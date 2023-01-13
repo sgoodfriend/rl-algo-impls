@@ -1,0 +1,115 @@
+CartPole-v1: &cartpole-defaults
+  n_timesteps: !!float 5e4
+  env_hyperparams:
+    n_envs: 4
+  policy_hyperparams:
+    hidden_sizes: [256, 256]
+  algo_hyperparams:
+    learning_rate: !!float 2.3e-3
+    batch_size: 64
+    buffer_size: 100000
+    learning_starts: 1000
+    gamma: 0.99
+    target_update_interval: 10
+    train_freq: 256
+    gradient_steps: 128
+    exploration_fraction: 0.16
+    exploration_final_eps: 0.04
+    print_n_episodes: 50
+  eval_params:
+    step_freq: !!float 1e4
+    n_episodes: 10
+    save_best: true
+
+CartPole-v0:
+  <<: *cartpole-defaults
+  n_timesteps: !!float 4e4
+
+MountainCar-v0:
+  n_timesteps: !!float 1.2e5
+  policy_hyperparams:
+    hidden_sizes: [256, 256]
+  algo_hyperparams:
+    learning_rate: !!float 4e-3
+    batch_size: 128
+    buffer_size: 10000
+    learning_starts: 1000
+    gamma: 0.98
+    target_update_interval: 600
+    train_freq: 16
+    gradient_steps: 8
+    exploration_fraction: 0.2
+    exploration_final_eps: 0.07
+    print_n_episodes: 50
+
+Acrobot-v1:
+  n_timesteps: !!float 1e5
+  policy_hyperparams:
+    hidden_sizes: [256, 256]
+  algo_hyperparams:
+    learning_rate: !!float 6.3e-4
+    batch_size: 128
+    buffer_size: 50000
+    learning_starts: 0
+    gamma: 0.99
+    target_update_interval: 250
+    train_freq: 4
+    gradient_steps: -1
+    exploration_fraction: 0.12
+    exploration_final_eps: 0.1
+    print_n_episodes: 10
+
+LunarLander-v2:
+  n_timesteps: !!float 5e5
+  policy_hyperparams:
+    hidden_sizes: [256, 256]
+  algo_hyperparams:
+    learning_rate: !!float 1e-4
+    batch_size: 256
+    buffer_size: 100000
+    learning_starts: 10000
+    gamma: 0.99
+    target_update_interval: 250
+    train_freq: 8
+    gradient_steps: -1
+    exploration_fraction: 0.12
+    exploration_final_eps: 0.1
+    max_grad_norm: 0.5
+    print_n_episodes: 10
+  eval_params:
+    step_freq: 25_000
+    n_episodes: 10
+    save_best: true
+
+SpaceInvadersNoFrameskip-v4: &atari-defaults
+  device: "mps"
+  n_timesteps: !!float 1e7
+  env_hyperparams:
+    frame_stack: 4
+    no_reward_timeout_steps: 1_000
+    n_envs: 8
+    vec_env_class: "subproc"
+  policy_hyperparams:
+    hidden_sizes: [512]
+  algo_hyperparams:
+    buffer_size: 100000
+    learning_rate: !!float 1e-4
+    batch_size: 32
+    learning_starts: 100000
+    target_update_interval: 1000
+    train_freq: 8
+    gradient_steps: 2
+    exploration_fraction: 0.1
+    exploration_final_eps: 0.01
+    print_n_episodes: 20
+  eval_params:
+    step_freq: 100_000
+    n_episodes: 10
+    save_best: true
+
+BreakoutNoFrameskip-v4:
+  <<: *atari-defaults
+
+PongNoFrameskip-v4:
+  <<: *atari-defaults
+  n_timesteps: !!float 2.5e6

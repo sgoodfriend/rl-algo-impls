@@ -1,0 +1,94 @@
+dqn-CartPole-v1-2023-01-12T16:18:51.889880:
+  algo: dqn
+  algo_hyperparams:
+    batch_size: 64
+    buffer_size: 100000
+    exploration_final_eps: 0.04
+    exploration_fraction: 0.16
+    gamma: 0.99
+    gradient_steps: 128
+    learning_rate: 0.0023
+    learning_starts: 1000
+    print_n_episodes: 50
+    target_update_interval: 10
+    train_freq: 256
+  best_eval:
+    length:
+      max: 500
+      mean: 349.9
+      min: 212
+      std: 106.72061656493557
+    n_episodes: 10
+    score:
+      max: 500.0
+      mean: 349.9
+      min: 212.0
+      std: 106.72061656493557
+  env: CartPole-v1
+  env_hyperparams:
+    n_envs: 4
+  eval:
+    length:
+      max: 134
+      mean: 128.8
+      min: 122
+      std: 3.280243893371345
+    n_episodes: 10
+    score:
+      max: 134.0
+      mean: 128.8
+      min: 122.0
+      std: 3.280243893371345
+  eval_params:
+    n_episodes: 10
+    save_best: true
+    step_freq: 10000.0
+  n_timesteps: 50000.0
+  policy_hyperparams:
+    hidden_sizes:
+    - 256
+    - 256
+  seed: null
+vpg-CartPole-v1-2023-01-12T16:20:09.982864:
+  algo: vpg
+  algo_hyperparams:
+    gamma: 0.99
+    lam: 1
+    pi_lr: 0.01
+    steps_per_epoch: 4096
+    train_v_iters: 80
+    val_lr: 0.01
+  best_eval:
+    length:
+      max: 500
+      mean: 500.0
+      min: 500
+      std: 0.0
+    n_episodes: 10
+    score:
+      max: 500.0
+      mean: 500.0
+      min: 500.0
+      std: 0.0
+  env: CartPole-v1
+  eval:
+    length:
+      max: 500
+      mean: 456.9
+      min: 229
+      std: 89.70222962669322
+    n_episodes: 10
+    score:
+      max: 500.0
+      mean: 456.9
+      min: 229.0
+      std: 89.70222962669322
+  eval_params:
+    n_episodes: 10
+    save_best: true
+    step_freq: 25000.0
+  n_timesteps: 400000.0
+  policy_hyperparams:
+    hidden_sizes:
+    - 32
+  seed: null
