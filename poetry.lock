@@ -2488,6 +2488,27 @@ typing-extensions = "*"
 opt-einsum = ["opt-einsum (>=3.3)"]
 
 [[package]]
+name = "torch-tb-profiler"
+version = "0.4.1"
+description = "PyTorch Profiler TensorBoard Plugin"
+category = "main"
+optional = false
+python-versions = ">=3.6.2"
+files = [
+    {file = "torch_tb_profiler-0.4.1-py3-none-any.whl", hash = "sha256:df7428ce5564e8357d0d03c0f246398c448fc8cd91b3075370ca5c25defbc635"},
+    {file = "torch_tb_profiler-0.4.1.tar.gz", hash = "sha256:f2c7fb27d420be443ffde50ada655c19f76a245d21e7772de753196fd0967685"},
+]
+
+[package.dependencies]
+pandas = ">=1.0.0"
+tensorboard = ">=1.15,<2.1.0 || >2.1.0"
+
+[package.extras]
+blob = ["azure-storage-blob"]
+gs = ["google-cloud-storage"]
+s3 = ["boto3"]
+
+[[package]]
 name = "tqdm"
 version = "4.64.1"
 description = "Fast, Extensible Progress Meter"
@@ -2659,4 +2680,4 @@ testing = ["flake8 (<5)", "func-timeout", "jaraco.functools", "jaraco.itertools"
 [metadata]
 lock-version = "2.0"
 python-versions = "~3.10"
-content-hash = "73ff5e124a305ef0529ee532a3a6960a8e49e71a740fe8ca508d7dc54b6438a7"
+content-hash = "c404031f6aea789d042f50848e0303a4639d52d64731cc3de09eec3738030659"

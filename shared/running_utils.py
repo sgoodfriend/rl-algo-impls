@@ -6,9 +6,11 @@ import yaml
 
 from dataclasses import dataclass
 from datetime import datetime
+from matplotlib.figure import Figure
 from stable_baselines3.common.vec_env.base_vec_env import VecEnv
 from stable_baselines3.common.vec_env.dummy_vec_env import DummyVecEnv
 from stable_baselines3.common.vec_env.subproc_vec_env import SubprocVecEnv
+from torch.utils.tensorboard.writer import SummaryWriter
 from typing import Any, Dict, List, Optional, Type, TypedDict, Union
 
 from shared.algorithm import Algorithm
@@ -154,23 +156,20 @@ class Names:
         return os.path.join(self.saved_models_dir, model_file_name)
 
     @property
-    def results_path(self) -> str:
-        return os.path.join(self.root_dir, "results")
+    def runs_dir(self) -> str:
+        return os.path.join(self.root_dir, "runs")
+
+    @property
+    def tensorboard_summary_path(self) -> str:
+        return os.path.join(self.runs_dir, self.run_name)
 
     @property
     def logs_path(self) -> str:
-        return os.path.join(self.results_path, f"log.yml")
-
-    @property
-    def training_plot_path(self) -> str:
-        return os.path.join(self.results_path, f"{self.run_name}-train.png")
-
-    @property
-    def eval_plot_path(self) -> str:
-        return os.path.join(self.results_path, f"{self.run_name}-eval.png")
+        return os.path.join(self.runs_dir, f"log.yml")
 
 
-def plot_training(history: List[EpisodesStats], plot_path: str) -> None:
+def plot_training(history: List[EpisodesStats], tb_writer: SummaryWriter):
+    figure = plt.figure()
     cumulative_steps = []
     for es in history:
         cumulative_steps.append(
@@ -186,15 +185,25 @@ def plot_training(history: List[EpisodesStats], plot_path: str) -> None:
     )
     plt.xlabel("Steps")
     plt.ylabel("Score")
-    plt.plot()
-    plt.savefig(plot_path)
+    tb_writer.add_figure("train", figure)
+    for steps, es in zip(cumulative_steps, history):
+        tb_writer.add_scalars(
+            "train",
+            {
+                "mean": es.score.mean,
+                "min": es.score.min,
+                "max": es.score.max,
+                "result": es.score.mean - es.score.std,
+            },
+            steps,
+        )
 
 
-def plot_eval_callback(callback: EvalCallback, plot_path: str) -> None:
+def plot_eval_callback(callback: EvalCallback, tb_writer: SummaryWriter):
+    figure = plt.figure()
     cumulative_steps = [
         (idx + 1) * callback.step_freq for idx in range(len(callback.stats))
     ]
-    plt.clf()
     plt.plot(
         cumulative_steps,
         [s.score.mean for s in callback.stats],
@@ -217,5 +226,35 @@ def plot_eval_callback(callback: EvalCallback, plot_path: str) -> None:
     plt.xlabel("Steps")
     plt.ylabel("Score")
     plt.legend()
-    plt.plot()
-    plt.savefig(plot_path)
+    tb_writer.add_figure("eval", figure)
+    for steps, es in zip(cumulative_steps, callback.stats):
+        tb_writer.add_scalars(
+            "eval",
+            {
+                "mean": es.score.mean,
+                "min": es.score.min,
+                "max": es.score.max,
+                "result": es.score.mean - es.score.std,
+            },
+            steps,
+        )
+
+
+Scalar = Union[bool, str, float, int, None]
+
+
+def flatten_hyperparameters(
+    hyperparams: Hyperparams, args: Dict[str, Scalar]
+) -> Dict[str, Scalar]:
+    flattened = args.copy()
+    for k, v in hyperparams.items():
+        if isinstance(v, dict):
+            for sk, sv in v.items():
+                key = f"{k}/{sk}"
+                if isinstance(sv, dict) or isinstance(sv, list):
+                    flattened[key] = str(sv)
+                else:
+                    flattened[key] = sv
+        else:
+            flattened[k] = v
+    return flattened

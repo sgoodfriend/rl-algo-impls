@@ -6,6 +6,7 @@ os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
 import torch
 import yaml
 
+from torch.utils.tensorboard.writer import SummaryWriter
 from typing import Any, Dict
 
 from shared.callbacks.eval_callback import EvalCallback
@@ -17,7 +18,9 @@ from shared.running_utils import (
     make_policy,
     plot_training,
     plot_eval_callback,
+    flatten_hyperparameters,
 )
+from shared.stats import EpisodesStats
 
 if __name__ == "__main__":
     import argparse
@@ -25,13 +28,13 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--algo",
-        default="vpg",
+        default="dqn",
         type=str,
         choices=list(ALGOS.keys()),
         help="Abbreviation of algorithm for training",
     )
     parser.add_argument(
-        "--env", default="CartPole-v1", type=str, help="Name of environment in gym"
+        "--env", default="CartPole-v0", type=str, help="Name of environment in gym"
     )
     parser.add_argument(
         "--seed",
@@ -44,6 +47,8 @@ if __name__ == "__main__":
 
     hyperparams = load_hyperparams(args.algo, args.env, os.path.dirname(__file__))
     names = Names(args.algo, args.env, hyperparams, os.path.dirname(__file__))
+
+    tb_writer = SummaryWriter(names.tensorboard_summary_path)
 
     device = torch.device(hyperparams.get("device", "cpu"))
     env = make_env(args.env, **hyperparams.get("env_hyperparams", {}))
@@ -66,10 +71,10 @@ if __name__ == "__main__":
 
     policy.save(names.model_path(best=False))
 
-    plot_training(history, names.training_plot_path)
-    plot_eval_callback(callback, names.eval_plot_path)
-
     eval_stats = callback.evaluate(n_episodes=10, print_returns=True)
+
+    plot_training(history, tb_writer)
+    plot_eval_callback(callback, tb_writer)
 
     log_dict: Dict[str, Any] = {
         "eval": eval_stats._asdict(),
@@ -78,7 +83,19 @@ if __name__ == "__main__":
         log_dict["best_eval"] = callback.best._asdict()
     log_dict.update(hyperparams)
     log_dict.update(vars(args))
-    dirname = os.path.dirname(__file__)
-    saved_models_dir = os.path.join(dirname, "saved_models")
-    with open(os.path.join(saved_models_dir, "log.yml"), "a") as f:
+    with open(names.logs_path, "a") as f:
         yaml.dump({names.run_name: log_dict}, f)
+
+    best_eval_stats: EpisodesStats = callback.best  # type: ignore
+    tb_writer.add_hparams(
+        flatten_hyperparameters(hyperparams, vars(args)),
+        {
+            "hparam/best_mean": best_eval_stats.score.mean,
+            "hparam/best_result": best_eval_stats.score.mean
+            - best_eval_stats.score.std,
+            "hparam/last_mean": eval_stats.score.mean,
+            "hparam/last_result": eval_stats.score.mean - eval_stats.score.std,
+        },
+        None,
+        names.run_name,
+    )
