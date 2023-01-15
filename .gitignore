@@ -130,3 +130,5 @@ dmypy.json
 
 # Everything in the runs directory
 runs/*
+
+wandb

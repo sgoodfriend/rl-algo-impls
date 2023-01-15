@@ -42,11 +42,37 @@ if __name__ == "__main__":
         type=int,
         help="If specified, sets randomness seed and determinism",
     )
+    parser.add_argument(
+        "--wandb-project-name",
+        type=str,
+        default="rl-algo-impls",
+        help="WandB project namme to upload training data to. If none, won't upload.",
+    )
+    parser.add_argument(
+        "--wandb-entity",
+        type=str,
+        default=None,
+        help="WanDB team of project. None uses default entity",
+    )
     args = parser.parse_args()
     print(args)
 
     hyperparams = load_hyperparams(args.algo, args.env, os.path.dirname(__file__))
     names = Names(args.algo, args.env, hyperparams, os.path.dirname(__file__))
+
+    if args.wandb_project_name:
+        import wandb
+
+        wandb.init(
+            project=args.wandb_project_name,
+            entity=args.wandb_entity,
+            sync_tensorboard=True,
+            config=hyperparams,
+            name=names.run_name,
+            monitor_gym=True,
+            save_code=True,
+        )
+        wandb.config.update(args)
 
     tb_writer = SummaryWriter(names.tensorboard_summary_path)
 
