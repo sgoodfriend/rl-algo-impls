@@ -11,26 +11,24 @@ DQNPolicySelf = TypeVar("DQNPolicySelf", bound="DQNPolicy")
 
 
 class DQNPolicy(Policy):
-
     def __init__(
         self,
         env: VecEnv,
-        device: torch.device,
         hidden_sizes: Sequence[int],
     ) -> None:
-        super().__init__(env, device)
-        self.q_net = QNetwork(env.observation_space, env.action_space,
-                              hidden_sizes).to(device).train(self.training)
+        super().__init__(env)
+        self.q_net = QNetwork(env.observation_space, env.action_space, hidden_sizes)
 
     def act(self, obs: VecEnvObs, eps: float = 0) -> np.ndarray:
         if self.training and np.random.random() < eps:
-            return np.array([
-                self.env.action_space.sample()
-                for _ in range(self.env.num_envs)
-            ])
+            return np.array(
+                [self.env.action_space.sample() for _ in range(self.env.num_envs)]
+            )
         else:
             with torch.no_grad():
-                obs_th = torch.as_tensor(np.array(obs), device=self.device)
+                obs_th = torch.as_tensor(np.array(obs))
+                if self.device:
+                    obs_th = obs_th.to(self.device)
                 return self.q_net(obs_th).argmax(axis=1).cpu().numpy()
 
     def train(self: DQNPolicySelf, mode: bool = True) -> DQNPolicySelf:

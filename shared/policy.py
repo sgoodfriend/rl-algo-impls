@@ -1,34 +1,34 @@
-import gym
 import numpy as np
 import torch
+import torch.nn as nn
 
 from abc import ABC, abstractmethod
-from gym.spaces import Box, Discrete
 from stable_baselines3.common.vec_env.base_vec_env import VecEnv, VecEnvObs
-from typing import TypeVar, Union
+from typing import Optional, TypeVar, Union
 
 PolicySelf = TypeVar("PolicySelf", bound="Policy")
 
 
-class Policy(ABC):
-
+class Policy(nn.Module, ABC):
     @abstractmethod
-    def __init__(self, env: VecEnv, device: torch.device, **kwargs) -> None:
+    def __init__(self, env: VecEnv, **kwargs) -> None:
         super().__init__()
         self.env = env
+        self.device = None
+
+    def to(
+        self: PolicySelf,
+        device: Optional[torch.device] = None,
+        dtype: Optional[Union[torch.dtype, str]] = None,
+        non_blocking: bool = False,
+    ) -> PolicySelf:
+        super().to(device, dtype, non_blocking)
         self.device = device
-        self.training = True
+        return self
 
     @abstractmethod
     def act(self, obs: VecEnvObs) -> np.ndarray:
         ...
-
-    def train(self: PolicySelf, mode: bool = True) -> PolicySelf:
-        self.training = mode
-        return self
-
-    def eval(self: PolicySelf) -> PolicySelf:
-        return self.train(False)
 
     @abstractmethod
     def save(self, path: str) -> None:

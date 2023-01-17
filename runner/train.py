@@ -88,8 +88,8 @@ def train(args: TrainArgs):
 
     eval_stats = callback.evaluate(n_episodes=10, print_returns=True)
 
-    plot_training(history, tb_writer)
-    plot_eval_callback(callback, tb_writer)
+    plot_training(history, tb_writer, names.run_name)
+    plot_eval_callback(callback, tb_writer, names.run_name)
 
     log_dict: Dict[str, Any] = {
         "eval": eval_stats._asdict(),

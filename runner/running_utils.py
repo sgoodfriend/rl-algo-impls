@@ -170,7 +170,7 @@ def make_policy(
     load_path: Optional[str] = None,
     **kwargs,
 ) -> Policy:
-    policy = POLICIES[algo](env, device, **kwargs)
+    policy = POLICIES[algo](env, **kwargs).to(device)
     if load_path:
         policy.load(load_path)
     return policy
@@ -235,7 +235,9 @@ class Names:
         return os.path.join(self.runs_dir, f"log.yml")
 
 
-def plot_training(history: List[EpisodesStats], tb_writer: SummaryWriter):
+def plot_training(
+    history: List[EpisodesStats], tb_writer: SummaryWriter, run_name: str
+):
     figure = plt.figure()
     cumulative_steps = []
     for es in history:
@@ -252,10 +254,11 @@ def plot_training(history: List[EpisodesStats], tb_writer: SummaryWriter):
     )
     plt.xlabel("Steps")
     plt.ylabel("Score")
+    plt.title(f"Train {run_name}")
     tb_writer.add_figure("train", figure)
 
 
-def plot_eval_callback(callback: EvalCallback, tb_writer: SummaryWriter):
+def plot_eval_callback(callback: EvalCallback, tb_writer: SummaryWriter, run_name: str):
     figure = plt.figure()
     cumulative_steps = [
         (idx + 1) * callback.step_freq for idx in range(len(callback.stats))
@@ -282,6 +285,7 @@ def plot_eval_callback(callback: EvalCallback, tb_writer: SummaryWriter):
     plt.xlabel("Steps")
     plt.ylabel("Score")
     plt.legend()
+    plt.title(f"Eval {run_name}")
     tb_writer.add_figure("eval", figure)
 
 
