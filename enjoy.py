@@ -5,8 +5,12 @@ os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
 
 import torch
 
-from shared.running_utils import (
+from dataclasses import dataclass
+
+from runner.running_utils import (
     POLICIES,
+    base_parser,
+    RunArgs,
     load_hyperparams,
     Names,
     set_seeds,
@@ -15,43 +19,25 @@ from shared.running_utils import (
 )
 from shared.callbacks.eval_callback import evaluate
 
-if __name__ == "__main__":
-    import argparse
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--algo",
-        default="dqn",
-        type=str,
-        choices=list(POLICIES.keys()),
-        help="Abbreviation of algorithm used to train the policy",
-    )
-    parser.add_argument(
-        "--env",
-        default="BreakoutNoFrameskip-v4",
-        type=str,
-        help="Name of environment in gym",
-    )
+@dataclass
+class EvalArgs(RunArgs):
+    render: bool = True
+    best: bool = True
+    n_envs: int = 1
+
+
+if __name__ == "__main__":
+    parser = base_parser()
     parser.add_argument("--render", default=True, type=bool)
     parser.add_argument("--best", default=True, type=bool)
     parser.add_argument("--n_envs", default=1, type=int)
-    parser.add_argument(
-        "--seed",
-        default=1,
-        type=int,
-        help="If specified, sets randomness seed and determinism",
-    )
-    parser.add_argument(
-        "--use-deterministic-algorithms",
-        default=True,
-        type=bool,
-        help="If seed set, set torch.use_deterministic_algorithms",
-    )
-    args = parser.parse_args()
+    parser.set_defaults(algo="dqn", env="CartPole-v1")
+    args = EvalArgs(**vars(parser.parse_args()))
     print(args)
 
     hyperparams = load_hyperparams(args.algo, args.env, os.path.dirname(__file__))
-    names = Names(args.algo, args.env, hyperparams, os.path.dirname(__file__))
+    names = Names(args, hyperparams, os.path.dirname(__file__))
 
     if args.n_envs is not None:
         env_hyperparams = hyperparams.get("env_hyperparams", {})
