@@ -186,17 +186,6 @@ def plot_training(history: List[EpisodesStats], tb_writer: SummaryWriter):
     plt.xlabel("Steps")
     plt.ylabel("Score")
     tb_writer.add_figure("train", figure)
-    for steps, es in zip(cumulative_steps, history):
-        tb_writer.add_scalars(
-            "train",
-            {
-                "mean": es.score.mean,
-                "min": es.score.min,
-                "max": es.score.max,
-                "result": es.score.mean - es.score.std,
-            },
-            steps,
-        )
 
 
 def plot_eval_callback(callback: EvalCallback, tb_writer: SummaryWriter):
@@ -227,17 +216,6 @@ def plot_eval_callback(callback: EvalCallback, tb_writer: SummaryWriter):
     plt.ylabel("Score")
     plt.legend()
     tb_writer.add_figure("eval", figure)
-    for steps, es in zip(cumulative_steps, callback.stats):
-        tb_writer.add_scalars(
-            "eval",
-            {
-                "mean": es.score.mean,
-                "min": es.score.min,
-                "max": es.score.max,
-                "result": es.score.mean - es.score.std,
-            },
-            steps,
-        )
 
 
 Scalar = Union[bool, str, float, int, None]

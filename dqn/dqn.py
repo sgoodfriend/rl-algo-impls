@@ -8,6 +8,7 @@ import torch.nn.functional as F
 from collections import deque
 from torch.optim import Adam
 from stable_baselines3.common.vec_env.base_vec_env import VecEnv, VecEnvObs
+from torch.utils.tensorboard.writer import SummaryWriter
 from typing import List, NamedTuple, Optional
 
 from dqn.policy import DQNPolicy
@@ -34,7 +35,6 @@ class Batch(NamedTuple):
 
 
 class ReplayBuffer:
-
     def __init__(self, num_envs: int, maxlen: int) -> None:
         self.num_envs = num_envs
         self.buffer = deque(maxlen=maxlen)
@@ -51,7 +51,8 @@ class ReplayBuffer:
         assert isinstance(next_obs, np.ndarray)
         for i in range(self.num_envs):
             self.buffer.append(
-                Transition(obs[i], action[i], reward[i], done[i], next_obs[i]))
+                Transition(obs[i], action[i], reward[i], done[i], next_obs[i])
+            )
 
     def sample(self, batch_size: int) -> Batch:
         ts = random.sample(self.buffer, batch_size)
@@ -68,44 +69,52 @@ class ReplayBuffer:
 
 
 class RolloutStats(EpisodeAccumulator):
-
-    def __init__(self, num_envs: int, print_n_episodes: int):
+    def __init__(self, num_envs: int, print_n_episodes: int, tb_writer: SummaryWriter):
         super().__init__(num_envs)
         self.print_n_episodes = print_n_episodes
         self.epochs: List[EpisodesStats] = []
+        self.tb_writer = tb_writer
 
     def on_done(self, ep_idx: int, episode: Episode) -> None:
-        if (self.print_n_episodes >= 0
-                and len(self.episodes) % self.print_n_episodes == 0):
-            sample = self.episodes[-self.print_n_episodes:]
+        if (
+            self.print_n_episodes >= 0
+            and len(self.episodes) % self.print_n_episodes == 0
+        ):
+            sample = self.episodes[-self.print_n_episodes :]
             epoch = EpisodesStats(sample)
             self.epochs.append(epoch)
-            print(f"Episode: {len(self.episodes)} | "
-                  f"{epoch} | "
-                  f"Total Steps: {np.sum([e.length for e in self.episodes])}")
+            total_steps = np.sum([e.length for e in self.episodes])
+            print(
+                f"Episode: {len(self.episodes)} | "
+                f"{epoch} | "
+                f"Total Steps: {total_steps}"
+            )
+            epoch.write_to_tensorboard(self.tb_writer, "train", global_step=total_steps)
 
 
 class DQN(Algorithm):
-
-    def __init__(self,
-                 policy: DQNPolicy,
-                 env: VecEnv,
-                 device: torch.device,
-                 learning_rate: float = 1e-4,
-                 buffer_size: int = 1_000_000,
-                 learning_starts: int = 50_000,
-                 batch_size: int = 32,
-                 tau: float = 1.0,
-                 gamma: float = 0.99,
-                 train_freq: int = 4,
-                 gradient_steps: int = 1,
-                 target_update_interval: int = 10_000,
-                 exploration_fraction: float = 0.1,
-                 exploration_initial_eps: float = 1.0,
-                 exploration_final_eps: float = 0.05,
-                 max_grad_norm: float = 10.0,
-                 print_n_episodes: int = -1) -> None:
-        super().__init__(policy, env, device)
+    def __init__(
+        self,
+        policy: DQNPolicy,
+        env: VecEnv,
+        device: torch.device,
+        tb_writer: SummaryWriter,
+        learning_rate: float = 1e-4,
+        buffer_size: int = 1_000_000,
+        learning_starts: int = 50_000,
+        batch_size: int = 32,
+        tau: float = 1.0,
+        gamma: float = 0.99,
+        train_freq: int = 4,
+        gradient_steps: int = 1,
+        target_update_interval: int = 10_000,
+        exploration_fraction: float = 0.1,
+        exploration_initial_eps: float = 1.0,
+        exploration_final_eps: float = 0.05,
+        max_grad_norm: float = 10.0,
+        print_n_episodes: int = -1,
+    ) -> None:
+        super().__init__(policy, env, device, tb_writer)
         self.policy = policy
 
         self.optimizer = Adam(self.policy.q_net.parameters(), lr=learning_rate)
@@ -124,16 +133,18 @@ class DQN(Algorithm):
 
         self.gamma = gamma
         self.exploration_eps_schedule = linear_schedule(
-            exploration_initial_eps, exploration_final_eps,
-            exploration_fraction)
+            exploration_initial_eps, exploration_final_eps, exploration_fraction
+        )
 
         self.max_grad_norm = max_grad_norm
 
-        self.rollout_stats = RolloutStats(self.env.num_envs, print_n_episodes)
+        self.rollout_stats = RolloutStats(
+            self.env.num_envs, print_n_episodes, tb_writer
+        )
 
-    def learn(self,
-              total_timesteps: int,
-              callback: Optional[Callback] = None) -> List[EpisodesStats]:
+    def learn(
+        self, total_timesteps: int, callback: Optional[Callback] = None
+    ) -> List[EpisodesStats]:
         self.policy.train(True)
         obs = self.env.reset()
         obs = self._collect_rollout(self.learning_starts, obs, 1)
@@ -146,8 +157,9 @@ class DQN(Algorithm):
             obs = self._collect_rollout(self.train_freq, obs, eps)
             rollout_steps = self.train_freq
             timesteps_elapsed += rollout_steps
-            for _ in range(self.gradient_steps
-                           if self.gradient_steps > 0 else self.train_freq):
+            for _ in range(
+                self.gradient_steps if self.gradient_steps > 0 else self.train_freq
+            ):
                 self.train()
             steps_since_target_update += rollout_steps
             if steps_since_target_update >= self.target_update_interval:
@@ -168,21 +180,17 @@ class DQN(Algorithm):
         next_o = torch.as_tensor(next_o, device=self.device)
 
         with torch.no_grad():
-            target = (
-                r +
-                (1 - d) * self.gamma * self.target_q_net(next_o).max(1).values)
+            target = r + (1 - d) * self.gamma * self.target_q_net(next_o).max(1).values
         current = self.policy.q_net(o).gather(dim=1, index=a).squeeze(1)
         loss = F.smooth_l1_loss(current, target)
 
         self.optimizer.zero_grad()
         loss.backward()
         if self.max_grad_norm:
-            nn.utils.clip_grad_norm_(self.policy.q_net.parameters(),
-                                     self.max_grad_norm)
+            nn.utils.clip_grad_norm_(self.policy.q_net.parameters(), self.max_grad_norm)
         self.optimizer.step()
 
-    def _collect_rollout(self, timesteps: int, obs: VecEnvObs,
-                         eps: float) -> VecEnvObs:
+    def _collect_rollout(self, timesteps: int, obs: VecEnvObs, eps: float) -> VecEnvObs:
         for _ in range(0, timesteps, self.env.num_envs):
             action = self.policy.act(obs, eps)
             next_obs, reward, done, _ = self.env.step(action)
@@ -192,7 +200,9 @@ class DQN(Algorithm):
         return obs
 
     def _update_target(self) -> None:
-        for target_param, param in zip(self.target_q_net.parameters(),
-                                       self.policy.q_net.parameters()):
-            target_param.data.copy_(self.tau * param.data +
-                                    (1 - self.tau) * target_param.data)
+        for target_param, param in zip(
+            self.target_q_net.parameters(), self.policy.q_net.parameters()
+        ):
+            target_param.data.copy_(
+                self.tau * param.data + (1 - self.tau) * target_param.data
+            )

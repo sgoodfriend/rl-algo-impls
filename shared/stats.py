@@ -1,7 +1,8 @@
 import numpy as np
 
 from dataclasses import dataclass
-from typing import NamedTuple, Sequence, TypeVar
+from torch.utils.tensorboard.writer import SummaryWriter
+from typing import Optional, Sequence, TypeVar
 
 
 @dataclass
@@ -49,7 +50,7 @@ class Statistic:
         if self.round_digits == 0:
             mean = int(mean)
             std = int(std)
-        return (f"{mean} +/- {std}")
+        return f"{mean} +/- {std}"
 
     def to_dict(self) -> dict[str, float]:
         return {
@@ -71,8 +72,7 @@ class EpisodesStats:
     def __init__(self, episodes: Sequence[Episode]) -> None:
         self.episodes = episodes
         self.score = Statistic(np.array([e.score for e in episodes]))
-        self.length = Statistic(np.array([e.length for e in episodes]),
-                                round_digits=0)
+        self.length = Statistic(np.array([e.length for e in episodes]), round_digits=0)
 
     def __ge__(self: EpisodesStatsSelf, o: EpisodesStatsSelf) -> bool:
         return self.score >= o.score
@@ -87,9 +87,22 @@ class EpisodesStats:
             "length": self.length.to_dict(),
         }
 
+    def write_to_tensorboard(
+        self, tb_writer: SummaryWriter, main_tag: str, global_step: Optional[int] = None
+    ) -> None:
+        tb_writer.add_scalars(
+            main_tag,
+            {
+                "mean": self.score.mean,
+                "min": self.score.min,
+                "max": self.score.max,
+                "result": self.score.mean - self.score.std,
+            },
+            global_step=global_step,
+        )
+
 
 class EpisodeAccumulator:
-
     def __init__(self, num_envs: int):
         self.episodes = []
         self.current_episodes = [Episode() for _ in range(num_envs)]

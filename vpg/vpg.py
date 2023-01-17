@@ -1,12 +1,11 @@
 import numpy as np
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
-from collections import deque
 from dataclasses import dataclass
 from torch.optim import Adam
 from stable_baselines3.common.vec_env.base_vec_env import VecEnv, VecEnvObs
+from torch.utils.tensorboard.writer import SummaryWriter
 from typing import List, Optional, Sequence, NamedTuple
 
 from shared.algorithm import Algorithm
@@ -41,7 +40,6 @@ class Trajectory:
 
 
 class TrajectoryAccumulator:
-
     def __init__(self, num_envs: int, goal_steps: int):
         self.num_envs = num_envs
 
@@ -97,12 +95,12 @@ class TrainEpochStats(NamedTuple):
 
 
 class VanillaPolicyGradient(Algorithm):
-
     def __init__(
         self,
         policy: ActorCritic,
         env: VecEnv,
         device: torch.device,
+        tb_writer: SummaryWriter,
         gamma: float = 0.99,
         pi_lr: float = 3e-4,
         val_lr: float = 1e-3,
@@ -111,7 +109,7 @@ class VanillaPolicyGradient(Algorithm):
         max_grad_norm: float = 10.0,
         steps_per_epoch: int = 4_000,
     ) -> None:
-        super().__init__(policy, env, device)
+        super().__init__(policy, env, device, tb_writer)
         self.policy = policy
 
         self.gamma = gamma
@@ -129,6 +127,7 @@ class VanillaPolicyGradient(Algorithm):
         callback: Optional[Callback] = None,
     ) -> List[EpisodesStats]:
         import gc
+
         self.policy.train(True)
         obs = self.env.reset()
         timesteps_elapsed = 0
@@ -140,24 +139,29 @@ class VanillaPolicyGradient(Algorithm):
             timesteps_elapsed += epoch_steps
             stats = accumulator.stats()
             episodes_stats.append(stats)
-            print(f"Epoch: {len(episodes_stats)} | "
-                  f"Score: {stats.score} | "
-                  f"Length: {stats.length} | "
-                  f"Pi Loss: {round(epoch_stats.pi_loss, 2)} | "
-                  f"V Loss: {round(epoch_stats.v_loss, 2)} | "
-                  f"Total Steps: {timesteps_elapsed}")
+            stats.write_to_tensorboard(
+                self.tb_writer, "train", global_step=timesteps_elapsed
+            )
+            print(
+                f"Epoch: {len(episodes_stats)} | "
+                f"Score: {stats.score} | "
+                f"Length: {stats.length} | "
+                f"Pi Loss: {round(epoch_stats.pi_loss, 2)} | "
+                f"V Loss: {round(epoch_stats.v_loss, 2)} | "
+                f"Total Steps: {timesteps_elapsed}"
+            )
             if callback:
                 callback.on_step(timesteps_elapsed=epoch_steps)
             gc.collect()
         return episodes_stats
 
     def train(self, trajectories: Sequence[Trajectory]) -> TrainEpochStats:
-        obs = torch.as_tensor(np.concatenate(
-            [np.array(t.obs) for t in trajectories]),
-                              device=self.device)
-        act = torch.as_tensor(np.concatenate(
-            [np.array(t.act) for t in trajectories]),
-                              device=self.device)
+        obs = torch.as_tensor(
+            np.concatenate([np.array(t.obs) for t in trajectories]), device=self.device
+        )
+        act = torch.as_tensor(
+            np.concatenate([np.array(t.act) for t in trajectories]), device=self.device
+        )
         rtg, adv = self._compute_rtg_and_advantage(trajectories)
 
         pi_loss = self._update_pi(obs, act, adv)
@@ -168,8 +172,7 @@ class VanillaPolicyGradient(Algorithm):
         return TrainEpochStats(pi_loss, v_loss)
 
     def _collect_trajectories(self, obs: VecEnvObs) -> TrajectoryAccumulator:
-        accumulator = TrajectoryAccumulator(self.env.num_envs,
-                                            self.steps_per_epoch)
+        accumulator = TrajectoryAccumulator(self.env.num_envs, self.steps_per_epoch)
         while not accumulator.is_done():
             action, value, _ = self.policy.step(obs)
             next_obs, reward, done, _ = self.env.step(action)
@@ -178,42 +181,42 @@ class VanillaPolicyGradient(Algorithm):
         return accumulator
 
     def _compute_rtg_and_advantage(
-            self, trajectories: Sequence[Trajectory]) -> RtgAdvantage:
+        self, trajectories: Sequence[Trajectory]
+    ) -> RtgAdvantage:
         rewards_to_go = []
         advantage = []
         for traj in trajectories:
-            last_val = 0 if traj.terminated else self.policy.step(
-                traj.obs[-1]).v
+            last_val = 0 if traj.terminated else self.policy.step(traj.obs[-1]).v
             rew = np.append(np.array(traj.rew), last_val)
             v = np.append(np.array(traj.v), last_val)
             rewards_to_go.append(discounted_cumsum(rew, self.gamma)[:-1])
             deltas = rew[:-1] + self.gamma * v[1:] - v[:-1]
             advantage.append(discounted_cumsum(deltas, self.gamma * self.lam))
         return RtgAdvantage(
-            torch.as_tensor(np.concatenate(rewards_to_go),
-                            dtype=torch.float32,
-                            device=self.device),
-            torch.as_tensor(np.concatenate(advantage),
-                            dtype=torch.float32,
-                            device=self.device))
+            torch.as_tensor(
+                np.concatenate(rewards_to_go), dtype=torch.float32, device=self.device
+            ),
+            torch.as_tensor(
+                np.concatenate(advantage), dtype=torch.float32, device=self.device
+            ),
+        )
 
-    def _update_pi(self, obs: torch.Tensor, act: torch.Tensor,
-                   adv: torch.Tensor) -> float:
+    def _update_pi(
+        self, obs: torch.Tensor, act: torch.Tensor, adv: torch.Tensor
+    ) -> float:
         self.pi_optim.zero_grad()
         _, logp = self.policy.pi(obs, act)
         pi_loss = -(logp * adv).mean()
         pi_loss.backward()
-        nn.utils.clip_grad_norm_(self.policy.pi.parameters(),
-                                 self.max_grad_norm)
+        nn.utils.clip_grad_norm_(self.policy.pi.parameters(), self.max_grad_norm)
         self.pi_optim.step()
         return pi_loss.item()
 
     def _update_v(self, obs: torch.Tensor, rtg: torch.Tensor) -> float:
         self.val_optim.zero_grad()
         v = self.policy.v(obs)
-        v_loss = ((v - rtg)**2).mean()
+        v_loss = ((v - rtg) ** 2).mean()
         v_loss.backward()
-        nn.utils.clip_grad_norm_(self.policy.v.parameters(),
-                                 self.max_grad_norm)
+        nn.utils.clip_grad_norm_(self.policy.v.parameters(), self.max_grad_norm)
         self.val_optim.step()
         return v_loss.item()

@@ -128,7 +128,9 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# Everything in the runs directory
+# Logging into tensorboard and wandb
 runs/*
-
 wandb
+
+# macOS
+.DS_STORE

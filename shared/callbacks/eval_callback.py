@@ -1,6 +1,7 @@
 import numpy as np
 
 from stable_baselines3.common.vec_env.base_vec_env import VecEnv
+from torch.utils.tensorboard.writer import SummaryWriter
 from typing import List, Optional, Union
 
 from shared.callbacks.callback import Callback
@@ -9,16 +10,17 @@ from shared.stats import Episode, EpisodeAccumulator, EpisodesStats
 
 
 class EvaluateAccumulator(EpisodeAccumulator):
-
     def __init__(self, num_envs: int, print_returns: bool = True):
         super().__init__(num_envs)
         self.print_returns = print_returns
 
     def on_done(self, ep_idx: int, episode: Episode) -> None:
         if self.print_returns:
-            print(f"Episode {len(self.episodes)} | "
-                  f"Score {episode.score} | "
-                  f"Length {episode.length}")
+            print(
+                f"Episode {len(self.episodes)} | "
+                f"Score {episode.score} | "
+                f"Length {episode.length}"
+            )
 
 
 def evaluate(
@@ -45,11 +47,11 @@ def evaluate(
 
 
 class EvalCallback(Callback):
-
     def __init__(
         self,
         policy: Policy,
         env: VecEnv,
+        tb_writer: SummaryWriter,
         best_model_path: Optional[str] = None,
         step_freq: Union[int, float] = 50_000,
         n_episodes: int = 10,
@@ -58,6 +60,7 @@ class EvalCallback(Callback):
         super().__init__()
         self.policy = policy
         self.env = env
+        self.tb_writer = tb_writer
         self.best_model_path = best_model_path
         self.step_freq = int(step_freq)
         self.n_episodes = n_episodes
@@ -71,9 +74,9 @@ class EvalCallback(Callback):
             self.evaluate()
         return True
 
-    def evaluate(self,
-                 n_episodes: Optional[int] = None,
-                 print_returns: Optional[bool] = None) -> EpisodesStats:
+    def evaluate(
+        self, n_episodes: Optional[int] = None, print_returns: Optional[bool] = None
+    ) -> EpisodesStats:
         eval_stat = evaluate(
             self.env,
             self.policy,
@@ -91,5 +94,7 @@ class EvalCallback(Callback):
                 assert self.best_model_path
                 self.policy.save(self.best_model_path)
                 print("Saved best model")
+
+        eval_stat.write_to_tensorboard(self.tb_writer, "eval", self.timesteps_elapsed)
 
         return eval_stat

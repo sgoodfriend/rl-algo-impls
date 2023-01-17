@@ -4,6 +4,7 @@ import os
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
 
 import torch
+import wandb
 import yaml
 
 from torch.utils.tensorboard.writer import SummaryWriter
@@ -34,7 +35,10 @@ if __name__ == "__main__":
         help="Abbreviation of algorithm for training",
     )
     parser.add_argument(
-        "--env", default="CartPole-v0", type=str, help="Name of environment in gym"
+        "--env",
+        default="BreakoutNoFrameskip-v4",
+        type=str,
+        help="Name of environment in gym",
     )
     parser.add_argument(
         "--seed",
@@ -60,14 +64,15 @@ if __name__ == "__main__":
     hyperparams = load_hyperparams(args.algo, args.env, os.path.dirname(__file__))
     names = Names(args.algo, args.env, hyperparams, os.path.dirname(__file__))
 
-    if args.wandb_project_name:
-        import wandb
-
+    wandb_enabled = args.wandb_project_name
+    if wandb_enabled:
+        wandb.tensorboard.patch(
+            root_logdir=names.tensorboard_summary_path, pytorch=True
+        )
         wandb.init(
             project=args.wandb_project_name,
             entity=args.wandb_entity,
-            sync_tensorboard=True,
-            config=hyperparams,
+            config=hyperparams,  # type: ignore
             name=names.run_name,
             monitor_gym=True,
             save_code=True,
@@ -83,11 +88,12 @@ if __name__ == "__main__":
     )
 
     algo = ALGOS[args.algo](
-        policy, env, device, **hyperparams.get("algo_hyperparams", {})
+        policy, env, device, tb_writer, **hyperparams.get("algo_hyperparams", {})
     )
     callback = EvalCallback(
         policy,
         make_env(args.env, **hyperparams.get("env_hyperparams", {})),
+        tb_writer,
         best_model_path=names.model_path(best=True),
         **hyperparams.get("eval_params", {}),
     )
@@ -125,3 +131,6 @@ if __name__ == "__main__":
         None,
         names.run_name,
     )
+
+    if wandb_enabled:
+        wandb.finish()

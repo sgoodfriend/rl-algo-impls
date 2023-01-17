@@ -1,7 +1,7 @@
 CartPole-v1: &cartpole-defaults
   n_timesteps: !!float 5e4
   env_hyperparams:
-    n_envs: 4
+    n_envs: 1
   policy_hyperparams:
     hidden_sizes: [256, 256]
   algo_hyperparams:

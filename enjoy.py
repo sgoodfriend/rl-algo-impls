@@ -20,13 +20,16 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--algo",
-        default="vpg",
+        default="dqn",
         type=str,
         choices=list(POLICIES.keys()),
         help="Abbreviation of algorithm used to train the policy",
     )
     parser.add_argument(
-        "--env", default="CartPole-v1", type=str, help="Name of environment in gym"
+        "--env",
+        default="BreakoutNoFrameskip-v4",
+        type=str,
+        help="Name of environment in gym",
     )
     parser.add_argument("--render", default=True, type=bool)
     parser.add_argument("--best", default=True, type=bool)
