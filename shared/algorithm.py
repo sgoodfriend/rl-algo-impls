@@ -7,7 +7,7 @@ from torch.utils.tensorboard.writer import SummaryWriter
 from typing import List, Optional
 
 from shared.callbacks.callback import Callback
-from shared.policy import Policy
+from shared.policy.policy import Policy
 from shared.stats import EpisodesStats
 
 

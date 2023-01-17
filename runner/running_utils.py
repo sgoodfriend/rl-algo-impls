@@ -18,13 +18,13 @@ from typing import Any, Callable, Dict, List, Optional, Type, TypedDict, Union
 
 from shared.algorithm import Algorithm
 from shared.callbacks.eval_callback import EvalCallback
-from shared.policy import Policy
+from shared.policy.policy import Policy
 from shared.stats import EpisodesStats
 
 from dqn.dqn import DQN
 from dqn.policy import DQNPolicy
 from vpg.vpg import VanillaPolicyGradient
-from vpg.policy import ActorCritic
+from vpg.policy import VPGActorCritic
 
 ALGOS: Dict[str, Type[Algorithm]] = {
     "dqn": DQN,
@@ -33,7 +33,7 @@ ALGOS: Dict[str, Type[Algorithm]] = {
 
 POLICIES: Dict[str, Type[Policy]] = {
     "dqn": DQNPolicy,
-    "vpg": ActorCritic,
+    "vpg": VPGActorCritic,
 }
 
 HYPERPARAMS_PATH = "hyperparams"

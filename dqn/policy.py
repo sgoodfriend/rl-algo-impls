@@ -5,7 +5,7 @@ from stable_baselines3.common.vec_env.base_vec_env import VecEnv, VecEnvObs
 from typing import Sequence, TypeVar
 
 from dqn.q_net import QNetwork
-from shared.policy import Policy
+from shared.policy.policy import Policy
 
 DQNPolicySelf = TypeVar("DQNPolicySelf", bound="DQNPolicy")
 
@@ -30,11 +30,6 @@ class DQNPolicy(Policy):
                 if self.device:
                     obs_th = obs_th.to(self.device)
                 return self.q_net(obs_th).argmax(axis=1).cpu().numpy()
-
-    def train(self: DQNPolicySelf, mode: bool = True) -> DQNPolicySelf:
-        super().train(mode)
-        self.q_net.train(mode)
-        return self
 
     def save(self, path: str) -> None:
         torch.save(self.q_net.state_dict(), path)

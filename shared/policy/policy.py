@@ -4,9 +4,14 @@ import torch.nn as nn
 
 from abc import ABC, abstractmethod
 from stable_baselines3.common.vec_env.base_vec_env import VecEnv, VecEnvObs
-from typing import Optional, TypeVar, Union
+from typing import Dict, Optional, Type, TypeVar, Union
 
 PolicySelf = TypeVar("PolicySelf", bound="Policy")
+
+ACTIVATION: Dict[str, Type[nn.Module]] = {
+    "tanh": nn.Tanh,
+    "relu": nn.ReLU,
+}
 
 
 class Policy(nn.Module, ABC):
