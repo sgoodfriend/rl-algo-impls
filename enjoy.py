@@ -9,6 +9,7 @@ from shared.running_utils import (
     POLICIES,
     load_hyperparams,
     Names,
+    set_seeds,
     make_env,
     make_policy,
 )
@@ -36,9 +37,15 @@ if __name__ == "__main__":
     parser.add_argument("--n_envs", default=1, type=int)
     parser.add_argument(
         "--seed",
-        default=None,
+        default=1,
         type=int,
         help="If specified, sets randomness seed and determinism",
+    )
+    parser.add_argument(
+        "--use-deterministic-algorithms",
+        default=True,
+        type=bool,
+        help="If seed set, set torch.use_deterministic_algorithms",
     )
     args = parser.parse_args()
     print(args)
@@ -53,9 +60,14 @@ if __name__ == "__main__":
             env_hyperparams["vec_env_class"] = "dummy"
         hyperparams["env_hyperparams"] = env_hyperparams
 
+    set_seeds(args.seed, args.use_deterministic_algorithms)
+
     device = torch.device(hyperparams.get("device", "cpu"))
     env = make_env(
-        args.env, render=args.render, **hyperparams.get("env_hyperparams", {})
+        args.env,
+        args.seed,
+        render=args.render,
+        **hyperparams.get("env_hyperparams", {}),
     )
     policy = make_policy(
         args.algo,

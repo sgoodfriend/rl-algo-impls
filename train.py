@@ -15,6 +15,7 @@ from shared.running_utils import (
     ALGOS,
     load_hyperparams,
     Names,
+    set_seeds,
     make_env,
     make_policy,
     plot_training,
@@ -29,22 +30,28 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--algo",
-        default="dqn",
+        default="vpg",
         type=str,
         choices=list(ALGOS.keys()),
         help="Abbreviation of algorithm for training",
     )
     parser.add_argument(
         "--env",
-        default="BreakoutNoFrameskip-v4",
+        default="CartPole-v0",
         type=str,
         help="Name of environment in gym",
     )
     parser.add_argument(
         "--seed",
-        default=None,
+        default=1,
         type=int,
         help="If specified, sets randomness seed and determinism",
+    )
+    parser.add_argument(
+        "--use-deterministic-algorithms",
+        default=True,
+        type=bool,
+        help="If seed set, set torch.use_deterministic_algorithms",
     )
     parser.add_argument(
         "--wandb-project-name",
@@ -62,6 +69,7 @@ if __name__ == "__main__":
     print(args)
 
     hyperparams = load_hyperparams(args.algo, args.env, os.path.dirname(__file__))
+    env_hyperparams = hyperparams.get("env_hyperparams", {})
     names = Names(args.algo, args.env, hyperparams, os.path.dirname(__file__))
 
     wandb_enabled = args.wandb_project_name
@@ -81,8 +89,10 @@ if __name__ == "__main__":
 
     tb_writer = SummaryWriter(names.tensorboard_summary_path)
 
+    set_seeds(args.seed, args.use_deterministic_algorithms)
+
     device = torch.device(hyperparams.get("device", "cpu"))
-    env = make_env(args.env, **hyperparams.get("env_hyperparams", {}))
+    env = make_env(args.env, args.seed, **env_hyperparams)
     policy = make_policy(
         args.algo, env, device, **hyperparams.get("policy_hyperparams", {})
     )
@@ -90,9 +100,13 @@ if __name__ == "__main__":
     algo = ALGOS[args.algo](
         policy, env, device, tb_writer, **hyperparams.get("algo_hyperparams", {})
     )
+
+    env_seed = args.seed
+    if env_seed is not None:
+        env_seed += env_hyperparams.get("n_envs", 1)
     callback = EvalCallback(
         policy,
-        make_env(args.env, **hyperparams.get("env_hyperparams", {})),
+        make_env(args.env, env_seed, **hyperparams.get("env_hyperparams", {})),
         tb_writer,
         best_model_path=names.model_path(best=True),
         **hyperparams.get("eval_params", {}),

@@ -1,17 +1,19 @@
 import gym
 import matplotlib.pyplot as plt
+import numpy as np
 import os
+import random
 import torch
+import torch.backends.cudnn
 import yaml
 
 from dataclasses import dataclass
 from datetime import datetime
-from matplotlib.figure import Figure
 from stable_baselines3.common.vec_env.base_vec_env import VecEnv
 from stable_baselines3.common.vec_env.dummy_vec_env import DummyVecEnv
 from stable_baselines3.common.vec_env.subproc_vec_env import SubprocVecEnv
 from torch.utils.tensorboard.writer import SummaryWriter
-from typing import Any, Dict, List, Optional, Type, TypedDict, Union
+from typing import Any, Callable, Dict, List, Optional, Type, TypedDict, Union
 
 from shared.algorithm import Algorithm
 from shared.callbacks.eval_callback import EvalCallback
@@ -51,8 +53,19 @@ def load_hyperparams(algo: str, env_id: str, root_path: str) -> Hyperparams:
     return hyperparams_dict[env_id]
 
 
+def set_seeds(seed: Optional[int], use_deterministic_algorithms: bool) -> None:
+    if seed is None:
+        return
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.backends.cudnn.benchmark = False
+    torch.use_deterministic_algorithms(use_deterministic_algorithms)
+
+
 def make_env(
     env_id: str,
+    seed: Optional[int],
     render: bool = False,
     n_envs: int = 1,
     frame_stack: int = 1,
@@ -69,35 +82,43 @@ def make_env(
 
     spec = gym.spec(env_id)
 
-    def make() -> gym.Env:
-        if "AtariEnv" in spec.entry_point:  # type: ignore
-            from gym.wrappers.atari_preprocessing import AtariPreprocessing
-            from gym.wrappers.frame_stack import FrameStack
+    def make(idx: int) -> Callable[[], gym.Env]:
+        def _make() -> gym.Env:
+            if "AtariEnv" in spec.entry_point:  # type: ignore
+                from gym.wrappers.atari_preprocessing import AtariPreprocessing
+                from gym.wrappers.frame_stack import FrameStack
 
-            env = gym.make(env_id, **make_kwargs)
-            env = AtariPreprocessing(env)
-            env = FrameStack(env, frame_stack)
-        elif "CarRacing" in env_id:
-            from gym.wrappers.resize_observation import ResizeObservation
-            from gym.wrappers.gray_scale_observation import GrayScaleObservation
-            from gym.wrappers.frame_stack import FrameStack
+                env = gym.make(env_id, **make_kwargs)
+                env = AtariPreprocessing(env)
+                env = FrameStack(env, frame_stack)
+            elif "CarRacing" in env_id:
+                from gym.wrappers.resize_observation import ResizeObservation
+                from gym.wrappers.gray_scale_observation import GrayScaleObservation
+                from gym.wrappers.frame_stack import FrameStack
 
-            env = gym.make(env_id, verbose=0, **make_kwargs)
-            env = ResizeObservation(env, (64, 64))
-            env = GrayScaleObservation(env, keep_dim=False)
-            env = FrameStack(env, frame_stack)
-        else:
-            env = gym.make(env_id, **make_kwargs)
+                env = gym.make(env_id, verbose=0, **make_kwargs)
+                env = ResizeObservation(env, (64, 64))
+                env = GrayScaleObservation(env, keep_dim=False)
+                env = FrameStack(env, frame_stack)
+            else:
+                env = gym.make(env_id, **make_kwargs)
 
-        if no_reward_timeout_steps:
-            from wrappers.no_reward_timeout import NoRewardTimeout
+            if no_reward_timeout_steps:
+                from wrappers.no_reward_timeout import NoRewardTimeout
 
-            env = NoRewardTimeout(env, no_reward_timeout_steps)
+                env = NoRewardTimeout(env, no_reward_timeout_steps)
 
-        return env
+            if seed is not None:
+                env.seed(seed + idx)
+                env.action_space.seed(seed + idx)
+                env.observation_space.seed(seed + idx)
+
+            return env
+
+        return _make
 
     VecEnvClass = {"dummy": DummyVecEnv, "subproc": SubprocVecEnv}[vec_env_class]
-    return VecEnvClass([make for i in range(n_envs)])
+    return VecEnvClass([make(i) for i in range(n_envs)])
 
 
 def make_policy(
