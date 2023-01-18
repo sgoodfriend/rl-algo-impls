@@ -25,7 +25,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--pool-size", type=int, default=1, help="Simultaneous training jobs to run"
     )
-    parser.set_defaults(algo="vpg", env="HalfCheetahBulletEnv-v0", seed=[1, 2, 3])
+    parser.set_defaults(algo="vpg", env="CarRacing-v0", seed=1)
     args = parser.parse_args()
     print(args)
 

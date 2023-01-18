@@ -66,7 +66,7 @@ class GaussianActor(Actor):
             obs_space, activation, layer_sizes[0]
         )
         self.mu_net = mlp(layer_sizes, activation, final_layer_gain=0.01)
-        self.log_std = nn.Parameter(torch.zeros(act_dim, dtype=torch.float32))
+        self.log_std = nn.Parameter(torch.ones(act_dim, dtype=torch.float32) * -0.5)
 
     def _distribution(self, obs: torch.Tensor) -> Distribution:
         obs = self._preprocessor(obs) if self._preprocessor else obs
