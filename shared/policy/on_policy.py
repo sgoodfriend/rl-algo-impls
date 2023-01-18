@@ -39,7 +39,7 @@ class CategoricalActor(Actor):
         self._preprocessor, self._feature_extractor = feature_extractor(
             obs_space, activation, layer_sizes[0]
         )
-        self._fc = mlp(layer_sizes, activation)
+        self._fc = mlp(layer_sizes, activation, final_layer_gain=0.01)
 
     def forward(self, obs: torch.Tensor, a: Optional[torch.Tensor] = None) -> PiForward:
         obs = self._preprocessor(obs) if self._preprocessor else obs
@@ -65,8 +65,8 @@ class GaussianActor(Actor):
         self._preprocessor, self._feature_extractor = feature_extractor(
             obs_space, activation, layer_sizes[0]
         )
-        self.mu_net = mlp(layer_sizes, activation)
-        self.log_std = nn.Parameter(torch.ones(act_dim, dtype=torch.float32) * -0.5)
+        self.mu_net = mlp(layer_sizes, activation, final_layer_gain=0.01)
+        self.log_std = nn.Parameter(torch.zeros(act_dim, dtype=torch.float32))
 
     def _distribution(self, obs: torch.Tensor) -> Distribution:
         obs = self._preprocessor(obs) if self._preprocessor else obs
@@ -100,7 +100,7 @@ class Critic(nn.Module):
         self._preprocessor, self._feature_extractor = feature_extractor(
             obs_space, activation, layer_sizes[0]
         )
-        self._fc = mlp(layer_sizes, activation)
+        self._fc = mlp(layer_sizes, activation, final_layer_gain=1.0)
 
     def forward(self, obs: torch.Tensor) -> torch.Tensor:
         obs = self._preprocessor(obs) if self._preprocessor else obs

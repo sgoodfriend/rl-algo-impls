@@ -82,7 +82,7 @@ CarRacing-v0:
     save_best: true
 
 HalfCheetahBulletEnv-v0: &pybullet-defaults
-  n_timesteps: !!float 1e7
+  n_timesteps: !!float 1e6
   policy_hyperparams:
     hidden_sizes: [64, 64]
   algo_hyperparams:

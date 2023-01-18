@@ -12,7 +12,7 @@ from shared.algorithm import Algorithm
 from shared.callbacks.callback import Callback
 from shared.stats import EpisodeAccumulator, EpisodesStats
 from shared.utils import discounted_cumsum
-from vpg.policy import ActorCritic
+from vpg.policy import VPGActorCritic
 
 
 @dataclass
@@ -97,7 +97,7 @@ class TrainEpochStats(NamedTuple):
 class VanillaPolicyGradient(Algorithm):
     def __init__(
         self,
-        policy: ActorCritic,
+        policy: VPGActorCritic,
         env: VecEnv,
         device: torch.device,
         tb_writer: SummaryWriter,
@@ -126,8 +126,6 @@ class VanillaPolicyGradient(Algorithm):
         total_timesteps: int,
         callback: Optional[Callback] = None,
     ) -> List[EpisodesStats]:
-        import gc
-
         self.policy.train(True)
         obs = self.env.reset()
         timesteps_elapsed = 0
@@ -152,7 +150,6 @@ class VanillaPolicyGradient(Algorithm):
             )
             if callback:
                 callback.on_step(timesteps_elapsed=epoch_steps)
-            gc.collect()
         return episodes_stats
 
     def train(self, trajectories: Sequence[Trajectory]) -> TrainEpochStats:

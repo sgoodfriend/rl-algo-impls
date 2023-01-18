@@ -1,4 +1,5 @@
 import gym
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -12,8 +13,9 @@ class FeatureExtractor(NamedTuple):
     feature_extractor: nn.Module
 
 
-def feature_extractor(obs_space: gym.Space, activation: Type[nn.Module],
-                      features_dim: int) -> FeatureExtractor:
+def feature_extractor(
+    obs_space: gym.Space, activation: Type[nn.Module], features_dim: int
+) -> FeatureExtractor:
     if isinstance(obs_space, Box):
         # Conv2D: (channels, height, width)
         if len(obs_space.shape) == 3:
@@ -21,11 +23,11 @@ def feature_extractor(obs_space: gym.Space, activation: Type[nn.Module],
             # "Human-level control through deep reinforcement learning."
             # Nature 518.7540 (2015): 529-533.
             cnn = nn.Sequential(
-                nn.Conv2d(obs_space.shape[0], 32, kernel_size=8, stride=4),
+                layer_init(nn.Conv2d(obs_space.shape[0], 32, kernel_size=8, stride=4)),
                 activation(),
-                nn.Conv2d(32, 64, kernel_size=4, stride=2),
+                layer_init(nn.Conv2d(32, 64, kernel_size=4, stride=2)),
                 activation(),
-                nn.Conv2d(64, 64, kernel_size=3, stride=1),
+                layer_init(nn.Conv2d(64, 64, kernel_size=3, stride=1)),
                 activation(),
                 nn.Flatten(),
             )
@@ -41,7 +43,7 @@ def feature_extractor(obs_space: gym.Space, activation: Type[nn.Module],
                 preprocess,
                 nn.Sequential(
                     cnn,
-                    nn.Linear(cnn_out.shape[1], features_dim),
+                    layer_init(nn.Linear(cnn_out.shape[1], features_dim)),
                     activation(),
                 ),
             )
@@ -55,17 +57,17 @@ def feature_extractor(obs_space: gym.Space, activation: Type[nn.Module],
             return FeatureExtractor(
                 preprocess,
                 nn.Sequential(
-                    nn.Linear(obs_space.shape[0], features_dim),
+                    layer_init(nn.Linear(obs_space.shape[0], features_dim)),
                     activation(),
                 ),
             )
         else:
-            raise ValueError(f'Unsupported observation space: {obs_space}')
+            raise ValueError(f"Unsupported observation space: {obs_space}")
     elif isinstance(obs_space, Discrete):
         return FeatureExtractor(
             lambda x: F.one_hot(x, obs_space.n).float(),
             nn.Sequential(
-                nn.Linear(obs_space.n, features_dim),
+                layer_init(nn.Linear(obs_space.n, features_dim)),
                 activation(),
             ),
         )
@@ -73,14 +75,24 @@ def feature_extractor(obs_space: gym.Space, activation: Type[nn.Module],
         raise NotImplementedError
 
 
-def mlp(layer_sizes: Sequence[int],
-        activation: Type[nn.Module],
-        output_activation: Type[nn.Module] = nn.Identity) -> nn.Module:
+def mlp(
+    layer_sizes: Sequence[int],
+    activation: Type[nn.Module],
+    output_activation: Type[nn.Module] = nn.Identity,
+    final_layer_gain: float = np.sqrt(2),
+) -> nn.Module:
     layers = []
-    for i in range(len(layer_sizes) - 1):
-        layers.append(nn.Linear(layer_sizes[i], layer_sizes[i + 1]))
-        if i < len(layer_sizes) - 2:
-            layers.append(activation())
-        else:
-            layers.append(output_activation())
+    for i in range(len(layer_sizes) - 2):
+        layers.append(layer_init(nn.Linear(layer_sizes[i], layer_sizes[i + 1])))
+        layers.append(activation())
+    layers.append(
+        layer_init(nn.Linear(layer_sizes[-2], layer_sizes[-1]), std=final_layer_gain)
+    )
+    layers.append(output_activation())
     return nn.Sequential(*layers)
+
+
+def layer_init(layer: nn.Module, std: float = np.sqrt(2)) -> nn.Module:
+    nn.init.orthogonal_(layer.weight, std)  # type: ignore
+    nn.init.constant_(layer.bias, 0.0)  # type: ignore
+    return layer
