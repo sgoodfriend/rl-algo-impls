@@ -305,8 +305,8 @@ class PPO(Algorithm):
         self.optimizer.step()
 
         with torch.no_grad():
-            approx_kl = ((ratio - 1) - logratio).mean()
-            clipped_frac = int(((ratio - 1).abs() > pi_clip).float().mean().item())
+            approx_kl = ((ratio - 1) - logratio).mean().cpu().numpy().item()
+            clipped_frac = int(((ratio - 1).abs() > pi_clip).float().mean().cpu().numpy().item())
         return TrainStepStats(
             loss.item(),
             pi_loss.item(),
