@@ -276,9 +276,9 @@ class PPO(Algorithm):
                         v_clip,
                         ent_coef,
                         obs[mb_idxs],
-                        mb_adv,
+                        act[mb_idxs],
                         rtg[mb_idxs],  # type: ignore
-                        adv[mb_idxs],
+                        mb_adv,
                         orig_v[mb_idxs],
                         orig_logp_a[mb_idxs],
                     )
