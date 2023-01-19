@@ -5,5 +5,17 @@ from shared.policy.on_policy import ActorCritic
 
 
 class VPGActorCritic(ActorCritic):
-    def __init__(self, env: VecEnv, hidden_sizes: Sequence[int], **kwargs) -> None:
-        super().__init__(env, hidden_sizes, hidden_sizes, **kwargs)
+    def __init__(
+        self,
+        env: VecEnv,
+        hidden_sizes: Sequence[int],
+        init_layers_orthogonal: bool = True,
+        **kwargs,
+    ) -> None:
+        super().__init__(
+            env,
+            hidden_sizes,
+            hidden_sizes,
+            init_layers_orthogonal=init_layers_orthogonal,
+            **kwargs,
+        )

@@ -2,7 +2,7 @@ import numpy as np
 
 from dataclasses import dataclass
 from torch.utils.tensorboard.writer import SummaryWriter
-from typing import Optional, Sequence, TypeVar
+from typing import List, Optional, Sequence, TypeVar
 
 
 @dataclass
@@ -124,3 +124,28 @@ class EpisodeAccumulator:
 
     def stats(self) -> EpisodesStats:
         return EpisodesStats(self.episodes)
+
+
+
+class RolloutStats(EpisodeAccumulator):
+    def __init__(self, num_envs: int, print_n_episodes: int, tb_writer: SummaryWriter):
+        super().__init__(num_envs)
+        self.print_n_episodes = print_n_episodes
+        self.epochs: List[EpisodesStats] = []
+        self.tb_writer = tb_writer
+
+    def on_done(self, ep_idx: int, episode: Episode) -> None:
+        if (
+            self.print_n_episodes >= 0
+            and len(self.episodes) % self.print_n_episodes == 0
+        ):
+            sample = self.episodes[-self.print_n_episodes :]
+            epoch = EpisodesStats(sample)
+            self.epochs.append(epoch)
+            total_steps = np.sum([e.length for e in self.episodes])
+            print(
+                f"Episode: {len(self.episodes)} | "
+                f"{epoch} | "
+                f"Total Steps: {total_steps}"
+            )
+            epoch.write_to_tensorboard(self.tb_writer, "train", global_step=total_steps)

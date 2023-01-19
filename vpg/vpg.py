@@ -2,41 +2,17 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from dataclasses import dataclass
-from torch.optim import Adam
 from stable_baselines3.common.vec_env.base_vec_env import VecEnv, VecEnvObs
+from torch.optim import Adam
 from torch.utils.tensorboard.writer import SummaryWriter
 from typing import List, Optional, Sequence, NamedTuple
 
 from shared.algorithm import Algorithm
 from shared.callbacks.callback import Callback
 from shared.stats import EpisodeAccumulator, EpisodesStats
+from shared.trajectory import Trajectory
 from shared.utils import discounted_cumsum
 from vpg.policy import VPGActorCritic
-
-
-@dataclass
-class Trajectory:
-    obs: List[np.ndarray]
-    act: List[np.ndarray]
-    rew: List[float]
-    v: List[float]
-    terminated: bool
-
-    def __init__(self) -> None:
-        self.obs = []
-        self.act = []
-        self.rew = []
-        self.v = []
-
-    def add(self, obs: np.ndarray, act: np.ndarray, rew: float, v: float):
-        self.obs.append(obs)
-        self.act.append(act)
-        self.rew.append(rew)
-        self.v.append(v)
-
-    def __len__(self) -> int:
-        return len(self.obs)
 
 
 class TrajectoryAccumulator:
@@ -93,6 +69,9 @@ class TrainEpochStats(NamedTuple):
     pi_loss: float
     v_loss: float
 
+    def write_to_tensorboard(self, tb_writer: SummaryWriter, global_step: int) -> None:
+        tb_writer.add_scalars("losses", self._asdict(), global_step=global_step)
+
 
 class VanillaPolicyGradient(Algorithm):
     def __init__(
@@ -139,6 +118,9 @@ class VanillaPolicyGradient(Algorithm):
             episodes_stats.append(stats)
             stats.write_to_tensorboard(
                 self.tb_writer, "train", global_step=timesteps_elapsed
+            )
+            epoch_stats.write_to_tensorboard(
+                self.tb_writer, global_step=timesteps_elapsed
             )
             print(
                 f"Epoch: {len(episodes_stats)} | "

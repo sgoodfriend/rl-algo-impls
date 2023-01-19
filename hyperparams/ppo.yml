@@ -1,0 +1,57 @@
+CartPole-v1: &cartpole-defaults
+  n_timesteps: !!float 1e5
+  env_hyperparams:
+    n_envs: 8
+  algo_hyperparams:
+    n_steps: 32
+    batch_size: 256
+    n_epochs: 20
+    gae_lambda: 0.8
+    gamma: 0.98
+    ent_coef: 0.0
+    learning_rate: 0.001
+    learning_rate_decay: linear
+    clip_range: 0.2
+    clip_range_decay: linear
+  eval_params:
+    step_freq: !!float 2.5e4
+    n_episodes: 10
+    save_best: true
+
+CartPole-v0:
+  <<: *cartpole-defaults
+
+LunarLander-v2:
+  n_timesteps: !!float 1e6
+  env_hyperparams:
+    n_envs: 16
+  algo_hyperparams:
+    n_steps: 1024
+    batch_size: 64
+    n_epochs: 4
+    gae_lambda: 0.98
+    gamma: 0.999
+    ent_coef: 0.01
+  eval_params:
+    step_freq: !!float 5e4
+    n_episodes: 10
+    save_best: true
+
+BreakoutNoFrameskip-v4: &atari-defaults
+  device: mps
+  n_timesteps: !!float 1e7
+  env_hyperparams:
+    n_envs: 8
+    frame_stack: 4
+    no_reward_timeout_steps: 500
+    vec_env_class: subproc
+  algo_hyperparams:
+    n_steps: 128
+    batch_size: 256
+    n_epochs: 4
+    learning_rate: !!float 2.5e-4
+    learning_rate_decay: linear
+    clip_range: 0.1
+    clip_range_decay: linear
+    vf_coef: 0.5
+    ent_coef: 0.01

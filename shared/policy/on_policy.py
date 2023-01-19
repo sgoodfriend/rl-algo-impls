@@ -33,13 +33,22 @@ class CategoricalActor(Actor):
         act_dim: int,
         hidden_sizes: Sequence[int] = (32,),
         activation: Type[nn.Module] = nn.Tanh,
+        init_layers_orthogonal: bool = True,
     ) -> None:
         super().__init__()
         layer_sizes = tuple(hidden_sizes) + (act_dim,)
         self._preprocessor, self._feature_extractor = feature_extractor(
-            obs_space, activation, layer_sizes[0]
+            obs_space,
+            activation,
+            layer_sizes[0],
+            init_layers_orthogonal=init_layers_orthogonal,
         )
-        self._fc = mlp(layer_sizes, activation, final_layer_gain=0.01)
+        self._fc = mlp(
+            layer_sizes,
+            activation,
+            init_layers_orthogonal=init_layers_orthogonal,
+            final_layer_gain=0.01,
+        )
 
     def forward(self, obs: torch.Tensor, a: Optional[torch.Tensor] = None) -> PiForward:
         obs = self._preprocessor(obs) if self._preprocessor else obs
@@ -59,13 +68,22 @@ class GaussianActor(Actor):
         act_dim: int,
         hidden_sizes: Sequence[int] = (32,),
         activation: Type[nn.Module] = nn.Tanh,
+        init_layers_orthogonal: bool = True,
     ) -> None:
         super().__init__()
         layer_sizes = tuple(hidden_sizes) + (act_dim,)
         self._preprocessor, self._feature_extractor = feature_extractor(
-            obs_space, activation, layer_sizes[0]
+            obs_space,
+            activation,
+            layer_sizes[0],
+            init_layers_orthogonal=init_layers_orthogonal,
         )
-        self.mu_net = mlp(layer_sizes, activation, final_layer_gain=0.01)
+        self.mu_net = mlp(
+            layer_sizes,
+            activation,
+            init_layers_orthogonal=init_layers_orthogonal,
+            final_layer_gain=0.01,
+        )
         self.log_std = nn.Parameter(torch.ones(act_dim, dtype=torch.float32) * -0.5)
 
     def _distribution(self, obs: torch.Tensor) -> Distribution:
@@ -94,13 +112,22 @@ class Critic(nn.Module):
         obs_space: gym.Space,
         hidden_sizes: Sequence[int] = (32,),
         activation: Type[nn.Module] = nn.Tanh,
+        init_layers_orthogonal: bool = True,
     ) -> None:
         super().__init__()
         layer_sizes = tuple(hidden_sizes) + (1,)
         self._preprocessor, self._feature_extractor = feature_extractor(
-            obs_space, activation, layer_sizes[0]
+            obs_space,
+            activation,
+            layer_sizes[0],
+            init_layers_orthogonal=init_layers_orthogonal,
         )
-        self._fc = mlp(layer_sizes, activation, final_layer_gain=1.0)
+        self._fc = mlp(
+            layer_sizes,
+            activation,
+            init_layers_orthogonal=init_layers_orthogonal,
+            final_layer_gain=1.0,
+        )
 
     def forward(self, obs: torch.Tensor) -> torch.Tensor:
         obs = self._preprocessor(obs) if self._preprocessor else obs
@@ -124,6 +151,7 @@ class ActorCritic(Policy):
         env: VecEnv,
         pi_hidden_sizes: Sequence[int],
         v_hidden_sizes: Sequence[int],
+        init_layers_orthogonal: bool = True,
         activation_fn: str = "tanh",
         **kwargs,
     ) -> None:
@@ -133,18 +161,29 @@ class ActorCritic(Policy):
         action_space = env.action_space
         if isinstance(action_space, Discrete):
             self.pi = CategoricalActor(
-                observation_space, action_space.n, pi_hidden_sizes, activation
+                observation_space,
+                action_space.n,
+                hidden_sizes=pi_hidden_sizes,
+                activation=activation,
+                init_layers_orthogonal=init_layers_orthogonal,
             ).train(self.training)
         elif isinstance(action_space, Box):
             self.pi = GaussianActor(
-                observation_space, action_space.shape[0], pi_hidden_sizes, activation
+                observation_space,
+                action_space.shape[0],
+                hidden_sizes=pi_hidden_sizes,
+                activation=activation,
+                init_layers_orthogonal=init_layers_orthogonal,
             ).train(self.training)
         else:
             raise ValueError(f"Unsupported action space: {action_space}")
 
-        self.v = Critic(observation_space, v_hidden_sizes, activation).train(
-            self.training
-        )
+        self.v = Critic(
+            observation_space,
+            hidden_sizes=v_hidden_sizes,
+            activation=activation,
+            init_layers_orthogonal=init_layers_orthogonal,
+        ).train(self.training)
 
     def step(self, obs: VecEnvObs) -> Step:
         assert isinstance(obs, np.ndarray)

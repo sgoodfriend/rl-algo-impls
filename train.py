@@ -25,7 +25,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--pool-size", type=int, default=1, help="Simultaneous training jobs to run"
     )
-    parser.set_defaults(algo="vpg", env="CarRacing-v0", seed=1)
+    parser.set_defaults(algo="ppo", env="LunarLander-v2", seed=1)
     args = parser.parse_args()
     print(args)
 
@@ -38,20 +38,21 @@ if __name__ == "__main__":
     seeds = args.seed if isinstance(args.seed, list) else [args.seed]
     if all(len(arg) == 1 for arg in [algos, envs, seeds]):
         train(TrainArgs(**vars(args)))
-    # Force a new process for each job to get around wandb not allowing more than one
-    # wandb.tensorboard.patch call per process.
-    with Pool(pool_size, maxtasksperchild=1) as p:
-        train_args = []
-        for algo in algos:
-            for env in envs:
-                for seed in seeds:
-                    args_dict = vars(args).copy()
-                    args_dict.update(
-                        {
-                            "algo": algo,
-                            "env": env,
-                            "seed": seed,
-                        }
-                    )
-                    train_args.append(TrainArgs(**args_dict))
-        p.map(train, train_args)
+    else:
+        # Force a new process for each job to get around wandb not allowing more than one
+        # wandb.tensorboard.patch call per process.
+        with Pool(pool_size, maxtasksperchild=1) as p:
+            train_args = []
+            for algo in algos:
+                for env in envs:
+                    for seed in seeds:
+                        args_dict = vars(args).copy()
+                        args_dict.update(
+                            {
+                                "algo": algo,
+                                "env": env,
+                                "seed": seed,
+                            }
+                        )
+                        train_args.append(TrainArgs(**args_dict))
+            p.map(train, train_args)

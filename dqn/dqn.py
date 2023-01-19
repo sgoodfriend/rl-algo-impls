@@ -14,8 +14,8 @@ from typing import List, NamedTuple, Optional
 from dqn.policy import DQNPolicy
 from shared.algorithm import Algorithm
 from shared.callbacks.callback import Callback
-from shared.stats import Episode, EpisodesStats, EpisodeAccumulator
-from shared.utils import linear_schedule
+from shared.stats import EpisodesStats, RolloutStats
+from shared.schedule import linear_schedule
 
 
 class Transition(NamedTuple):
@@ -68,30 +68,6 @@ class ReplayBuffer:
         return len(self.buffer)
 
 
-class RolloutStats(EpisodeAccumulator):
-    def __init__(self, num_envs: int, print_n_episodes: int, tb_writer: SummaryWriter):
-        super().__init__(num_envs)
-        self.print_n_episodes = print_n_episodes
-        self.epochs: List[EpisodesStats] = []
-        self.tb_writer = tb_writer
-
-    def on_done(self, ep_idx: int, episode: Episode) -> None:
-        if (
-            self.print_n_episodes >= 0
-            and len(self.episodes) % self.print_n_episodes == 0
-        ):
-            sample = self.episodes[-self.print_n_episodes :]
-            epoch = EpisodesStats(sample)
-            self.epochs.append(epoch)
-            total_steps = np.sum([e.length for e in self.episodes])
-            print(
-                f"Episode: {len(self.episodes)} | "
-                f"{epoch} | "
-                f"Total Steps: {total_steps}"
-            )
-            epoch.write_to_tensorboard(self.tb_writer, "train", global_step=total_steps)
-
-
 class DQN(Algorithm):
     def __init__(
         self,
@@ -133,7 +109,9 @@ class DQN(Algorithm):
 
         self.gamma = gamma
         self.exploration_eps_schedule = linear_schedule(
-            exploration_initial_eps, exploration_final_eps, exploration_fraction
+            exploration_initial_eps,
+            exploration_final_eps,
+            end_fraction=exploration_fraction,
         )
 
         self.max_grad_norm = max_grad_norm

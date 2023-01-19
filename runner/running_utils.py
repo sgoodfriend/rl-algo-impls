@@ -19,21 +19,26 @@ from typing import Any, Callable, Dict, List, Optional, Type, TypedDict, Union
 from shared.algorithm import Algorithm
 from shared.callbacks.eval_callback import EvalCallback
 from shared.policy.policy import Policy
+from shared.policy.on_policy import ActorCritic
 from shared.stats import EpisodesStats
 
 from dqn.dqn import DQN
 from dqn.policy import DQNPolicy
 from vpg.vpg import VanillaPolicyGradient
 from vpg.policy import VPGActorCritic
+from ppo.ppo import PPO
+from ppo.policy import PPOActorCritic
 
 ALGOS: Dict[str, Type[Algorithm]] = {
     "dqn": DQN,
     "vpg": VanillaPolicyGradient,
+    "ppo": PPO,
 }
 
 POLICIES: Dict[str, Type[Policy]] = {
     "dqn": DQNPolicy,
     "vpg": VPGActorCritic,
+    "ppo": PPOActorCritic,
 }
 
 HYPERPARAMS_PATH = "hyperparams"

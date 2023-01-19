@@ -14,7 +14,10 @@ class FeatureExtractor(NamedTuple):
 
 
 def feature_extractor(
-    obs_space: gym.Space, activation: Type[nn.Module], features_dim: int
+    obs_space: gym.Space,
+    activation: Type[nn.Module],
+    features_dim: int,
+    init_layers_orthogonal: bool = False,
 ) -> FeatureExtractor:
     if isinstance(obs_space, Box):
         # Conv2D: (channels, height, width)
@@ -23,11 +26,18 @@ def feature_extractor(
             # "Human-level control through deep reinforcement learning."
             # Nature 518.7540 (2015): 529-533.
             cnn = nn.Sequential(
-                layer_init(nn.Conv2d(obs_space.shape[0], 32, kernel_size=8, stride=4)),
+                layer_init(
+                    nn.Conv2d(obs_space.shape[0], 32, kernel_size=8, stride=4),
+                    init_layers_orthogonal,
+                ),
                 activation(),
-                layer_init(nn.Conv2d(32, 64, kernel_size=4, stride=2)),
+                layer_init(
+                    nn.Conv2d(32, 64, kernel_size=4, stride=2), init_layers_orthogonal
+                ),
                 activation(),
-                layer_init(nn.Conv2d(64, 64, kernel_size=3, stride=1)),
+                layer_init(
+                    nn.Conv2d(64, 64, kernel_size=3, stride=1), init_layers_orthogonal
+                ),
                 activation(),
                 nn.Flatten(),
             )
@@ -43,7 +53,10 @@ def feature_extractor(
                 preprocess,
                 nn.Sequential(
                     cnn,
-                    layer_init(nn.Linear(cnn_out.shape[1], features_dim)),
+                    layer_init(
+                        nn.Linear(cnn_out.shape[1], features_dim),
+                        init_layers_orthogonal,
+                    ),
                     activation(),
                 ),
             )
@@ -57,7 +70,10 @@ def feature_extractor(
             return FeatureExtractor(
                 preprocess,
                 nn.Sequential(
-                    layer_init(nn.Linear(obs_space.shape[0], features_dim)),
+                    layer_init(
+                        nn.Linear(obs_space.shape[0], features_dim),
+                        init_layers_orthogonal,
+                    ),
                     activation(),
                 ),
             )
@@ -67,7 +83,9 @@ def feature_extractor(
         return FeatureExtractor(
             lambda x: F.one_hot(x, obs_space.n).float(),
             nn.Sequential(
-                layer_init(nn.Linear(obs_space.n, features_dim)),
+                layer_init(
+                    nn.Linear(obs_space.n, features_dim), init_layers_orthogonal
+                ),
                 activation(),
             ),
         )
@@ -79,20 +97,33 @@ def mlp(
     layer_sizes: Sequence[int],
     activation: Type[nn.Module],
     output_activation: Type[nn.Module] = nn.Identity,
+    init_layers_orthogonal: bool = False,
     final_layer_gain: float = np.sqrt(2),
 ) -> nn.Module:
     layers = []
     for i in range(len(layer_sizes) - 2):
-        layers.append(layer_init(nn.Linear(layer_sizes[i], layer_sizes[i + 1])))
+        layers.append(
+            layer_init(
+                nn.Linear(layer_sizes[i], layer_sizes[i + 1]), init_layers_orthogonal
+            )
+        )
         layers.append(activation())
     layers.append(
-        layer_init(nn.Linear(layer_sizes[-2], layer_sizes[-1]), std=final_layer_gain)
+        layer_init(
+            nn.Linear(layer_sizes[-2], layer_sizes[-1]),
+            init_layers_orthogonal,
+            std=final_layer_gain,
+        )
     )
     layers.append(output_activation())
     return nn.Sequential(*layers)
 
 
-def layer_init(layer: nn.Module, std: float = np.sqrt(2)) -> nn.Module:
+def layer_init(
+    layer: nn.Module, init_layers_orthogonal: bool, std: float = np.sqrt(2)
+) -> nn.Module:
+    if not init_layers_orthogonal:
+        return layer
     nn.init.orthogonal_(layer.weight, std)  # type: ignore
     nn.init.constant_(layer.bias, 0.0)  # type: ignore
     return layer
