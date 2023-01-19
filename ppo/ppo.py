@@ -266,6 +266,8 @@ class PPO(Algorithm):
                     rtg, adv = self._compute_rtg_and_advantage(trajectories)
                 else:
                     adv = self._compute_advantage(trajectories)
+                if self.normalize_advantage:
+                    adv = (adv - adv.mean(-1)) / (adv.std(-1) + 1e-8)
                 b_idxs = idxs[i : i + self.batch_size]
                 step_stats.append(
                     self._train_step(
