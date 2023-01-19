@@ -81,7 +81,7 @@ LunarLander-v2:
     gae_lambda: 0.98
     gamma: 0.999
     ent_coef: 0.01
-    normalize_advantages: false
+    normalize_advantage: false
   eval_params:
     step_freq: !!float 5e4
     n_episodes: 10
@@ -116,7 +116,7 @@ HalfCheetahBulletEnv-v0: &pybullet-defaults
     v_hidden_sizes: [256, 256]
     init_layers_orthogonal: false
     activation_fn: relu
-    log_std_init: -2
+    # log_std_init: -2
   algo_hyperparams: &pybullet-algo-defaults
     n_steps: 512
     batch_size: 128
