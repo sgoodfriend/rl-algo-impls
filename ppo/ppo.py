@@ -260,26 +260,27 @@ class PPO(Algorithm):
 
         step_stats = []
         for _ in range(self.n_epochs):
+            if self.update_rtg_between_epochs:
+                rtg, adv = self._compute_rtg_and_advantage(trajectories)
+            else:
+                adv = self._compute_advantage(trajectories)
             idxs = torch.randperm(len(obs))
             for i in range(0, len(obs), self.batch_size):
-                if self.update_rtg_between_epochs:
-                    rtg, adv = self._compute_rtg_and_advantage(trajectories)
-                else:
-                    adv = self._compute_advantage(trajectories)
+                mb_idxs = idxs[i : i + self.batch_size]
+                mb_adv = adv[mb_idxs]
                 if self.normalize_advantage:
-                    adv = (adv - adv.mean(-1)) / (adv.std(-1) + 1e-8)
-                b_idxs = idxs[i : i + self.batch_size]
+                    mb_adv = (mb_adv - mb_adv.mean(-1)) / (mb_adv.std(-1) + 1e-8)
                 step_stats.append(
                     self._train_step(
                         pi_clip,
                         v_clip,
                         ent_coef,
-                        obs[b_idxs],
-                        act[b_idxs],
-                        rtg[b_idxs],  # type: ignore
-                        adv[b_idxs],
-                        orig_v[b_idxs],
-                        orig_logp_a[b_idxs],
+                        obs[mb_idxs],
+                        mb_adv,
+                        rtg[mb_idxs],  # type: ignore
+                        adv[mb_idxs],
+                        orig_v[mb_idxs],
+                        orig_logp_a[mb_idxs],
                     )
                 )
 
