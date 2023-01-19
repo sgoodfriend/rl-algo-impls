@@ -146,6 +146,7 @@ class PPO(Algorithm):
         clip_range_vf_decay: str = "none",
         normalize_advantage: bool = True,
         ent_coef: float = 0.0,
+        ent_coef_decay: str = "none",
         vf_coef: float = 0.5,
         max_grad_norm: float = 0.5,
         print_n_episodes: int = 100,
@@ -176,7 +177,11 @@ class PPO(Algorithm):
                 else constant_schedule(clip_range_vf)
             )
         self.normalize_advantage = normalize_advantage
-        self.ent_coef = ent_coef
+        self.ent_coef_schedule = (
+            linear_schedule(ent_coef, 0)
+            if ent_coef_decay == "linear"
+            else constant_schedule(ent_coef)
+        )
         self.vf_coef = vf_coef
 
         self.n_steps = n_steps
@@ -233,6 +238,7 @@ class PPO(Algorithm):
             if self.clip_range_vf_schedule
             else None
         )
+        ent_coef = self.ent_coef_schedule(progress)
 
         obs = torch.as_tensor(
             np.concatenate([np.array(t.obs) for t in trajectories]), device=self.device
@@ -265,9 +271,10 @@ class PPO(Algorithm):
                     self._train_step(
                         pi_clip,
                         v_clip,
+                        ent_coef,
                         obs[b_idxs],
                         act[b_idxs],
-                        rtg[b_idxs],
+                        rtg[b_idxs],  # type: ignore
                         adv[b_idxs],
                         orig_v[b_idxs],
                         orig_logp_a[b_idxs],
@@ -280,6 +287,7 @@ class PPO(Algorithm):
         self,
         pi_clip: float,
         v_clip: Optional[float],
+        ent_coef: float,
         obs: torch.Tensor,
         act: torch.Tensor,
         rtg: torch.Tensor,
@@ -302,7 +310,7 @@ class PPO(Algorithm):
 
         entropy_loss = pi.entropy().mean()
 
-        loss = pi_loss - self.ent_coef * entropy_loss + self.vf_coef * v_loss
+        loss = pi_loss - ent_coef * entropy_loss + self.vf_coef * v_loss
 
         self.optimizer.zero_grad()
         loss.backward()

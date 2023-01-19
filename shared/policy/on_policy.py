@@ -80,6 +80,7 @@ class GaussianActor(Actor):
         hidden_sizes: Sequence[int] = (32,),
         activation: Type[nn.Module] = nn.Tanh,
         init_layers_orthogonal: bool = True,
+        log_std_init: float = -0.5,
     ) -> None:
         super().__init__()
         layer_sizes = tuple(hidden_sizes) + (act_dim,)
@@ -95,7 +96,9 @@ class GaussianActor(Actor):
             init_layers_orthogonal=init_layers_orthogonal,
             final_layer_gain=0.01,
         )
-        self.log_std = nn.Parameter(torch.ones(act_dim, dtype=torch.float32) * -0.5)
+        self.log_std = nn.Parameter(
+            torch.ones(act_dim, dtype=torch.float32) * log_std_init
+        )
 
     def _distribution(self, obs: torch.Tensor) -> Distribution:
         obs = self._preprocessor(obs) if self._preprocessor else obs
@@ -164,6 +167,7 @@ class ActorCritic(Policy):
         v_hidden_sizes: Sequence[int],
         init_layers_orthogonal: bool = True,
         activation_fn: str = "tanh",
+        log_std_init: float = -0.5,
         **kwargs,
     ) -> None:
         super().__init__(env)
@@ -185,6 +189,7 @@ class ActorCritic(Policy):
                 hidden_sizes=pi_hidden_sizes,
                 activation=activation,
                 init_layers_orthogonal=init_layers_orthogonal,
+                log_std_init=log_std_init,
             ).train(self.training)
         else:
             raise ValueError(f"Unsupported action space: {action_space}")

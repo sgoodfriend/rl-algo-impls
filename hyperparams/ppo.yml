@@ -33,6 +33,31 @@ MountainCar-v0:
     gamma: 0.99
     ent_coef: 0.0
 
+MountainCarContinuous-v0:
+  n_timesteps: !!float 1e5
+  env_hyperparams:
+    normalize: true
+    n_envs: 4
+  policy_hyperparams:
+    init_layers_orthogonal: false
+    # log_std_init: -3.29
+  algo_hyperparams:
+    n_steps: 512
+    batch_size: 256
+    n_epochs: 10
+    learning_rate: !!float 7.77e-5
+    ent_coef: 0.01 # 0.00429
+    ent_coef_decay: linear
+    clip_range: 0.1
+    gae_lambda: 0.9
+    max_grad_norm: 5
+    vf_coef: 0.19
+    # use_sde: true
+  eval_params:
+    step_freq: 5000
+    n_episodes: 10
+    save_best: true
+
 Acrobot-v1:
   n_timesteps: !!float 1e6
   env_hyperparams:
@@ -82,16 +107,16 @@ BreakoutNoFrameskip-v4: &atari-defaults
 
 HalfCheetahBulletEnv-v0: &pybullet-defaults
   n_timesteps: !!float 2e6
-  env_hyperparams:
+  env_hyperparams: &pybullet-env-defaults
     n_envs: 16
     normalize: true
-  policy_hyperparams:
+  policy_hyperparams: &pybullet-policy-defaults
     pi_hidden_sizes: [256, 256]
     v_hidden_sizes: [256, 256]
     init_layers_orthogonal: false
     activation_fn: relu
-    # log_std_init=-2
-  algo_hyperparams:
+    log_std_init: -2
+  algo_hyperparams: &pybullet-algo-defaults
     n_steps: 512
     batch_size: 128
     n_epochs: 20
@@ -104,3 +129,11 @@ HalfCheetahBulletEnv-v0: &pybullet-defaults
     learning_rate: !!float 3e-5
     # use_sde: true
     clip_range: 0.4
+
+AntBulletEnv-v0:
+  <<: *pybullet-defaults
+  policy_hyperparams:
+    <<: *pybullet-policy-defaults
+    # log_std_init: -1
+  algo_hyperparams:
+    <<: *pybullet-algo-defaults
