@@ -25,6 +25,12 @@ class Actor(nn.Module, ABC):
     def forward(self, obs: torch.Tensor, a: Optional[torch.Tensor] = None) -> PiForward:
         ...
 
+    @abstractmethod
+    def log_prob_from_distrubition(
+        self, pi: Distribution, a: torch.Tensor
+    ) -> torch.Tensor:
+        ...
+
 
 class CategoricalActor(Actor):
     def __init__(
@@ -57,8 +63,13 @@ class CategoricalActor(Actor):
         pi = Categorical(logits=logits)
         logp_a = None
         if a is not None:
-            logp_a = pi.log_prob(a)
+            logp_a = self.log_prob_from_distrubition(pi, a)
         return PiForward(pi, logp_a)
+
+    def log_prob_from_distrubition(
+        self, pi: Distribution, a: torch.Tensor
+    ) -> torch.Tensor:
+        return pi.log_prob(a)
 
 
 class GaussianActor(Actor):
@@ -93,7 +104,7 @@ class GaussianActor(Actor):
         std = torch.exp(self.log_std)
         return Normal(mu, std)
 
-    def _log_prob_from_distrubition(
+    def log_prob_from_distrubition(
         self, pi: Distribution, a: torch.Tensor
     ) -> torch.Tensor:
         return pi.log_prob(a).sum(axis=-1)
@@ -102,7 +113,7 @@ class GaussianActor(Actor):
         pi = self._distribution(obs)
         logp_a = None
         if a is not None:
-            logp_a = self._log_prob_from_distrubition(pi, a)
+            logp_a = self.log_prob_from_distrubition(pi, a)
         return PiForward(pi, logp_a)
 
 
@@ -191,10 +202,10 @@ class ActorCritic(Policy):
         if self.device is not None:
             o = o.to(self.device)
         with torch.no_grad():
-            pi = self.pi(o)
-            a = pi.pi.sample()
+            pi, _ = self.pi(o)
+            a = pi.sample()
             v = self.v(o)
-            logp_a = pi.pi.log_prob(a)
+            logp_a = self.pi.log_prob_from_distrubition(pi, a)
         return Step(a.cpu().numpy(), v.cpu().numpy(), logp_a.cpu().numpy())
 
     def act(self, obs: np.ndarray) -> np.ndarray:
