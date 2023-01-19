@@ -13,13 +13,13 @@ from datetime import datetime
 from stable_baselines3.common.vec_env.base_vec_env import VecEnv
 from stable_baselines3.common.vec_env.dummy_vec_env import DummyVecEnv
 from stable_baselines3.common.vec_env.subproc_vec_env import SubprocVecEnv
+from stable_baselines3.common.vec_env.vec_normalize import VecNormalize
 from torch.utils.tensorboard.writer import SummaryWriter
 from typing import Any, Callable, Dict, List, Optional, Type, TypedDict, Union
 
 from shared.algorithm import Algorithm
 from shared.callbacks.eval_callback import EvalCallback
-from shared.policy.policy import Policy
-from shared.policy.on_policy import ActorCritic
+from shared.policy.policy import Policy, VEC_NORMALIZE_FILENAME
 from shared.stats import EpisodesStats
 
 from dqn.dqn import DQN
@@ -113,12 +113,16 @@ def set_seeds(seed: Optional[int], use_deterministic_algorithms: bool) -> None:
 def make_env(
     env_id: str,
     seed: Optional[int],
+    training: bool = True,
     render: bool = False,
+    normalize_load_path: Optional[str] = None,
     n_envs: int = 1,
     frame_stack: int = 1,
     make_kwargs: Optional[Dict[str, Any]] = None,
     no_reward_timeout_steps: Optional[int] = None,
     vec_env_class: str = "dummy",
+    normalize: bool = False,
+    normalize_kwargs: Optional[Dict[str, Any]] = None,
 ) -> VecEnv:
     if "BulletEnv" in env_id:
         import pybullet_envs
@@ -165,7 +169,17 @@ def make_env(
         return _make
 
     VecEnvClass = {"dummy": DummyVecEnv, "subproc": SubprocVecEnv}[vec_env_class]
-    return VecEnvClass([make(i) for i in range(n_envs)])
+    venv = VecEnvClass([make(i) for i in range(n_envs)])
+    if normalize:
+        if normalize_load_path:
+            venv = VecNormalize.load(
+                os.path.join(normalize_load_path, VEC_NORMALIZE_FILENAME), venv
+            )
+        else:
+            venv = VecNormalize(venv, training=training, **(normalize_kwargs or {}))
+        if not training:
+            venv.norm_reward = False
+    return venv
 
 
 def make_policy(

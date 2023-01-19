@@ -1,6 +1,6 @@
-import numpy as np
-
-from stable_baselines3.common.vec_env.base_vec_env import VecEnv
+from copy import deepcopy
+from stable_baselines3.common.vec_env.base_vec_env import VecEnv, VecEnvWrapper
+from stable_baselines3.common.vec_env.vec_normalize import VecNormalize
 from torch.utils.tensorboard.writer import SummaryWriter
 from typing import List, Optional, Union
 
@@ -71,6 +71,18 @@ class EvalCallback(Callback):
     def on_step(self, timesteps_elapsed: int = 1) -> bool:
         super().on_step(timesteps_elapsed)
         if self.timesteps_elapsed // self.step_freq > len(self.stats):
+            if self.policy.vec_normalize is not None:
+                eval_env_wrapper = self.env
+                while isinstance(eval_env_wrapper, VecEnvWrapper):
+                    if isinstance(eval_env_wrapper, VecNormalize):
+                        if hasattr(self.policy.vec_normalize, "obs_rms"):
+                            eval_env_wrapper.obs_rms = deepcopy(
+                                self.policy.vec_normalize.obs_rms
+                            )
+                        eval_env_wrapper.ret_rms = deepcopy(
+                            self.policy.vec_normalize.ret_rms
+                        )
+                    eval_env_wrapper = eval_env_wrapper.venv
             self.evaluate()
         return True
 

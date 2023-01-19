@@ -11,6 +11,7 @@ class PPOActorCritic(ActorCritic):
         env: VecEnv,
         pi_hidden_sizes: Optional[Sequence[int]] = None,
         v_hidden_sizes: Optional[Sequence[int]] = None,
+        init_layers_orthogonal: bool = True,
         **kwargs,
     ) -> None:
         obs_space = env.observation_space
@@ -32,5 +33,6 @@ class PPOActorCritic(ActorCritic):
             env,
             pi_hidden_sizes,
             v_hidden_sizes,
+            init_layers_orthogonal=init_layers_orthogonal,
             **kwargs,
         )

@@ -213,8 +213,13 @@ class PPO(Algorithm):
         for _ in range(self.n_steps):
             action, value, logp_a = self.policy.step(obs)
             next_obs, reward, done, _ = self.env.step(action)
-            self.rollout_stats.step(reward, done)
             accumulator.step(obs, action, next_obs, reward, done, value, logp_a)
+            unnormalized_reward = (
+                self.policy.vec_normalize.unnormalize_reward(reward)
+                if self.policy.vec_normalize
+                else reward
+            )
+            self.rollout_stats.step(unnormalized_reward, done)
             obs = next_obs
         return accumulator
 
@@ -306,7 +311,9 @@ class PPO(Algorithm):
 
         with torch.no_grad():
             approx_kl = ((ratio - 1) - logratio).mean().cpu().numpy().item()
-            clipped_frac = int(((ratio - 1).abs() > pi_clip).float().mean().cpu().numpy().item())
+            clipped_frac = int(
+                ((ratio - 1).abs() > pi_clip).float().mean().cpu().numpy().item()
+            )
         return TrainStepStats(
             loss.item(),
             pi_loss.item(),

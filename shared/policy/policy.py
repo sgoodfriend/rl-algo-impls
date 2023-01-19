@@ -1,8 +1,10 @@
 import numpy as np
+import os
 import torch
 import torch.nn as nn
 
 from abc import ABC, abstractmethod
+from stable_baselines3.common.vec_env import unwrap_vec_normalize
 from stable_baselines3.common.vec_env.base_vec_env import VecEnv, VecEnvObs
 from typing import Dict, Optional, Type, TypeVar, Union
 
@@ -13,12 +15,15 @@ ACTIVATION: Dict[str, Type[nn.Module]] = {
     "relu": nn.ReLU,
 }
 
+VEC_NORMALIZE_FILENAME = "vecnormalize.pkl"
+
 
 class Policy(nn.Module, ABC):
     @abstractmethod
     def __init__(self, env: VecEnv, **kwargs) -> None:
         super().__init__()
         self.env = env
+        self.vec_normalize = unwrap_vec_normalize(env)
         self.device = None
 
     def to(
@@ -31,16 +36,21 @@ class Policy(nn.Module, ABC):
         self.device = device
         return self
 
+    def train(self: PolicySelf, mode: bool = True) -> PolicySelf:
+        super().train(mode)
+        if self.vec_normalize:
+            self.vec_normalize.training = mode
+        return self
+
     @abstractmethod
     def act(self, obs: VecEnvObs) -> np.ndarray:
         ...
 
-    @abstractmethod
     def save(self, path: str) -> None:
-        ...
+        os.makedirs(path, exist_ok=True)
+        if self.vec_normalize:
+            self.vec_normalize.save(os.path.join(path, VEC_NORMALIZE_FILENAME))
 
     @abstractmethod
     def load(self, path: str) -> None:
         ...
-
-    

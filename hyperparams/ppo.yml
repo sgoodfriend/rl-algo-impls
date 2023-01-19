@@ -21,6 +21,30 @@ CartPole-v1: &cartpole-defaults
 CartPole-v0:
   <<: *cartpole-defaults
 
+MountainCar-v0:
+  n_timesteps: !!float 1e6
+  env_hyperparams:
+    normalize: true
+    n_envs: 16
+  algo_hyperparams:
+    n_steps: 16
+    n_epochs: 4
+    gae_lambda: 0.98
+    gamma: 0.99
+    ent_coef: 0.0
+
+Acrobot-v1:
+  n_timesteps: !!float 1e6
+  env_hyperparams:
+    n_envs: 16
+    normalize: true
+  algo_hyperparams:
+    n_steps: 256
+    n_epochs: 4
+    gae_lambda: 0.94
+    gamma: 0.99
+    ent_coef: 0.0
+
 LunarLander-v2:
   n_timesteps: !!float 1e6
   env_hyperparams:
@@ -55,3 +79,28 @@ BreakoutNoFrameskip-v4: &atari-defaults
     clip_range_decay: linear
     vf_coef: 0.5
     ent_coef: 0.01
+
+HalfCheetahBulletEnv-v0: &pybullet-defaults
+  n_timesteps: !!float 2e6
+  env_hyperparams:
+    n_envs: 16
+    normalize: true
+  policy_hyperparams:
+    pi_hidden_sizes: [256, 256]
+    v_hidden_sizes: [256, 256]
+    init_layers_orthogonal: false
+    activation_fn: relu
+    # log_std_init=-2
+  algo_hyperparams:
+    n_steps: 512
+    batch_size: 128
+    n_epochs: 20
+    gamma: 0.99
+    gae_lambda: 0.9
+    ent_coef: 0.0
+    # sde_sample_freq: 4
+    max_grad_norm: 0.5
+    vf_coef: 0.5
+    learning_rate: !!float 3e-5
+    # use_sde: true
+    clip_range: 0.4

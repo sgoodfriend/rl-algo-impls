@@ -48,18 +48,22 @@ if __name__ == "__main__":
 
     set_seeds(args.seed, args.use_deterministic_algorithms)
 
+    model_path = names.model_path(best=args.best)
+
     device = torch.device(hyperparams.get("device", "cpu"))
     env = make_env(
         args.env,
         args.seed,
+        training=False,
         render=args.render,
+        normalize_load_path=model_path,
         **hyperparams.get("env_hyperparams", {}),
     )
     policy = make_policy(
         args.algo,
         env,
         device,
-        load_path=names.model_path(best=args.best),
+        load_path=model_path,
         **hyperparams.get("policy_hyperparams", {}),
     ).eval()
 

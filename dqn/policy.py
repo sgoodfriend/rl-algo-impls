@@ -1,4 +1,5 @@
 import numpy as np
+import os
 import torch
 
 from stable_baselines3.common.vec_env.base_vec_env import VecEnv, VecEnvObs
@@ -32,7 +33,8 @@ class DQNPolicy(Policy):
                 return self.q_net(obs_th).argmax(axis=1).cpu().numpy()
 
     def save(self, path: str) -> None:
-        torch.save(self.q_net.state_dict(), path)
+        super().save(path)
+        torch.save(self.q_net.state_dict(), os.path.join(path, "q.pt"))
 
     def load(self, path: str) -> None:
-        self.q_net.load_state_dict(torch.load(path))
+        self.q_net.load_state_dict(torch.load(os.path.join(path, "q.pt")))

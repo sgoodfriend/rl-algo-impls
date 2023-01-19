@@ -75,7 +75,9 @@ def train(args: TrainArgs):
         env_seed += env_hyperparams.get("n_envs", 1)
     callback = EvalCallback(
         policy,
-        make_env(args.env, env_seed, **hyperparams.get("env_hyperparams", {})),
+        make_env(
+            args.env, env_seed, training=False, **hyperparams.get("env_hyperparams", {})
+        ),
         tb_writer,
         best_model_path=names.model_path(best=True),
         **hyperparams.get("eval_params", {}),

@@ -201,7 +201,7 @@ class ActorCritic(Policy):
         return self.step(obs).a
 
     def save(self, path: str) -> None:
-        os.makedirs(path, exist_ok=True)
+        super().save(path)
         torch.save(self.pi.state_dict(), Path(path) / "pi.pt")
         torch.save(self.v.state_dict(), Path(path) / "v.pt")
 
