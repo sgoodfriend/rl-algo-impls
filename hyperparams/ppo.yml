@@ -81,6 +81,7 @@ LunarLander-v2:
     gae_lambda: 0.98
     gamma: 0.999
     ent_coef: 0.01
+    ent_coef_decay: linear
     normalize_advantage: false
   eval_params:
     step_freq: !!float 5e4
