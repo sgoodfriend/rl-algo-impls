@@ -20,6 +20,7 @@ CartPole-v1: &cartpole-defaults
 
 CartPole-v0:
   <<: *cartpole-defaults
+  n_timesteps: !!float 5e4
 
 MountainCar-v0:
   n_timesteps: !!float 1e6
