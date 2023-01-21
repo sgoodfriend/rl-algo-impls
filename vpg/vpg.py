@@ -184,7 +184,7 @@ class VanillaPolicyGradient(Algorithm):
         self, obs: torch.Tensor, act: torch.Tensor, adv: torch.Tensor
     ) -> float:
         self.pi_optim.zero_grad()
-        _, logp = self.policy.pi(obs, act)
+        _, logp, _ = self.policy.pi(obs, act)
         pi_loss = -(logp * adv).mean()
         pi_loss.backward()
         nn.utils.clip_grad_norm_(self.policy.pi.parameters(), self.max_grad_norm)

@@ -117,7 +117,8 @@ HalfCheetahBulletEnv-v0: &pybullet-defaults
     v_hidden_sizes: [256, 256]
     init_layers_orthogonal: false
     activation_fn: relu
-    # log_std_init: -2
+    use_sde: true
+    log_std_init: -2
   algo_hyperparams: &pybullet-algo-defaults
     n_steps: 512
     batch_size: 128
@@ -125,11 +126,10 @@ HalfCheetahBulletEnv-v0: &pybullet-defaults
     gamma: 0.99
     gae_lambda: 0.9
     ent_coef: 0.0
-    # sde_sample_freq: 4
+    sde_sample_freq: 4
     max_grad_norm: 0.5
     vf_coef: 0.5
     learning_rate: !!float 3e-5
-    # use_sde: true
     clip_range: 0.4
 
 AntBulletEnv-v0:

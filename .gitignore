@@ -134,3 +134,6 @@ wandb
 
 # macOS
 .DS_STORE
+
+# Local scratch work
+scratch/*

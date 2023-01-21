@@ -8,14 +8,14 @@ from stable_baselines3.common.vec_env import unwrap_vec_normalize
 from stable_baselines3.common.vec_env.base_vec_env import VecEnv, VecEnvObs
 from typing import Dict, Optional, Type, TypeVar, Union
 
-PolicySelf = TypeVar("PolicySelf", bound="Policy")
-
 ACTIVATION: Dict[str, Type[nn.Module]] = {
     "tanh": nn.Tanh,
     "relu": nn.ReLU,
 }
 
 VEC_NORMALIZE_FILENAME = "vecnormalize.pkl"
+
+PolicySelf = TypeVar("PolicySelf", bound="Policy")
 
 
 class Policy(nn.Module, ABC):
@@ -36,14 +36,8 @@ class Policy(nn.Module, ABC):
         self.device = device
         return self
 
-    def train(self: PolicySelf, mode: bool = True) -> PolicySelf:
-        super().train(mode)
-        if self.vec_normalize:
-            self.vec_normalize.training = mode
-        return self
-
     @abstractmethod
-    def act(self, obs: VecEnvObs) -> np.ndarray:
+    def act(self, obs: VecEnvObs, deterministic: bool = True) -> np.ndarray:
         ...
 
     def save(self, path: str) -> None:
@@ -54,3 +48,6 @@ class Policy(nn.Module, ABC):
     @abstractmethod
     def load(self, path: str) -> None:
         ...
+
+    def reset_noise(self) -> None:
+        pass

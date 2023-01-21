@@ -170,7 +170,7 @@ class DQN(Algorithm):
 
     def _collect_rollout(self, timesteps: int, obs: VecEnvObs, eps: float) -> VecEnvObs:
         for _ in range(0, timesteps, self.env.num_envs):
-            action = self.policy.act(obs, eps)
+            action = self.policy.act(obs, eps, deterministic=False)
             next_obs, reward, done, _ = self.env.step(action)
             self.rollout_stats.step(reward, done)
             self.replay_buffer.add(obs, action, reward, done, next_obs)

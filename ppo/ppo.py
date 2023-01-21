@@ -151,6 +151,7 @@ class PPO(Algorithm):
         max_grad_norm: float = 0.5,
         print_n_episodes: int = 100,
         update_rtg_between_epochs: bool = False,
+        sde_sample_freq: int = -1,
     ) -> None:
         super().__init__(policy, env, device, tb_writer)
         self.policy = policy
@@ -187,6 +188,7 @@ class PPO(Algorithm):
         self.n_steps = n_steps
         self.batch_size = batch_size
         self.n_epochs = n_epochs
+        self.sde_sample_freq = sde_sample_freq
 
         self.rollout_stats = RolloutStats(
             self.env.num_envs, print_n_episodes, tb_writer
@@ -198,7 +200,6 @@ class PPO(Algorithm):
         total_timesteps: int,
         callback: Optional[Callback] = None,
     ) -> List[EpisodesStats]:
-        self.policy.train(True)
         obs = self.env.reset()
         ts_elapsed = 0
         while ts_elapsed < total_timesteps:
@@ -214,8 +215,12 @@ class PPO(Algorithm):
         return self.rollout_stats.epochs
 
     def _collect_trajectories(self, obs: VecEnvObs) -> TrajectoryAccumulator:
+        self.policy.eval()
         accumulator = TrajectoryAccumulator(self.env.num_envs)
-        for _ in range(self.n_steps):
+        self.policy.reset_noise()
+        for i in range(self.n_steps):
+            if self.sde_sample_freq > 0 and i > 0 and i % self.sde_sample_freq == 0:
+                self.policy.reset_noise()
             action, value, logp_a = self.policy.step(obs)
             next_obs, reward, done, _ = self.env.step(action)
             accumulator.step(obs, action, next_obs, reward, done, value, logp_a)
@@ -229,6 +234,7 @@ class PPO(Algorithm):
         return accumulator
 
     def train(self, trajectories: List[PPOTrajectory], progress: float) -> TrainStats:
+        self.policy.train()
         learning_rate = self.lr_schedule(progress)
         self.optimizer.param_groups[0]["lr"] = learning_rate
 
@@ -298,8 +304,8 @@ class PPO(Algorithm):
         orig_v: torch.Tensor,
         orig_logp_a: torch.Tensor,
     ) -> TrainStepStats:
-        pi, logp = self.policy.pi(obs, act)
-        logratio = logp - orig_logp_a
+        _, logp_a, entropy = self.policy.pi(obs, act)
+        logratio = logp_a - orig_logp_a
         ratio = torch.exp(logratio)
         clip_ratio = torch.clamp(ratio, min=1 - pi_clip, max=1 + pi_clip)
         pi_loss = torch.maximum(-ratio * adv, -clip_ratio * adv).mean()
@@ -311,7 +317,7 @@ class PPO(Algorithm):
             v_loss = torch.maximum(v_loss, v_clipped)
         v_loss = v_loss.mean()
 
-        entropy_loss = pi.entropy().mean()
+        entropy_loss = entropy.mean()
 
         loss = pi_loss - ent_coef * entropy_loss + self.vf_coef * v_loss
 

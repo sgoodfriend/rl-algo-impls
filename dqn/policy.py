@@ -20,8 +20,11 @@ class DQNPolicy(Policy):
         super().__init__(env)
         self.q_net = QNetwork(env.observation_space, env.action_space, hidden_sizes)
 
-    def act(self, obs: VecEnvObs, eps: float = 0) -> np.ndarray:
-        if self.training and np.random.random() < eps:
+    def act(
+        self, obs: VecEnvObs, eps: float = 0, deterministic: bool = True
+    ) -> np.ndarray:
+        assert eps == 0 if deterministic else eps >= 0
+        if not deterministic and np.random.random() < eps:
             return np.array(
                 [self.env.action_space.sample() for _ in range(self.env.num_envs)]
             )
