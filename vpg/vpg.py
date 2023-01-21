@@ -153,8 +153,8 @@ class VanillaPolicyGradient(Algorithm):
     def _collect_trajectories(self, obs: VecEnvObs) -> TrajectoryAccumulator:
         accumulator = TrajectoryAccumulator(self.env.num_envs, self.steps_per_epoch)
         while not accumulator.is_done():
-            action, value, _ = self.policy.step(obs)
-            next_obs, reward, done, _ = self.env.step(action)
+            action, value, _, clamped_action = self.policy.step(obs)
+            next_obs, reward, done, _ = self.env.step(clamped_action)
             accumulator.step(obs, action, reward, done, value)
             obs = next_obs
         return accumulator

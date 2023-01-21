@@ -221,8 +221,8 @@ class PPO(Algorithm):
         for i in range(self.n_steps):
             if self.sde_sample_freq > 0 and i > 0 and i % self.sde_sample_freq == 0:
                 self.policy.reset_noise()
-            action, value, logp_a = self.policy.step(obs)
-            next_obs, reward, done, _ = self.env.step(action)
+            action, value, logp_a, clamped_action = self.policy.step(obs)
+            next_obs, reward, done, _ = self.env.step(clamped_action)
             accumulator.step(obs, action, next_obs, reward, done, value, logp_a)
             unnormalized_reward = (
                 self.policy.vec_normalize.unnormalize_reward(reward)

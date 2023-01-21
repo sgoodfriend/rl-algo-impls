@@ -326,6 +326,7 @@ class Step(NamedTuple):
     a: np.ndarray
     v: np.ndarray
     logp_a: np.ndarray
+    clamped_a: np.ndarray
 
 
 ActorCriticSelf = TypeVar("ActorCriticSelf", bound="ActorCritic")
@@ -348,20 +349,21 @@ class ActorCritic(Policy):
         super().__init__(env)
         activation = ACTIVATION[activation_fn]
         observation_space = env.observation_space
-        action_space = env.action_space
-        if isinstance(action_space, Discrete):
+        self.action_space = env.action_space
+        self.squash_output = False
+        if isinstance(self.action_space, Discrete):
             self.pi = CategoricalActor(
                 observation_space,
-                action_space.n,
+                self.action_space.n,
                 hidden_sizes=pi_hidden_sizes,
                 activation=activation,
                 init_layers_orthogonal=init_layers_orthogonal,
             )
-        elif isinstance(action_space, Box):
+        elif isinstance(self.action_space, Box):
             if use_sde:
                 self.pi = StateDependentNoiseActor(
                     observation_space,
-                    action_space.shape[0],
+                    self.action_space.shape[0],
                     hidden_sizes=pi_hidden_sizes,
                     activation=activation,
                     init_layers_orthogonal=init_layers_orthogonal,
@@ -369,17 +371,18 @@ class ActorCritic(Policy):
                     full_std=full_std,
                     squash_output=squash_output,
                 )
+                self.squash_output = squash_output
             else:
                 self.pi = GaussianActor(
                     observation_space,
-                    action_space.shape[0],
+                    self.action_space.shape[0],
                     hidden_sizes=pi_hidden_sizes,
                     activation=activation,
                     init_layers_orthogonal=init_layers_orthogonal,
                     log_std_init=log_std_init,
                 )
         else:
-            raise ValueError(f"Unsupported action space: {action_space}")
+            raise ValueError(f"Unsupported action space: {self.action_space}")
         self.pi.train(self.training)
 
         self.v = Critic(
@@ -399,11 +402,13 @@ class ActorCritic(Policy):
             a = pi.sample()
             v = self.v(o)
             logp_a = pi.log_prob(a)
-        return Step(a.cpu().numpy(), v.cpu().numpy(), logp_a.cpu().numpy())
+        a_np = a.cpu().numpy()
+        clamped_a_np = self._clamp_actions(a_np)
+        return Step(a_np, v.cpu().numpy(), logp_a.cpu().numpy(), clamped_a_np)
 
     def act(self, obs: np.ndarray, deterministic: bool = True) -> np.ndarray:
         if not deterministic:
-            return self.step(obs).a
+            return self.step(obs).clamped_a
         else:
             assert isinstance(obs, np.ndarray)
             o = torch.as_tensor(obs)
@@ -412,7 +417,7 @@ class ActorCritic(Policy):
             with torch.no_grad():
                 pi, _, _ = self.pi(o)
                 a = pi.mode
-            return a.cpu().numpy()
+            return self._clamp_actions(a.cpu().numpy())
 
     def save(self, path: str) -> None:
         super().save(path)
@@ -429,3 +434,14 @@ class ActorCritic(Policy):
             self.pi.sample_weights(
                 batch_size=batch_size if batch_size else self.env.num_envs
             )
+
+    def _clamp_actions(self, actions: np.ndarray) -> np.ndarray:
+        if isinstance(self.action_space, Box):
+            low, high = self.action_space.low, self.action_space.high  # type: ignore
+            if self.squash_output:
+                # Squashed output is already between -1 and 1. Rescale if the actual
+                # output needs to something other than -1 and 1
+                return low + 0.5 * (actions + 1) * (high - low)
+            else:
+                return np.clip(actions, low, high)
+        return actions
