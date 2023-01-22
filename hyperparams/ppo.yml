@@ -89,6 +89,33 @@ LunarLander-v2:
     n_episodes: 10
     save_best: true
 
+CarRacing-v0:
+  device: mps
+  n_timesteps: !!float 4e6
+  env_hyperparams:
+    n_envs: 8
+    frame_stack: 4
+  policy_hyperparams:
+    use_sde: true
+    log_std_init: -2
+    init_layers_orthogonal: false
+    activation_fn: relu
+    pi_hidden_sizes: [256]
+    v_hidden_sizes: [256]
+  algo_hyperparams:
+    n_steps: 512
+    batch_size: 128
+    n_epochs: 10
+    learning_rate: !!float 1e-4
+    learning_rate_decay: linear
+    gamma: 0.99
+    gae_lambda: 0.95
+    ent_coef: 0.0
+    sde_sample_freq: 4
+    max_grad_norm: 0.5
+    vf_coef: 0.5
+    clip_range: 0.2
+
 BreakoutNoFrameskip-v4: &atari-defaults
   device: mps
   n_timesteps: !!float 1e7
@@ -107,6 +134,10 @@ BreakoutNoFrameskip-v4: &atari-defaults
     clip_range_decay: linear
     vf_coef: 0.5
     ent_coef: 0.01
+
+PongNoFrameskip-v4:
+  <<: *atari-defaults
+  n_timesteps: !!float 2.5e6
 
 HalfCheetahBulletEnv-v0: &pybullet-defaults
   n_timesteps: !!float 2e6
@@ -137,6 +168,14 @@ AntBulletEnv-v0:
   <<: *pybullet-defaults
   policy_hyperparams:
     <<: *pybullet-policy-defaults
-    # log_std_init: -1
+    log_std_init: -1
   algo_hyperparams:
     <<: *pybullet-algo-defaults
+
+Walker2DBulletEnv-v0:
+  <<: *pybullet-defaults
+  policy_hyperparams:
+    <<: *pybullet-policy-defaults
+  algo_hyperparams:
+    <<: *pybullet-algo-defaults
+    clip_range_decay: linear
