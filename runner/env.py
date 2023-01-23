@@ -1,6 +1,16 @@
 import gym
 import os
 
+from gym.wrappers.resize_observation import ResizeObservation
+from gym.wrappers.gray_scale_observation import GrayScaleObservation
+from gym.wrappers.frame_stack import FrameStack
+from stable_baselines3.common.atari_wrappers import (
+    ClipRewardEnv,
+    EpisodicLifeEnv,
+    FireResetEnv,
+    MaxAndSkipEnv,
+    NoopResetEnv,
+)
 from stable_baselines3.common.vec_env.base_vec_env import VecEnv
 from stable_baselines3.common.vec_env.dummy_vec_env import DummyVecEnv
 from stable_baselines3.common.vec_env.subproc_vec_env import SubprocVecEnv
@@ -36,17 +46,17 @@ def make_env(
     def make(idx: int) -> Callable[[], gym.Env]:
         def _make() -> gym.Env:
             if "AtariEnv" in spec.entry_point:  # type: ignore
-                from gym.wrappers.atari_preprocessing import AtariPreprocessing
-                from gym.wrappers.frame_stack import FrameStack
-
                 env = gym.make(env_id, **make_kwargs)
-                env = AtariPreprocessing(env)
+                env = NoopResetEnv(env, noop_max=30)
+                env = MaxAndSkipEnv(env, skip=4)
+                env = EpisodicLifeEnv(env)
+                if "FIRE" in env.unwrapped.get_action_meanings():  # type: ignore
+                    env = FireResetEnv(env)
+                env = ClipRewardEnv(env)
+                env = ResizeObservation(env, (84, 84))
+                env = GrayScaleObservation(env, keep_dim=False)
                 env = FrameStack(env, frame_stack)
             elif "CarRacing" in env_id:
-                from gym.wrappers.resize_observation import ResizeObservation
-                from gym.wrappers.gray_scale_observation import GrayScaleObservation
-                from gym.wrappers.frame_stack import FrameStack
-
                 env = gym.make(env_id, verbose=0, **make_kwargs)
                 env = ResizeObservation(env, (64, 64))
                 env = GrayScaleObservation(env, keep_dim=False)

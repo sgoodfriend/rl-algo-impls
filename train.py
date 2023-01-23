@@ -25,7 +25,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--pool-size", type=int, default=3, help="Simultaneous training jobs to run"
     )
-    parser.set_defaults(algo="ppo", env="MountainCarContinuous-v0", seed=1)
+    parser.set_defaults(algo="ppo", env="BreakoutNoFrameskip-v4", seed=1)
     args = parser.parse_args()
     print(args)
 

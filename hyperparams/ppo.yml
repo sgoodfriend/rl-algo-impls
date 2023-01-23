@@ -119,6 +119,8 @@ CarRacing-v0:
 BreakoutNoFrameskip-v4: &atari-defaults
   device: mps
   n_timesteps: !!float 1e7
+  policy_hyperparams:
+    activation_fn: relu
   env_hyperparams:
     n_envs: 8
     frame_stack: 4
