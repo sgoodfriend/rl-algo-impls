@@ -7,6 +7,7 @@ import torch
 
 from dataclasses import dataclass
 
+from runner.env import make_env
 from runner.running_utils import (
     POLICIES,
     base_parser,
@@ -14,7 +15,6 @@ from runner.running_utils import (
     load_hyperparams,
     Names,
     set_seeds,
-    make_env,
     make_policy,
 )
 from shared.callbacks.eval_callback import evaluate
@@ -32,7 +32,7 @@ if __name__ == "__main__":
     parser.add_argument("--render", default=True, type=bool)
     parser.add_argument("--best", default=True, type=bool)
     parser.add_argument("--n_envs", default=1, type=int)
-    parser.set_defaults(algo="ppo", env="PongNoFrameskip-v4")
+    parser.set_defaults(algo="ppo", env="CarRacing-v0")
     args = EvalArgs(**vars(parser.parse_args()))
     print(args)
 

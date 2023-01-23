@@ -13,13 +13,13 @@ from torch.utils.tensorboard.writer import SummaryWriter
 from typing import Any, Dict, Optional
 
 from shared.callbacks.eval_callback import EvalCallback
+from runner.env import make_env
 from runner.running_utils import (
     ALGOS,
     RunArgs,
     load_hyperparams,
     Names,
     set_seeds,
-    make_env,
     make_policy,
     plot_training,
     plot_eval_callback,
