@@ -252,10 +252,7 @@ class PPO(Algorithm):
         act = torch.as_tensor(
             np.concatenate([np.array(t.act) for t in trajectories]), device=self.device
         )
-        if self.update_rtg_between_epochs:
-            rtg = None
-        else:
-            rtg = self._compute_rtg(trajectories)
+        rtg, adv = self._compute_rtg_and_advantage(trajectories)
         orig_v = torch.as_tensor(
             np.concatenate([np.array(t.v) for t in trajectories]), device=self.device
         )
@@ -283,7 +280,7 @@ class PPO(Algorithm):
                         ent_coef,
                         obs[mb_idxs],
                         act[mb_idxs],
-                        rtg[mb_idxs],  # type: ignore
+                        rtg[mb_idxs],
                         mb_adv,
                         orig_v[mb_idxs],
                         orig_logp_a[mb_idxs],
@@ -356,25 +353,11 @@ class PPO(Algorithm):
             np.concatenate(advantage), dtype=torch.float32, device=self.device
         )
 
-    def _compute_rtg(self, trajectories: Sequence[PPOTrajectory]) -> torch.Tensor:
-        rewards_to_go = []
-        for traj in trajectories:
-            last_val = 0
-            if not traj.terminated and traj.next_obs is not None:
-                with torch.no_grad():
-                    next_obs = torch.as_tensor(np.array(traj.next_obs)).to(self.device)
-                    last_val = self.policy.v(next_obs).cpu().numpy()
-            rew = np.append(np.array(traj.rew), last_val)
-            rewards_to_go.append(discounted_cumsum(rew, self.gamma)[:-1])
-        return torch.as_tensor(
-            np.concatenate(rewards_to_go), dtype=torch.float32, device=self.device
-        )
-
     def _compute_rtg_and_advantage(
         self, trajectories: Sequence[PPOTrajectory]
     ) -> RtgAdvantage:
         rewards_to_go = []
-        advantage = []
+        advantages = []
         for traj in trajectories:
             last_val = 0
             if not traj.terminated and traj.next_obs is not None:
@@ -382,15 +365,16 @@ class PPO(Algorithm):
                     next_obs = torch.as_tensor(np.array(traj.next_obs)).to(self.device)
                     last_val = self.policy.v(next_obs).cpu().numpy()
             rew = np.append(np.array(traj.rew), last_val)
-            rewards_to_go.append(discounted_cumsum(rew, self.gamma)[:-1])
             v = np.append(np.array(traj.v), last_val)
             deltas = rew[:-1] + self.gamma * v[1:] - v[:-1]
-            advantage.append(discounted_cumsum(deltas, self.gamma * self.gae_lambda))
+            adv = discounted_cumsum(deltas, self.gamma * self.gae_lambda)
+            advantages.append(adv)
+            rewards_to_go.append(v[:-1] + adv)
         return RtgAdvantage(
             torch.as_tensor(
                 np.concatenate(rewards_to_go), dtype=torch.float32, device=self.device
             ),
             torch.as_tensor(
-                np.concatenate(advantage), dtype=torch.float32, device=self.device
+                np.concatenate(advantages), dtype=torch.float32, device=self.device
             ),
         )
