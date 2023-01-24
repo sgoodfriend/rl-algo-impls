@@ -5,9 +5,6 @@ from gym.wrappers.resize_observation import ResizeObservation
 from gym.wrappers.gray_scale_observation import GrayScaleObservation
 from gym.wrappers.frame_stack import FrameStack
 from stable_baselines3.common.atari_wrappers import (
-    ClipRewardEnv,
-    EpisodicLifeEnv,
-    FireResetEnv,
     MaxAndSkipEnv,
     NoopResetEnv,
 )
@@ -18,6 +15,7 @@ from stable_baselines3.common.vec_env.vec_normalize import VecNormalize
 from typing import Any, Callable, Dict, Optional
 
 from shared.policy.policy import VEC_NORMALIZE_FILENAME
+from wrappers.atari_wrappers import EpisodicLifeEnv, FireOnLifeStarttEnv, ClipRewardEnv
 
 
 def make_env(
@@ -49,10 +47,11 @@ def make_env(
                 env = gym.make(env_id, **make_kwargs)
                 env = NoopResetEnv(env, noop_max=30)
                 env = MaxAndSkipEnv(env, skip=4)
-                env = EpisodicLifeEnv(env)
-                if "FIRE" in env.unwrapped.get_action_meanings():  # type: ignore
-                    env = FireResetEnv(env)
-                env = ClipRewardEnv(env)
+                env = EpisodicLifeEnv(env, training=training)
+                action_meanings = env.unwrapped.get_action_meanings()
+                if "FIRE" in action_meanings:  # type: ignore
+                    env = FireOnLifeStarttEnv(env, action_meanings.index("FIRE"))
+                env = ClipRewardEnv(env, training=training)
                 env = ResizeObservation(env, (84, 84))
                 env = GrayScaleObservation(env, keep_dim=False)
                 env = FrameStack(env, frame_stack)

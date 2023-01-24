@@ -25,6 +25,7 @@ class EvalArgs(RunArgs):
     render: bool = True
     best: bool = True
     n_envs: int = 1
+    n_episodes: int = 3
 
 
 if __name__ == "__main__":
@@ -32,6 +33,7 @@ if __name__ == "__main__":
     parser.add_argument("--render", default=True, type=bool)
     parser.add_argument("--best", default=True, type=bool)
     parser.add_argument("--n_envs", default=1, type=int)
+    parser.add_argument("--n_episodes", default=3, type=int)
     parser.set_defaults(algo="ppo", env="BreakoutNoFrameskip-v4")
     args = EvalArgs(**vars(parser.parse_args()))
     print(args)
@@ -67,4 +69,4 @@ if __name__ == "__main__":
         **hyperparams.get("policy_hyperparams", {}),
     ).eval()
 
-    evaluate(env, policy, 3 if args.render else 100, render=args.render)
+    evaluate(env, policy, args.n_episodes, render=args.render)
