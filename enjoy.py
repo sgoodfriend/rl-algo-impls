@@ -34,7 +34,7 @@ if __name__ == "__main__":
     parser.add_argument("--best", default=True, type=bool)
     parser.add_argument("--n_envs", default=1, type=int)
     parser.add_argument("--n_episodes", default=3, type=int)
-    parser.set_defaults(algo="ppo", env="BreakoutNoFrameskip-v4")
+    parser.set_defaults(algo="ppo", env="Walker2DBulletEnv-v0")
     args = EvalArgs(**vars(parser.parse_args()))
     print(args)
 

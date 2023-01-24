@@ -179,8 +179,12 @@ AntBulletEnv-v0:
 
 Walker2DBulletEnv-v0:
   <<: *pybullet-defaults
-  policy_hyperparams:
-    <<: *pybullet-policy-defaults
+  algo_hyperparams:
+    <<: *pybullet-algo-defaults
+    clip_range_decay: linear
+
+HopperBulletEnv-v0:
+  <<: *pybullet-defaults
   algo_hyperparams:
     <<: *pybullet-algo-defaults
     clip_range_decay: linear
