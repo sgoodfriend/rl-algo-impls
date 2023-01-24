@@ -28,6 +28,7 @@ def evaluate(
     policy: Policy,
     n_episodes: int,
     render: bool = False,
+    deterministic: bool = True,
     print_returns: bool = True,
 ) -> EpisodesStats:
     policy.eval()
@@ -35,7 +36,7 @@ def evaluate(
 
     obs = env.reset()
     while len(episodes) < n_episodes:
-        act = policy.act(obs)
+        act = policy.act(obs, deterministic=deterministic)
         obs, rew, done, _ = env.step(act)
         episodes.step(rew, done)
         if render:
@@ -56,6 +57,7 @@ class EvalCallback(Callback):
         step_freq: Union[int, float] = 50_000,
         n_episodes: int = 10,
         save_best: bool = True,
+        deterministic: bool = True,
     ) -> None:
         super().__init__()
         self.policy = policy
@@ -65,6 +67,7 @@ class EvalCallback(Callback):
         self.step_freq = int(step_freq)
         self.n_episodes = n_episodes
         self.save_best = save_best
+        self.deterministic = deterministic
         self.stats: List[EpisodesStats] = []
         self.best = None
 
@@ -93,6 +96,7 @@ class EvalCallback(Callback):
             self.env,
             self.policy,
             n_episodes or self.n_episodes,
+            deterministic=self.deterministic,
             print_returns=print_returns or False,
         )
         self.policy.train(True)
