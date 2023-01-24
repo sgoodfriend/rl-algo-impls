@@ -66,11 +66,13 @@ EpisodesStatsSelf = TypeVar("EpisodesStatsSelf", bound="EpisodesStats")
 
 class EpisodesStats:
     episodes: Sequence[Episode]
+    simple: bool
     score: Statistic
     length: Statistic
 
-    def __init__(self, episodes: Sequence[Episode]) -> None:
+    def __init__(self, episodes: Sequence[Episode], simple: bool = False) -> None:
         self.episodes = episodes
+        self.simple = simple
         self.score = Statistic(np.array([e.score for e in episodes]))
         self.length = Statistic(np.array([e.length for e in episodes]), round_digits=0)
 
@@ -90,14 +92,18 @@ class EpisodesStats:
     def write_to_tensorboard(
         self, tb_writer: SummaryWriter, main_tag: str, global_step: Optional[int] = None
     ) -> None:
+        stats = {"mean": self.score.mean}
+        if not self.simple:
+            stats.update(
+                {
+                    "min": self.score.min,
+                    "max": self.score.max,
+                    "result": self.score.mean - self.score.std,
+                }
+            )
         tb_writer.add_scalars(
             main_tag,
-            {
-                "mean": self.score.mean,
-                "min": self.score.min,
-                "max": self.score.max,
-                "result": self.score.mean - self.score.std,
-            },
+            stats,
             global_step=global_step,
         )
 
@@ -124,7 +130,6 @@ class EpisodeAccumulator:
 
     def stats(self) -> EpisodesStats:
         return EpisodesStats(self.episodes)
-
 
 
 class RolloutStats(EpisodeAccumulator):

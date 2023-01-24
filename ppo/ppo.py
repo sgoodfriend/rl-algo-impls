@@ -6,13 +6,12 @@ from dataclasses import asdict, dataclass
 from torch.optim import Adam
 from stable_baselines3.common.vec_env.base_vec_env import VecEnv, VecEnvObs
 from torch.utils.tensorboard.writer import SummaryWriter
-from typing import List, Optional, Sequence, NamedTuple
+from typing import List, Optional, Sequence, NamedTuple, TypeVar
 
 from shared.algorithm import Algorithm
 from shared.callbacks.callback import Callback
 from shared.policy.on_policy import ActorCritic
 from shared.schedule import constant_schedule, linear_schedule
-from shared.stats import RolloutStats, EpisodesStats
 from shared.trajectory import Trajectory as BaseTrajectory
 from shared.utils import discounted_cumsum
 
@@ -126,6 +125,9 @@ class TrainStats:
         )
 
 
+PPOSelf = TypeVar("PPOSelf", bound="PPO")
+
+
 class PPO(Algorithm):
     def __init__(
         self,
@@ -149,7 +151,6 @@ class PPO(Algorithm):
         ent_coef_decay: str = "none",
         vf_coef: float = 0.5,
         max_grad_norm: float = 0.5,
-        print_n_episodes: int = 100,
         update_rtg_between_epochs: bool = False,
         sde_sample_freq: int = -1,
     ) -> None:
@@ -190,16 +191,13 @@ class PPO(Algorithm):
         self.n_epochs = n_epochs
         self.sde_sample_freq = sde_sample_freq
 
-        self.rollout_stats = RolloutStats(
-            self.env.num_envs, print_n_episodes, tb_writer
-        )
         self.update_rtg_between_epochs = update_rtg_between_epochs
 
     def learn(
-        self,
+        self: PPOSelf,
         total_timesteps: int,
         callback: Optional[Callback] = None,
-    ) -> List[EpisodesStats]:
+    ) -> PPOSelf:
         obs = self.env.reset()
         ts_elapsed = 0
         while ts_elapsed < total_timesteps:
@@ -212,7 +210,7 @@ class PPO(Algorithm):
             if callback:
                 callback.on_step(timesteps_elapsed=rollout_steps)
 
-        return self.rollout_stats.epochs
+        return self
 
     def _collect_trajectories(self, obs: VecEnvObs) -> TrajectoryAccumulator:
         self.policy.eval()
@@ -224,12 +222,6 @@ class PPO(Algorithm):
             action, value, logp_a, clamped_action = self.policy.step(obs)
             next_obs, reward, done, _ = self.env.step(clamped_action)
             accumulator.step(obs, action, next_obs, reward, done, value, logp_a)
-            unnormalized_reward = (
-                self.policy.vec_normalize.unnormalize_reward(reward)
-                if self.policy.vec_normalize
-                else reward
-            )
-            self.rollout_stats.step(unnormalized_reward, done)
             obs = next_obs
         return accumulator
 

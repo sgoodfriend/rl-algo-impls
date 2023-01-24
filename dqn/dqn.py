@@ -9,12 +9,11 @@ from collections import deque
 from torch.optim import Adam
 from stable_baselines3.common.vec_env.base_vec_env import VecEnv, VecEnvObs
 from torch.utils.tensorboard.writer import SummaryWriter
-from typing import List, NamedTuple, Optional
+from typing import List, NamedTuple, Optional, TypeVar
 
 from dqn.policy import DQNPolicy
 from shared.algorithm import Algorithm
 from shared.callbacks.callback import Callback
-from shared.stats import EpisodesStats, RolloutStats
 from shared.schedule import linear_schedule
 
 
@@ -68,6 +67,9 @@ class ReplayBuffer:
         return len(self.buffer)
 
 
+DQNSelf = TypeVar("DQNSelf", bound="DQN")
+
+
 class DQN(Algorithm):
     def __init__(
         self,
@@ -88,7 +90,6 @@ class DQN(Algorithm):
         exploration_initial_eps: float = 1.0,
         exploration_final_eps: float = 0.05,
         max_grad_norm: float = 10.0,
-        print_n_episodes: int = -1,
     ) -> None:
         super().__init__(policy, env, device, tb_writer)
         self.policy = policy
@@ -116,13 +117,9 @@ class DQN(Algorithm):
 
         self.max_grad_norm = max_grad_norm
 
-        self.rollout_stats = RolloutStats(
-            self.env.num_envs, print_n_episodes, tb_writer
-        )
-
     def learn(
-        self, total_timesteps: int, callback: Optional[Callback] = None
-    ) -> List[EpisodesStats]:
+        self: DQNSelf, total_timesteps: int, callback: Optional[Callback] = None
+    ) -> DQNSelf:
         self.policy.train(True)
         obs = self.env.reset()
         obs = self._collect_rollout(self.learning_starts, obs, 1)
@@ -145,7 +142,7 @@ class DQN(Algorithm):
                 steps_since_target_update = 0
             if callback:
                 callback.on_step(timesteps_elapsed=rollout_steps)
-        return self.rollout_stats.epochs
+        return self
 
     def train(self) -> None:
         if len(self.replay_buffer) < self.batch_size:
@@ -172,7 +169,6 @@ class DQN(Algorithm):
         for _ in range(0, timesteps, self.env.num_envs):
             action = self.policy.act(obs, eps, deterministic=False)
             next_obs, reward, done, _ = self.env.step(action)
-            self.rollout_stats.step(reward, done)
             self.replay_buffer.add(obs, action, reward, done, next_obs)
             obs = next_obs
         return obs

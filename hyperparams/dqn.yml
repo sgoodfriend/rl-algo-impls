@@ -2,6 +2,7 @@ CartPole-v1: &cartpole-defaults
   n_timesteps: !!float 5e4
   env_hyperparams:
     n_envs: 1
+    rolling_length: 50
   policy_hyperparams:
     hidden_sizes: [256, 256]
   algo_hyperparams:
@@ -15,7 +16,6 @@ CartPole-v1: &cartpole-defaults
     gradient_steps: 128
     exploration_fraction: 0.16
     exploration_final_eps: 0.04
-    print_n_episodes: 50
   eval_params:
     step_freq: !!float 1e4
     n_episodes: 10
@@ -27,6 +27,8 @@ CartPole-v0:
 
 MountainCar-v0:
   n_timesteps: !!float 1.2e5
+  env_hyperparams:
+    rolling_length: 50
   policy_hyperparams:
     hidden_sizes: [256, 256]
   algo_hyperparams:
@@ -40,10 +42,11 @@ MountainCar-v0:
     gradient_steps: 8
     exploration_fraction: 0.2
     exploration_final_eps: 0.07
-    print_n_episodes: 50
 
 Acrobot-v1:
   n_timesteps: !!float 1e5
+  env_hyperparams:
+    rolling_length: 10
   policy_hyperparams:
     hidden_sizes: [256, 256]
   algo_hyperparams:
@@ -57,10 +60,11 @@ Acrobot-v1:
     gradient_steps: -1
     exploration_fraction: 0.12
     exploration_final_eps: 0.1
-    print_n_episodes: 10
 
 LunarLander-v2:
   n_timesteps: !!float 5e5
+  env_hyperparams:
+    rolling_length: 10
   policy_hyperparams:
     hidden_sizes: [256, 256]
   algo_hyperparams:
@@ -75,7 +79,6 @@ LunarLander-v2:
     exploration_fraction: 0.12
     exploration_final_eps: 0.1
     max_grad_norm: 0.5
-    print_n_episodes: 10
   eval_params:
     step_freq: 25_000
     n_episodes: 10
@@ -89,6 +92,7 @@ SpaceInvadersNoFrameskip-v4: &atari-defaults
     no_reward_timeout_steps: 1_000
     n_envs: 8
     vec_env_class: "subproc"
+    rolling_length: 20
   policy_hyperparams:
     hidden_sizes: [512]
   algo_hyperparams:
@@ -101,7 +105,6 @@ SpaceInvadersNoFrameskip-v4: &atari-defaults
     gradient_steps: 2
     exploration_fraction: 0.1
     exploration_final_eps: 0.01
-    print_n_episodes: 20
   eval_params:
     step_freq: 100_000
     n_episodes: 10

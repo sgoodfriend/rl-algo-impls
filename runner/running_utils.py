@@ -178,29 +178,6 @@ class Names:
         return os.path.join(self.runs_dir, f"log.yml")
 
 
-def plot_training(
-    history: List[EpisodesStats], tb_writer: SummaryWriter, run_name: str
-):
-    figure = plt.figure()
-    cumulative_steps = []
-    for es in history:
-        cumulative_steps.append(
-            es.length.sum() + (cumulative_steps[-1] if cumulative_steps else 0)
-        )
-
-    plt.plot(cumulative_steps, [es.score.mean for es in history])
-    plt.fill_between(
-        cumulative_steps,
-        [es.score.min for es in history],  # type: ignore
-        [es.score.max for es in history],  # type: ignore
-        facecolor="cyan",
-    )
-    plt.xlabel("Steps")
-    plt.ylabel("Score")
-    plt.title(f"Train {run_name}")
-    tb_writer.add_figure("train", figure)
-
-
 def plot_eval_callback(callback: EvalCallback, tb_writer: SummaryWriter, run_name: str):
     figure = plt.figure()
     cumulative_steps = [

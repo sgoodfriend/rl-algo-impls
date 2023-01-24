@@ -61,11 +61,10 @@ def train(args: TrainArgs):
     set_seeds(args.seed, args.use_deterministic_algorithms)
 
     device = torch.device(hyperparams.get("device", "cpu"))
-    env = make_env(args.env, args.seed, **env_hyperparams)
+    env = make_env(args.env, args.seed, tb_writer=tb_writer, **env_hyperparams)
     policy = make_policy(
         args.algo, env, device, **hyperparams.get("policy_hyperparams", {})
     )
-
     algo = ALGOS[args.algo](
         policy, env, device, tb_writer, **hyperparams.get("algo_hyperparams", {})
     )
@@ -73,16 +72,18 @@ def train(args: TrainArgs):
     env_seed = args.seed
     if env_seed is not None:
         env_seed += env_hyperparams.get("n_envs", 1)
+    eval_env = make_env(
+        args.env, env_seed, training=False, **hyperparams.get("env_hyperparams", {})
+    )
+
     callback = EvalCallback(
         policy,
-        make_env(
-            args.env, env_seed, training=False, **hyperparams.get("env_hyperparams", {})
-        ),
+        eval_env,
         tb_writer,
         best_model_path=names.model_path(best=True),
         **hyperparams.get("eval_params", {}),
     )
-    history = algo.learn(
+    algo.learn(
         int(hyperparams.get("n_timesteps", 100_000)), callback=callback
     )
 
@@ -90,7 +91,6 @@ def train(args: TrainArgs):
 
     eval_stats = callback.evaluate(n_episodes=10, print_returns=True)
 
-    plot_training(history, tb_writer, names.run_name)
     plot_eval_callback(callback, tb_writer, names.run_name)
 
     log_dict: Dict[str, Any] = {

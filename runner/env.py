@@ -12,10 +12,12 @@ from stable_baselines3.common.vec_env.base_vec_env import VecEnv
 from stable_baselines3.common.vec_env.dummy_vec_env import DummyVecEnv
 from stable_baselines3.common.vec_env.subproc_vec_env import SubprocVecEnv
 from stable_baselines3.common.vec_env.vec_normalize import VecNormalize
+from torch.utils.tensorboard.writer import SummaryWriter
 from typing import Any, Callable, Dict, Optional
 
 from shared.policy.policy import VEC_NORMALIZE_FILENAME
 from wrappers.atari_wrappers import EpisodicLifeEnv, FireOnLifeStarttEnv, ClipRewardEnv
+from wrappers.episode_stats_writer import EpisodeStatsWriter
 
 
 def make_env(
@@ -31,6 +33,8 @@ def make_env(
     vec_env_class: str = "dummy",
     normalize: bool = False,
     normalize_kwargs: Optional[Dict[str, Any]] = None,
+    tb_writer: Optional[SummaryWriter] = None,
+    rolling_length: int = 100,
 ) -> VecEnv:
     if "BulletEnv" in env_id:
         import pybullet_envs
@@ -38,13 +42,16 @@ def make_env(
     make_kwargs = make_kwargs if make_kwargs is not None else {}
     if "BulletEnv" in env_id and render:
         make_kwargs["render"] = True
+    if "CarRacing" in env_id:
+        make_kwargs["verbose"] = 0
 
     spec = gym.spec(env_id)
 
     def make(idx: int) -> Callable[[], gym.Env]:
         def _make() -> gym.Env:
+            env = gym.make(env_id, **make_kwargs)
+            env = gym.wrappers.RecordEpisodeStatistics(env)
             if "AtariEnv" in spec.entry_point:  # type: ignore
-                env = gym.make(env_id, **make_kwargs)
                 env = NoopResetEnv(env, noop_max=30)
                 env = MaxAndSkipEnv(env, skip=4)
                 env = EpisodicLifeEnv(env, training=training)
@@ -56,12 +63,9 @@ def make_env(
                 env = GrayScaleObservation(env, keep_dim=False)
                 env = FrameStack(env, frame_stack)
             elif "CarRacing" in env_id:
-                env = gym.make(env_id, verbose=0, **make_kwargs)
                 env = ResizeObservation(env, (64, 64))
                 env = GrayScaleObservation(env, keep_dim=False)
                 env = FrameStack(env, frame_stack)
-            else:
-                env = gym.make(env_id, **make_kwargs)
 
             if no_reward_timeout_steps:
                 from wrappers.no_reward_timeout import NoRewardTimeout
@@ -79,6 +83,11 @@ def make_env(
 
     VecEnvClass = {"dummy": DummyVecEnv, "subproc": SubprocVecEnv}[vec_env_class]
     venv = VecEnvClass([make(i) for i in range(n_envs)])
+    if training:
+        assert tb_writer
+        venv = EpisodeStatsWriter(
+            venv, tb_writer, training=training, rolling_length=rolling_length
+        )
     if normalize:
         if normalize_load_path:
             venv = VecNormalize.load(

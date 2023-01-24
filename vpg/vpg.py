@@ -5,7 +5,7 @@ import torch.nn as nn
 from stable_baselines3.common.vec_env.base_vec_env import VecEnv, VecEnvObs
 from torch.optim import Adam
 from torch.utils.tensorboard.writer import SummaryWriter
-from typing import List, Optional, Sequence, NamedTuple
+from typing import List, Optional, Sequence, NamedTuple, TypeVar
 
 from shared.algorithm import Algorithm
 from shared.callbacks.callback import Callback
@@ -25,8 +25,6 @@ class TrajectoryAccumulator:
         self.steps_per_env = int(np.ceil(goal_steps / num_envs))
         self.step_idx = 0
         self.envs_done: set[int] = set()
-
-        self._stats = EpisodeAccumulator(num_envs)
 
     def step(
         self,
@@ -48,16 +46,12 @@ class TrajectoryAccumulator:
                 self.current_trajectories[i] = Trajectory()
                 if self.step_idx >= self.steps_per_env:
                     self.envs_done.add(i)
-        self._stats.step(reward, done)
 
     def is_done(self) -> bool:
         return len(self.envs_done) == self.num_envs
 
     def n_timesteps(self) -> int:
         return np.sum([len(t) for t in self.trajectories]).item()
-
-    def stats(self) -> EpisodesStats:
-        return self._stats.stats()
 
 
 class RtgAdvantage(NamedTuple):
@@ -71,6 +65,11 @@ class TrainEpochStats(NamedTuple):
 
     def write_to_tensorboard(self, tb_writer: SummaryWriter, global_step: int) -> None:
         tb_writer.add_scalars("losses", self._asdict(), global_step=global_step)
+
+
+VanillaPolicyGradientSelf = TypeVar(
+    "VanillaPolicyGradientSelf", bound="VanillaPolicyGradient"
+)
 
 
 class VanillaPolicyGradient(Algorithm):
@@ -101,38 +100,32 @@ class VanillaPolicyGradient(Algorithm):
         self.train_v_iters = train_v_iters
 
     def learn(
-        self,
+        self: VanillaPolicyGradientSelf,
         total_timesteps: int,
         callback: Optional[Callback] = None,
-    ) -> List[EpisodesStats]:
+    ) -> VanillaPolicyGradientSelf:
         self.policy.train(True)
         obs = self.env.reset()
         timesteps_elapsed = 0
-        episodes_stats: List[EpisodesStats] = []
+        epoch_cnt = 0
         while timesteps_elapsed < total_timesteps:
+            epoch_cnt += 1
             accumulator = self._collect_trajectories(obs)
             epoch_stats = self.train(accumulator.trajectories)
             epoch_steps = accumulator.n_timesteps()
             timesteps_elapsed += epoch_steps
-            stats = accumulator.stats()
-            episodes_stats.append(stats)
-            stats.write_to_tensorboard(
-                self.tb_writer, "train", global_step=timesteps_elapsed
-            )
             epoch_stats.write_to_tensorboard(
                 self.tb_writer, global_step=timesteps_elapsed
             )
             print(
-                f"Epoch: {len(episodes_stats)} | "
-                f"Score: {stats.score} | "
-                f"Length: {stats.length} | "
+                f"Epoch: {epoch_cnt} | "
                 f"Pi Loss: {round(epoch_stats.pi_loss, 2)} | "
                 f"V Loss: {round(epoch_stats.v_loss, 2)} | "
                 f"Total Steps: {timesteps_elapsed}"
             )
             if callback:
                 callback.on_step(timesteps_elapsed=epoch_steps)
-        return episodes_stats
+        return self
 
     def train(self, trajectories: Sequence[Trajectory]) -> TrainEpochStats:
         obs = torch.as_tensor(

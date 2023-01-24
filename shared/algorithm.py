@@ -4,12 +4,13 @@ import torch
 from abc import ABC, abstractmethod
 from stable_baselines3.common.vec_env.base_vec_env import VecEnv
 from torch.utils.tensorboard.writer import SummaryWriter
-from typing import List, Optional
+from typing import List, Optional, TypeVar
 
 from shared.callbacks.callback import Callback
 from shared.policy.policy import Policy
 from shared.stats import EpisodesStats
 
+AlgorithmSelf = TypeVar("AlgorithmSelf", bound="Algorithm")
 
 class Algorithm(ABC):
     @abstractmethod
@@ -29,6 +30,6 @@ class Algorithm(ABC):
 
     @abstractmethod
     def learn(
-        self, total_timesteps: int, callback: Optional[Callback] = None
-    ) -> List[EpisodesStats]:
+        self: AlgorithmSelf, total_timesteps: int, callback: Optional[Callback] = None
+    ) -> AlgorithmSelf:
         ...
