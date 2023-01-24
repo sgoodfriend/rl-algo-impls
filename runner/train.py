@@ -21,7 +21,6 @@ from runner.running_utils import (
     Names,
     set_seeds,
     make_policy,
-    plot_training,
     plot_eval_callback,
     flatten_hyperparameters,
 )
@@ -83,9 +82,7 @@ def train(args: TrainArgs):
         best_model_path=names.model_path(best=True),
         **hyperparams.get("eval_params", {}),
     )
-    algo.learn(
-        int(hyperparams.get("n_timesteps", 100_000)), callback=callback
-    )
+    algo.learn(int(hyperparams.get("n_timesteps", 100_000)), callback=callback)
 
     policy.save(names.model_path(best=False))
 
