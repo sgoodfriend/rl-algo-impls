@@ -26,8 +26,13 @@ class Names:
     args: RunArgs
     hyperparams: Hyperparams
     root_dir: str
-    seed: Optional[int] = None
     run_id: str = datetime.now().isoformat()
+
+    def seed(self, training: bool = True) -> Optional[int]:
+        seed = self.args.seed
+        if training or seed is None:
+            return seed
+        return seed + self.hyperparams.get("env_hyperparams", {}).get("n_envs", 1)
 
     @property
     def env_id(self) -> str:

@@ -75,10 +75,11 @@ def make_env(
 
                 env = NoRewardTimeout(env, no_reward_timeout_steps)
 
-            if names.seed is not None:
-                env.seed(names.seed + idx)
-                env.action_space.seed(names.seed + idx)
-                env.observation_space.seed(names.seed + idx)
+            seed = names.seed(training=training)
+            if seed is not None:
+                env.seed(seed + idx)
+                env.action_space.seed(seed + idx)
+                env.observation_space.seed(seed + idx)
 
             return env
 

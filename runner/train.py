@@ -67,11 +67,7 @@ def train(args: TrainArgs):
         policy, env, device, tb_writer, **hyperparams.get("algo_hyperparams", {})
     )
 
-    env_seed = args.seed
-    if env_seed is not None:
-        env_seed += env_hyperparams.get("n_envs", 1)
     eval_env = make_eval_env(names, **hyperparams.get("env_hyperparams", {}))
-
     callback = EvalCallback(
         policy,
         eval_env,
