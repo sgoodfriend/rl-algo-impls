@@ -18,8 +18,8 @@ from typing import Any, Callable, Dict, Optional, Union
 from runner.names import Names
 from shared.policy.policy import VEC_NORMALIZE_FILENAME
 from wrappers.atari_wrappers import EpisodicLifeEnv, FireOnLifeStarttEnv, ClipRewardEnv
+from wrappers.episode_record_video import EpisodeRecordVideo
 from wrappers.episode_stats_writer import EpisodeStatsWriter
-from wrappers.vec_single_recorder import VecSingleRecorder
 
 
 def make_env(
@@ -54,6 +54,13 @@ def make_env(
         def _make() -> gym.Env:
             env = gym.make(names.env_id, **make_kwargs)
             env = gym.wrappers.RecordEpisodeStatistics(env)
+            if training and train_record_video and idx == 0:
+                env = EpisodeRecordVideo(
+                    env,
+                    names.video_prefix,
+                    step_increment=n_envs,
+                    video_step_interval=int(video_step_interval),
+                )
             if "AtariEnv" in spec.entry_point:  # type: ignore
                 env = NoopResetEnv(env, noop_max=30)
                 env = MaxAndSkipEnv(env, skip=4)
@@ -101,12 +108,6 @@ def make_env(
             venv = VecNormalize(venv, training=training, **(normalize_kwargs or {}))
         if not training:
             venv.norm_reward = False
-    if training and train_record_video:
-        venv = VecSingleRecorder(
-            venv,
-            names.video_prefix,
-            video_step_interval=int(video_step_interval),
-        )
     return venv
 
 
