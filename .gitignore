@@ -137,3 +137,6 @@ wandb
 
 # Local scratch work
 scratch/*
+
+# vscode
+.vscode/

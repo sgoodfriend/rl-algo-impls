@@ -13,7 +13,7 @@ from torch.utils.tensorboard.writer import SummaryWriter
 from typing import Any, Dict, Optional
 
 from shared.callbacks.eval_callback import EvalCallback
-from runner.env import make_env
+from runner.env import make_env, make_eval_env
 from runner.names import Names, RunArgs
 from runner.running_utils import (
     ALGOS,
@@ -59,7 +59,7 @@ def train(args: TrainArgs):
     set_seeds(args.seed, args.use_deterministic_algorithms)
 
     device = torch.device(hyperparams.get("device", "cpu"))
-    env = make_env(args.env, args.seed, tb_writer=tb_writer, **env_hyperparams)
+    env = make_env(names, tb_writer=tb_writer, **env_hyperparams)
     policy = make_policy(
         args.algo, env, device, **hyperparams.get("policy_hyperparams", {})
     )
@@ -70,9 +70,7 @@ def train(args: TrainArgs):
     env_seed = args.seed
     if env_seed is not None:
         env_seed += env_hyperparams.get("n_envs", 1)
-    eval_env = make_env(
-        args.env, env_seed, training=False, **hyperparams.get("env_hyperparams", {})
-    )
+    eval_env = make_eval_env(names, **hyperparams.get("env_hyperparams", {}))
 
     callback = EvalCallback(
         policy,

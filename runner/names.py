@@ -30,8 +30,12 @@ class Names:
     run_id: str = datetime.now().isoformat()
 
     @property
+    def env_id(self) -> str:
+        return self.args.env
+
+    @property
     def model_name(self) -> str:
-        parts = [self.args.algo, self.args.env]
+        parts = [self.args.algo, self.env_id]
         if self.args.seed is not None:
             parts.append(f"S{self.args.seed}")
         make_kwargs = self.hyperparams.get("env_hyperparams", {}).get("make_kwargs", {})
@@ -77,3 +81,11 @@ class Names:
     @property
     def logs_path(self) -> str:
         return os.path.join(self.runs_dir, f"log.yml")
+
+    @property
+    def videos_dir(self) -> str:
+        return os.path.join(self.root_dir, "videos")
+
+    @property
+    def video_prefix(self) -> str:
+        return os.path.join(self.videos_dir, self.model_name)

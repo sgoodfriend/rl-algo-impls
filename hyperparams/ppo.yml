@@ -2,6 +2,7 @@ CartPole-v1: &cartpole-defaults
   n_timesteps: !!float 1e5
   env_hyperparams:
     n_envs: 8
+    video_step_interval: !!float 2.5e4
   algo_hyperparams:
     n_steps: 32
     batch_size: 256
@@ -27,6 +28,7 @@ MountainCar-v0:
   env_hyperparams:
     normalize: true
     n_envs: 16
+    video_step_interval: !!float 2.5e5
   algo_hyperparams:
     n_steps: 16
     n_epochs: 4
@@ -75,6 +77,7 @@ LunarLander-v2:
   n_timesteps: !!float 1e6
   env_hyperparams:
     n_envs: 16
+    video_step_interval: !!float 2.5e5
   algo_hyperparams:
     n_steps: 1024
     batch_size: 64

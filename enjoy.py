@@ -7,7 +7,7 @@ import torch
 
 from dataclasses import dataclass
 
-from runner.env import make_env
+from runner.env import make_eval_env
 from runner.names import Names, RunArgs
 from runner.running_utils import (
     POLICIES,
@@ -35,7 +35,7 @@ if __name__ == "__main__":
     parser.add_argument("--n_envs", default=1, type=int)
     parser.add_argument("--n_episodes", default=3, type=int)
     parser.add_argument("--deterministic", default=True, type=bool)
-    parser.set_defaults(algo="ppo", env="CarRacing-v0")
+    parser.set_defaults(algo="ppo", env="CartPole-v1")
     args = EvalArgs(**vars(parser.parse_args()))
     print(args)
 
@@ -54,10 +54,8 @@ if __name__ == "__main__":
     model_path = names.model_path(best=args.best)
 
     device = torch.device(hyperparams.get("device", "cpu"))
-    env = make_env(
-        args.env,
-        args.seed,
-        training=False,
+    env = make_eval_env(
+        names,
         render=args.render,
         normalize_load_path=model_path,
         **hyperparams.get("env_hyperparams", {}),

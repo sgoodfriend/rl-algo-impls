@@ -13,16 +13,17 @@ from stable_baselines3.common.vec_env.dummy_vec_env import DummyVecEnv
 from stable_baselines3.common.vec_env.subproc_vec_env import SubprocVecEnv
 from stable_baselines3.common.vec_env.vec_normalize import VecNormalize
 from torch.utils.tensorboard.writer import SummaryWriter
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Dict, Optional, Union
 
+from runner.names import Names
 from shared.policy.policy import VEC_NORMALIZE_FILENAME
 from wrappers.atari_wrappers import EpisodicLifeEnv, FireOnLifeStarttEnv, ClipRewardEnv
 from wrappers.episode_stats_writer import EpisodeStatsWriter
+from wrappers.vec_single_recorder import VecSingleRecorder
 
 
 def make_env(
-    env_id: str,
-    seed: Optional[int],
+    names: Names,
     training: bool = True,
     render: bool = False,
     normalize_load_path: Optional[str] = None,
@@ -35,21 +36,23 @@ def make_env(
     normalize_kwargs: Optional[Dict[str, Any]] = None,
     tb_writer: Optional[SummaryWriter] = None,
     rolling_length: int = 100,
+    train_record_video: bool = True,
+    video_step_interval: Union[int, float] = 1_000_000,
 ) -> VecEnv:
-    if "BulletEnv" in env_id:
+    if "BulletEnv" in names.env_id:
         import pybullet_envs
 
     make_kwargs = make_kwargs if make_kwargs is not None else {}
-    if "BulletEnv" in env_id and render:
+    if "BulletEnv" in names.env_id and render:
         make_kwargs["render"] = True
-    if "CarRacing" in env_id:
+    if "CarRacing" in names.env_id:
         make_kwargs["verbose"] = 0
 
-    spec = gym.spec(env_id)
+    spec = gym.spec(names.env_id)
 
     def make(idx: int) -> Callable[[], gym.Env]:
         def _make() -> gym.Env:
-            env = gym.make(env_id, **make_kwargs)
+            env = gym.make(names.env_id, **make_kwargs)
             env = gym.wrappers.RecordEpisodeStatistics(env)
             if "AtariEnv" in spec.entry_point:  # type: ignore
                 env = NoopResetEnv(env, noop_max=30)
@@ -62,7 +65,7 @@ def make_env(
                 env = ResizeObservation(env, (84, 84))
                 env = GrayScaleObservation(env, keep_dim=False)
                 env = FrameStack(env, frame_stack)
-            elif "CarRacing" in env_id:
+            elif "CarRacing" in names.env_id:
                 env = ResizeObservation(env, (64, 64))
                 env = GrayScaleObservation(env, keep_dim=False)
                 env = FrameStack(env, frame_stack)
@@ -72,10 +75,10 @@ def make_env(
 
                 env = NoRewardTimeout(env, no_reward_timeout_steps)
 
-            if seed is not None:
-                env.seed(seed + idx)
-                env.action_space.seed(seed + idx)
-                env.observation_space.seed(seed + idx)
+            if names.seed is not None:
+                env.seed(names.seed + idx)
+                env.action_space.seed(names.seed + idx)
+                env.observation_space.seed(names.seed + idx)
 
             return env
 
@@ -97,4 +100,16 @@ def make_env(
             venv = VecNormalize(venv, training=training, **(normalize_kwargs or {}))
         if not training:
             venv.norm_reward = False
+    if training and train_record_video:
+        venv = VecSingleRecorder(
+            venv,
+            names.video_prefix,
+            video_step_interval=int(video_step_interval),
+        )
     return venv
+
+
+def make_eval_env(names: Names, **kwargs) -> VecEnv:
+    kwargs = kwargs.copy()
+    kwargs["training"] = False
+    return make_env(names, **kwargs)
