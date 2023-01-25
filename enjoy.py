@@ -8,12 +8,11 @@ import torch
 from dataclasses import dataclass
 
 from runner.env import make_env
+from runner.names import Names, RunArgs
 from runner.running_utils import (
     POLICIES,
     base_parser,
-    RunArgs,
     load_hyperparams,
-    Names,
     set_seeds,
     make_policy,
 )
@@ -36,7 +35,7 @@ if __name__ == "__main__":
     parser.add_argument("--n_envs", default=1, type=int)
     parser.add_argument("--n_episodes", default=3, type=int)
     parser.add_argument("--deterministic", default=True, type=bool)
-    parser.set_defaults(algo="ppo", env="BreakoutNoFrameskip-v4")
+    parser.set_defaults(algo="ppo", env="CarRacing-v0")
     args = EvalArgs(**vars(parser.parse_args()))
     print(args)
 

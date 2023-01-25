@@ -14,11 +14,10 @@ from typing import Any, Dict, Optional
 
 from shared.callbacks.eval_callback import EvalCallback
 from runner.env import make_env
+from runner.names import Names, RunArgs
 from runner.running_utils import (
     ALGOS,
-    RunArgs,
     load_hyperparams,
-    Names,
     set_seeds,
     make_policy,
     plot_eval_callback,

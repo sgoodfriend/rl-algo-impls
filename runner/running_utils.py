@@ -7,16 +7,14 @@ import torch
 import torch.backends.cudnn
 import yaml
 
-from dataclasses import dataclass
-from datetime import datetime
 from stable_baselines3.common.vec_env.base_vec_env import VecEnv
 from torch.utils.tensorboard.writer import SummaryWriter
-from typing import Dict, List, Optional, Type, TypedDict, Union
+from typing import Dict, Optional, Type, Union
 
+from runner.names import Hyperparams
 from shared.algorithm import Algorithm
 from shared.callbacks.eval_callback import EvalCallback
 from shared.policy.policy import Policy
-from shared.stats import EpisodesStats
 
 from dqn.dqn import DQN
 from dqn.policy import DQNPolicy
@@ -38,14 +36,6 @@ POLICIES: Dict[str, Type[Policy]] = {
 }
 
 HYPERPARAMS_PATH = "hyperparams"
-
-
-class Hyperparams(TypedDict, total=False):
-    device: str
-    n_timesteps: Union[int, float]
-    env_hyperparams: Dict
-    policy_hyperparams: Dict
-    algo_hyperparams: Dict
 
 
 def base_parser() -> argparse.ArgumentParser:
@@ -81,14 +71,6 @@ def base_parser() -> argparse.ArgumentParser:
     return parser
 
 
-@dataclass
-class RunArgs:
-    algo: str
-    env: str
-    seed: Optional[int] = None
-    use_deterministic_algorithms: bool = True
-
-
 def load_hyperparams(algo: str, env_id: str, root_path: str) -> Hyperparams:
     hyperparams_path = os.path.join(root_path, HYPERPARAMS_PATH, f"{algo}.yml")
     with open(hyperparams_path, "r") as f:
@@ -117,65 +99,6 @@ def make_policy(
     if load_path:
         policy.load(load_path)
     return policy
-
-
-@dataclass
-class Names:
-    args: RunArgs
-    hyperparams: Hyperparams
-    root_dir: str
-    seed: Optional[int] = None
-    run_id: str = datetime.now().isoformat()
-
-    @property
-    def model_name(self) -> str:
-        model_name = f"{self.args.algo}-{self.args.env}"
-        make_kwargs = self.hyperparams.get("env_hyperparams", {}).get("make_kwargs", {})
-        if make_kwargs:
-            for k, v in make_kwargs.items():
-                if type(v) == bool and v:
-                    model_name += f"-{k}"
-                elif type(v) == int and v:
-                    model_name += f"-{k}{v}"
-                else:
-                    model_name += f"-{v}"
-        return model_name
-
-    @property
-    def run_name(self) -> str:
-        parts = [self.model_name]
-        if self.args.seed is not None:
-            parts.append(f"S{self.args.seed}")
-        parts.append(self.run_id)
-        return "-".join(parts)
-
-    @property
-    def saved_models_dir(self) -> str:
-        return os.path.join(self.root_dir, "saved_models")
-
-    def model_path(
-        self,
-        best: bool = False,
-        include_run_id: bool = False,
-    ) -> str:
-        model_file_name = (
-            (self.run_name if include_run_id else self.model_name)
-            + ("-best" if best else "")
-            + ".pt"
-        )
-        return os.path.join(self.saved_models_dir, model_file_name)
-
-    @property
-    def runs_dir(self) -> str:
-        return os.path.join(self.root_dir, "runs")
-
-    @property
-    def tensorboard_summary_path(self) -> str:
-        return os.path.join(self.runs_dir, self.run_name)
-
-    @property
-    def logs_path(self) -> str:
-        return os.path.join(self.runs_dir, f"log.yml")
 
 
 def plot_eval_callback(callback: EvalCallback, tb_writer: SummaryWriter, run_name: str):
