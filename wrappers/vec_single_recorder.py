@@ -39,7 +39,7 @@ class VecSingleRecorder(VecEnvWrapper):
         self.video_step_interval = video_step_interval
         self.max_video_length = max_video_length
         self.total_steps = 0
-        self.last_record_video_step = 0
+        self.next_record_video_step = 0
         self.video_recorder = None
         self.recorded_frames = 0
 
@@ -58,11 +58,7 @@ class VecSingleRecorder(VecEnvWrapper):
                 self.video_recorder.metadata["episode"] = episode_info
             if dones[0] or self.recorded_frames > self.max_video_length:
                 self._close_video_recorder()
-        elif (
-            dones[0]
-            and self.total_steps
-            >= self.last_record_video_step + self.video_step_interval
-        ):
+        elif dones[0] and self.total_steps >= self.next_record_video_step:
             self._start_video_recorder()
         return obs, rew, dones, infos
 
@@ -71,9 +67,7 @@ class VecSingleRecorder(VecEnvWrapper):
         if self.video_recorder:
             self._close_video_recorder()
         elif (
-            not self.video_recorder
-            and self.total_steps
-            >= self.last_record_video_step + self.video_step_interval
+            not self.video_recorder and self.total_steps >= self.next_record_video_step
         ):
             self._start_video_recorder()
         return obs
@@ -81,8 +75,7 @@ class VecSingleRecorder(VecEnvWrapper):
     def _start_video_recorder(self) -> None:
         self._close_video_recorder()
 
-        self.last_record_video_step += self.video_step_interval
-        video_path = f"{self.video_path_prefix}-{self.last_record_video_step}"
+        video_path = f"{self.video_path_prefix}-{self.next_record_video_step}"
         self.video_recorder = VideoRecorder(
             self.single_image_wrapper,
             base_path=video_path,
@@ -91,6 +84,7 @@ class VecSingleRecorder(VecEnvWrapper):
 
         self.video_recorder.capture_frame()
         self.recorded_frames = 1
+        self.next_record_video_step += self.video_step_interval
 
     def _close_video_recorder(self) -> None:
         if self.video_recorder:
