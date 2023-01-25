@@ -31,24 +31,23 @@ class Names:
 
     @property
     def model_name(self) -> str:
-        model_name = f"{self.args.algo}-{self.args.env}"
+        parts = [self.args.algo, self.args.env]
+        if self.args.seed is not None:
+            parts.append(f"S{self.args.seed}")
         make_kwargs = self.hyperparams.get("env_hyperparams", {}).get("make_kwargs", {})
         if make_kwargs:
             for k, v in make_kwargs.items():
                 if type(v) == bool and v:
-                    model_name += f"-{k}"
+                    parts.append(k)
                 elif type(v) == int and v:
-                    model_name += f"-{k}{v}"
+                    parts.append(f"{k}{v}")
                 else:
-                    model_name += f"-{v}"
-        return model_name
+                    parts.append(str(v))
+        return "-".join(parts)
 
     @property
     def run_name(self) -> str:
-        parts = [self.model_name]
-        if self.args.seed is not None:
-            parts.append(f"S{self.args.seed}")
-        parts.append(self.run_id)
+        parts = [self.model_name, self.run_id]
         return "-".join(parts)
 
     @property
