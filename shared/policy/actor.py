@@ -157,8 +157,8 @@ class StateDependentNoiseDistribution(Normal):
         return self.bijector.forward(mean) if self.bijector else mean
 
 
-StateDependentNoiseActorSelf = TypeVar(
-    "StateDependentNoiseActorSelf", bound="StateDependentNoiseActor"
+StateDependentNoiseActorHeadSelf = TypeVar(
+    "StateDependentNoiseActorHeadSelf", bound="StateDependentNoiseActorHead"
 )
 
 
@@ -208,11 +208,11 @@ class StateDependentNoiseActorHead(Actor):
         self.sample_weights()
 
     def to(
-        self: StateDependentNoiseActorSelf,
+        self: StateDependentNoiseActorHeadSelf,
         device: Optional[torch.device] = None,
         dtype: Optional[Union[torch.dtype, str]] = None,
         non_blocking: bool = False,
-    ) -> StateDependentNoiseActorSelf:
+    ) -> StateDependentNoiseActorHeadSelf:
         super().to(device, dtype, non_blocking)
         self.device = device
         return self
