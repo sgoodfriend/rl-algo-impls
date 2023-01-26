@@ -293,13 +293,12 @@ class PPO(Algorithm):
         orig_v: torch.Tensor,
         orig_logp_a: torch.Tensor,
     ) -> TrainStepStats:
-        _, logp_a, entropy = self.policy.pi(obs, act)
+        logp_a, entropy, v = self.policy(obs, act)
         logratio = logp_a - orig_logp_a
         ratio = torch.exp(logratio)
         clip_ratio = torch.clamp(ratio, min=1 - pi_clip, max=1 + pi_clip)
         pi_loss = torch.maximum(-ratio * adv, -clip_ratio * adv).mean()
 
-        v = self.policy.v(obs)
         v_loss = (v - rtg).pow(2)
         if v_clip:
             v_clipped = (torch.clamp(v, orig_v - v_clip, orig_v + v_clip) - rtg).pow(2)
@@ -334,9 +333,7 @@ class PPO(Algorithm):
         for traj in trajectories:
             last_val = 0
             if not traj.terminated and traj.next_obs is not None:
-                with torch.no_grad():
-                    next_obs = torch.as_tensor(np.array(traj.next_obs)).to(self.device)
-                    last_val = self.policy.v(next_obs).cpu().numpy()
+                last_val = self.policy.value(np.array(traj.next_obs))
             rew = np.append(np.array(traj.rew), last_val)
             v = np.append(np.array(traj.v), last_val)
             deltas = rew[:-1] + self.gamma * v[1:] - v[:-1]
@@ -353,9 +350,7 @@ class PPO(Algorithm):
         for traj in trajectories:
             last_val = 0
             if not traj.terminated and traj.next_obs is not None:
-                with torch.no_grad():
-                    next_obs = torch.as_tensor(np.array(traj.next_obs)).to(self.device)
-                    last_val = self.policy.v(next_obs).cpu().numpy()
+                last_val = self.policy.value(np.array(traj.next_obs))
             rew = np.append(np.array(traj.rew), last_val)
             v = np.append(np.array(traj.v), last_val)
             deltas = rew[:-1] + self.gamma * v[1:] - v[:-1]
