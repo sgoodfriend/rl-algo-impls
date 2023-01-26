@@ -32,6 +32,7 @@ def make_env(
     frame_stack: int = 1,
     make_kwargs: Optional[Dict[str, Any]] = None,
     no_reward_timeout_steps: Optional[int] = None,
+    no_reward_fire_steps: Optional[int] = None,
     vec_env_class: str = "dummy",
     normalize: bool = False,
     normalize_kwargs: Optional[Dict[str, Any]] = None,
@@ -82,7 +83,7 @@ def make_env(
             if no_reward_timeout_steps:
                 from wrappers.no_reward_timeout import NoRewardTimeout
 
-                env = NoRewardTimeout(env, no_reward_timeout_steps)
+                env = NoRewardTimeout(env, no_reward_timeout_steps, n_fire_steps=no_reward_fire_steps)
 
             seed = names.seed(training=training)
             if seed is not None:

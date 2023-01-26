@@ -124,7 +124,8 @@ BreakoutNoFrameskip-v4: &atari-defaults
   env_hyperparams:
     n_envs: 8
     frame_stack: 4
-    no_reward_timeout_steps: 500
+    no_reward_timeout_steps: 1000
+    no_reward_fire_steps: 500
     vec_env_class: subproc
   algo_hyperparams:
     n_steps: 128
