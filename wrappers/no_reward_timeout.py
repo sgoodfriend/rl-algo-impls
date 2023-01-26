@@ -29,6 +29,7 @@ class NoRewardTimeout(gym.Wrapper):
     def step(self, action: ActType) -> tuple[ObsType, float, bool, dict]:
         if self.steps_since_reward == self.n_fire_steps:
             assert self.fire_act is not None
+            self.print_intervention("Force fire action")
             action = self.fire_act
         obs, rew, done, info = self.env.step(action)
 
@@ -40,11 +41,7 @@ class NoRewardTimeout(gym.Wrapper):
         else:
             self.steps_since_reward += 1
             if self.steps_since_reward >= self.n_timeout_steps:
-                print(
-                    f"{self.__class__.__name__}: Early terminate | "
-                    f"Score: {self.episode_score} | "
-                    f"Length: {self.episode_step_idx}"
-                )
+                self.print_intervention("Early terminate")
                 done = True
 
         if done:
@@ -60,3 +57,10 @@ class NoRewardTimeout(gym.Wrapper):
         self.steps_since_reward = 0
         self.episode_score = 0
         self.episode_step_idx = 0
+
+    def print_intervention(self, tag: str) -> None:
+        print(
+            f"{self.__class__.__name__}: {tag} | "
+            f"Score: {self.episode_score} | "
+            f"Length: {self.episode_step_idx}"
+        )
