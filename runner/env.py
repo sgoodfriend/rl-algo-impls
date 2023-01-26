@@ -20,6 +20,7 @@ from shared.policy.policy import VEC_NORMALIZE_FILENAME
 from wrappers.atari_wrappers import EpisodicLifeEnv, FireOnLifeStarttEnv, ClipRewardEnv
 from wrappers.episode_record_video import EpisodeRecordVideo
 from wrappers.episode_stats_writer import EpisodeStatsWriter
+from wrappers.video_compat_wrapper import VideoCompatWrapper
 
 
 def make_env(
@@ -54,6 +55,7 @@ def make_env(
         def _make() -> gym.Env:
             env = gym.make(names.env_id, **make_kwargs)
             env = gym.wrappers.RecordEpisodeStatistics(env)
+            env = VideoCompatWrapper(env)
             if training and train_record_video and idx == 0:
                 env = EpisodeRecordVideo(
                     env,
