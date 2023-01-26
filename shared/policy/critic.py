@@ -25,25 +25,3 @@ class CriticHead(nn.Module):
     def forward(self, obs: torch.Tensor) -> torch.Tensor:
         v = self._fc(obs)
         return v.squeeze(-1)
-
-
-class HeadedCritic(nn.Module):
-    def __init__(
-        self,
-        head: CriticHead,
-        obs_space: gym.Space,
-        hidden_sizes: Sequence[int] = (32,),
-        activation: Type[nn.Module] = nn.Tanh,
-        init_layers_orthogonal: bool = True,
-    ) -> None:
-        super().__init__()
-        self.feature_extractor = FeatureExtractor(
-            obs_space,
-            activation,
-            init_layers_orthogonal=init_layers_orthogonal,
-        )
-        self.head = head
-
-    def forward(self, obs: torch.Tensor) -> torch.Tensor:
-        fe = self.feature_extractor(obs)
-        return self.head(fe)

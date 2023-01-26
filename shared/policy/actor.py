@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 
 from abc import ABC, abstractmethod
+from gym.spaces import Box, Discrete
 from torch.distributions import Categorical, Distribution, Normal
 from typing import NamedTuple, Optional, Sequence, Type, TypeVar, Union
 
@@ -259,23 +260,45 @@ class StateDependentNoiseActorHead(Actor):
         self.exploration_matrices = weights_dist.rsample(torch.Size((batch_size,)))
 
 
-class HeadedActor(Actor):
-    def __init__(
-        self,
-        head: Actor,
-        obs_space: gym.Space,
-        hidden_sizes: Sequence[int] = (32,),
-        activation: Type[nn.Module] = nn.Tanh,
-        init_layers_orthogonal: bool = True,
-    ) -> None:
-        super().__init__()
-        self.feature_extractor = FeatureExtractor(
-            obs_space,
-            activation,
+def actor_head(
+    action_space: gym.Space,
+    hidden_sizes: Sequence[int],
+    init_layers_orthogonal: bool,
+    activation: Type[nn.Module],
+    log_std_init: float = -0.5,
+    use_sde: bool = False,
+    full_std: bool = True,
+    squash_output: bool = False,
+) -> Actor:
+    assert not use_sde or isinstance(
+        action_space, Box
+    ), "use_sde only valid if Box action_space"
+    assert not squash_output or use_sde, "squash_output only valid if use_sde"
+    if isinstance(action_space, Discrete):
+        return CategoricalActorHead(
+            action_space.n,
+            hidden_sizes=hidden_sizes,
+            activation=activation,
             init_layers_orthogonal=init_layers_orthogonal,
         )
-        self.head = head
-
-    def forward(self, obs: torch.Tensor, a: Optional[torch.Tensor] = None) -> PiForward:
-        fe = self.feature_extractor(obs)
-        return self.head(fe, a)
+    elif isinstance(action_space, Box):
+        if use_sde:
+            return StateDependentNoiseActorHead(
+                action_space.shape[0],
+                hidden_sizes=hidden_sizes,
+                activation=activation,
+                init_layers_orthogonal=init_layers_orthogonal,
+                log_std_init=log_std_init,
+                full_std=full_std,
+                squash_output=squash_output,
+            )
+        else:
+            return GaussianActorHead(
+                action_space.shape[0],
+                hidden_sizes=hidden_sizes,
+                activation=activation,
+                init_layers_orthogonal=init_layers_orthogonal,
+                log_std_init=log_std_init,
+            )
+    else:
+        raise ValueError(f"Unsupported action space: {action_space}")
