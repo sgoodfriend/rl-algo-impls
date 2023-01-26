@@ -1,3 +1,4 @@
+import gym
 import torch
 import torch.nn as nn
 
@@ -5,7 +6,7 @@ from abc import ABC, abstractmethod
 from torch.distributions import Categorical, Distribution, Normal
 from typing import NamedTuple, Optional, Sequence, Type, TypeVar, Union
 
-from shared.module import mlp
+from shared.module import FeatureExtractor, mlp
 
 
 class PiForward(NamedTuple):
@@ -20,7 +21,7 @@ class Actor(nn.Module, ABC):
         ...
 
 
-class CategoricalActor(Actor):
+class CategoricalActorHead(Actor):
     def __init__(
         self,
         act_dim: int,
@@ -56,7 +57,7 @@ class GaussianDistribution(Normal):
         return self.rsample()
 
 
-class GaussianActor(Actor):
+class GaussianActorHead(Actor):
     def __init__(
         self,
         act_dim: int,
@@ -161,7 +162,7 @@ StateDependentNoiseActorSelf = TypeVar(
 )
 
 
-class StateDependentNoiseActor(Actor):
+class StateDependentNoiseActorHead(Actor):
     def __init__(
         self,
         act_dim: int,
@@ -256,3 +257,26 @@ class StateDependentNoiseActor(Actor):
         # Reparametrization trick to pass gradients
         self.exploration_mat = weights_dist.rsample()
         self.exploration_matrices = weights_dist.rsample(torch.Size((batch_size,)))
+
+
+class HeadedActor(Actor):
+    def __init__(
+        self,
+        head: Actor,
+        obs_space: gym.Space,
+        hidden_sizes: Sequence[int] = (32,),
+        activation: Type[nn.Module] = nn.Tanh,
+        init_layers_orthogonal: bool = True,
+    ) -> None:
+        super().__init__()
+        self.feature_extractor = FeatureExtractor(
+            obs_space,
+            activation,
+            hidden_sizes[0],
+            init_layers_orthogonal=init_layers_orthogonal,
+        )
+        self.head = head
+
+    def forward(self, obs: torch.Tensor, a: Optional[torch.Tensor] = None) -> PiForward:
+        fe = self.feature_extractor(obs)
+        return self.head(fe, a)

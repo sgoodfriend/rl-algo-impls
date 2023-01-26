@@ -5,7 +5,7 @@ import torch.nn as nn
 from gym.spaces import Discrete
 from typing import Sequence, Type
 
-from shared.module import feature_extractor, mlp
+from shared.module import FeatureExtractor, mlp
 
 
 class QNetwork(nn.Module):
@@ -20,11 +20,10 @@ class QNetwork(nn.Module):
         super().__init__()
         assert isinstance(action_space, Discrete)
         layer_sizes = tuple(hidden_sizes) + (action_space.n, )
-        self._preprocessor, self._feature_extractor = feature_extractor(
+        self._feature_extractor = FeatureExtractor(
             observation_space, activation, layer_sizes[0])
         self._fc = mlp(layer_sizes, activation)
 
     def forward(self, obs: th.Tensor) -> th.Tensor:
-        x = self._preprocessor(obs) if self._preprocessor else obs
-        x = self._feature_extractor(x)
+        x = self._feature_extractor(obs)
         return self._fc(x)

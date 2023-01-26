@@ -7,12 +7,12 @@ from pathlib import Path
 from stable_baselines3.common.vec_env.base_vec_env import VecEnv, VecEnvObs
 from typing import NamedTuple, Optional, Sequence, Type, TypeVar
 
-from shared.module import feature_extractor, mlp
+from shared.module import FeatureExtractor, mlp
 from shared.policy.actor import (
     PiForward,
-    CategoricalActor,
-    GaussianActor,
-    StateDependentNoiseActor,
+    CategoricalActorHead,
+    GaussianActorHead,
+    StateDependentNoiseActorHead,
 )
 from shared.policy.policy import ACTIVATION, Policy
 
@@ -82,14 +82,14 @@ class ActorCritic(Policy):
         assert pi_hidden_sizes
         assert v_hidden_sizes
         assert not share_features_extractor or pi_hidden_sizes[0] == v_hidden_sizes[0]
-        self._preprocessor, self._feature_extractor = feature_extractor(
+        self._feature_extractor = FeatureExtractor(
             observation_space,
             activation,
             pi_hidden_sizes[0],
             init_layers_orthogonal=init_layers_orthogonal,
         )
         if isinstance(self.action_space, Discrete):
-            self._pi = CategoricalActor(
+            self._pi = CategoricalActorHead(
                 self.action_space.n,
                 hidden_sizes=pi_hidden_sizes,
                 activation=activation,
@@ -97,7 +97,7 @@ class ActorCritic(Policy):
             )
         elif isinstance(self.action_space, Box):
             if use_sde:
-                self._pi = StateDependentNoiseActor(
+                self._pi = StateDependentNoiseActorHead(
                     self.action_space.shape[0],
                     hidden_sizes=pi_hidden_sizes,
                     activation=activation,
@@ -108,7 +108,7 @@ class ActorCritic(Policy):
                 )
                 self.squash_output = squash_output
             else:
-                self._pi = GaussianActor(
+                self._pi = GaussianActorHead(
                     self.action_space.shape[0],
                     hidden_sizes=pi_hidden_sizes,
                     activation=activation,
@@ -118,9 +118,9 @@ class ActorCritic(Policy):
         else:
             raise ValueError(f"Unsupported action space: {self.action_space}")
 
-        self._v_preprocessor, self._v_feature_extractor = None, None
+        self._v_feature_extractor = None
         if not share_features_extractor:
-            self._v_preprocessor, self._v_feature_extractor = feature_extractor(
+            self._v_feature_extractor = FeatureExtractor(
                 observation_space,
                 activation,
                 v_hidden_sizes[0],
@@ -135,18 +135,14 @@ class ActorCritic(Policy):
     def _pi_forward(
         self, obs: torch.Tensor, action: Optional[torch.Tensor] = None
     ) -> tuple[PiForward, torch.Tensor]:
-        if self._preprocessor:
-            obs = self._preprocessor(obs)
-        p_fc = self._feature_extractor(obs)
-        pi_forward = self._pi(p_fc, action)
+        p_fe = self._feature_extractor(obs)
+        pi_forward = self._pi(p_fe, action)
 
-        return pi_forward, p_fc
+        return pi_forward, p_fe
 
     def _v_forward(self, obs: torch.Tensor, p_fc: torch.Tensor) -> torch.Tensor:
-        if self._v_preprocessor:
-            obs = self._v_preprocessor(obs)
-        v_fc = self._v_feature_extractor(obs) if self._v_feature_extractor else p_fc
-        return self._v(v_fc)
+        v_fe = self._v_feature_extractor(obs) if self._v_feature_extractor else p_fc
+        return self._v(v_fe)
 
     def forward(self, obs: torch.Tensor, action: torch.Tensor) -> ACForward:
         (_, logp_a, entropy), p_fc = self._pi_forward(obs, action)
@@ -166,16 +162,12 @@ class ActorCritic(Policy):
     def value(self, obs: VecEnvObs) -> np.ndarray:
         o = self._as_tensor(obs)
         with torch.no_grad():
-            if self._v_preprocessor:
-                o = self._v_preprocessor(o)
-            elif self._preprocessor and not self._v_feature_extractor:
-                o = self._preprocessor(o)
-            fc = (
+            fe = (
                 self._v_feature_extractor(o)
                 if self._v_feature_extractor
                 else self._feature_extractor(o)
             )
-            v = self._v(fc)
+            v = self._v(fe)
         return v.cpu().numpy()
 
     def step(self, obs: VecEnvObs) -> Step:
@@ -227,7 +219,7 @@ class ActorCritic(Policy):
         self.reset_noise()
 
     def reset_noise(self, batch_size: Optional[int] = None) -> None:
-        if isinstance(self._pi, StateDependentNoiseActor):
+        if isinstance(self._pi, StateDependentNoiseActorHead):
             self._pi.sample_weights(
                 batch_size=batch_size if batch_size else self.env.num_envs
             )
