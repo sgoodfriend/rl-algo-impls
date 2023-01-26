@@ -79,9 +79,9 @@ class EvalCallback(Callback):
         self.best = None
 
         self.record_best_videos = record_best_videos
-        assert video_env if record_best_videos else True
+        assert video_env or not record_best_videos
         self.video_env = video_env
-        assert best_video_dir if record_best_videos else True
+        assert best_video_dir or not record_best_videos
         self.best_video_dir = best_video_dir
         if best_video_dir:
             os.makedirs(best_video_dir, exist_ok=True)
@@ -124,14 +124,14 @@ class EvalCallback(Callback):
                     os.path.join(self.best_video_dir, str(self.timesteps_elapsed)),
                     max_video_length=self.max_video_length,
                 )
-                evaluate(
+                video_stats = evaluate(
                     video_wrapped,
                     self.policy,
                     1,
                     deterministic=self.deterministic,
                     print_returns=False,
                 )
-                print("Saved best video")
+                print(f"Saved best video: {video_stats}")
 
         eval_stat.write_to_tensorboard(self.tb_writer, "eval", self.timesteps_elapsed)
 

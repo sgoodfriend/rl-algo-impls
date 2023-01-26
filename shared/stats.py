@@ -89,7 +89,10 @@ class EpisodesStats:
         return self.score >= o.score
 
     def __repr__(self) -> str:
-        return f"Score: {self.score} | Length: {self.length}"
+        return (
+            f"Score: {self.score} ({round(self.score.mean - self.score.std, 2)}) | "
+            f"Length: {self.length}"
+        )
 
     def _asdict(self) -> dict:
         return {
