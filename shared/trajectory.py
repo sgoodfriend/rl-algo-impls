@@ -2,9 +2,7 @@ import numpy as np
 import torch
 
 from dataclasses import dataclass
-from typing import List, NamedTuple
-
-from shared.policy.on_policy import Critic
+from typing import List
 
 
 @dataclass

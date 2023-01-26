@@ -1,6 +1,5 @@
 import numpy as np
 import torch
-import torch.nn as nn
 
 from gym.spaces import Box, Discrete
 from pathlib import Path
@@ -14,28 +13,8 @@ from shared.policy.actor import (
     GaussianActorHead,
     StateDependentNoiseActorHead,
 )
+from shared.policy.critic import CriticHead
 from shared.policy.policy import ACTIVATION, Policy
-
-
-class Critic(nn.Module):
-    def __init__(
-        self,
-        hidden_sizes: Sequence[int] = (32,),
-        activation: Type[nn.Module] = nn.Tanh,
-        init_layers_orthogonal: bool = True,
-    ) -> None:
-        super().__init__()
-        layer_sizes = tuple(hidden_sizes) + (1,)
-        self._fc = mlp(
-            layer_sizes,
-            activation,
-            init_layers_orthogonal=init_layers_orthogonal,
-            final_layer_gain=1.0,
-        )
-
-    def forward(self, obs: torch.Tensor) -> torch.Tensor:
-        v = self._fc(obs)
-        return v.squeeze(-1)
 
 
 class Step(NamedTuple):
@@ -126,7 +105,7 @@ class ActorCritic(Policy):
                 v_hidden_sizes[0],
                 init_layers_orthogonal=init_layers_orthogonal,
             )
-        self._v = Critic(
+        self._v = CriticHead(
             hidden_sizes=v_hidden_sizes,
             activation=activation,
             init_layers_orthogonal=init_layers_orthogonal,
