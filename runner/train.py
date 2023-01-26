@@ -69,9 +69,7 @@ def train(args: TrainArgs):
 
     eval_env = make_eval_env(names, **env_hyperparams)
     eval_params = hyperparams.get("eval_params", {})
-    record_best_videos = eval_params.get(
-        "record_best_videos", True
-    )
+    record_best_videos = eval_params.get("record_best_videos", True)
     callback = EvalCallback(
         policy,
         eval_env,
@@ -79,7 +77,7 @@ def train(args: TrainArgs):
         best_model_path=names.model_path(best=True),
         **eval_params,
         video_env=make_eval_env(names, override_n_envs=1, **env_hyperparams)
-        record_best_videos
+        if record_best_videos
         else None,
         best_video_dir=names.best_videos_dir,
     )
