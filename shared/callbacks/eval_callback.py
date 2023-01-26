@@ -131,6 +131,7 @@ class EvalCallback(Callback):
                     deterministic=self.deterministic,
                     print_returns=False,
                 )
+                print("Saved best video")
 
         eval_stat.write_to_tensorboard(self.tb_writer, "eval", self.timesteps_elapsed)
 
