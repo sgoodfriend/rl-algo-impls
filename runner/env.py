@@ -83,7 +83,9 @@ def make_env(
             if no_reward_timeout_steps:
                 from wrappers.no_reward_timeout import NoRewardTimeout
 
-                env = NoRewardTimeout(env, no_reward_timeout_steps, n_fire_steps=no_reward_fire_steps)
+                env = NoRewardTimeout(
+                    env, no_reward_timeout_steps, n_fire_steps=no_reward_fire_steps
+                )
 
             seed = names.seed(training=training)
             if seed is not None:
