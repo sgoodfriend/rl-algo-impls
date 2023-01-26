@@ -42,13 +42,6 @@ if __name__ == "__main__":
     hyperparams = load_hyperparams(args.algo, args.env, os.path.dirname(__file__))
     names = Names(args, hyperparams, os.path.dirname(__file__))
 
-    if args.n_envs is not None:
-        env_hyperparams = hyperparams.get("env_hyperparams", {})
-        env_hyperparams["n_envs"] = args.n_envs
-        if args.n_envs == 1:
-            env_hyperparams["vec_env_class"] = "dummy"
-        hyperparams["env_hyperparams"] = env_hyperparams
-
     set_seeds(args.seed, args.use_deterministic_algorithms)
 
     model_path = names.model_path(best=args.best)
@@ -56,6 +49,7 @@ if __name__ == "__main__":
     device = torch.device(hyperparams.get("device", "cpu"))
     env = make_eval_env(
         names,
+        override_n_envs=args.n_envs,
         render=args.render,
         normalize_load_path=model_path,
         **hyperparams.get("env_hyperparams", {}),

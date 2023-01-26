@@ -41,8 +41,14 @@ class Statistic:
     def __len__(self) -> int:
         return len(self.values)
 
+    def _diff(self: StatisticSelf, o: StatisticSelf) -> float:
+        return (self.mean - self.std) - (o.mean - o.std)
+
+    def __gt__(self: StatisticSelf, o: StatisticSelf) -> bool:
+        return self._diff(o) > 0
+
     def __ge__(self: StatisticSelf, o: StatisticSelf) -> bool:
-        return (self.mean - self.std) >= (o.mean - o.std)
+        return self._diff(o) >= 0
 
     def __repr__(self) -> str:
         mean = round(self.mean, self.round_digits)
@@ -75,6 +81,9 @@ class EpisodesStats:
         self.simple = simple
         self.score = Statistic(np.array([e.score for e in episodes]))
         self.length = Statistic(np.array([e.length for e in episodes]), round_digits=0)
+
+    def __gt__(self: EpisodesStatsSelf, o: EpisodesStatsSelf) -> bool:
+        return self.score > o.score
 
     def __ge__(self: EpisodesStatsSelf, o: EpisodesStatsSelf) -> bool:
         return self.score >= o.score

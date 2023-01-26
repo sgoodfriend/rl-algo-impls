@@ -67,13 +67,21 @@ def train(args: TrainArgs):
         policy, env, device, tb_writer, **hyperparams.get("algo_hyperparams", {})
     )
 
-    eval_env = make_eval_env(names, **hyperparams.get("env_hyperparams", {}))
+    eval_env = make_eval_env(names, **env_hyperparams)
+    eval_params = hyperparams.get("eval_params", {})
+    record_best_videos = eval_params.get(
+        "record_best_videos", True
+    )
     callback = EvalCallback(
         policy,
         eval_env,
         tb_writer,
         best_model_path=names.model_path(best=True),
-        **hyperparams.get("eval_params", {}),
+        **eval_params,
+        video_env=make_eval_env(names, override_n_envs=1, **env_hyperparams)
+        record_best_videos
+        else None,
+        best_video_dir=names.best_videos_dir,
     )
     algo.learn(int(hyperparams.get("n_timesteps", 100_000)), callback=callback)
 

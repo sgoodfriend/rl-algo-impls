@@ -36,7 +36,7 @@ def make_env(
     normalize_kwargs: Optional[Dict[str, Any]] = None,
     tb_writer: Optional[SummaryWriter] = None,
     rolling_length: int = 100,
-    train_record_video: bool = True,
+    train_record_video: bool = False,
     video_step_interval: Union[int, float] = 1_000_000,
 ) -> VecEnv:
     if "BulletEnv" in names.env_id:
@@ -111,7 +111,13 @@ def make_env(
     return venv
 
 
-def make_eval_env(names: Names, **kwargs) -> VecEnv:
+def make_eval_env(
+    names: Names, override_n_envs: Optional[int] = None, **kwargs
+) -> VecEnv:
     kwargs = kwargs.copy()
     kwargs["training"] = False
+    if override_n_envs is not None:
+        kwargs["n_envs"] = override_n_envs
+        if override_n_envs == 1:
+            kwargs["vec_env_class"] = "dummy"
     return make_env(names, **kwargs)
