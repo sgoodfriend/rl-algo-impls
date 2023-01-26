@@ -58,15 +58,12 @@ class ActorCritic(Policy):
         self.action_space = env.action_space
         self.squash_output = False
         self.share_features_extractor = share_features_extractor
-        assert pi_hidden_sizes
-        assert v_hidden_sizes
-        assert not share_features_extractor or pi_hidden_sizes[0] == v_hidden_sizes[0]
         self._feature_extractor = FeatureExtractor(
             observation_space,
             activation,
-            pi_hidden_sizes[0],
             init_layers_orthogonal=init_layers_orthogonal,
         )
+        pi_hidden_sizes = (self._feature_extractor.out_dim,) + tuple(pi_hidden_sizes)
         if isinstance(self.action_space, Discrete):
             self._pi = CategoricalActorHead(
                 self.action_space.n,
@@ -97,14 +94,16 @@ class ActorCritic(Policy):
         else:
             raise ValueError(f"Unsupported action space: {self.action_space}")
 
-        self._v_feature_extractor = None
         if not share_features_extractor:
             self._v_feature_extractor = FeatureExtractor(
                 observation_space,
                 activation,
-                v_hidden_sizes[0],
                 init_layers_orthogonal=init_layers_orthogonal,
             )
+            v_hidden_sizes = (self._v_feature_extractor.out_dim,) + tuple(v_hidden_sizes)
+        else:
+            self._v_feature_extractor = None
+            v_hidden_sizes = (self._feature_extractor.out_dim,) + tuple(v_hidden_sizes)
         self._v = CriticHead(
             hidden_sizes=v_hidden_sizes,
             activation=activation,

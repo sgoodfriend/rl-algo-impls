@@ -9,19 +9,19 @@ from shared.module import FeatureExtractor, mlp
 
 
 class QNetwork(nn.Module):
-
     def __init__(
-            self,
-            observation_space: gym.Space,
-            action_space: gym.Space,
-            hidden_sizes: Sequence[int],
-            activation: Type[nn.Module] = nn.ReLU,  # Used by stable-baselines3
+        self,
+        observation_space: gym.Space,
+        action_space: gym.Space,
+        hidden_sizes: Sequence[int],
+        activation: Type[nn.Module] = nn.ReLU,  # Used by stable-baselines3
     ) -> None:
         super().__init__()
         assert isinstance(action_space, Discrete)
-        layer_sizes = tuple(hidden_sizes) + (action_space.n, )
-        self._feature_extractor = FeatureExtractor(
-            observation_space, activation, layer_sizes[0])
+        self._feature_extractor = FeatureExtractor(observation_space, activation)
+        layer_sizes = (
+            (self._feature_extractor.out_dim,) + tuple(hidden_sizes) + (action_space.n,)
+        )
         self._fc = mlp(layer_sizes, activation)
 
     def forward(self, obs: th.Tensor) -> th.Tensor:

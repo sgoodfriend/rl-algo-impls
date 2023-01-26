@@ -272,7 +272,6 @@ class HeadedActor(Actor):
         self.feature_extractor = FeatureExtractor(
             obs_space,
             activation,
-            hidden_sizes[0],
             init_layers_orthogonal=init_layers_orthogonal,
         )
         self.head = head

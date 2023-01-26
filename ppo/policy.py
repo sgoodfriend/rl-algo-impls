@@ -17,8 +17,8 @@ class PPOActorCritic(ActorCritic):
         obs_space = env.observation_space
         if isinstance(obs_space, Box):
             if len(obs_space.shape) == 3:
-                pi_hidden_sizes = pi_hidden_sizes or [512]
-                v_hidden_sizes = v_hidden_sizes or [512]
+                pi_hidden_sizes = pi_hidden_sizes or []
+                v_hidden_sizes = v_hidden_sizes or []
             elif len(obs_space.shape) == 1:
                 pi_hidden_sizes = pi_hidden_sizes or [64, 64]
                 v_hidden_sizes = v_hidden_sizes or [64, 64]

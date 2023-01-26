@@ -5,7 +5,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from gym.spaces import Box, Discrete
-from typing import Callable, NamedTuple, Optional, Sequence, Type
+from stable_baselines3.common.preprocessing import get_flattened_obs_dim
+from typing import Sequence, Type
 
 
 class FeatureExtractor(nn.Module):
@@ -13,8 +14,8 @@ class FeatureExtractor(nn.Module):
         self,
         obs_space: gym.Space,
         activation: Type[nn.Module],
-        features_dim: int,
         init_layers_orthogonal: bool = False,
+        cnn_feature_dim: int = 512,
     ) -> None:
         super().__init__()
         if isinstance(obs_space, Box):
@@ -53,11 +54,12 @@ class FeatureExtractor(nn.Module):
                 self.feature_extractor = nn.Sequential(
                     cnn,
                     layer_init(
-                        nn.Linear(cnn_out.shape[1], features_dim),
+                        nn.Linear(cnn_out.shape[1], cnn_feature_dim),
                         init_layers_orthogonal,
                     ),
                     activation(),
                 )
+                self.out_dim = cnn_feature_dim
             elif len(obs_space.shape) == 1:
 
                 def preprocess(obs: torch.Tensor) -> torch.Tensor:
@@ -66,23 +68,14 @@ class FeatureExtractor(nn.Module):
                     return obs.float()
 
                 self.preprocess = preprocess
-                self.feature_extractor = nn.Sequential(
-                    layer_init(
-                        nn.Linear(obs_space.shape[0], features_dim),
-                        init_layers_orthogonal,
-                    ),
-                    activation(),
-                )
+                self.feature_extractor = nn.Flatten()
+                self.out_dim = get_flattened_obs_dim(obs_space)
             else:
                 raise ValueError(f"Unsupported observation space: {obs_space}")
         elif isinstance(obs_space, Discrete):
             self.preprocess = lambda x: F.one_hot(x, obs_space.n).float()
-            self.feature_extractor = nn.Sequential(
-                layer_init(
-                    nn.Linear(obs_space.n, features_dim), init_layers_orthogonal
-                ),
-                activation(),
-            )
+            self.feature_extractor = nn.Flatten()
+            self.out_dim = obs_space.n
         else:
             raise NotImplementedError
 
