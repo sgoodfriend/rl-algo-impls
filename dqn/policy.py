@@ -16,8 +16,9 @@ class DQNPolicy(Policy):
         self,
         env: VecEnv,
         hidden_sizes: Sequence[int],
+        **kwargs,
     ) -> None:
-        super().__init__(env)
+        super().__init__(env, **kwargs)
         self.q_net = QNetwork(env.observation_space, env.action_space, hidden_sizes)
 
     def act(
@@ -34,10 +35,3 @@ class DQNPolicy(Policy):
                 if self.device:
                     obs_th = obs_th.to(self.device)
                 return self.q_net(obs_th).argmax(axis=1).cpu().numpy()
-
-    def save(self, path: str) -> None:
-        super().save(path)
-        torch.save(self.q_net.state_dict(), os.path.join(path, "q.pt"))
-
-    def load(self, path: str) -> None:
-        self.q_net.load_state_dict(torch.load(os.path.join(path, "q.pt")))

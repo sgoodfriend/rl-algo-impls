@@ -3,6 +3,7 @@ import os
 
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
 
+import shutil
 import torch
 import wandb
 import yaml
@@ -74,7 +75,7 @@ def train(args: TrainArgs):
         policy,
         eval_env,
         tb_writer,
-        best_model_path=names.model_path(best=True),
+        best_model_path=names.model_dir_path(best=True),
         **eval_params,
         video_env=make_eval_env(names, override_n_envs=1, **env_hyperparams)
         if record_best_videos
@@ -83,7 +84,7 @@ def train(args: TrainArgs):
     )
     algo.learn(int(hyperparams.get("n_timesteps", 100_000)), callback=callback)
 
-    policy.save(names.model_path(best=False))
+    policy.save(names.model_dir_path(best=False))
 
     eval_stats = callback.evaluate(n_episodes=10, print_returns=True)
 
@@ -114,4 +115,20 @@ def train(args: TrainArgs):
     )
 
     if wandb_enabled:
+        shutil.copytree(
+            names.model_dir_path(), os.path.join(wandb.run.dir, names.model_dir_name())
+        )
+        shutil.copytree(
+            names.model_dir_path(best=True),
+            os.path.join(wandb.run.dir, names.model_dir_name(best=True)),
+        )
+        if callback.best_video_base_path:
+            shutil.copyfile(
+                callback.best_video_base_path + ".mp4",
+                os.path.join(wandb.run.dir, "best.mp4"),
+            )
+            shutil.copyfile(
+                callback.best_video_base_path + ".meta.json",
+                os.path.join(wandb.run.dir, "best.meta.json"),
+            )
         wandb.finish()

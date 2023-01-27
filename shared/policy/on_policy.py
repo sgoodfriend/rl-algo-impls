@@ -60,8 +60,9 @@ class ActorCritic(Policy):
         full_std: bool = True,
         squash_output: bool = False,
         share_features_extractor: bool = True,
+        **kwargs,
     ) -> None:
-        super().__init__(env)
+        super().__init__(env, **kwargs)
         activation = ACTIVATION[activation_fn]
         observation_space = env.observation_space
         self.action_space = env.action_space
@@ -162,29 +163,8 @@ class ActorCritic(Policy):
                 a = pi.mode
             return clamp_actions(a.cpu().numpy(), self.action_space, self.squash_output)
 
-    def save(self, path: str) -> None:
-        super().save(path)
-        torch.save(
-            self._feature_extractor.state_dict(), Path(path) / FEAT_EXT_FILE_NAME
-        )
-        if self._v_feature_extractor:
-            torch.save(
-                self._v_feature_extractor.state_dict(),
-                Path(path) / V_FEAT_EXT_FILE_NAME,
-            )
-        torch.save(self._pi.state_dict(), Path(path) / PI_FILE_NAME)
-        torch.save(self._v.state_dict(), Path(path) / V_FILE_NAME)
-
     def load(self, path: str) -> None:
-        self._feature_extractor.load_state_dict(
-            torch.load(Path(path)) / FEAT_EXT_FILE_NAME
-        )
-        if self._v_feature_extractor:
-            self._v_feature_extractor.load_state_dict(
-                torch.load(Path(path) / V_FEAT_EXT_FILE_NAME)
-            )
-        self._pi.load_state_dict(torch.load(Path(path) / PI_FILE_NAME))
-        self._v.load_state_dict(torch.load(Path(path) / V_FILE_NAME))
+        super().load(path)
         self.reset_noise()
 
     def reset_noise(self, batch_size: Optional[int] = None) -> None:

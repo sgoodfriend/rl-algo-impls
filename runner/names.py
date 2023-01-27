@@ -63,17 +63,24 @@ class Names:
     def saved_models_dir(self) -> str:
         return os.path.join(self.root_dir, "saved_models")
 
-    def model_path(
+    def model_dir_name(
         self,
         best: bool = False,
         include_run_id: bool = False,
     ) -> str:
-        model_file_name = (
-            (self.run_name if include_run_id else self.model_name)
-            + ("-best" if best else "")
-            + ".pt"
+        return (self.run_name if include_run_id else self.model_name) + (
+            "-best" if best else ""
         )
-        return os.path.join(self.saved_models_dir, model_file_name)
+
+    def model_dir_path(
+        self,
+        best: bool = False,
+        include_run_id: bool = False,
+    ) -> str:
+        return os.path.join(
+            self.saved_models_dir,
+            self.model_dir_name(best=best, include_run_id=include_run_id),
+        )
 
     @property
     def runs_dir(self) -> str:

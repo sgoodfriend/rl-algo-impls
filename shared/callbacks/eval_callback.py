@@ -86,6 +86,7 @@ class EvalCallback(Callback):
         if best_video_dir:
             os.makedirs(best_video_dir, exist_ok=True)
         self.max_video_length = max_video_length
+        self.best_video_base_path = None
 
     def on_step(self, timesteps_elapsed: int = 1) -> bool:
         super().on_step(timesteps_elapsed)
@@ -119,9 +120,12 @@ class EvalCallback(Callback):
             if strictly_better and self.record_best_videos:
                 assert self.video_env and self.best_video_dir
                 self.sync_vec_normalize(self.video_env)
+                self.best_video_base_path = os.path.join(
+                    self.best_video_dir, str(self.timesteps_elapsed)
+                )
                 video_wrapped = VecEpisodeRecorder(
                     self.video_env,
-                    os.path.join(self.best_video_dir, str(self.timesteps_elapsed)),
+                    self.best_video_base_path,
                     max_video_length=self.max_video_length,
                 )
                 video_stats = evaluate(

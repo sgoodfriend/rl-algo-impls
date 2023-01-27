@@ -14,6 +14,7 @@ ACTIVATION: Dict[str, Type[nn.Module]] = {
 }
 
 VEC_NORMALIZE_FILENAME = "vecnormalize.pkl"
+MODEL_FILENAME = "model.pth"
 
 PolicySelf = TypeVar("PolicySelf", bound="Policy")
 
@@ -42,12 +43,18 @@ class Policy(nn.Module, ABC):
 
     def save(self, path: str) -> None:
         os.makedirs(path, exist_ok=True)
+
         if self.vec_normalize:
             self.vec_normalize.save(os.path.join(path, VEC_NORMALIZE_FILENAME))
+        torch.save(
+            self.state_dict(),
+            os.path.join(path, MODEL_FILENAME),
+        )
 
     @abstractmethod
     def load(self, path: str) -> None:
-        ...
+        # VecNormalize load occurs in env.py
+        self.load_state_dict(torch.load(os.path.join(path, MODEL_FILENAME)))
 
     def reset_noise(self) -> None:
         pass

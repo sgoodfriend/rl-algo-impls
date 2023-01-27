@@ -8,7 +8,12 @@ from stable_baselines3.common.vec_env.base_vec_env import VecEnv, VecEnvObs
 from typing import NamedTuple, Optional, Sequence, TypeVar
 
 from shared.module import FeatureExtractor
-from shared.policy.actor import PiForward, Actor, StateDependentNoiseActorHead, actor_head
+from shared.policy.actor import (
+    PiForward,
+    Actor,
+    StateDependentNoiseActorHead,
+    actor_head,
+)
 from shared.policy.critic import CriticHead
 from shared.policy.on_policy import Step, clamp_actions
 from shared.policy.policy import ACTIVATION, Policy
@@ -39,8 +44,9 @@ class VPGActorCritic(Policy):
         use_sde: bool = False,
         full_std: bool = True,
         squash_output: bool = False,
+        **kwargs,
     ) -> None:
-        super().__init__(env)
+        super().__init__(env, **kwargs)
         activation = ACTIVATION[activation_fn]
         obs_space = env.observation_space
         self.action_space = env.action_space
@@ -102,14 +108,8 @@ class VPGActorCritic(Policy):
                 a = pi.mode
             return clamp_actions(a.cpu().numpy(), self.action_space, self.squash_output)
 
-    def save(self, path: str) -> None:
-        super().save(path)
-        torch.save(self.pi.state_dict(), Path(path) / PI_FILE_NAME)
-        torch.save(self.v.state_dict(), Path(path) / V_FILE_NAME)
-
     def load(self, path: str) -> None:
-        self.pi.load_state_dict(torch.load(Path(path) / PI_FILE_NAME))
-        self.v.load_state_dict(torch.load(Path(path) / V_FILE_NAME))
+        super().load(path)
         self.reset_noise()
 
     def reset_noise(self, batch_size: Optional[int] = None) -> None:
