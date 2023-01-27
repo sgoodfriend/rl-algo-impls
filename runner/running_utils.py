@@ -7,6 +7,7 @@ import torch
 import torch.backends.cudnn
 import yaml
 
+from gym.spaces import Box, Discrete
 from stable_baselines3.common.vec_env.base_vec_env import VecEnv
 from torch.utils.tensorboard.writer import SummaryWriter
 from typing import Dict, Optional, Type, Union
@@ -76,6 +77,28 @@ def load_hyperparams(algo: str, env_id: str, root_path: str) -> Hyperparams:
     with open(hyperparams_path, "r") as f:
         hyperparams_dict = yaml.safe_load(f)
     return hyperparams_dict[env_id]
+
+
+def get_device(device: str, env: VecEnv) -> torch.device:
+    # cuda by default
+    if device == "auto":
+        device = "cuda"
+    # Apple MPS is a second choice (sometimes) 
+    if device == "cuda" and not torch.cuda.is_available():
+        device = "mps"
+    # If no MPS, fallback to cpu
+    if device == "mps" and not torch.backends.mps.is_available():
+        device = "cpu"
+    # Simple environments like Discreet and 1-D Boxes might also be better
+    # served with the CPU.
+    if device == "mps":
+        obs_space = env.observation_space
+        if isinstance(obs_space, Discrete):
+            device = "cpu"
+        elif isinstance(obs_space, Box) and len(obs_space.shape) == 1:
+            device = "cpu"
+    print(f"Device: {device}")
+    return torch.device(device)
 
 
 def set_seeds(seed: Optional[int], use_deterministic_algorithms: bool) -> None:

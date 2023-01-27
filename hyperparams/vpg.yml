@@ -60,7 +60,6 @@ LunarLander-v2:
     save_best: true
 
 CarRacing-v0:
-  device: "mps"
   n_timesteps: !!float 4e6
   env_hyperparams:
     frame_stack: 4
@@ -136,7 +135,6 @@ FrozenLake-v1:
     save_best: true
 
 SpaceInvadersNoFrameskip-v4: &atari-defaults
-  device: "mps"
   n_timesteps: !!float 1e7
   env_hyperparams:
     frame_stack: 4

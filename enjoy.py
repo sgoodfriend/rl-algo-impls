@@ -14,6 +14,7 @@ from runner.running_utils import (
     base_parser,
     load_hyperparams,
     set_seeds,
+    get_device,
     make_policy,
 )
 from shared.callbacks.eval_callback import evaluate
@@ -46,7 +47,6 @@ if __name__ == "__main__":
 
     model_path = names.model_dir_path(best=args.best)
 
-    device = torch.device(hyperparams.get("device", "cpu"))
     env = make_eval_env(
         names,
         override_n_envs=args.n_envs,
@@ -54,6 +54,7 @@ if __name__ == "__main__":
         normalize_load_path=model_path,
         **hyperparams.get("env_hyperparams", {}),
     )
+    device = get_device(hyperparams.get("device", "auto"), env)
     policy = make_policy(
         args.algo,
         env,

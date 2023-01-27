@@ -90,7 +90,6 @@ LunarLander-v2:
     save_best: true
 
 CarRacing-v0:
-  device: mps
   n_timesteps: !!float 4e6
   env_hyperparams:
     n_envs: 8
@@ -118,7 +117,6 @@ CarRacing-v0:
     clip_range: 0.2
 
 BreakoutNoFrameskip-v4: &atari-defaults
-  device: mps
   n_timesteps: !!float 1e7
   policy_hyperparams:
     activation_fn: relu

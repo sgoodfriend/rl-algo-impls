@@ -4,11 +4,9 @@ import os
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
 
 import shutil
-import torch
 import wandb
 import yaml
 
-from argparse import Namespace
 from dataclasses import dataclass
 from torch.utils.tensorboard.writer import SummaryWriter
 from typing import Any, Dict, Optional
@@ -20,6 +18,7 @@ from runner.running_utils import (
     ALGOS,
     load_hyperparams,
     set_seeds,
+    get_device,
     make_policy,
     plot_eval_callback,
     flatten_hyperparameters,
@@ -59,8 +58,8 @@ def train(args: TrainArgs):
 
     set_seeds(args.seed, args.use_deterministic_algorithms)
 
-    device = torch.device(hyperparams.get("device", "cpu"))
     env = make_env(names, tb_writer=tb_writer, **env_hyperparams)
+    device = get_device(hyperparams.get("device", "auto"), env)
     policy = make_policy(
         args.algo, env, device, **hyperparams.get("policy_hyperparams", {})
     )
