@@ -36,16 +36,13 @@ class NoRewardTimeout(gym.Wrapper):
         self.episode_score += rew
         self.episode_step_idx += 1
 
-        if rew > 0 or done:
+        if rew != 0 or done:
             self.steps_since_reward = 0
         else:
             self.steps_since_reward += 1
             if self.steps_since_reward >= self.n_timeout_steps:
                 self.print_intervention("Early terminate")
                 done = True
-
-        if done:
-            self._reset_state()
 
         return obs, rew, done, info
 
