@@ -140,3 +140,7 @@ scratch/*
 
 # vscode
 .vscode/
+
+# Don't bother tracking saved_models or videos
+saved_models/*
+videos/*
