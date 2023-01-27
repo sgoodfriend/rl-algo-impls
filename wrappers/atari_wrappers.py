@@ -1,7 +1,7 @@
 import gym
 import numpy as np
 
-from typing import Any, Union
+from typing import Any, Dict, Tuple, Union
 
 ObsType = Union[np.ndarray, dict]
 ActType = Union[int, float, np.ndarray, dict]
@@ -15,7 +15,7 @@ class EpisodicLifeEnv(gym.Wrapper):
         self.life_done_continue = False
         self.lives = 0
 
-    def step(self, action: ActType) -> tuple[ObsType, float, bool, dict[str, Any]]:
+    def step(self, action: ActType) -> Tuple[ObsType, float, bool, Dict[str, Any]]:
         obs, rew, done, info = self.env.step(action)
         new_lives = self.env.unwrapped.ale.lives()
         self.life_done_continue = new_lives != self.lives and not done
@@ -46,7 +46,7 @@ class FireOnLifeStarttEnv(gym.Wrapper):
         self.lives = 0
         self.fire_on_next_step = True
 
-    def step(self, action: ActType) -> tuple[ObsType, float, bool, dict[str, Any]]:
+    def step(self, action: ActType) -> Tuple[ObsType, float, bool, Dict[str, Any]]:
         if self.fire_on_next_step:
             action = self.fire_act
             self.fire_on_next_step = False
@@ -74,7 +74,7 @@ class ClipRewardEnv(gym.Wrapper):
         super().__init__(env)
         self.training = training
 
-    def step(self, action: ActType) -> tuple[ObsType, float, bool, dict[str, Any]]:
+    def step(self, action: ActType) -> Tuple[ObsType, float, bool, Dict[str, Any]]:
         obs, rew, done, info = self.env.step(action)
         if self.training:
             info["unclipped_reward"] = rew

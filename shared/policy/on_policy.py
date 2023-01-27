@@ -5,7 +5,7 @@ import torch
 from gym.spaces import Box
 from pathlib import Path
 from stable_baselines3.common.vec_env.base_vec_env import VecEnv, VecEnvObs
-from typing import NamedTuple, Optional, Sequence, TypeVar
+from typing import NamedTuple, Optional, Sequence, Tuple, TypeVar
 
 from shared.module import FeatureExtractor
 from shared.policy.actor import PiForward, StateDependentNoiseActorHead, actor_head
@@ -104,7 +104,7 @@ class ActorCritic(Policy):
 
     def _pi_forward(
         self, obs: torch.Tensor, action: Optional[torch.Tensor] = None
-    ) -> tuple[PiForward, torch.Tensor]:
+    ) -> Tuple[PiForward, torch.Tensor]:
         p_fe = self._feature_extractor(obs)
         pi_forward = self._pi(p_fe, action)
 

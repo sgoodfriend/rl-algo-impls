@@ -2,7 +2,7 @@ import numpy as np
 
 from dataclasses import dataclass
 from torch.utils.tensorboard.writer import SummaryWriter
-from typing import List, Optional, Sequence, TypeVar
+from typing import Dict, List, Optional, Sequence, TypeVar
 
 
 @dataclass
@@ -58,7 +58,7 @@ class Statistic:
             std = int(std)
         return f"{mean} +/- {std}"
 
-    def to_dict(self) -> dict[str, float]:
+    def to_dict(self) -> Dict[str, float]:
         return {
             "mean": self.mean,
             "std": self.std,

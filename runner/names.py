@@ -2,7 +2,7 @@ import os
 
 from datetime import datetime
 from dataclasses import dataclass
-from typing import Any, Optional, TypedDict, Union
+from typing import Any, Dict, Optional, TypedDict, Union
 
 
 @dataclass
@@ -16,9 +16,9 @@ class RunArgs:
 class Hyperparams(TypedDict, total=False):
     device: str
     n_timesteps: Union[int, float]
-    env_hyperparams: dict[str, Any]
-    policy_hyperparams: dict[str, Any]
-    algo_hyperparams: dict[str, Any]
+    env_hyperparams: Dict[str, Any]
+    policy_hyperparams: Dict[str, Any]
+    algo_hyperparams: Dict[str, Any]
 
 
 @dataclass

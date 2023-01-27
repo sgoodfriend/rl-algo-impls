@@ -1,7 +1,7 @@
 import gym
 import numpy as np
 
-from typing import Optional, Union
+from typing import Optional, Tuple, Union
 
 ObsType = Union[np.ndarray, dict]
 ActType = Union[int, float, np.ndarray, dict]
@@ -26,7 +26,7 @@ class NoRewardTimeout(gym.Wrapper):
         self.episode_score = 0
         self.episode_step_idx = 0
 
-    def step(self, action: ActType) -> tuple[ObsType, float, bool, dict]:
+    def step(self, action: ActType) -> Tuple[ObsType, float, bool, dict]:
         if self.steps_since_reward == self.n_fire_steps:
             assert self.fire_act is not None
             self.print_intervention("Force fire action")

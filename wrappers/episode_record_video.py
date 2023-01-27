@@ -2,7 +2,7 @@ import gym
 import numpy as np
 
 from gym.wrappers.monitoring.video_recorder import VideoRecorder
-from typing import Union
+from typing import Tuple, Union
 
 ObsType = Union[np.ndarray, dict]
 ActType = Union[int, float, np.ndarray, dict]
@@ -27,7 +27,7 @@ class EpisodeRecordVideo(gym.Wrapper):
         self.video_recorder = None
         self.recorded_frames = 0
 
-    def step(self, action: ActType) -> tuple[ObsType, float, bool, dict]:
+    def step(self, action: ActType) -> Tuple[ObsType, float, bool, dict]:
         obs, rew, done, info = self.env.step(action)
         self.total_steps += self.step_increment
         # Using first env to record episodes
