@@ -190,3 +190,21 @@ HopperBulletEnv-v0:
   algo_hyperparams:
     <<: *pybullet-algo-defaults
     clip_range_decay: linear
+
+HumanoidBulletEnv-v0:
+  <<: *pybullet-defaults
+  n_timesteps: !!float 1e7
+  env_hyperparams:
+    <<: *pybullet-env-defaults
+    n_envs: 8
+  policy_hyperparams:
+    <<: *pybullet-policy-defaults
+    log_std_init: -1
+  algo_hyperparams:
+    <<: *pybullet-algo-defaults
+    n_steps: 2048
+    batch_size: 64
+    n_epochs: 10
+    gae_lambda: 0.95
+    learning_rate: !!float 2.5e-4
+    clip_range: 0.2
