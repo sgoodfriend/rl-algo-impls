@@ -35,7 +35,7 @@ if __name__ == "__main__":
     parser.add_argument("--n_envs", default=1, type=int)
     parser.add_argument("--n_episodes", default=3, type=int)
     parser.add_argument("--deterministic", default=True, type=bool)
-    parser.set_defaults(algo="ppo", env="CartPole-v1")
+    parser.set_defaults(algo="ppo", env="CartPole-v1", seed=1)
     args = EvalArgs(**vars(parser.parse_args()))
     print(args)
 
