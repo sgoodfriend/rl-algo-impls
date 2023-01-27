@@ -44,7 +44,7 @@ if __name__ == "__main__":
 
     set_seeds(args.seed, args.use_deterministic_algorithms)
 
-    model_path = names.model_path(best=args.best)
+    model_path = names.model_dir_path(best=args.best)
 
     device = torch.device(hyperparams.get("device", "cpu"))
     env = make_eval_env(
