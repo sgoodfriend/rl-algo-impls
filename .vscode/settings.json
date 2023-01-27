@@ -1,5 +1,0 @@
-{
-  "python.analysis.typeCheckingMode": "basic",
-  "python.formatting.provider": "black",
-  "editor.rulers": [88]
-}
