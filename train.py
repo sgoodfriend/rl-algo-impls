@@ -37,7 +37,13 @@ if __name__ == "__main__":
     envs = args.env if isinstance(args.env, list) else [args.env]
     seeds = args.seed if isinstance(args.seed, list) else [args.seed]
     if all(len(arg) == 1 for arg in [algos, envs, seeds]):
-        train(TrainArgs(**vars(args)))
+        args_dict = vars(args).copy()
+        args_dict.update({
+            "algo": algos[0],
+            "env": envs[0],
+            "seed": seeds[0],
+        })
+        train(TrainArgs(**args_dict))
     else:
         # Force a new process for each job to get around wandb not allowing more than one
         # wandb.tensorboard.patch call per process.
