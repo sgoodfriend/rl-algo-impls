@@ -1,0 +1,6 @@
+AutoROM.accept-rom-license >= 0.4.2, < 0.5
+stable-baselines3[extra] >= 1.7.0, < 1.8
+pyglet == 1.5.27
+wandb >= 0.13.9, < 0.14
+pyvirtualdisplay == 3.0
+pybullet >= 3.2.5, < 3.3

@@ -146,6 +146,9 @@ PongNoFrameskip-v4:
 SpaceInvadersNoFrameskip-v4:
   <<: *atari-defaults
 
+QbertNoFrameskip-v4:
+  <<: *atari-defaults
+
 HalfCheetahBulletEnv-v0: &pybullet-defaults
   n_timesteps: !!float 2e6
   env_hyperparams: &pybullet-env-defaults
