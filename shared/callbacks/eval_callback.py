@@ -1,3 +1,5 @@
+import itertools
+import numpy as np
 import os
 
 from copy import deepcopy
@@ -13,17 +15,29 @@ from wrappers.vec_episode_recorder import VecEpisodeRecorder
 
 
 class EvaluateAccumulator(EpisodeAccumulator):
-    def __init__(self, num_envs: int, print_returns: bool = True):
+    def __init__(self, num_envs: int, goal_episodes: int, print_returns: bool = True):
         super().__init__(num_envs)
+        self.completed_episodes_by_env_idx = [[] for _ in range(num_envs)]
+        self.goal_episodes_per_env = int(np.ceil(goal_episodes / num_envs))
         self.print_returns = print_returns
 
     def on_done(self, ep_idx: int, episode: Episode) -> None:
+        if len(self.completed_episodes_by_env_idx[ep_idx]) >= self.goal_episodes_per_env:
+            return
+        self.completed_episodes_by_env_idx[ep_idx].append(episode)
         if self.print_returns:
             print(
-                f"Episode {len(self.episodes)} | "
+                f"Episode {len(self)} | "
                 f"Score {episode.score} | "
                 f"Length {episode.length}"
             )
+
+    def __len__(self) -> int:
+        return sum(len(ce) for ce in self.completed_episodes_by_env_idx)
+
+    @property
+    def episodes(self) -> bool:
+        return list(itertools.chain(*self.completed_episodes_by_env_idx)) 
 
 
 def evaluate(
@@ -35,7 +49,7 @@ def evaluate(
     print_returns: bool = True,
 ) -> EpisodesStats:
     policy.eval()
-    episodes = EvaluateAccumulator(env.num_envs, print_returns)
+    episodes = EvaluateAccumulator(env.num_envs, n_episodes, print_returns)
 
     obs = env.reset()
     while len(episodes) < n_episodes:

@@ -122,15 +122,19 @@ class EpisodesStats:
 
 class EpisodeAccumulator:
     def __init__(self, num_envs: int):
-        self.episodes = []
+        self._episodes = []
         self.current_episodes = [Episode() for _ in range(num_envs)]
+
+    @property
+    def episodes(self) -> List[Episode]:
+        return self._episodes
 
     def step(self, reward: np.ndarray, done: np.ndarray) -> None:
         for idx, current in enumerate(self.current_episodes):
             current.score += reward[idx]
             current.length += 1
             if done[idx]:
-                self.episodes.append(current)
+                self._episodes.append(current)
                 self.on_done(idx, current)
                 self.current_episodes[idx] = Episode()
 

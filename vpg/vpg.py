@@ -5,11 +5,10 @@ import torch.nn as nn
 from stable_baselines3.common.vec_env.base_vec_env import VecEnv, VecEnvObs
 from torch.optim import Adam
 from torch.utils.tensorboard.writer import SummaryWriter
-from typing import List, Optional, Sequence, NamedTuple, TypeVar
+from typing import Optional, Sequence, NamedTuple, TypeVar
 
 from shared.algorithm import Algorithm
 from shared.callbacks.callback import Callback
-from shared.stats import EpisodeAccumulator, EpisodesStats
 from shared.trajectory import Trajectory
 from shared.utils import discounted_cumsum
 from vpg.policy import VPGActorCritic
