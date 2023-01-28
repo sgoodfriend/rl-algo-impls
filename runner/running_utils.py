@@ -109,6 +109,7 @@ def set_seeds(seed: Optional[int], use_deterministic_algorithms: bool) -> None:
     torch.manual_seed(seed)
     torch.backends.cudnn.benchmark = False
     torch.use_deterministic_algorithms(use_deterministic_algorithms)
+    os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
 
 
 def make_policy(
