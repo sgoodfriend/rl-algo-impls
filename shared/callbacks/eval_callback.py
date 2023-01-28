@@ -39,6 +39,9 @@ class EvaluateAccumulator(EpisodeAccumulator):
     def episodes(self) -> bool:
         return list(itertools.chain(*self.completed_episodes_by_env_idx)) 
 
+    def is_done(self) -> bool:
+        return all(len(ce) == self.goal_episodes_per_env for ce in self.completed_episodes_by_env_idx)
+
 
 def evaluate(
     env: VecEnv,
@@ -52,7 +55,7 @@ def evaluate(
     episodes = EvaluateAccumulator(env.num_envs, n_episodes, print_returns)
 
     obs = env.reset()
-    while len(episodes) < n_episodes:
+    while not episodes.is_done():
         act = policy.act(obs, deterministic=deterministic)
         obs, rew, done, _ = env.step(act)
         episodes.step(rew, done)

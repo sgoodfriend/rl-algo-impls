@@ -111,6 +111,7 @@ class EpisodesStats:
                     "min": self.score.min,
                     "max": self.score.max,
                     "result": self.score.mean - self.score.std,
+                    "n_episodes": len(self.episodes),
                 }
             )
         tb_writer.add_scalars(
