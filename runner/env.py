@@ -20,7 +20,7 @@ from shared.policy.policy import VEC_NORMALIZE_FILENAME
 from wrappers.atari_wrappers import EpisodicLifeEnv, FireOnLifeStarttEnv, ClipRewardEnv
 from wrappers.episode_record_video import EpisodeRecordVideo
 from wrappers.episode_stats_writer import EpisodeStatsWriter
-from wrappers.initial_step_offset_wrapper import InitialStepOffsetWrapper
+from wrappers.initial_step_truncate_wrapper import InitialStepTruncateWrapper
 from wrappers.video_compat_wrapper import VideoCompatWrapper
 
 
@@ -41,7 +41,7 @@ def make_env(
     rolling_length: int = 100,
     train_record_video: bool = False,
     video_step_interval: Union[int, float] = 1_000_000,
-    initialize_steps_to_offset: Optional[int] = None,
+    initial_steps_to_truncate: Optional[int] = None,
 ) -> VecEnv:
     if "BulletEnv" in names.env_id:
         import pybullet_envs
@@ -66,8 +66,8 @@ def make_env(
                     step_increment=n_envs,
                     video_step_interval=int(video_step_interval),
                 )
-            if training and initialize_steps_to_offset:
-                env = InitialStepOffsetWrapper(env, idx * initialize_steps_to_offset // n_envs)
+            if training and initial_steps_to_truncate:
+                env = InitialStepTruncateWrapper(env, idx * initial_steps_to_truncate // n_envs)
             if "AtariEnv" in spec.entry_point:  # type: ignore
                 env = NoopResetEnv(env, noop_max=30)
                 env = MaxAndSkipEnv(env, skip=4)

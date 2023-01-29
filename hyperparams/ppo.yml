@@ -94,7 +94,7 @@ CarRacing-v0:
   env_hyperparams:
     n_envs: 8
     frame_stack: 4
-    initialize_steps_to_offset: 1000
+    initial_steps_to_truncate: 1000
   policy_hyperparams:
     use_sde: true
     log_std_init: -2
