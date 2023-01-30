@@ -59,7 +59,7 @@ if __name__ == "__main__":
         for algo, env, seed in itertools.product(algos, envs, seeds):
             for k, v in args_dict(algo, env, seed, args).items():
                 command_line_args = ["python", __file__]
-                command_line_args.extend([f"--k", v])
+                command_line_args.extend([f"--{k}", v])
                 subprocess.run(command_line_args)
     else:
         # Force a new process for each job to get around wandb not allowing more than one
