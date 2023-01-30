@@ -3,14 +3,12 @@ import os
 
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
 
-import torch
-
 from dataclasses import dataclass
+from typing import Optional
 
 from runner.env import make_eval_env
 from runner.names import Names, RunArgs
 from runner.running_utils import (
-    POLICIES,
     base_parser,
     load_hyperparams,
     set_seeds,
@@ -26,8 +24,7 @@ class EvalArgs(RunArgs):
     best: bool = True
     n_envs: int = 1
     n_episodes: int = 3
-    deterministic: bool = True
-
+    deterministic: Optional[bool] = None
 
 if __name__ == "__main__":
     parser = base_parser()
@@ -35,8 +32,8 @@ if __name__ == "__main__":
     parser.add_argument("--best", default=True, type=bool)
     parser.add_argument("--n_envs", default=1, type=int)
     parser.add_argument("--n_episodes", default=3, type=int)
-    parser.add_argument("--deterministic", default=True, type=bool)
     parser.set_defaults(algo="ppo", env="CartPole-v1", seed=1)
+    parser.add_argument("--deterministic", default=None, type=bool)
     args = EvalArgs(**vars(parser.parse_args()))
     print(args)
 
@@ -63,10 +60,14 @@ if __name__ == "__main__":
         **hyperparams.get("policy_hyperparams", {}),
     ).eval()
 
+    if args.deterministic is None:
+        deterministic = hyperparams.get("eval_params", {}).get("deterministic", True)
+    else:
+        deterministic = args.deterministic
     evaluate(
         env,
         policy,
         args.n_episodes,
         render=args.render,
-        deterministic=args.deterministic,
+        deterministic=deterministic,
     )
