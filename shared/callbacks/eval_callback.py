@@ -134,6 +134,7 @@ class EvalCallback(Callback):
                 assert self.best_model_path
                 self.policy.save(self.best_model_path)
                 print("Saved best model")
+            self.best.write_to_tensorboard(self.tb_writer, "best_eval", self.timesteps_elapsed)
             if strictly_better and self.record_best_videos:
                 assert self.video_env and self.best_video_dir
                 self.sync_vec_normalize(self.video_env)
