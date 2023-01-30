@@ -57,10 +57,10 @@ if __name__ == "__main__":
         # jobs (for example a single job uses an entire GPU and/or uses subproc 
         # vec_env_class). Don't use Pool, but use subprocess instead.
         for algo, env, seed in itertools.product(algos, envs, seeds):
+            command_line_args = ["python", __file__]
             for k, v in args_dict(algo, env, seed, args).items():
-                command_line_args = ["python", __file__]
                 command_line_args.extend([f"--{k}", v])
-                subprocess.run(command_line_args)
+            subprocess.run(command_line_args)
     else:
         # Force a new process for each job to get around wandb not allowing more than one
         # wandb.tensorboard.patch call per process.
