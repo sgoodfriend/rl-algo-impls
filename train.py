@@ -4,7 +4,6 @@ import os
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
 
 import itertools
-import subprocess
 
 from argparse import Namespace
 from multiprocessing import Pool
@@ -51,21 +50,12 @@ if __name__ == "__main__":
     envs = args.env if isinstance(args.env, list) else [args.env]
     seeds = args.seed if isinstance(args.seed, list) else [args.seed]
     if all(len(arg) == 1 for arg in [algos, envs, seeds]):
-        train(**args_dict(algos[0], envs[0], seeds[0], args))
-    elif pool_size == 1:
-        # pool_size 1 likely means we don't support great parallelism of entire
-        # jobs (for example a single job uses an entire GPU and/or uses subproc 
-        # vec_env_class). Don't use Pool, but use subprocess instead.
-        for algo, env, seed in itertools.product(algos, envs, seeds):
-            command_line_args = ["python", __file__, "--pool-size", pool_size]
-            for k, v in args_dict(algo, env, seed, args).items():
-                command_line_args.extend([f"--{k}", v])
-            subprocess.run(command_line_args)
+        train(TrainArgs(**args_dict(algos[0], envs[0], seeds[0], args)))
     else:
         # Force a new process for each job to get around wandb not allowing more than one
         # wandb.tensorboard.patch call per process.
         with Pool(pool_size, maxtasksperchild=1) as p:
             train_args = []
             for algo, env, seed in itertools.product(algos, envs, seeds):
-                train(**args_dict(algo, env, seed, args))
+                train(TrainArgs(**args_dict(algo, env, seed, args)))
             p.map(train, train_args)
