@@ -60,6 +60,7 @@ class ActorCritic(Policy):
         full_std: bool = True,
         squash_output: bool = False,
         share_features_extractor: bool = True,
+        cnn_feature_dim: int = 512,
         **kwargs,
     ) -> None:
         super().__init__(env, **kwargs)
@@ -72,6 +73,7 @@ class ActorCritic(Policy):
             observation_space,
             activation,
             init_layers_orthogonal=init_layers_orthogonal,
+            cnn_feature_dim=cnn_feature_dim,
         )
         self._pi = actor_head(
             self.action_space,
@@ -89,6 +91,7 @@ class ActorCritic(Policy):
                 observation_space,
                 activation,
                 init_layers_orthogonal=init_layers_orthogonal,
+                cnn_feature_dim=cnn_feature_dim,
             )
             v_hidden_sizes = (self._v_feature_extractor.out_dim,) + tuple(
                 v_hidden_sizes

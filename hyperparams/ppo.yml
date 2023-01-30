@@ -99,8 +99,8 @@ CarRacing-v0:
     log_std_init: -2
     init_layers_orthogonal: false
     activation_fn: relu
-    pi_hidden_sizes: [256]
-    v_hidden_sizes: [256]
+    share_features_extractor: false
+    cnn_feature_dim: 256
   algo_hyperparams:
     n_steps: 512
     batch_size: 128
