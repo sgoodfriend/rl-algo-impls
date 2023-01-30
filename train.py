@@ -67,5 +67,5 @@ if __name__ == "__main__":
         with Pool(pool_size, maxtasksperchild=1) as p:
             train_args = []
             for algo, env, seed in itertools.product(algos, envs, seeds):
-                train(**args_dict(algo, env, seed, args)
+                train(**args_dict(algo, env, seed, args))
             p.map(train, train_args)
