@@ -116,6 +116,7 @@ CarRacing-v0:
     clip_range: 0.2
 
 # BreakoutNoFrameskip-v4
+# PongNoFrameskip-v4
 # SpaceInvadersNoFrameskip-v4
 # QbertNoFrameskip-v4
 atari: &atari-defaults
@@ -140,12 +141,6 @@ atari: &atari-defaults
     ent_coef: 0.01
   eval_params:
     deterministic: false
-
-PongNoFrameskip-v4:
-  <<: *atari-defaults
-  n_timesteps: !!float 2.5e6
-  env_hyperparams:
-    <<: *atari-env-defaults
 
 HalfCheetahBulletEnv-v0: &pybullet-defaults
   n_timesteps: !!float 2e6
