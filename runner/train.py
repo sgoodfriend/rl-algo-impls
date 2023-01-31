@@ -113,6 +113,8 @@ def train(args: TrainArgs):
         names.run_name,
     )
 
+    tb_writer.close()
+
     if wandb_enabled:
         shutil.copytree(
             names.model_dir_path(), os.path.join(wandb.run.dir, names.model_dir_name())

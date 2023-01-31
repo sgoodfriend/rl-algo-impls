@@ -9,7 +9,13 @@ from argparse import Namespace
 from multiprocessing import Pool
 from typing import Any, Dict
 
-from runner.running_utils import base_parser
+from runner.running_utils import (
+    base_parser,
+    BASIC_ENVS,
+    PYBULLET_ENVS,
+    CAR_RACING_ENVS,
+    ATARI_ENVS,
+)
 from runner.train import train, TrainArgs
 
 

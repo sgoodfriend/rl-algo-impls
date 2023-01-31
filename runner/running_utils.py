@@ -37,6 +37,29 @@ POLICIES: Dict[str, Type[Policy]] = {
     "ppo": PPOActorCritic,
 }
 
+BASIC_ENVS = [  # Recommended pool_size 1 (too fast, overwhelms Wandb?)
+    "CartPole-v1",
+    "MountainCar-v0",
+    "MountainCarContinuous-v0",
+    "Acrobot-v1",
+    "LunarLander-v2",
+]
+PYBULLET_ENVS = [  # Recommended pool_size 3
+    "HalfCheetahBulletEnv-v0",
+    "AntBulletEnv-v0",
+    "Walker2DBulletEnv-v0",
+    "HopperBulletEnv-v0",
+]
+CAR_RACING_ENVS = [  # Recommended pool_size 1
+    "CarRacing-v0",
+]
+ATARI_ENVS = [  # Recommended pool_size 1
+    "PongNoFrameskip-v4",
+    "BreakoutNoFrameskip-v4",
+    "SpaceInvadersNoFrameskip-v4",
+    "QbertNoFrameskip-v4",
+]
+
 HYPERPARAMS_PATH = "hyperparams"
 
 
@@ -90,7 +113,7 @@ def get_device(device: str, env: VecEnv) -> torch.device:
     # cuda by default
     if device == "auto":
         device = "cuda"
-    # Apple MPS is a second choice (sometimes) 
+    # Apple MPS is a second choice (sometimes)
     if device == "cuda" and not torch.cuda.is_available():
         device = "mps"
     # If no MPS, fallback to cpu
