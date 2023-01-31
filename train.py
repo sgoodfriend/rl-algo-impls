@@ -9,17 +9,21 @@ from argparse import Namespace
 from multiprocessing import Pool
 from typing import Any, Dict
 
-from runner.running_utils import ALGOS, base_parser
+from runner.running_utils import base_parser
 from runner.train import train, TrainArgs
+
 
 def args_dict(algo: str, env: str, seed: str, args: Namespace) -> Dict[str, Any]:
     d = vars(args).copy()
-    d.update({
-        "algo": algo,
-        "env": env,
-        "seed": seed,
-    })
+    d.update(
+        {
+            "algo": algo,
+            "env": env,
+            "seed": seed,
+        }
+    )
     return d
+
 
 if __name__ == "__main__":
     parser = base_parser()
@@ -55,7 +59,8 @@ if __name__ == "__main__":
         # Force a new process for each job to get around wandb not allowing more than one
         # wandb.tensorboard.patch call per process.
         with Pool(pool_size, maxtasksperchild=1) as p:
-            train_args = []
-            for algo, env, seed in itertools.product(algos, envs, seeds):
-                train(TrainArgs(**args_dict(algo, env, seed, args)))
+            train_args = [
+                TrainArgs(**args_dict(algo, env, seed, args))
+                for algo, env, seed in itertools.product(algos, envs, seeds)
+            ]
             p.map(train, train_args)
