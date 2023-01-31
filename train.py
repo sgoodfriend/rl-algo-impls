@@ -46,9 +46,9 @@ if __name__ == "__main__":
         help="WanDB team of project. None uses default entity",
     )
     parser.add_argument(
-        "--pool-size", type=int, default=3, help="Simultaneous training jobs to run"
+        "--pool-size", type=int, default=1, help="Simultaneous training jobs to run"
     )
-    parser.set_defaults(algo="ppo", env="CartPole-v1", seed=[1, 2, 3])
+    parser.set_defaults(algo="ppo", env="CartPole-v1", seed=1)
     args = parser.parse_args()
     print(args)
 
