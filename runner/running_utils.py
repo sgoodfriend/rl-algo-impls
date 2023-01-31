@@ -1,5 +1,6 @@
 import argparse
 import gym
+import json
 import matplotlib.pyplot as plt
 import numpy as np
 import os
@@ -11,9 +12,8 @@ import yaml
 from gym.spaces import Box, Discrete
 from stable_baselines3.common.vec_env.base_vec_env import VecEnv
 from torch.utils.tensorboard.writer import SummaryWriter
-from typing import Dict, Optional, Type, Union
+from typing import Any, Dict, Optional, Type, TypedDict, Union
 
-from runner.names import Hyperparams
 from shared.algorithm import Algorithm
 from shared.callbacks.eval_callback import EvalCallback
 from shared.policy.policy import Policy
@@ -59,6 +59,15 @@ ATARI_ENVS = [  # Recommended pool_size 1
     "SpaceInvadersNoFrameskip-v4",
     "QbertNoFrameskip-v4",
 ]
+
+
+class Hyperparams(TypedDict, total=False):
+    device: str
+    n_timesteps: Union[int, float]
+    env_hyperparams: Dict[str, Any]
+    policy_hyperparams: Dict[str, Any]
+    algo_hyperparams: Dict[str, Any]
+
 
 HYPERPARAMS_PATH = "hyperparams"
 
@@ -192,9 +201,12 @@ Scalar = Union[bool, str, float, int, None]
 
 
 def flatten_hyperparameters(
-    hyperparams: Hyperparams, args: Dict[str, Scalar]
+    hyperparams: Hyperparams, args: Dict[str, Union[Scalar, list]]
 ) -> Dict[str, Scalar]:
     flattened = args.copy()
+    for k, v in flattened.items():
+        if isinstance(v, list):
+            flattened[k] = json.dumps(v)
     for k, v in hyperparams.items():
         if isinstance(v, dict):
             for sk, sv in v.items():
@@ -204,5 +216,5 @@ def flatten_hyperparameters(
                 else:
                     flattened[key] = sv
         else:
-            flattened[k] = v
-    return flattened
+            flattened[k] = v  # type: ignore
+    return flattened  # type: ignore

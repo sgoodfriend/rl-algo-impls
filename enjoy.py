@@ -3,6 +3,9 @@ import os
 
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
 
+import shutil
+import yaml
+
 from dataclasses import dataclass
 from typing import Optional
 
@@ -25,6 +28,8 @@ class EvalArgs(RunArgs):
     n_envs: int = 1
     n_episodes: int = 3
     deterministic: Optional[bool] = None
+    wandb_run_path: Optional[str] = None
+
 
 if __name__ == "__main__":
     parser = base_parser()
@@ -33,35 +38,73 @@ if __name__ == "__main__":
     parser.add_argument("--n_envs", default=1, type=int)
     parser.add_argument("--n_episodes", default=3, type=int)
     parser.add_argument("--deterministic", default=None, type=bool)
-    parser.set_defaults(algo="ppo", env="CartPole-v1", seed=1)
+    parser.add_argument("--wandb-run-path", default=None, type=str)
+    parser.set_defaults(
+        wandb_run_path="sgoodfriend/rl-algo-impls/vmd8rc48",
+    )
     args = EvalArgs(**vars(parser.parse_args()))
+
+    if args.wandb_run_path:
+        import wandb
+
+        config_path = "config.yaml"
+        wandb.restore(config_path, run_path=args.wandb_run_path)
+        with open(config_path, "r") as f:
+            wandb_config = yaml.safe_load(f)
+        os.remove(config_path)
+
+        args.algo = wandb_config["algo"]["value"]
+        args.env = wandb_config["env"]["value"]
+        device_name = wandb_config.get("device", {}).get("value", "auto")
+        env_hyperparams = wandb_config.get("env_hyperparams", {}).get("value", {})
+        policy_hyperparams = wandb_config.get("policy_hyperparams", {}).get("value", {})
+        eval_params = wandb_config.get("eval_params", {}).get("value", {})
+
+        names = Names(args, env_hyperparams, os.path.dirname(__file__))
+        model_path = names.model_dir_path(best=args.best, downloaded=True)
+
+        model_archive_name = names.model_dir_name(best=args.best, extension=".zip")
+        wandb.restore(
+            model_archive_name,
+            run_path=args.wandb_run_path,
+        )
+        if os.path.isdir(model_path):
+            shutil.rmtree(model_path)
+        shutil.unpack_archive(model_archive_name, model_path)
+        os.remove(model_archive_name)
+    else:
+        hyperparams = load_hyperparams(args.algo, args.env, os.path.dirname(__file__))
+
+        device_name = hyperparams.get("device", "auto")
+        env_hyperparams = hyperparams.get("env_hyperparams", {})
+        policy_hyperparams = hyperparams.get("policy_hyperparams", {})
+        eval_params = hyperparams.get("eval_params", {})
+
+        names = Names(args, env_hyperparams, os.path.dirname(__file__))
+        model_path = names.model_dir_path(best=args.best)
+
     print(args)
 
-    hyperparams = load_hyperparams(args.algo, args.env, os.path.dirname(__file__))
-    names = Names(args, hyperparams, os.path.dirname(__file__))
-
     set_seeds(args.seed, args.use_deterministic_algorithms)
-
-    model_path = names.model_dir_path(best=args.best)
 
     env = make_eval_env(
         names,
         override_n_envs=args.n_envs,
         render=args.render,
         normalize_load_path=model_path,
-        **hyperparams.get("env_hyperparams", {}),
+        **env_hyperparams,
     )
-    device = get_device(hyperparams.get("device", "auto"), env)
+    device = get_device(device_name, env)
     policy = make_policy(
         args.algo,
         env,
         device,
         load_path=model_path,
-        **hyperparams.get("policy_hyperparams", {}),
+        **policy_hyperparams,
     ).eval()
 
     if args.deterministic is None:
-        deterministic = hyperparams.get("eval_params", {}).get("deterministic", True)
+        deterministic = eval_params.get("deterministic", True)
     else:
         deterministic = args.deterministic
     evaluate(

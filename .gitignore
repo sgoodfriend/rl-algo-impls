@@ -143,4 +143,5 @@ scratch/*
 
 # Don't bother tracking saved_models or videos
 saved_models/*
+downloaded_models/*
 videos/*

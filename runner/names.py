@@ -2,7 +2,7 @@ import os
 
 from datetime import datetime
 from dataclasses import dataclass
-from typing import Any, Dict, Optional, TypedDict, Union
+from typing import Any, Dict, Optional
 
 
 @dataclass
@@ -13,18 +13,10 @@ class RunArgs:
     use_deterministic_algorithms: bool = True
 
 
-class Hyperparams(TypedDict, total=False):
-    device: str
-    n_timesteps: Union[int, float]
-    env_hyperparams: Dict[str, Any]
-    policy_hyperparams: Dict[str, Any]
-    algo_hyperparams: Dict[str, Any]
-
-
 @dataclass
 class Names:
     args: RunArgs
-    hyperparams: Hyperparams
+    env_hyperparams: Dict[str, Any]
     root_dir: str
     run_id: str = datetime.now().isoformat()
 
@@ -32,7 +24,7 @@ class Names:
         seed = self.args.seed
         if training or seed is None:
             return seed
-        return seed + self.hyperparams.get("env_hyperparams", {}).get("n_envs", 1)
+        return seed + self.env_hyperparams.get("n_envs", 1)
 
     @property
     def env_id(self) -> str:
@@ -43,7 +35,7 @@ class Names:
         parts = [self.args.algo, self.env_id]
         if self.args.seed is not None:
             parts.append(f"S{self.args.seed}")
-        make_kwargs = self.hyperparams.get("env_hyperparams", {}).get("make_kwargs", {})
+        make_kwargs = self.env_hyperparams.get("make_kwargs", {})
         if make_kwargs:
             for k, v in make_kwargs.items():
                 if type(v) == bool and v:
@@ -63,23 +55,21 @@ class Names:
     def saved_models_dir(self) -> str:
         return os.path.join(self.root_dir, "saved_models")
 
+    @property
+    def downloaded_models_dir(self) -> str:
+        return os.path.join(self.root_dir, "downloaded_models")
+
     def model_dir_name(
         self,
         best: bool = False,
-        include_run_id: bool = False,
+        extension: str = "",
     ) -> str:
-        return (self.run_name if include_run_id else self.model_name) + (
-            "-best" if best else ""
-        )
+        return self.model_name + ("-best" if best else "") + extension
 
-    def model_dir_path(
-        self,
-        best: bool = False,
-        include_run_id: bool = False,
-    ) -> str:
+    def model_dir_path(self, best: bool = False, downloaded: bool = False) -> str:
         return os.path.join(
-            self.saved_models_dir,
-            self.model_dir_name(best=best, include_run_id=include_run_id),
+            self.saved_models_dir if not downloaded else self.downloaded_models_dir,
+            self.model_dir_name(best=best),
         )
 
     @property

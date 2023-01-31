@@ -3,13 +3,14 @@ import os
 
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
 
+import dataclasses
 import shutil
 import wandb
 import yaml
 
 from dataclasses import dataclass
 from torch.utils.tensorboard.writer import SummaryWriter
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Sequence
 
 from shared.callbacks.eval_callback import EvalCallback
 from runner.env import make_env, make_eval_env
@@ -30,6 +31,7 @@ from shared.stats import EpisodesStats
 class TrainArgs(RunArgs):
     wandb_project_name: Optional[str] = None
     wandb_entity: Optional[str] = None
+    wandb_tags: Sequence[str] = dataclasses.field(default_factory=list)
 
 
 def train(args: TrainArgs):
@@ -37,7 +39,7 @@ def train(args: TrainArgs):
     hyperparams = load_hyperparams(args.algo, args.env, os.getcwd())
     print(hyperparams)
     env_hyperparams = hyperparams.get("env_hyperparams", {})
-    names = Names(args, hyperparams, os.getcwd())
+    names = Names(args, env_hyperparams, os.getcwd())
 
     wandb_enabled = args.wandb_project_name
     if wandb_enabled:
@@ -51,6 +53,7 @@ def train(args: TrainArgs):
             name=names.run_name,
             monitor_gym=True,
             save_code=True,
+            tags=args.wandb_tags,
         )
         wandb.config.update(args)
 
@@ -116,11 +119,16 @@ def train(args: TrainArgs):
     tb_writer.close()
 
     if wandb_enabled:
-        shutil.copytree(
-            names.model_dir_path(), os.path.join(wandb.run.dir, names.model_dir_name())
+        shutil.make_archive(
+            os.path.join(wandb.run.dir, names.model_dir_name(extension=".zip")),
+            "zip",
+            names.model_dir_path(),
         )
-        shutil.copytree(
+        shutil.make_archive(
+            os.path.join(
+                wandb.run.dir, names.model_dir_name(best=True, extension=".zip")
+            ),
+            "zip",
             names.model_dir_path(best=True),
-            os.path.join(wandb.run.dir, names.model_dir_name(best=True)),
         )
         wandb.finish()

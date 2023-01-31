@@ -46,6 +46,9 @@ if __name__ == "__main__":
         help="WanDB team of project. None uses default entity",
     )
     parser.add_argument(
+        "--wandb-tags", type=str, nargs="+", help="wandb tags to add to run"
+    )
+    parser.add_argument(
         "--pool-size", type=int, default=1, help="Simultaneous training jobs to run"
     )
     parser.set_defaults(algo="ppo", env="CartPole-v1", seed=1)
