@@ -123,13 +123,4 @@ def train(args: TrainArgs):
             names.model_dir_path(best=True),
             os.path.join(wandb.run.dir, names.model_dir_name(best=True)),
         )
-        if callback.best_video_base_path:
-            shutil.copyfile(
-                callback.best_video_base_path + ".mp4",
-                os.path.join(wandb.run.dir, "best.mp4"),
-            )
-            shutil.copyfile(
-                callback.best_video_base_path + ".meta.json",
-                os.path.join(wandb.run.dir, "best.meta.json"),
-            )
         wandb.finish()
