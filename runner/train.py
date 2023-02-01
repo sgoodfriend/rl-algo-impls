@@ -38,8 +38,7 @@ def train(args: TrainArgs):
     print(args)
     hyperparams = load_hyperparams(args.algo, args.env, os.getcwd())
     print(hyperparams)
-    env_hyperparams = hyperparams.get("env_hyperparams", {})
-    names = Names(args, env_hyperparams, os.getcwd())
+    names = Names(args, hyperparams, os.getcwd())
 
     wandb_enabled = args.wandb_project_name
     if wandb_enabled:
@@ -61,30 +60,25 @@ def train(args: TrainArgs):
 
     set_seeds(args.seed, args.use_deterministic_algorithms)
 
-    env = make_env(names, tb_writer=tb_writer, **env_hyperparams)
-    device = get_device(hyperparams.get("device", "auto"), env)
-    policy = make_policy(
-        args.algo, env, device, **hyperparams.get("policy_hyperparams", {})
-    )
-    algo = ALGOS[args.algo](
-        policy, env, device, tb_writer, **hyperparams.get("algo_hyperparams", {})
-    )
+    env = make_env(names, tb_writer=tb_writer, **names.env_hyperparams)
+    device = get_device(names.device, env)
+    policy = make_policy(args.algo, env, device, **names.policy_hyperparams)
+    algo = ALGOS[args.algo](policy, env, device, tb_writer, **names.algo_hyperparams)
 
-    eval_env = make_eval_env(names, **env_hyperparams)
-    eval_params = hyperparams.get("eval_params", {})
-    record_best_videos = eval_params.get("record_best_videos", True)
+    eval_env = make_eval_env(names, **names.env_hyperparams)
+    record_best_videos = names.eval_params.get("record_best_videos", True)
     callback = EvalCallback(
         policy,
         eval_env,
         tb_writer,
         best_model_path=names.model_dir_path(best=True),
-        **eval_params,
-        video_env=make_eval_env(names, override_n_envs=1, **env_hyperparams)
+        **names.eval_params,
+        video_env=make_eval_env(names, override_n_envs=1, **names.env_hyperparams)
         if record_best_videos
         else None,
         best_video_dir=names.best_videos_dir,
     )
-    algo.learn(int(hyperparams.get("n_timesteps", 100_000)), callback=callback)
+    algo.learn(names.n_timesteps, callback=callback)
 
     policy.save(names.model_dir_path(best=False))
 

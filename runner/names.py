@@ -2,7 +2,7 @@ import os
 
 from datetime import datetime
 from dataclasses import dataclass
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, TypedDict, Union
 
 
 @dataclass
@@ -13,10 +13,19 @@ class RunArgs:
     use_deterministic_algorithms: bool = True
 
 
+class Hyperparams(TypedDict, total=False):
+    device: str
+    n_timesteps: Union[int, float]
+    env_hyperparams: Dict[str, Any]
+    policy_hyperparams: Dict[str, Any]
+    algo_hyperparams: Dict[str, Any]
+    eval_params: Dict[str, Any]
+
+
 @dataclass
 class Names:
     args: RunArgs
-    env_hyperparams: Dict[str, Any]
+    hyperparams: Hyperparams
     root_dir: str
     run_id: str = datetime.now().isoformat()
 
@@ -25,6 +34,30 @@ class Names:
         if training or seed is None:
             return seed
         return seed + self.env_hyperparams.get("n_envs", 1)
+
+    @property
+    def device(self) -> str:
+        return self.hyperparams.get("device", "auto")
+
+    @property
+    def n_timesteps(self) -> int:
+        return int(self.hyperparams.get("n_timesteps", 100_000))
+
+    @property
+    def env_hyperparams(self) -> Dict[str, Any]:
+        return self.hyperparams.get("env_hyperparams", {})
+
+    @property
+    def policy_hyperparams(self) -> Dict[str, Any]:
+        return self.hyperparams.get("policy_hyperparams", {})
+
+    @property
+    def algo_hyperparams(self) -> Dict[str, Any]:
+        return self.hyperparams.get("algo_hyperparams", {})
+
+    @property
+    def eval_params(self) -> Dict[str, Any]:
+        return self.hyperparams.get("eval_params", {})
 
     @property
     def env_id(self) -> str:

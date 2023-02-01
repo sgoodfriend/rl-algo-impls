@@ -12,8 +12,9 @@ import yaml
 from gym.spaces import Box, Discrete
 from stable_baselines3.common.vec_env.base_vec_env import VecEnv
 from torch.utils.tensorboard.writer import SummaryWriter
-from typing import Any, Dict, Optional, Type, TypedDict, Union
+from typing import Dict, Optional, Type, Union
 
+from runner.names import Hyperparams
 from shared.algorithm import Algorithm
 from shared.callbacks.eval_callback import EvalCallback
 from shared.policy.policy import Policy
@@ -30,44 +31,11 @@ ALGOS: Dict[str, Type[Algorithm]] = {
     "vpg": VanillaPolicyGradient,
     "ppo": PPO,
 }
-
 POLICIES: Dict[str, Type[Policy]] = {
     "dqn": DQNPolicy,
     "vpg": VPGActorCritic,
     "ppo": PPOActorCritic,
 }
-
-BASIC_ENVS = [  # Recommended pool_size 1 (too fast, overwhelms Wandb?)
-    "CartPole-v1",
-    "MountainCar-v0",
-    "MountainCarContinuous-v0",
-    "Acrobot-v1",
-    "LunarLander-v2",
-]
-PYBULLET_ENVS = [  # Recommended pool_size 3
-    "HalfCheetahBulletEnv-v0",
-    "AntBulletEnv-v0",
-    "Walker2DBulletEnv-v0",
-    "HopperBulletEnv-v0",
-]
-CAR_RACING_ENVS = [  # Recommended pool_size 1
-    "CarRacing-v0",
-]
-ATARI_ENVS = [  # Recommended pool_size 1
-    "PongNoFrameskip-v4",
-    "BreakoutNoFrameskip-v4",
-    "SpaceInvadersNoFrameskip-v4",
-    "QbertNoFrameskip-v4",
-]
-
-
-class Hyperparams(TypedDict, total=False):
-    device: str
-    n_timesteps: Union[int, float]
-    env_hyperparams: Dict[str, Any]
-    policy_hyperparams: Dict[str, Any]
-    algo_hyperparams: Dict[str, Any]
-
 
 HYPERPARAMS_PATH = "hyperparams"
 
