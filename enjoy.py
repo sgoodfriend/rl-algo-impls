@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from typing import Optional
 
 from runner.env import make_eval_env
-from runner.names import Names, RunArgs
+from runner.config import Config, RunArgs
 from runner.running_utils import (
     base_parser,
     load_hyperparams,
@@ -57,10 +57,10 @@ if __name__ == "__main__":
             "use_deterministic_algorithms", True
         )
 
-        names = Names(args, hyperparams, os.path.dirname(__file__))
-        model_path = names.model_dir_path(best=args.best, downloaded=True)
+        config = Config(args, hyperparams, os.path.dirname(__file__))
+        model_path = config.model_dir_path(best=args.best, downloaded=True)
 
-        model_archive_name = names.model_dir_name(best=args.best, extension=".zip")
+        model_archive_name = config.model_dir_name(best=args.best, extension=".zip")
         run.file(model_archive_name).download()
         if os.path.isdir(model_path):
             shutil.rmtree(model_path)
@@ -69,31 +69,31 @@ if __name__ == "__main__":
     else:
         hyperparams = load_hyperparams(args.algo, args.env, os.path.dirname(__file__))
 
-        names = Names(args, hyperparams, os.path.dirname(__file__))
-        model_path = names.model_dir_path(best=args.best)
+        config = Config(args, hyperparams, os.path.dirname(__file__))
+        model_path = config.model_dir_path(best=args.best)
 
     print(args)
 
     set_seeds(args.seed, args.use_deterministic_algorithms)
 
     env = make_eval_env(
-        names,
+        config,
         override_n_envs=args.n_envs,
         render=args.render,
         normalize_load_path=model_path,
-        **names.env_hyperparams,
+        **config.env_hyperparams,
     )
-    device = get_device(names.device, env)
+    device = get_device(config.device, env)
     policy = make_policy(
         args.algo,
         env,
         device,
         load_path=model_path,
-        **names.policy_hyperparams,
+        **config.policy_hyperparams,
     ).eval()
 
     if args.deterministic is None:
-        deterministic = names.eval_params.get("deterministic", True)
+        deterministic = config.eval_params.get("deterministic", True)
     else:
         deterministic = args.deterministic
     evaluate(

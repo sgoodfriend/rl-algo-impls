@@ -14,7 +14,7 @@ from typing import Any, Dict, Optional, Sequence
 
 from shared.callbacks.eval_callback import EvalCallback
 from runner.env import make_env, make_eval_env
-from runner.names import Names, RunArgs
+from runner.config import Config, RunArgs
 from runner.running_utils import (
     ALGOS,
     load_hyperparams,
@@ -38,53 +38,53 @@ def train(args: TrainArgs):
     print(args)
     hyperparams = load_hyperparams(args.algo, args.env, os.getcwd())
     print(hyperparams)
-    names = Names(args, hyperparams, os.getcwd())
+    config = Config(args, hyperparams, os.getcwd())
 
     wandb_enabled = args.wandb_project_name
     if wandb_enabled:
         wandb.tensorboard.patch(
-            root_logdir=names.tensorboard_summary_path, pytorch=True
+            root_logdir=config.tensorboard_summary_path, pytorch=True
         )
         wandb.init(
             project=args.wandb_project_name,
             entity=args.wandb_entity,
             config=hyperparams,  # type: ignore
-            name=names.run_name,
+            name=config.run_name,
             monitor_gym=True,
             save_code=True,
             tags=args.wandb_tags,
         )
         wandb.config.update(args)
 
-    tb_writer = SummaryWriter(names.tensorboard_summary_path)
+    tb_writer = SummaryWriter(config.tensorboard_summary_path)
 
     set_seeds(args.seed, args.use_deterministic_algorithms)
 
-    env = make_env(names, tb_writer=tb_writer, **names.env_hyperparams)
-    device = get_device(names.device, env)
-    policy = make_policy(args.algo, env, device, **names.policy_hyperparams)
-    algo = ALGOS[args.algo](policy, env, device, tb_writer, **names.algo_hyperparams)
+    env = make_env(config, tb_writer=tb_writer, **config.env_hyperparams)
+    device = get_device(config.device, env)
+    policy = make_policy(args.algo, env, device, **config.policy_hyperparams)
+    algo = ALGOS[args.algo](policy, env, device, tb_writer, **config.algo_hyperparams)
 
-    eval_env = make_eval_env(names, **names.env_hyperparams)
-    record_best_videos = names.eval_params.get("record_best_videos", True)
+    eval_env = make_eval_env(config, **config.env_hyperparams)
+    record_best_videos = config.eval_params.get("record_best_videos", True)
     callback = EvalCallback(
         policy,
         eval_env,
         tb_writer,
-        best_model_path=names.model_dir_path(best=True),
-        **names.eval_params,
-        video_env=make_eval_env(names, override_n_envs=1, **names.env_hyperparams)
+        best_model_path=config.model_dir_path(best=True),
+        **config.eval_params,
+        video_env=make_eval_env(config, override_n_envs=1, **config.env_hyperparams)
         if record_best_videos
         else None,
-        best_video_dir=names.best_videos_dir,
+        best_video_dir=config.best_videos_dir,
     )
-    algo.learn(names.n_timesteps, callback=callback)
+    algo.learn(config.n_timesteps, callback=callback)
 
-    policy.save(names.model_dir_path(best=False))
+    policy.save(config.model_dir_path(best=False))
 
     eval_stats = callback.evaluate(n_episodes=10, print_returns=True)
 
-    plot_eval_callback(callback, tb_writer, names.run_name)
+    plot_eval_callback(callback, tb_writer, config.run_name)
 
     log_dict: Dict[str, Any] = {
         "eval": eval_stats._asdict(),
@@ -93,8 +93,8 @@ def train(args: TrainArgs):
         log_dict["best_eval"] = callback.best._asdict()
     log_dict.update(hyperparams)
     log_dict.update(vars(args))
-    with open(names.logs_path, "a") as f:
-        yaml.dump({names.run_name: log_dict}, f)
+    with open(config.logs_path, "a") as f:
+        yaml.dump({config.run_name: log_dict}, f)
 
     best_eval_stats: EpisodesStats = callback.best  # type: ignore
     tb_writer.add_hparams(
@@ -107,20 +107,20 @@ def train(args: TrainArgs):
             "hparam/last_result": eval_stats.score.mean - eval_stats.score.std,
         },
         None,
-        names.run_name,
+        config.run_name,
     )
 
     tb_writer.close()
 
     if wandb_enabled:
         shutil.make_archive(
-            os.path.join(wandb.run.dir, names.model_dir_name()),
+            os.path.join(wandb.run.dir, config.model_dir_name()),
             "zip",
-            names.model_dir_path(),
+            config.model_dir_path(),
         )
         shutil.make_archive(
-            os.path.join(wandb.run.dir, names.model_dir_name(best=True)),
+            os.path.join(wandb.run.dir, config.model_dir_name(best=True)),
             "zip",
-            names.model_dir_path(best=True),
+            config.model_dir_path(best=True),
         )
         wandb.finish()

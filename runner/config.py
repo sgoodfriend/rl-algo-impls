@@ -23,7 +23,7 @@ class Hyperparams(TypedDict, total=False):
 
 
 @dataclass
-class Names:
+class Config:
     args: RunArgs
     hyperparams: Hyperparams
     root_dir: str

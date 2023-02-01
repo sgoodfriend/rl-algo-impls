@@ -14,7 +14,7 @@ from stable_baselines3.common.vec_env.base_vec_env import VecEnv
 from torch.utils.tensorboard.writer import SummaryWriter
 from typing import Dict, Optional, Type, Union
 
-from runner.names import Hyperparams
+from runner.config import Hyperparams
 from shared.algorithm import Algorithm
 from shared.callbacks.eval_callback import EvalCallback
 from shared.policy.policy import Policy

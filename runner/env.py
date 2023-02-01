@@ -15,7 +15,7 @@ from stable_baselines3.common.vec_env.vec_normalize import VecNormalize
 from torch.utils.tensorboard.writer import SummaryWriter
 from typing import Any, Callable, Dict, Optional, Union
 
-from runner.names import Names
+from runner.config import Config
 from shared.policy.policy import VEC_NORMALIZE_FILENAME
 from wrappers.atari_wrappers import EpisodicLifeEnv, FireOnLifeStarttEnv, ClipRewardEnv
 from wrappers.episode_record_video import EpisodeRecordVideo
@@ -25,7 +25,7 @@ from wrappers.video_compat_wrapper import VideoCompatWrapper
 
 
 def make_env(
-    names: Names,
+    config: Config,
     training: bool = True,
     render: bool = False,
     normalize_load_path: Optional[str] = None,
@@ -43,31 +43,33 @@ def make_env(
     video_step_interval: Union[int, float] = 1_000_000,
     initial_steps_to_truncate: Optional[int] = None,
 ) -> VecEnv:
-    if "BulletEnv" in names.env_id:
+    if "BulletEnv" in config.env_id:
         import pybullet_envs
 
     make_kwargs = make_kwargs if make_kwargs is not None else {}
-    if "BulletEnv" in names.env_id and render:
+    if "BulletEnv" in config.env_id and render:
         make_kwargs["render"] = True
-    if "CarRacing" in names.env_id:
+    if "CarRacing" in config.env_id:
         make_kwargs["verbose"] = 0
 
-    spec = gym.spec(names.env_id)
+    spec = gym.spec(config.env_id)
 
     def make(idx: int) -> Callable[[], gym.Env]:
         def _make() -> gym.Env:
-            env = gym.make(names.env_id, **make_kwargs)
+            env = gym.make(config.env_id, **make_kwargs)
             env = gym.wrappers.RecordEpisodeStatistics(env)
             env = VideoCompatWrapper(env)
             if training and train_record_video and idx == 0:
                 env = EpisodeRecordVideo(
                     env,
-                    names.video_prefix,
+                    config.video_prefix,
                     step_increment=n_envs,
                     video_step_interval=int(video_step_interval),
                 )
             if training and initial_steps_to_truncate:
-                env = InitialStepTruncateWrapper(env, idx * initial_steps_to_truncate // n_envs)
+                env = InitialStepTruncateWrapper(
+                    env, idx * initial_steps_to_truncate // n_envs
+                )
             if "AtariEnv" in spec.entry_point:  # type: ignore
                 env = NoopResetEnv(env, noop_max=30)
                 env = MaxAndSkipEnv(env, skip=4)
@@ -79,7 +81,7 @@ def make_env(
                 env = ResizeObservation(env, (84, 84))
                 env = GrayScaleObservation(env, keep_dim=False)
                 env = FrameStack(env, frame_stack)
-            elif "CarRacing" in names.env_id:
+            elif "CarRacing" in config.env_id:
                 env = ResizeObservation(env, (64, 64))
                 env = GrayScaleObservation(env, keep_dim=False)
                 env = FrameStack(env, frame_stack)
@@ -91,7 +93,7 @@ def make_env(
                     env, no_reward_timeout_steps, n_fire_steps=no_reward_fire_steps
                 )
 
-            seed = names.seed(training=training)
+            seed = config.seed(training=training)
             if seed is not None:
                 env.seed(seed + idx)
                 env.action_space.seed(seed + idx)
@@ -121,7 +123,7 @@ def make_env(
 
 
 def make_eval_env(
-    names: Names, override_n_envs: Optional[int] = None, **kwargs
+    config: Config, override_n_envs: Optional[int] = None, **kwargs
 ) -> VecEnv:
     kwargs = kwargs.copy()
     kwargs["training"] = False
@@ -129,4 +131,4 @@ def make_eval_env(
         kwargs["n_envs"] = override_n_envs
         if override_n_envs == 1:
             kwargs["vec_env_class"] = "dummy"
-    return make_env(names, **kwargs)
+    return make_env(config, **kwargs)
