@@ -120,14 +120,12 @@ def train(args: TrainArgs):
 
     if wandb_enabled:
         shutil.make_archive(
-            os.path.join(wandb.run.dir, names.model_dir_name(extension=".zip")),
+            os.path.join(wandb.run.dir, names.model_dir_name()),
             "zip",
             names.model_dir_path(),
         )
         shutil.make_archive(
-            os.path.join(
-                wandb.run.dir, names.model_dir_name(best=True, extension=".zip")
-            ),
+            os.path.join(wandb.run.dir, names.model_dir_name(best=True)),
             "zip",
             names.model_dir_path(best=True),
         )
