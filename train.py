@@ -37,23 +37,26 @@ if __name__ == "__main__":
         "--wandb-entity",
         type=str,
         default=None,
-        help="WanDB team of project. None uses default entity",
+        help="WandB team of project. None uses default entity",
     )
     parser.add_argument(
-        "--wandb-tags", type=str, nargs="+", help="wandb tags to add to run"
+        "--wandb-tags", type=str, nargs="*", help="WandB tags to add to run"
     )
     parser.add_argument(
         "--pool-size", type=int, default=1, help="Simultaneous training jobs to run"
     )
-    parser.add_argument("--virtual-display", type=bool, action="store_true", 
-        help="Whether to create a virtual display for video rendering"
+    parser.add_argument(
+        "--virtual-display",
+        action="store_true",
+        help="Whether to create a virtual display for video rendering",
     )
     parser.set_defaults(algo="ppo", env="CartPole-v1", seed=1)
     args = parser.parse_args()
     print(args)
-    
+
     if args.virtual_display:
         from pyvirtualdisplay import Display
+
         virtual_display = Display(visible=0, size=(1400, 900))
         virtual_display.start()
     delattr(args, "virtual_display")
