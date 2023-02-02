@@ -45,9 +45,18 @@ if __name__ == "__main__":
     parser.add_argument(
         "--pool-size", type=int, default=1, help="Simultaneous training jobs to run"
     )
+    parser.add_argument("--virtual-display", type=bool, action="store_true", 
+        help="Whether to create a virtual display for video rendering"
+    )
     parser.set_defaults(algo="ppo", env="CartPole-v1", seed=1)
     args = parser.parse_args()
     print(args)
+    
+    if args.virtual_display:
+        from pyvirtualdisplay import Display
+        virtual_display = Display(visible=0, size=(1400, 900))
+        virtual_display.start()
+    delattr(args, "virtual_display")
 
     # pool_size isn't a TrainArg so must be removed from args
     pool_size = args.pool_size

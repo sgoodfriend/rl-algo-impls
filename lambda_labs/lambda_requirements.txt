@@ -1,0 +1,9 @@
+scipy >= 1.10.0, < 1.11
+tensorboard >= ^2.11.0, < 2.12
+AutoROM.accept-rom-license >= 0.4.2, < 0.5
+stable-baselines3[extra] >= 1.7.0, < 1.8
+gym[box2d] >= 0.21.0, < 0.22
+pyglet == 1.5.27
+wandb >= 0.13.9, < 0.14
+pyvirtualdisplay == 3.0
+pybullet >= 3.2.5, < 3.3
