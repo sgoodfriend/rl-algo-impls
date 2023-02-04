@@ -96,7 +96,7 @@ CarRacing-v0:
     frame_stack: 4
   policy_hyperparams:
     use_sde: true
-    # log_std_init: -2
+    log_std_init: -2
     init_layers_orthogonal: false
     activation_fn: relu
     share_features_extractor: false
@@ -150,10 +150,7 @@ HalfCheetahBulletEnv-v0: &pybullet-defaults
   policy_hyperparams: &pybullet-policy-defaults
     pi_hidden_sizes: [256, 256]
     v_hidden_sizes: [256, 256]
-    # init_layers_orthogonal: false
     activation_fn: relu
-    # use_sde: true
-    # log_std_init: -2
   algo_hyperparams: &pybullet-algo-defaults
     n_steps: 512
     batch_size: 128
@@ -171,7 +168,6 @@ AntBulletEnv-v0:
   <<: *pybullet-defaults
   policy_hyperparams:
     <<: *pybullet-policy-defaults
-    # log_std_init: -1
   algo_hyperparams:
     <<: *pybullet-algo-defaults
 
