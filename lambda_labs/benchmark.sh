@@ -6,8 +6,8 @@ export VIRTUAL_DISPLAY=1
 BENCHMARK_MAX_PROCS="${BENCHMARK_MAX_PROCS:-6}"
 
 ALGOS=(
-    "vpg"
-    "dqn"
+    # "vpg"
+    # "dqn"
     "ppo"
 )
 ENVS=(
