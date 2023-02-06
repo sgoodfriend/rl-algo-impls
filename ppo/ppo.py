@@ -151,7 +151,7 @@ class PPO(Algorithm):
         ent_coef_decay: str = "none",
         vf_coef: float = 0.5,
         max_grad_norm: float = 0.5,
-        update_rtg_between_epochs: bool = True,
+        update_rtg_between_epochs: bool = False,
         sde_sample_freq: int = -1,
     ) -> None:
         super().__init__(policy, env, device, tb_writer)
