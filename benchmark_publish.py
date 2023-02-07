@@ -44,11 +44,10 @@ if __name__ == "__main__":
         default=3,
         help="How many publish jobs can run in parallel",
     )
-    parser.set_defaults(
-        wandb_tags=["benchmark_5598ebc", "host_192-9-145-26"],
-        wandb_report_url="https://api.wandb.ai/links/sgoodfriend/6p2sjqtn",
-        envs=["CartPole-v1", "Acrobot-v1"],
-    )
+    # parser.set_defaults(
+    #     wandb_tags=["benchmark_5598ebc", "host_192-9-145-26"],
+    #     wandb_report_url="https://api.wandb.ai/links/sgoodfriend/6p2sjqtn",
+    # )
     args = parser.parse_args()
     print(args)
 
