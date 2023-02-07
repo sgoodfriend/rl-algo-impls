@@ -60,13 +60,16 @@ class Config:
         return self.hyperparams.get("eval_params", {})
 
     @property
+    def algo(self) -> str:
+        return self.args.algo
+
+    @property
     def env_id(self) -> str:
         return self.args.env
 
-    @property
-    def model_name(self) -> str:
-        parts = [self.args.algo, self.env_id]
-        if self.args.seed is not None:
+    def model_name(self, include_seed: bool = True) -> str:
+        parts = [self.algo, self.env_id]
+        if include_seed and self.args.seed is not None:
             parts.append(f"S{self.args.seed}")
         make_kwargs = self.env_hyperparams.get("make_kwargs", {})
         if make_kwargs:
@@ -81,7 +84,7 @@ class Config:
 
     @property
     def run_name(self) -> str:
-        parts = [self.model_name, self.run_id]
+        parts = [self.model_name(), self.run_id]
         return "-".join(parts)
 
     @property
@@ -97,7 +100,7 @@ class Config:
         best: bool = False,
         extension: str = "",
     ) -> str:
-        return self.model_name + ("-best" if best else "") + extension
+        return self.model_name() + ("-best" if best else "") + extension
 
     def model_dir_path(self, best: bool = False, downloaded: bool = False) -> str:
         return os.path.join(
@@ -123,8 +126,8 @@ class Config:
 
     @property
     def video_prefix(self) -> str:
-        return os.path.join(self.videos_dir, self.model_name)
+        return os.path.join(self.videos_dir, self.model_name())
 
     @property
     def best_videos_dir(self) -> str:
-        return os.path.join(self.videos_dir, f"{self.model_name}-best")
+        return os.path.join(self.videos_dir, f"{self.model_name()}-best")

@@ -22,7 +22,10 @@ class EvaluateAccumulator(EpisodeAccumulator):
         self.print_returns = print_returns
 
     def on_done(self, ep_idx: int, episode: Episode) -> None:
-        if len(self.completed_episodes_by_env_idx[ep_idx]) >= self.goal_episodes_per_env:
+        if (
+            len(self.completed_episodes_by_env_idx[ep_idx])
+            >= self.goal_episodes_per_env
+        ):
             return
         self.completed_episodes_by_env_idx[ep_idx].append(episode)
         if self.print_returns:
@@ -36,11 +39,14 @@ class EvaluateAccumulator(EpisodeAccumulator):
         return sum(len(ce) for ce in self.completed_episodes_by_env_idx)
 
     @property
-    def episodes(self) -> bool:
-        return list(itertools.chain(*self.completed_episodes_by_env_idx)) 
+    def episodes(self) -> List[Episode]:
+        return list(itertools.chain(*self.completed_episodes_by_env_idx))
 
     def is_done(self) -> bool:
-        return all(len(ce) == self.goal_episodes_per_env for ce in self.completed_episodes_by_env_idx)
+        return all(
+            len(ce) == self.goal_episodes_per_env
+            for ce in self.completed_episodes_by_env_idx
+        )
 
 
 def evaluate(
@@ -108,7 +114,7 @@ class EvalCallback(Callback):
     def on_step(self, timesteps_elapsed: int = 1) -> bool:
         super().on_step(timesteps_elapsed)
         if self.timesteps_elapsed // self.step_freq >= len(self.stats):
-            self.sync_vec_normalize(self.env)
+            sync_vec_normalize(self.policy.vec_normalize, self.env)
             self.evaluate()
         return True
 
@@ -134,10 +140,12 @@ class EvalCallback(Callback):
                 assert self.best_model_path
                 self.policy.save(self.best_model_path)
                 print("Saved best model")
-            self.best.write_to_tensorboard(self.tb_writer, "best_eval", self.timesteps_elapsed)
+            self.best.write_to_tensorboard(
+                self.tb_writer, "best_eval", self.timesteps_elapsed
+            )
             if strictly_better and self.record_best_videos:
                 assert self.video_env and self.best_video_dir
-                self.sync_vec_normalize(self.video_env)
+                sync_vec_normalize(self.policy.vec_normalize, self.video_env)
                 self.best_video_base_path = os.path.join(
                     self.best_video_dir, str(self.timesteps_elapsed)
                 )
@@ -159,16 +167,15 @@ class EvalCallback(Callback):
 
         return eval_stat
 
-    def sync_vec_normalize(self, destination_env: VecEnv) -> None:
-        if self.policy.vec_normalize is not None:
-            eval_env_wrapper = destination_env
-            while isinstance(eval_env_wrapper, VecEnvWrapper):
-                if isinstance(eval_env_wrapper, VecNormalize):
-                    if hasattr(self.policy.vec_normalize, "obs_rms"):
-                        eval_env_wrapper.obs_rms = deepcopy(
-                            self.policy.vec_normalize.obs_rms
-                        )
-                    eval_env_wrapper.ret_rms = deepcopy(
-                        self.policy.vec_normalize.ret_rms
-                    )
-                eval_env_wrapper = eval_env_wrapper.venv
+
+def sync_vec_normalize(
+    origin_vec_normalize: Optional[VecNormalize], destination_env: VecEnv
+) -> None:
+    if origin_vec_normalize is not None:
+        eval_env_wrapper = destination_env
+        while isinstance(eval_env_wrapper, VecEnvWrapper):
+            if isinstance(eval_env_wrapper, VecNormalize):
+                if hasattr(origin_vec_normalize, "obs_rms"):
+                    eval_env_wrapper.obs_rms = deepcopy(origin_vec_normalize.obs_rms)
+                eval_env_wrapper.ret_rms = deepcopy(origin_vec_normalize.ret_rms)
+            eval_env_wrapper = eval_env_wrapper.venv
