@@ -20,8 +20,8 @@ ENVS=(
     # PyBullet
     "HalfCheetahBulletEnv-v0"
     "AntBulletEnv-v0"
-    "Walker2DBulletEnv-v0"
     "HopperBulletEnv-v0"
+    "Walker2DBulletEnv-v0"
     # CarRacing
     "CarRacing-v0"
     # Atari
