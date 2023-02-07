@@ -144,7 +144,7 @@ def publish(
         api.create_repo(
             token=huggingface_token,
             repo_id=huggingface_repo,
-            private=True,
+            private=False,
             exist_ok=True,
         )
         repo_url = upload_folder(
