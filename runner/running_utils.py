@@ -40,28 +40,28 @@ POLICIES: Dict[str, Type[Policy]] = {
 HYPERPARAMS_PATH = "hyperparams"
 
 
-def base_parser() -> argparse.ArgumentParser:
+def base_parser(multiple: bool = True) -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--algo",
-        default="dqn",
+        default=["dqn"],
         type=str,
         choices=list(ALGOS.keys()),
-        nargs="+",
+        nargs="+" if multiple else 1,
         help="Abbreviation(s) of algorithm(s)",
     )
     parser.add_argument(
         "--env",
-        default="CartPole-v1",
+        default=["CartPole-v1"],
         type=str,
-        nargs="+",
+        nargs="+" if multiple else 1,
         help="Name of environment(s) in gym",
     )
     parser.add_argument(
         "--seed",
-        default=1,
+        default=[1],
         type=int,
-        nargs="*",
+        nargs="*" if multiple else "?",
         help="Seeds to run experiment. Unset will do one run with no set seed",
     )
     parser.add_argument(

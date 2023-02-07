@@ -54,7 +54,9 @@ class Policy(nn.Module, ABC):
     @abstractmethod
     def load(self, path: str) -> None:
         # VecNormalize load occurs in env.py
-        self.load_state_dict(torch.load(os.path.join(path, MODEL_FILENAME)))
+        self.load_state_dict(
+            torch.load(os.path.join(path, MODEL_FILENAME), map_location=self.device)
+        )
 
     def reset_noise(self) -> None:
         pass
