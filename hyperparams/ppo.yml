@@ -123,6 +123,7 @@ atari: &atari-defaults
   n_timesteps: !!float 1e7
   policy_hyperparams:
     activation_fn: relu
+    share_features_extractor: false
   env_hyperparams: &atari-env-defaults
     n_envs: 8
     frame_stack: 4
