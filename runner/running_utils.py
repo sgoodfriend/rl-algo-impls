@@ -44,7 +44,7 @@ def base_parser(multiple: bool = True) -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--algo",
-        default="dqn",
+        default=["dqn"],
         type=str,
         choices=list(ALGOS.keys()),
         nargs="+" if multiple else 1,
@@ -52,14 +52,14 @@ def base_parser(multiple: bool = True) -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--env",
-        default="CartPole-v1",
+        default=["CartPole-v1"],
         type=str,
         nargs="+" if multiple else 1,
         help="Name of environment(s) in gym",
     )
     parser.add_argument(
         "--seed",
-        default=1,
+        default=[1],
         type=int,
         nargs="*" if multiple else "?",
         help="Seeds to run experiment. Unset will do one run with no set seed",

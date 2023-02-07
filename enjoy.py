@@ -25,6 +25,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
     args.algo = args.algo[0]
     args.env = args.env[0]
-    args = EvalArgs(**vars(parser.parse_args()))
+    args = EvalArgs(**vars(args))
 
     evaluate_model(args, os.path.dirname(__file__))
