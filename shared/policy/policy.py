@@ -51,7 +51,6 @@ class Policy(nn.Module, ABC):
             os.path.join(path, MODEL_FILENAME),
         )
 
-    @abstractmethod
     def load(self, path: str) -> None:
         # VecNormalize load occurs in env.py
         self.load_state_dict(
