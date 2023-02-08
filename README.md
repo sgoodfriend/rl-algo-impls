@@ -64,6 +64,7 @@ but these are the approximate setup and usage I've been using:
 
 ```
 brew install swig
+brew install --cask xquartz
 ```
 
 2. Download and install Miniconda for arm64
