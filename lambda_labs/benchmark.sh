@@ -7,23 +7,23 @@ BENCHMARK_MAX_PROCS="${BENCHMARK_MAX_PROCS:-6}"
 
 ALGOS=(
     # "vpg"
-    # "dqn"
-    "ppo"
+    "dqn"
+    # "ppo"
 )
 ENVS=(
     # Basic
     "CartPole-v1"
     "MountainCar-v0"
-    "MountainCarContinuous-v0"
+    # "MountainCarContinuous-v0"
     "Acrobot-v1"
     "LunarLander-v2"
-    # PyBullet
-    "HalfCheetahBulletEnv-v0"
-    "AntBulletEnv-v0"
-    "HopperBulletEnv-v0"
-    "Walker2DBulletEnv-v0"
-    # CarRacing
-    "CarRacing-v0"
+    # # PyBullet
+    # "HalfCheetahBulletEnv-v0"
+    # "AntBulletEnv-v0"
+    # "HopperBulletEnv-v0"
+    # "Walker2DBulletEnv-v0"
+    # # CarRacing
+    # "CarRacing-v0"
     # Atari
     "PongNoFrameskip-v4"
     "BreakoutNoFrameskip-v4"
