@@ -119,6 +119,8 @@ def set_seeds(seed: Optional[int], use_deterministic_algorithms: bool) -> None:
     torch.backends.cudnn.benchmark = False
     torch.use_deterministic_algorithms(use_deterministic_algorithms)
     os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
+    # Stop warning and it would introduce stochasticity if I was using TF
+    os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
 
 
 def make_policy(
