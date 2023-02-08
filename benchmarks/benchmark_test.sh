@@ -1,7 +1,7 @@
 source benchmarks/train_loop.sh
 
 export WANDB_PROJECT_NAME="rl-algo-impls"
-# export VIRTUAL_DISPLAY=1
+export VIRTUAL_DISPLAY=1
 
 BENCHMARK_MAX_PROCS="${BENCHMARK_MAX_PROCS:-3}"
 
@@ -17,12 +17,12 @@ ENVS=(
     # "MountainCarContinuous-v0"
     "Acrobot-v1"
     "LunarLander-v2"
-    # PyBullet
+    # # PyBullet
     # "HalfCheetahBulletEnv-v0"
     # "AntBulletEnv-v0"
     # "HopperBulletEnv-v0"
     # "Walker2DBulletEnv-v0"
-    # CarRacing
+    # # CarRacing
     # "CarRacing-v0"
     # Atari
     "PongNoFrameskip-v4"
