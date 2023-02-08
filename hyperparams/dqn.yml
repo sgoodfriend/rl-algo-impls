@@ -46,7 +46,7 @@ MountainCar-v0:
 Acrobot-v1:
   n_timesteps: !!float 1e5
   env_hyperparams:
-    rolling_length: 10
+    rolling_length: 50
   policy_hyperparams:
     hidden_sizes: [256, 256]
   algo_hyperparams:
@@ -64,7 +64,7 @@ Acrobot-v1:
 LunarLander-v2:
   n_timesteps: !!float 5e5
   env_hyperparams:
-    rolling_length: 10
+    rolling_length: 50
   policy_hyperparams:
     hidden_sizes: [256, 256]
   algo_hyperparams:
@@ -84,14 +84,13 @@ LunarLander-v2:
     n_episodes: 10
     save_best: true
 
-SpaceInvadersNoFrameskip-v4: &atari-defaults
+atari: &atari-defaults
   n_timesteps: !!float 1e7
   env_hyperparams:
     frame_stack: 4
     no_reward_timeout_steps: 1_000
     n_envs: 8
     vec_env_class: "subproc"
-    rolling_length: 20
   policy_hyperparams:
     hidden_sizes: [512]
   algo_hyperparams:
@@ -108,9 +107,6 @@ SpaceInvadersNoFrameskip-v4: &atari-defaults
     step_freq: 100_000
     n_episodes: 10
     save_best: true
-
-BreakoutNoFrameskip-v4:
-  <<: *atari-defaults
 
 PongNoFrameskip-v4:
   <<: *atari-defaults
