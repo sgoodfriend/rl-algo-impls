@@ -1,7 +1,6 @@
 CartPole-v1: &cartpole-defaults
   n_timesteps: !!float 5e4
   env_hyperparams:
-    n_envs: 1
     rolling_length: 50
   policy_hyperparams:
     hidden_sizes: [256, 256]
@@ -18,8 +17,6 @@ CartPole-v1: &cartpole-defaults
     exploration_final_eps: 0.04
   eval_params:
     step_freq: !!float 1e4
-    n_episodes: 10
-    save_best: true
 
 CartPole-v0:
   <<: *cartpole-defaults
@@ -81,8 +78,6 @@ LunarLander-v2:
     max_grad_norm: 0.5
   eval_params:
     step_freq: 25_000
-    n_episodes: 10
-    save_best: true
 
 atari: &atari-defaults
   n_timesteps: !!float 1e7
@@ -102,9 +97,7 @@ atari: &atari-defaults
     exploration_fraction: 0.1
     exploration_final_eps: 0.01
   eval_params:
-    step_freq: 100_000
-    n_episodes: 10
-    save_best: true
+    deterministic: false
 
 PongNoFrameskip-v4:
   <<: *atari-defaults
