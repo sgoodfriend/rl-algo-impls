@@ -25,7 +25,7 @@ environments [5 basic gym, 4 PyBullet, CarRacing-v0, and 4 Atari] across 3 seeds
 cost ($0.60/hr).
 
 ```
-git clone git@github.com:sgoodfriend/rl-algo-impls.git
+git clone https://github.com/sgoodfriend/rl-algo-impls.git
 cd rl-algo-impls
 bash ./lambda_labs/setup.sh
 wandb login
