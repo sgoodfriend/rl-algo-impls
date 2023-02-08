@@ -15,7 +15,7 @@ class DQNPolicy(Policy):
     def __init__(
         self,
         env: VecEnv,
-        hidden_sizes: Sequence[int],
+        hidden_sizes: Sequence[int] = [],
         **kwargs,
     ) -> None:
         super().__init__(env, **kwargs)

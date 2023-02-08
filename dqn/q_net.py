@@ -13,7 +13,7 @@ class QNetwork(nn.Module):
         self,
         observation_space: gym.Space,
         action_space: gym.Space,
-        hidden_sizes: Sequence[int],
+        hidden_sizes: Sequence[int] = [],
         activation: Type[nn.Module] = nn.ReLU,  # Used by stable-baselines3
     ) -> None:
         super().__init__()
