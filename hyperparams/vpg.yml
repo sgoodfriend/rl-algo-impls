@@ -68,8 +68,8 @@ Acrobot-v1:
 
 LunarLander-v2:
   n_timesteps: !!float 4e6
-  # policy_hyperparams:
-  #   hidden_sizes: [256, 256]
+  policy_hyperparams:
+    hidden_sizes: [256, 256]
   algo_hyperparams:
     steps_per_epoch: 2048
     pi_lr: 0.0001
