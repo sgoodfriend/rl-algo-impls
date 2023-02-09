@@ -1,7 +1,6 @@
 source benchmarks/train_loop.sh
 
 export WANDB_PROJECT_NAME="rl-algo-impls"
-export VIRTUAL_DISPLAY=1
 
 BENCHMARK_MAX_PROCS="${BENCHMARK_MAX_PROCS:-3}"
 
