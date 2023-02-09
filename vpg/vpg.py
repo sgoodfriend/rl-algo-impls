@@ -85,6 +85,7 @@ class VanillaPolicyGradient(Algorithm):
         lam: float = 0.97,
         max_grad_norm: float = 10.0,
         steps_per_epoch: int = 4_000,
+        sde_sample_freq: int = -1,
     ) -> None:
         super().__init__(policy, env, device, tb_writer)
         self.policy = policy
@@ -97,6 +98,7 @@ class VanillaPolicyGradient(Algorithm):
 
         self.steps_per_epoch = steps_per_epoch
         self.train_v_iters = train_v_iters
+        self.sde_sample_freq = sde_sample_freq
 
     def learn(
         self: VanillaPolicyGradientSelf,
@@ -144,7 +146,16 @@ class VanillaPolicyGradient(Algorithm):
 
     def _collect_trajectories(self, obs: VecEnvObs) -> TrajectoryAccumulator:
         accumulator = TrajectoryAccumulator(self.env.num_envs, self.steps_per_epoch)
+        self.policy.reset_noise()
+        n_steps = 0
         while not accumulator.is_done():
+            if (
+                self.sde_sample_freq > 0
+                and n_steps > 0
+                and n_steps % self.sde_sample_freq == 0
+            ):
+                self.policy.reset_noise()
+            n_steps += 1
             action, value, _, clamped_action = self.policy.step(obs)
             next_obs, reward, done, _ = self.env.step(clamped_action)
             accumulator.step(obs, action, reward, done, value)

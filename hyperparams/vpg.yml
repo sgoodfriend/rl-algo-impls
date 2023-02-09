@@ -100,6 +100,7 @@ CarRacing-v0:
     val_lr: !!float 1e-4
     train_v_iters: 40
     max_grad_norm: 0.5
+    sde_sample_freq: 4
 
 HalfCheetahBulletEnv-v0: &pybullet-defaults
   n_timesteps: !!float 2e6
