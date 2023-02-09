@@ -59,7 +59,6 @@ if __name__ == "__main__":
 
         virtual_display = Display(visible=False, size=(1400, 900))
         virtual_display.start()
-    delattr(args, "virtual_display")
 
     # pool_size isn't a TrainArg so must be removed from args
     pool_size = args.pool_size
