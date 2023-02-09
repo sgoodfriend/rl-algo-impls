@@ -94,7 +94,7 @@ CarRacing-v0:
     hidden_sizes: [256]
   algo_hyperparams:
     steps_per_epoch: 4000
-    pi_lr: !!float 7e-5
+    pi_lr: !!float 5e-5
     gamma: 0.99
     lam: 0.95
     val_lr: !!float 1e-4
