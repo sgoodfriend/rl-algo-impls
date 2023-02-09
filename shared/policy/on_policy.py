@@ -2,7 +2,7 @@ import gym
 import numpy as np
 import torch
 
-from gym.spaces import Box
+from gym.spaces import Box, Discrete, Space
 from pathlib import Path
 from stable_baselines3.common.vec_env.base_vec_env import VecEnv, VecEnvObs
 from typing import NamedTuple, Optional, Sequence, Tuple, TypeVar
@@ -45,6 +45,21 @@ def clamp_actions(
         else:
             return np.clip(actions, low, high)
     return actions
+
+
+def default_hidden_sizes(obs_space: Space) -> Sequence[int]:
+    if isinstance(obs_space, Box):
+        if len(obs_space.shape) == 3:
+            # By default feature extractor to output has no hidden layers
+            return []
+        elif len(obs_space.shape) == 1:
+            return [64, 64]
+        else:
+            raise ValueError(f"Unsupported observation space: {obs_space}")
+    elif isinstance(obs_space, Discrete):
+        return [64]
+    else:
+        raise ValueError(f"Unsupported observation space: {obs_space}")
 
 
 class ActorCritic(Policy):

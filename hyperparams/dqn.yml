@@ -84,6 +84,7 @@ atari: &atari-defaults
   env_hyperparams:
     frame_stack: 4
     no_reward_timeout_steps: 1_000
+    no_reward_fire_steps: 500
     n_envs: 8
     vec_env_class: "subproc"
   algo_hyperparams:

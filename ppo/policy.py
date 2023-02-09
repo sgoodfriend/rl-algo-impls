@@ -2,7 +2,7 @@ from stable_baselines3.common.vec_env.base_vec_env import VecEnv
 from typing import Optional, Sequence
 
 from gym.spaces import Box, Discrete
-from shared.policy.on_policy import ActorCritic
+from shared.policy.on_policy import ActorCritic, default_hidden_sizes
 
 
 class PPOActorCritic(ActorCritic):
@@ -13,21 +13,16 @@ class PPOActorCritic(ActorCritic):
         v_hidden_sizes: Optional[Sequence[int]] = None,
         **kwargs,
     ) -> None:
-        obs_space = env.observation_space
-        if isinstance(obs_space, Box):
-            if len(obs_space.shape) == 3:
-                pi_hidden_sizes = pi_hidden_sizes or []
-                v_hidden_sizes = v_hidden_sizes or []
-            elif len(obs_space.shape) == 1:
-                pi_hidden_sizes = pi_hidden_sizes or [64, 64]
-                v_hidden_sizes = v_hidden_sizes or [64, 64]
-            else:
-                raise ValueError(f"Unsupported observation space: {obs_space}")
-        elif isinstance(obs_space, Discrete):
-            pi_hidden_sizes = pi_hidden_sizes or [64]
-            v_hidden_sizes = v_hidden_sizes or [64]
-        else:
-            raise ValueError(f"Unsupported observation space: {obs_space}")
+        pi_hidden_sizes = (
+            pi_hidden_sizes
+            if pi_hidden_sizes is not None
+            else default_hidden_sizes(env.observation_space)
+        )
+        v_hidden_sizes = (
+            v_hidden_sizes
+            if v_hidden_sizes is not None
+            else default_hidden_sizes(env.observation_space)
+        )
         super().__init__(
             env,
             pi_hidden_sizes,

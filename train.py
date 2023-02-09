@@ -45,17 +45,17 @@ if __name__ == "__main__":
     parser.add_argument(
         "--pool-size", type=int, default=1, help="Simultaneous training jobs to run"
     )
-    parser.add_argument(
-        "--virtual-display",
-        action="store_true",
-        help="Whether to create a virtual display for video rendering",
+    parser.set_defaults(
+        algo="ppo",
+        env="MountainCarContinuous-v0",
+        seed=[1, 2, 3],
+        pool_size=3,
     )
-    parser.set_defaults(algo="ppo", env="CartPole-v1", seed=1)
     args = parser.parse_args()
     print(args)
 
-    if args.virtual_display:
-        from pyvirtualdisplay import Display
+    if args.pool_size == 1:
+        from pyvirtualdisplay.display import Display
 
         virtual_display = Display(visible=False, size=(1400, 900))
         virtual_display.start()

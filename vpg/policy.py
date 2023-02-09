@@ -15,7 +15,7 @@ from shared.policy.actor import (
     actor_head,
 )
 from shared.policy.critic import CriticHead
-from shared.policy.on_policy import Step, clamp_actions
+from shared.policy.on_policy import Step, clamp_actions, default_hidden_sizes
 from shared.policy.policy import ACTIVATION, Policy
 
 PI_FILE_NAME = "pi.pt"
@@ -37,7 +37,7 @@ class VPGActorCritic(Policy):
     def __init__(
         self,
         env: VecEnv,
-        hidden_sizes: Sequence[int],
+        hidden_sizes: Optional[Sequence[int]] = None,
         init_layers_orthogonal: bool = True,
         activation_fn: str = "tanh",
         log_std_init: float = -0.5,
@@ -52,6 +52,12 @@ class VPGActorCritic(Policy):
         self.action_space = env.action_space
         self.use_sde = use_sde
         self.squash_output = squash_output
+
+        hidden_sizes = (
+            hidden_sizes
+            if hidden_sizes is not None
+            else default_hidden_sizes(obs_space)
+        )
 
         pi_feature_extractor = FeatureExtractor(
             obs_space, activation, init_layers_orthogonal=init_layers_orthogonal

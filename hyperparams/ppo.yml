@@ -15,8 +15,6 @@ CartPole-v1: &cartpole-defaults
     clip_range_decay: linear
   eval_params:
     step_freq: !!float 2.5e4
-    n_episodes: 10
-    save_best: true
 
 CartPole-v0:
   <<: *cartpole-defaults
@@ -53,11 +51,8 @@ MountainCarContinuous-v0:
     gae_lambda: 0.9
     max_grad_norm: 5
     vf_coef: 0.19
-    # use_sde: true
   eval_params:
     step_freq: 5000
-    n_episodes: 10
-    save_best: true
 
 Acrobot-v1:
   n_timesteps: !!float 1e6
@@ -84,10 +79,6 @@ LunarLander-v2:
     ent_coef: 0.01
     ent_coef_decay: linear
     normalize_advantage: false
-  eval_params:
-    step_freq: !!float 5e4
-    n_episodes: 10
-    save_best: true
 
 CarRacing-v0:
   n_timesteps: !!float 4e6
