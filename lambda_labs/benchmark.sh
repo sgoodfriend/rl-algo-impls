@@ -2,7 +2,7 @@ source benchmarks/train_loop.sh
 
 # export WANDB_PROJECT_NAME="rl-algo-impls"
 
-BENCHMARK_MAX_PROCS="${BENCHMARK_MAX_PROCS:-6}"
+BENCHMARK_MAX_PROCS="${BENCHMARK_MAX_PROCS:-3}"
 
 ALGOS=(
     "vpg"
@@ -11,16 +11,16 @@ ALGOS=(
 )
 ENVS=(
     # Basic
-    "CartPole-v1"
-    "MountainCar-v0"
-    "MountainCarContinuous-v0"
-    "Acrobot-v1"
+    # "CartPole-v1"
+    # "MountainCar-v0"
+    # "MountainCarContinuous-v0"
+    # "Acrobot-v1"
     "LunarLander-v2"
     # PyBullet
-    "HalfCheetahBulletEnv-v0"
-    "AntBulletEnv-v0"
-    "HopperBulletEnv-v0"
-    "Walker2DBulletEnv-v0"
+    # "HalfCheetahBulletEnv-v0"
+    # "AntBulletEnv-v0"
+    # "HopperBulletEnv-v0"
+    # "Walker2DBulletEnv-v0"
     # CarRacing
     "CarRacing-v0"
     # Atari
