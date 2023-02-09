@@ -37,6 +37,16 @@ videos of the running best model and the weights of the best and last model.
 Benchmarking runs are tagged with a shorted commit hash (i.e., `benchmark_5598ebc`) and
 hostname (i.e., `host_192-9-145-26`)
 
+Publishing benchmarks to Huggingface requires logging into Huggingface with a
+write-capable API token:
+
+```
+git config --global credential.helper store
+huggingface-cli login
+# For example: python benchmark_publish.py --wandb-tags host_192-9-147-166 benchmark_1d4094f --wandb-report-url https://api.wandb.ai/links/sgoodfriend/099h4lvj
+python benchmark_publish.py --wandb-tags HOST_TAG COMMIT_TAG --wandb-report-url WANDB_REPORT_URL
+```
+
 ### Google Colab Pro+
 
 3 notebooks in the repo are setup to be used with Google Colab:

@@ -14,6 +14,8 @@ from typing import List, Optional
 
 from huggingface_hub.hf_api import HfApi, upload_folder
 from huggingface_hub.repocard import metadata_save
+from pyvirtualdisplay.display import Display
+
 from publish.markdown_format import EvalTableData, model_card_text
 from runner.evaluate import EvalArgs, evaluate_model
 from runner.env import make_eval_env
@@ -27,6 +29,9 @@ def publish(
     huggingface_user: Optional[str] = None,
     huggingface_token: Optional[str] = None,
 ) -> None:
+    virtual_display = Display(visible=False, size=(1400, 900))
+    virtual_display.start()
+
     api = wandb.Api()
     runs = [api.run(rp) for rp in wandb_run_paths]
     algo = runs[0].config["algo"]
