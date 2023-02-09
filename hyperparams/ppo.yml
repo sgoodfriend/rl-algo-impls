@@ -37,9 +37,10 @@ MountainCarContinuous-v0:
   env_hyperparams:
     normalize: true
     n_envs: 4
-  policy_hyperparams:
-    init_layers_orthogonal: false
-    # log_std_init: -3.29
+  # policy_hyperparams:
+  #   init_layers_orthogonal: false
+  #   log_std_init: -3.29
+  #   use_sde: true
   algo_hyperparams:
     n_steps: 512
     batch_size: 256
@@ -92,6 +93,7 @@ CarRacing-v0:
     activation_fn: relu
     share_features_extractor: false
     cnn_feature_dim: 256
+    hidden_sizes: [256]
   algo_hyperparams:
     n_steps: 512
     batch_size: 128
