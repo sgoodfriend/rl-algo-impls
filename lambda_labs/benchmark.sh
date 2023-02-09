@@ -5,9 +5,9 @@ source benchmarks/train_loop.sh
 BENCHMARK_MAX_PROCS="${BENCHMARK_MAX_PROCS:-6}"
 
 ALGOS=(
-    # "vpg"
+    "vpg"
     # "dqn"
-    "ppo"
+    # "ppo"
 )
 ENVS=(
     # Basic
