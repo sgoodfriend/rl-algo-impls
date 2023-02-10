@@ -2,8 +2,8 @@ import gym
 import numpy as np
 import torch
 
+from abc import abstractmethod
 from gym.spaces import Box, Discrete, Space
-from pathlib import Path
 from stable_baselines3.common.vec_env.base_vec_env import VecEnv, VecEnvObs
 from typing import NamedTuple, Optional, Sequence, Tuple, TypeVar
 
@@ -62,7 +62,17 @@ def default_hidden_sizes(obs_space: Space) -> Sequence[int]:
         raise ValueError(f"Unsupported observation space: {obs_space}")
 
 
-class ActorCritic(Policy):
+class OnPolicy(Policy):
+    @abstractmethod
+    def value(self, obs: VecEnvObs) -> np.ndarray:
+        ...
+
+    @abstractmethod
+    def step(self, obs: VecEnvObs) -> Step:
+        ...
+
+
+class ActorCritic(OnPolicy):
     def __init__(
         self,
         env: VecEnv,
@@ -139,13 +149,6 @@ class ActorCritic(Policy):
         assert logp_a is not None
         assert entropy is not None
         return ACForward(logp_a, entropy, v)
-
-    def _as_tensor(self, obs: VecEnvObs) -> torch.Tensor:
-        assert isinstance(obs, np.ndarray)
-        o = torch.as_tensor(obs)
-        if self.device is not None:
-            o = o.to(self.device)
-        return o
 
     def value(self, obs: VecEnvObs) -> np.ndarray:
         o = self._as_tensor(obs)

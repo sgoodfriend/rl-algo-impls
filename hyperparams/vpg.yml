@@ -1,10 +1,10 @@
 CartPole-v1: &cartpole-defaults
   n_timesteps: !!float 4e5
   algo_hyperparams:
-    steps_per_epoch: 4096
+    n_steps: 4096
     pi_lr: 0.01
     gamma: 0.99
-    lam: 1
+    gae_lambda: 1
     val_lr: 0.01
     train_v_iters: 80
   eval_params:
@@ -14,10 +14,10 @@ CartPole-v0:
   <<: *cartpole-defaults
   n_timesteps: !!float 1e5
   algo_hyperparams:
-    steps_per_epoch: 1024
+    n_steps: 1024
     pi_lr: 0.01
     gamma: 0.99
-    lam: 1
+    gae_lambda: 1
     val_lr: 0.01
     train_v_iters: 80
 
@@ -27,10 +27,10 @@ MountainCar-v0:
     normalize: true
     n_envs: 16
   algo_hyperparams:
-    steps_per_epoch: 2048
+    n_steps: 200
     pi_lr: 0.005
     gamma: 0.99
-    lam: 0.97
+    gae_lambda: 0.97
     val_lr: 0.01
     train_v_iters: 80
     max_grad_norm: 0.5
@@ -45,10 +45,10 @@ MountainCarContinuous-v0:
   #   log_std_init: -3.29
   #   use_sde: true
   algo_hyperparams:
-    steps_per_epoch: 4000
+    n_steps: 1000
     pi_lr: !!float 5e-4
     gamma: 0.99
-    lam: 0.9
+    gae_lambda: 0.9
     val_lr: !!float 1e-3
     train_v_iters: 80
     max_grad_norm: 5
@@ -58,10 +58,10 @@ MountainCarContinuous-v0:
 Acrobot-v1:
   n_timesteps: !!float 2e5
   algo_hyperparams:
-    steps_per_epoch: 2048
+    n_steps: 2048
     pi_lr: 0.005
     gamma: 0.99
-    lam: 0.97
+    gae_lambda: 0.97
     val_lr: 0.01
     train_v_iters: 80
     max_grad_norm: 0.5
@@ -71,10 +71,10 @@ LunarLander-v2:
   policy_hyperparams:
     hidden_sizes: [256, 256]
   algo_hyperparams:
-    steps_per_epoch: 2048
+    n_steps: 2048
     pi_lr: 0.0001
     gamma: 0.999
-    lam: 0.97
+    gae_lambda: 0.97
     val_lr: 0.0001
     train_v_iters: 80
     max_grad_norm: 0.5
@@ -95,10 +95,10 @@ CarRacing-v0:
     cnn_feature_dim: 256
     hidden_sizes: [256]
   algo_hyperparams:
-    steps_per_epoch: 4000
+    n_steps: 1000
     pi_lr: !!float 5e-5
     gamma: 0.99
-    lam: 0.95
+    gae_lambda: 0.95
     val_lr: !!float 1e-4
     train_v_iters: 40
     max_grad_norm: 0.5
@@ -109,10 +109,10 @@ HalfCheetahBulletEnv-v0: &pybullet-defaults
   policy_hyperparams: &pybullet-policy-defaults
     hidden_sizes: [256, 256]
   algo_hyperparams: &pybullet-algo-defaults
-    steps_per_epoch: 4000
+    n_steps: 4000
     pi_lr: !!float 3e-4
     gamma: 0.99
-    lam: 0.97
+    gae_lambda: 0.97
     val_lr: !!float 1e-3
     train_v_iters: 80
     max_grad_norm: 0.5
@@ -142,10 +142,10 @@ FrozenLake-v1:
   policy_hyperparams:
     hidden_sizes: [64]
   algo_hyperparams:
-    steps_per_epoch: 2048
+    n_steps: 2048
     pi_lr: 0.01
     gamma: 0.99
-    lam: 0.98
+    gae_lambda: 0.98
     val_lr: 0.01
     train_v_iters: 80
     max_grad_norm: 0.5
@@ -157,18 +157,16 @@ FrozenLake-v1:
 atari: &atari-defaults
   n_timesteps: !!float 1e7
   env_hyperparams:
-    n_envs: 8
     frame_stack: 4
     no_reward_timeout_steps: 1000
     no_reward_fire_steps: 500
-    vec_env_class: subproc
   # policy_hyperparams:
   #   hidden_sizes: [256, 256]
   algo_hyperparams:
-    steps_per_epoch: 4096
+    n_steps: 4096
     pi_lr: !!float 1e-4
     gamma: 0.99
-    lam: 0.95
+    gae_lambda: 0.95
     val_lr: !!float 2e-4
     train_v_iters: 80
     max_grad_norm: 0.5

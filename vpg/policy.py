@@ -15,8 +15,14 @@ from shared.policy.actor import (
     actor_head,
 )
 from shared.policy.critic import CriticHead
-from shared.policy.on_policy import Step, clamp_actions, default_hidden_sizes
-from shared.policy.policy import ACTIVATION, Policy
+from shared.policy.on_policy import (
+    Step,
+    ACForward,
+    OnPolicy,
+    clamp_actions,
+    default_hidden_sizes,
+)
+from shared.policy.policy import ACTIVATION
 
 PI_FILE_NAME = "pi.pt"
 V_FILE_NAME = "v.pt"
@@ -33,7 +39,7 @@ class VPGActor(Actor):
         return self.head(fe, a)
 
 
-class VPGActorCritic(Policy):
+class VPGActorCritic(OnPolicy):
     def __init__(
         self,
         env: VecEnv,
@@ -84,12 +90,11 @@ class VPGActorCritic(Policy):
         )
         self.v = nn.Sequential(v_feature_extractor, v_head)
 
-    def _as_tensor(self, obs: VecEnvObs) -> torch.Tensor:
-        assert isinstance(obs, np.ndarray)
-        o = torch.as_tensor(obs)
-        if self.device is not None:
-            o = o.to(self.device)
-        return o
+    def value(self, obs: VecEnvObs) -> np.ndarray:
+        o = self._as_tensor(obs)
+        with torch.no_grad():
+            v = self.v(o)
+        return v.cpu().numpy()
 
     def step(self, obs: VecEnvObs) -> Step:
         o = self._as_tensor(obs)
