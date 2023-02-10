@@ -2,7 +2,7 @@ source benchmarks/train_loop.sh
 
 # export WANDB_PROJECT_NAME="rl-algo-impls"
 
-BENCHMARK_MAX_PROCS="${BENCHMARK_MAX_PROCS:-6}"
+BENCHMARK_MAX_PROCS="${BENCHMARK_MAX_PROCS:-3}"
 
 ALGOS=(
     "vpg"
