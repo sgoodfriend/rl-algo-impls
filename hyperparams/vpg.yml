@@ -160,8 +160,8 @@ _atari: &atari-defaults
     frame_stack: 4
     no_reward_timeout_steps: 1000
     no_reward_fire_steps: 500
-  # policy_hyperparams:
-  #   hidden_sizes: [256, 256]
+  policy_hyperparams:
+    hidden_sizes: [512]
   algo_hyperparams:
     n_steps: 4096
     pi_lr: !!float 1e-4
