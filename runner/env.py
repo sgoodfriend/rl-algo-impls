@@ -1,4 +1,5 @@
 import gym
+import numpy as np
 import os
 
 from gym.wrappers.resize_observation import ResizeObservation
@@ -21,6 +22,8 @@ from wrappers.atari_wrappers import EpisodicLifeEnv, FireOnLifeStarttEnv, ClipRe
 from wrappers.episode_record_video import EpisodeRecordVideo
 from wrappers.episode_stats_writer import EpisodeStatsWriter
 from wrappers.initial_step_truncate_wrapper import InitialStepTruncateWrapper
+from wrappers.noop_env_seed import NoopEnvSeed
+from wrappers.transpose_image_observation import TransposeImageObservation
 from wrappers.video_compat_wrapper import VideoCompatWrapper
 
 
@@ -46,17 +49,23 @@ def make_env(
     if "BulletEnv" in config.env_id:
         import pybullet_envs
 
-    make_kwargs = make_kwargs if make_kwargs is not None else {}
-    if "BulletEnv" in config.env_id and render:
-        make_kwargs["render"] = True
-    if "CarRacing" in config.env_id:
-        make_kwargs["verbose"] = 0
-
     spec = gym.spec(config.env_id)
+    seed = config.seed(training=training)
 
     def make(idx: int) -> Callable[[], gym.Env]:
+        env_kwargs = make_kwargs.copy() if make_kwargs is not None else {}
+        if "BulletEnv" in config.env_id and render:
+            env_kwargs["render"] = True
+        if "CarRacing" in config.env_id:
+            env_kwargs["verbose"] = 0
+        if "procgen" in config.env_id:
+            if not render:
+                env_kwargs["render_mode"] = "rgb_array"
+            if seed is not None:
+                env_kwargs["start_level"] = seed + idx
+
         def _make() -> gym.Env:
-            env = gym.make(config.env_id, **make_kwargs)
+            env = gym.make(config.env_id, **env_kwargs)
             env = gym.wrappers.RecordEpisodeStatistics(env)
             env = VideoCompatWrapper(env)
             if training and train_record_video and idx == 0:
@@ -85,6 +94,12 @@ def make_env(
                 env = ResizeObservation(env, (64, 64))
                 env = GrayScaleObservation(env, keep_dim=False)
                 env = FrameStack(env, frame_stack)
+            elif "procgen" in config.env_id:
+                # env = GrayScaleObservation(env, keep_dim=False)
+                env = NoopEnvSeed(env)
+                env = TransposeImageObservation(env)
+                if frame_stack > 1:
+                    env = FrameStack(env, frame_stack)
 
             if no_reward_timeout_steps:
                 from wrappers.no_reward_timeout import NoRewardTimeout
@@ -93,7 +108,6 @@ def make_env(
                     env, no_reward_timeout_steps, n_fire_steps=no_reward_fire_steps
                 )
 
-            seed = config.seed(training=training)
             if seed is not None:
                 env.seed(seed + idx)
                 env.action_space.seed(seed + idx)

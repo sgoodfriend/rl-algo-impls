@@ -192,3 +192,34 @@ HumanoidBulletEnv-v0:
     gae_lambda: 0.95
     learning_rate: !!float 2.5e-4
     clip_range: 0.2
+
+procgen:procgen-coinrun-v0: &procgen-defaults
+  n_timesteps: !!float 25e6
+  # device: cpu
+  env_hyperparams: &procgen-env-defaults
+    n_envs: 64
+    # frame_stack: 4
+    # no_reward_timeout_steps: 1000
+    # no_reward_fire_steps: 500
+    # vec_env_class: subproc
+    normalize: true
+    normalize_kwargs:
+      norm_obs: false
+    make_kwargs:
+      distribution_mode: easy
+  policy_hyperparams:
+    activation_fn: relu
+  algo_hyperparams:
+    gamma: 0.999
+    gae_lambda: 0.95
+    n_steps: 256
+    batch_size: 32
+    n_epochs: 4
+    ent_coef: 0.01
+    clip_range: 0.2
+    clip_range_decay: linear
+    learning_rate: !!float 5e-4
+    learning_rate_decay: linear
+    vf_coef: 0.5
+  eval_params:
+    deterministic: false
