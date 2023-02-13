@@ -7,7 +7,7 @@ from pathlib import Path
 from stable_baselines3.common.vec_env.base_vec_env import VecEnv, VecEnvObs
 from typing import NamedTuple, Optional, Sequence, TypeVar
 
-from shared.module import FeatureExtractor
+from shared.feature_extractor import FeatureExtractor
 from shared.policy.actor import (
     PiForward,
     Actor,

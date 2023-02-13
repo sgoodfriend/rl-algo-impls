@@ -7,7 +7,8 @@ from gym.spaces import Box, Discrete
 from torch.distributions import Categorical, Distribution, Normal
 from typing import NamedTuple, Optional, Sequence, Type, TypeVar, Union
 
-from shared.module import FeatureExtractor, mlp
+from shared.feature_extractor import FeatureExtractor
+from shared.module import mlp
 
 
 class PiForward(NamedTuple):

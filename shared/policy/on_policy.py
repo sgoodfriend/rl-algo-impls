@@ -7,7 +7,7 @@ from gym.spaces import Box, Discrete, Space
 from stable_baselines3.common.vec_env.base_vec_env import VecEnv, VecEnvObs
 from typing import NamedTuple, Optional, Sequence, Tuple, TypeVar
 
-from shared.module import FeatureExtractor
+from shared.feature_extractor import FeatureExtractor
 from shared.policy.actor import PiForward, StateDependentNoiseActorHead, actor_head
 from shared.policy.critic import CriticHead
 from shared.policy.policy import ACTIVATION, Policy
