@@ -1,63 +1,85 @@
 CartPole-v1: &cartpole-defaults
   n_timesteps: !!float 4e5
-  policy_hyperparams:
-    hidden_sizes: [32]
   algo_hyperparams:
-    steps_per_epoch: 4096
+    n_steps: 4096
     pi_lr: 0.01
     gamma: 0.99
-    lam: 1
+    gae_lambda: 1
     val_lr: 0.01
     train_v_iters: 80
   eval_params:
     step_freq: !!float 2.5e4
-    n_episodes: 10
-    save_best: true
 
 CartPole-v0:
   <<: *cartpole-defaults
   n_timesteps: !!float 1e5
   algo_hyperparams:
-    steps_per_epoch: 1024
+    n_steps: 1024
     pi_lr: 0.01
     gamma: 0.99
-    lam: 1
+    gae_lambda: 1
     val_lr: 0.01
     train_v_iters: 80
 
-Acrobot-v1:
-  n_timesteps: !!float 2e5
-  policy_hyperparams:
-    hidden_sizes: [32, 32]
+MountainCar-v0:
+  n_timesteps: !!float 1e6
+  env_hyperparams:
+    normalize: true
+    n_envs: 16
   algo_hyperparams:
-    steps_per_epoch: 2048
+    n_steps: 200
     pi_lr: 0.005
     gamma: 0.99
-    lam: 0.97
+    gae_lambda: 0.97
     val_lr: 0.01
     train_v_iters: 80
     max_grad_norm: 0.5
+
+MountainCarContinuous-v0:
+  n_timesteps: !!float 3e5
+  env_hyperparams:
+    normalize: true
+    n_envs: 4
+  # policy_hyperparams:
+  #   init_layers_orthogonal: false
+  #   log_std_init: -3.29
+  #   use_sde: true
+  algo_hyperparams:
+    n_steps: 1000
+    pi_lr: !!float 5e-4
+    gamma: 0.99
+    gae_lambda: 0.9
+    val_lr: !!float 1e-3
+    train_v_iters: 80
+    max_grad_norm: 5
   eval_params:
-    step_freq: !!float 4e4
-    n_episodes: 10
-    save_best: true
+    step_freq: 5000
+
+Acrobot-v1:
+  n_timesteps: !!float 2e5
+  algo_hyperparams:
+    n_steps: 2048
+    pi_lr: 0.005
+    gamma: 0.99
+    gae_lambda: 0.97
+    val_lr: 0.01
+    train_v_iters: 80
+    max_grad_norm: 0.5
 
 LunarLander-v2:
   n_timesteps: !!float 4e6
   policy_hyperparams:
     hidden_sizes: [256, 256]
   algo_hyperparams:
-    steps_per_epoch: 2048
+    n_steps: 2048
     pi_lr: 0.0001
     gamma: 0.999
-    lam: 0.97
+    gae_lambda: 0.97
     val_lr: 0.0001
     train_v_iters: 80
     max_grad_norm: 0.5
   eval_params:
-    step_freq: !!float 5e4
-    n_episodes: 10
-    save_best: true
+    deterministic: false
 
 CarRacing-v0:
   n_timesteps: !!float 4e6
@@ -66,52 +88,50 @@ CarRacing-v0:
     n_envs: 4
     vec_env_class: "dummy"
   policy_hyperparams:
-    hidden_sizes: [256, 256]
+    use_sde: true
+    log_std_init: -2
+    init_layers_orthogonal: false
+    activation_fn: relu
+    cnn_feature_dim: 256
+    hidden_sizes: [256]
   algo_hyperparams:
-    steps_per_epoch: 4000
-    pi_lr: !!float 7e-5
+    n_steps: 1000
+    pi_lr: !!float 5e-5
     gamma: 0.99
-    lam: 0.95
+    gae_lambda: 0.95
     val_lr: !!float 1e-4
     train_v_iters: 40
     max_grad_norm: 0.5
-  eval_params:
-    step_freq: !!float 5e4
-    n_episodes: 10
-    save_best: true
+    sde_sample_freq: 4
 
 HalfCheetahBulletEnv-v0: &pybullet-defaults
   n_timesteps: !!float 2e6
-  policy_hyperparams:
-    hidden_sizes: [64, 64]
-    init_layers_orthogonal: true
-  algo_hyperparams:
-    steps_per_epoch: 4000
+  policy_hyperparams: &pybullet-policy-defaults
+    hidden_sizes: [256, 256]
+  algo_hyperparams: &pybullet-algo-defaults
+    n_steps: 4000
     pi_lr: !!float 3e-4
     gamma: 0.99
-    lam: 0.97
+    gae_lambda: 0.97
     val_lr: !!float 1e-3
     train_v_iters: 80
     max_grad_norm: 0.5
-  eval_params:
-    step_freq: !!float 1e5
-    n_episodes: 10
-    save_best: true
-
-HopperBulletEnv-v0:
-  <<: *pybullet-defaults
 
 AntBulletEnv-v0:
   <<: *pybullet-defaults
   policy_hyperparams:
+    <<: *pybullet-policy-defaults
     hidden_sizes: [400, 300]
   algo_hyperparams:
+    <<: *pybullet-algo-defaults
     pi_lr: !!float 7e-4
-    gamma: 0.99
-    lam: 0.97
     val_lr: !!float 7e-3
-    train_v_iters: 80
-    max_grad_norm: 0.5
+
+HopperBulletEnv-v0:
+  <<: *pybullet-defaults
+
+Walker2DBulletEnv-v0:
+  <<: *pybullet-defaults
 
 FrozenLake-v1:
   n_timesteps: !!float 8e5
@@ -122,10 +142,10 @@ FrozenLake-v1:
   policy_hyperparams:
     hidden_sizes: [64]
   algo_hyperparams:
-    steps_per_epoch: 2048
+    n_steps: 2048
     pi_lr: 0.01
     gamma: 0.99
-    lam: 0.98
+    gae_lambda: 0.98
     val_lr: 0.01
     train_v_iters: 80
     max_grad_norm: 0.5
@@ -134,24 +154,21 @@ FrozenLake-v1:
     n_episodes: 10
     save_best: true
 
-SpaceInvadersNoFrameskip-v4: &atari-defaults
+atari: &atari-defaults
   n_timesteps: !!float 1e7
   env_hyperparams:
     frame_stack: 4
-    no_reward_timeout_steps: 1_000
-    n_envs: 8
-    vec_env_class: "subproc"
-  policy_hyperparams:
-    hidden_sizes: [256, 256]
+    no_reward_timeout_steps: 1000
+    no_reward_fire_steps: 500
+  # policy_hyperparams:
+  #   hidden_sizes: [256, 256]
   algo_hyperparams:
-    steps_per_epoch: 4096
+    n_steps: 4096
     pi_lr: !!float 1e-4
     gamma: 0.99
-    lam: 0.95
+    gae_lambda: 0.95
     val_lr: !!float 2e-4
     train_v_iters: 80
     max_grad_norm: 0.5
   eval_params:
-    step_freq: !!float 1e5
-    n_episodes: 10
-    save_best: true
+    deterministic: false

@@ -59,3 +59,10 @@ class Policy(nn.Module, ABC):
 
     def reset_noise(self) -> None:
         pass
+
+    def _as_tensor(self, obs: VecEnvObs) -> torch.Tensor:
+        assert isinstance(obs, np.ndarray)
+        o = torch.as_tensor(obs)
+        if self.device is not None:
+            o = o.to(self.device)
+        return o

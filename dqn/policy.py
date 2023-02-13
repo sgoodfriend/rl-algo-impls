@@ -30,8 +30,6 @@ class DQNPolicy(Policy):
                 [self.env.action_space.sample() for _ in range(self.env.num_envs)]
             )
         else:
+            o = self._as_tensor(obs)
             with torch.no_grad():
-                obs_th = torch.as_tensor(np.array(obs))
-                if self.device:
-                    obs_th = obs_th.to(self.device)
-                return self.q_net(obs_th).argmax(axis=1).cpu().numpy()
+                return self.q_net(o).argmax(axis=1).cpu().numpy()

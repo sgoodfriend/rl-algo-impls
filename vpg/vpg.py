@@ -2,68 +2,38 @@ import numpy as np
 import torch
 import torch.nn as nn
 
+from collections import defaultdict
+from dataclasses import dataclass, asdict
 from stable_baselines3.common.vec_env.base_vec_env import VecEnv, VecEnvObs
 from torch.optim import Adam
 from torch.utils.tensorboard.writer import SummaryWriter
-from typing import Optional, Sequence, NamedTuple, TypeVar
+from typing import Optional, Sequence, TypeVar
 
 from shared.algorithm import Algorithm
 from shared.callbacks.callback import Callback
-from shared.trajectory import Trajectory
-from shared.utils import discounted_cumsum
+from shared.gae import compute_rtg_and_advantage, compute_advantage
+from shared.trajectory import Trajectory, TrajectoryAccumulator
 from vpg.policy import VPGActorCritic
 
 
-class TrajectoryAccumulator:
-    def __init__(self, num_envs: int, goal_steps: int):
-        self.num_envs = num_envs
-
-        self.trajectories = []
-        self.current_trajectories = [Trajectory() for _ in range(num_envs)]
-
-        self.steps_per_env = int(np.ceil(goal_steps / num_envs))
-        self.step_idx = 0
-        self.envs_done: set[int] = set()
-
-    def step(
-        self,
-        obs: VecEnvObs,
-        action: np.ndarray,
-        reward: np.ndarray,
-        done: np.ndarray,
-        val: np.ndarray,
-    ) -> None:
-        assert isinstance(obs, np.ndarray)
-        self.step_idx += 1
-        for i, trajectory in enumerate(self.current_trajectories):
-            trajectory.add(obs[i], action[i], reward[i], val[i])
-            if done[i]:
-                # TODO: Eventually take advantage of terminated/truncated
-                # differentiation in later versions of gym.
-                trajectory.terminated = True
-                self.trajectories.append(trajectory)
-                self.current_trajectories[i] = Trajectory()
-                if self.step_idx >= self.steps_per_env:
-                    self.envs_done.add(i)
-
-    def is_done(self) -> bool:
-        return len(self.envs_done) == self.num_envs
-
-    def n_timesteps(self) -> int:
-        return np.sum([len(t) for t in self.trajectories]).item()
-
-
-class RtgAdvantage(NamedTuple):
-    rewards_to_go: torch.Tensor
-    advantage: torch.Tensor
-
-
-class TrainEpochStats(NamedTuple):
+@dataclass
+class TrainEpochStats:
     pi_loss: float
     v_loss: float
+    envs_with_done: int = 0
+    episodes_done: int = 0
 
     def write_to_tensorboard(self, tb_writer: SummaryWriter, global_step: int) -> None:
-        tb_writer.add_scalars("losses", self._asdict(), global_step=global_step)
+        tb_writer.add_scalars("losses", asdict(self), global_step=global_step)
+
+
+class VPGTrajectoryAccumulator(TrajectoryAccumulator):
+    def __init__(self, num_envs: int) -> None:
+        super().__init__(num_envs, trajectory_class=Trajectory)
+        self.completed_per_env: defaultdict[int, int] = defaultdict(int)
+
+    def on_done(self, env_idx: int, trajectory: Trajectory) -> None:
+        self.completed_per_env[env_idx] += 1
 
 
 VanillaPolicyGradientSelf = TypeVar(
@@ -82,35 +52,39 @@ class VanillaPolicyGradient(Algorithm):
         pi_lr: float = 3e-4,
         val_lr: float = 1e-3,
         train_v_iters: int = 80,
-        lam: float = 0.97,
+        gae_lambda: float = 0.97,
         max_grad_norm: float = 10.0,
-        steps_per_epoch: int = 4_000,
+        n_steps: int = 4_000,
+        sde_sample_freq: int = -1,
+        update_rtg_between_v_iters: bool = False,
     ) -> None:
         super().__init__(policy, env, device, tb_writer)
         self.policy = policy
 
         self.gamma = gamma
-        self.lam = lam
+        self.gae_lambda = gae_lambda
         self.pi_optim = Adam(self.policy.pi.parameters(), lr=pi_lr)
         self.val_optim = Adam(self.policy.v.parameters(), lr=val_lr)
         self.max_grad_norm = max_grad_norm
 
-        self.steps_per_epoch = steps_per_epoch
+        self.n_steps = n_steps
         self.train_v_iters = train_v_iters
+        self.sde_sample_freq = sde_sample_freq
+        self.update_rtg_between_v_iters = update_rtg_between_v_iters
 
     def learn(
         self: VanillaPolicyGradientSelf,
         total_timesteps: int,
         callback: Optional[Callback] = None,
     ) -> VanillaPolicyGradientSelf:
-        self.policy.train(True)
-        obs = self.env.reset()
         timesteps_elapsed = 0
         epoch_cnt = 0
         while timesteps_elapsed < total_timesteps:
             epoch_cnt += 1
-            accumulator = self._collect_trajectories(obs)
-            epoch_stats = self.train(accumulator.trajectories)
+            accumulator = self._collect_trajectories()
+            epoch_stats = self.train(accumulator.all_trajectories)
+            epoch_stats.envs_with_done = len(accumulator.completed_per_env)
+            epoch_stats.episodes_done = sum(accumulator.completed_per_env.values())
             epoch_steps = accumulator.n_timesteps()
             timesteps_elapsed += epoch_steps
             epoch_stats.write_to_tensorboard(
@@ -127,50 +101,41 @@ class VanillaPolicyGradient(Algorithm):
         return self
 
     def train(self, trajectories: Sequence[Trajectory]) -> TrainEpochStats:
+        self.policy.train()
         obs = torch.as_tensor(
             np.concatenate([np.array(t.obs) for t in trajectories]), device=self.device
         )
         act = torch.as_tensor(
             np.concatenate([np.array(t.act) for t in trajectories]), device=self.device
         )
-        rtg, adv = self._compute_rtg_and_advantage(trajectories)
+        rtg, adv = compute_rtg_and_advantage(
+            trajectories, self.policy, self.gamma, self.gae_lambda, self.device
+        )
 
         pi_loss = self._update_pi(obs, act, adv)
         v_loss = 0
         for _ in range(self.train_v_iters):
+            if self.update_rtg_between_v_iters:
+                rtg = compute_advantage(
+                    trajectories, self.policy, self.gamma, self.gae_lambda, self.device
+                )
             v_loss = self._update_v(obs, rtg)
 
         return TrainEpochStats(pi_loss, v_loss)
 
-    def _collect_trajectories(self, obs: VecEnvObs) -> TrajectoryAccumulator:
-        accumulator = TrajectoryAccumulator(self.env.num_envs, self.steps_per_epoch)
-        while not accumulator.is_done():
+    def _collect_trajectories(self) -> VPGTrajectoryAccumulator:
+        self.policy.eval()
+        obs = self.env.reset()
+        accumulator = VPGTrajectoryAccumulator(self.env.num_envs)
+        self.policy.reset_noise()
+        for i in range(self.n_steps):
+            if self.sde_sample_freq > 0 and i > 0 and i % self.sde_sample_freq == 0:
+                self.policy.reset_noise()
             action, value, _, clamped_action = self.policy.step(obs)
             next_obs, reward, done, _ = self.env.step(clamped_action)
-            accumulator.step(obs, action, reward, done, value)
+            accumulator.step(obs, action, next_obs, reward, done, value)
             obs = next_obs
         return accumulator
-
-    def _compute_rtg_and_advantage(
-        self, trajectories: Sequence[Trajectory]
-    ) -> RtgAdvantage:
-        rewards_to_go = []
-        advantage = []
-        for traj in trajectories:
-            last_val = 0 if traj.terminated else self.policy.step(traj.obs[-1]).v
-            rew = np.append(np.array(traj.rew), last_val)
-            v = np.append(np.array(traj.v), last_val)
-            rewards_to_go.append(discounted_cumsum(rew, self.gamma)[:-1])
-            deltas = rew[:-1] + self.gamma * v[1:] - v[:-1]
-            advantage.append(discounted_cumsum(deltas, self.gamma * self.lam))
-        return RtgAdvantage(
-            torch.as_tensor(
-                np.concatenate(rewards_to_go), dtype=torch.float32, device=self.device
-            ),
-            torch.as_tensor(
-                np.concatenate(advantage), dtype=torch.float32, device=self.device
-            ),
-        )
 
     def _update_pi(
         self, obs: torch.Tensor, act: torch.Tensor, adv: torch.Tensor

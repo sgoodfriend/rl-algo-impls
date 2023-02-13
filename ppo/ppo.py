@@ -2,7 +2,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from torch.optim import Adam
 from stable_baselines3.common.vec_env.base_vec_env import VecEnv, VecEnvObs
 from torch.utils.tensorboard.writer import SummaryWriter
@@ -10,21 +10,15 @@ from typing import List, Optional, Sequence, NamedTuple, TypeVar
 
 from shared.algorithm import Algorithm
 from shared.callbacks.callback import Callback
+from shared.gae import compute_advantage, compute_rtg_and_advantage, RtgAdvantage
 from shared.policy.on_policy import ActorCritic
 from shared.schedule import constant_schedule, linear_schedule
-from shared.trajectory import Trajectory as BaseTrajectory
-from shared.utils import discounted_cumsum
+from shared.trajectory import Trajectory, TrajectoryAccumulator
 
 
 @dataclass
-class PPOTrajectory(BaseTrajectory):
-    logp_a: List[float]
-    next_obs: Optional[np.ndarray]
-
-    def __init__(self) -> None:
-        super().__init__()
-        self.logp_a = []
-        self.next_obs = None
+class PPOTrajectory(Trajectory):
+    logp_a: List[float] = field(default_factory=list)
 
     def add(
         self,
@@ -36,18 +30,13 @@ class PPOTrajectory(BaseTrajectory):
         v: float,
         logp_a: float,
     ):
-        super().add(obs, act, rew, v)
-        self.next_obs = next_obs if not terminated else None
-        self.terminated = terminated
+        super().add(obs, act, next_obs, rew, terminated, v)
         self.logp_a.append(logp_a)
 
 
-class TrajectoryAccumulator:
+class PPOTrajectoryAccumulator(TrajectoryAccumulator):
     def __init__(self, num_envs: int) -> None:
-        self.num_envs = num_envs
-
-        self.trajectories_ = []
-        self.current_trajectories_ = [PPOTrajectory() for _ in range(num_envs)]
+        super().__init__(num_envs, PPOTrajectory)
 
     def step(
         self,
@@ -59,28 +48,7 @@ class TrajectoryAccumulator:
         val: np.ndarray,
         logp_a: np.ndarray,
     ) -> None:
-        assert isinstance(obs, np.ndarray)
-        assert isinstance(next_obs, np.ndarray)
-        for i, trajectory in enumerate(self.current_trajectories_):
-            # TODO: Eventually take advantage of terminated/truncated differentiation in
-            # later versions of gym.
-            trajectory.add(
-                obs[i], action[i], next_obs[i], reward[i], done[i], val[i], logp_a[i]
-            )
-            if done[i]:
-                self.trajectories_.append(trajectory)
-                self.current_trajectories_[i] = PPOTrajectory()
-
-    @property
-    def all_trajectories(self) -> List[PPOTrajectory]:
-        return self.trajectories_ + list(
-            filter(lambda t: len(t), self.current_trajectories_)
-        )
-
-
-class RtgAdvantage(NamedTuple):
-    rewards_to_go: torch.Tensor
-    advantage: torch.Tensor
+        super().step(obs, action, next_obs, reward, done, val, logp_a)
 
 
 class TrainStepStats(NamedTuple):
@@ -244,7 +212,9 @@ class PPO(Algorithm):
         act = torch.as_tensor(
             np.concatenate([np.array(t.act) for t in trajectories]), device=self.device
         )
-        rtg, adv = self._compute_rtg_and_advantage(trajectories)
+        rtg, adv = compute_rtg_and_advantage(
+            trajectories, self.policy, self.gamma, self.gae_lambda, self.device
+        )
         orig_v = torch.as_tensor(
             np.concatenate([np.array(t.v) for t in trajectories]), device=self.device
         )
@@ -256,9 +226,13 @@ class PPO(Algorithm):
         step_stats = []
         for _ in range(self.n_epochs):
             if self.update_rtg_between_epochs:
-                rtg, adv = self._compute_rtg_and_advantage(trajectories)
+                rtg, adv = compute_rtg_and_advantage(
+                    trajectories, self.policy, self.gamma, self.gae_lambda, self.device
+                )
             else:
-                adv = self._compute_advantage(trajectories)
+                adv = compute_advantage(
+                    trajectories, self.policy, self.gamma, self.gae_lambda, self.device
+                )
             idxs = torch.randperm(len(obs))
             for i in range(0, len(obs), self.batch_size):
                 mb_idxs = idxs[i : i + self.batch_size]
@@ -326,42 +300,4 @@ class PPO(Algorithm):
             entropy_loss.item(),
             approx_kl,
             clipped_frac,
-        )
-
-    def _compute_advantage(self, trajectories: Sequence[PPOTrajectory]) -> torch.Tensor:
-        advantage = []
-        for traj in trajectories:
-            last_val = 0
-            if not traj.terminated and traj.next_obs is not None:
-                last_val = self.policy.value(np.array(traj.next_obs))
-            rew = np.append(np.array(traj.rew), last_val)
-            v = np.append(np.array(traj.v), last_val)
-            deltas = rew[:-1] + self.gamma * v[1:] - v[:-1]
-            advantage.append(discounted_cumsum(deltas, self.gamma * self.gae_lambda))
-        return torch.as_tensor(
-            np.concatenate(advantage), dtype=torch.float32, device=self.device
-        )
-
-    def _compute_rtg_and_advantage(
-        self, trajectories: Sequence[PPOTrajectory]
-    ) -> RtgAdvantage:
-        rewards_to_go = []
-        advantages = []
-        for traj in trajectories:
-            last_val = 0
-            if not traj.terminated and traj.next_obs is not None:
-                last_val = self.policy.value(np.array(traj.next_obs))
-            rew = np.append(np.array(traj.rew), last_val)
-            v = np.append(np.array(traj.v), last_val)
-            deltas = rew[:-1] + self.gamma * v[1:] - v[:-1]
-            adv = discounted_cumsum(deltas, self.gamma * self.gae_lambda)
-            advantages.append(adv)
-            rewards_to_go.append(v[:-1] + adv)
-        return RtgAdvantage(
-            torch.as_tensor(
-                np.concatenate(rewards_to_go), dtype=torch.float32, device=self.device
-            ),
-            torch.as_tensor(
-                np.concatenate(advantages), dtype=torch.float32, device=self.device
-            ),
         )
