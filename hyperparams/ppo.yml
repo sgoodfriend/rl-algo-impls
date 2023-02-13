@@ -223,3 +223,4 @@ procgen:procgen-coinrun-v0: &procgen-defaults
     vf_coef: 0.5
   eval_params:
     deterministic: false
+    ignore_first_episode: true

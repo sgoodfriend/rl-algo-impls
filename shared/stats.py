@@ -140,8 +140,8 @@ class EpisodeAccumulator:
             current.length += 1
             if done[idx]:
                 self._episodes.append(current)
-                self.on_done(idx, current)
                 self.current_episodes[idx] = Episode()
+                self.on_done(idx, current)
 
     def __len__(self) -> int:
         return len(self.episodes)
