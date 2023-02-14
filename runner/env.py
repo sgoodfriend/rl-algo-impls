@@ -61,8 +61,6 @@ def make_env(
         if "procgen" in config.env_id:
             if not render:
                 env_kwargs["render_mode"] = "rgb_array"
-            if seed is not None:
-                env_kwargs["start_level"] = seed + idx
 
         def _make() -> gym.Env:
             env = gym.make(config.env_id, **env_kwargs)
