@@ -1,3 +1,4 @@
+import dataclasses
 import gym
 import numpy as np
 import os
@@ -16,7 +17,7 @@ from stable_baselines3.common.vec_env.vec_normalize import VecNormalize
 from torch.utils.tensorboard.writer import SummaryWriter
 from typing import Any, Callable, Dict, Optional, Union
 
-from runner.config import Config
+from runner.config import Config, EnvHyperparams
 from shared.policy.policy import VEC_NORMALIZE_FILENAME
 from wrappers.atari_wrappers import EpisodicLifeEnv, FireOnLifeStarttEnv, ClipRewardEnv
 from wrappers.episode_record_video import EpisodeRecordVideo
@@ -29,23 +30,73 @@ from wrappers.video_compat_wrapper import VideoCompatWrapper
 
 def make_env(
     config: Config,
+    hparams: EnvHyperparams,
     training: bool = True,
     render: bool = False,
     normalize_load_path: Optional[str] = None,
-    n_envs: int = 1,
-    frame_stack: int = 1,
-    make_kwargs: Optional[Dict[str, Any]] = None,
-    no_reward_timeout_steps: Optional[int] = None,
-    no_reward_fire_steps: Optional[int] = None,
-    vec_env_class: str = "dummy",
-    normalize: bool = False,
-    normalize_kwargs: Optional[Dict[str, Any]] = None,
     tb_writer: Optional[SummaryWriter] = None,
-    rolling_length: int = 100,
-    train_record_video: bool = False,
-    video_step_interval: Union[int, float] = 1_000_000,
-    initial_steps_to_truncate: Optional[int] = None,
 ) -> VecEnv:
+    if hparams.is_procgen:
+        return _make_procgen_env(
+            config,
+            hparams,
+            training=training,
+            render=render,
+            normalize_load_path=normalize_load_path,
+            tb_writer=tb_writer,
+        )
+    else:
+        return _make_vec_env(
+            config,
+            hparams,
+            training=training,
+            render=render,
+            normalize_load_path=normalize_load_path,
+            tb_writer=tb_writer,
+        )
+
+
+def make_eval_env(
+    config: Config,
+    hparams: EnvHyperparams,
+    override_n_envs: Optional[int] = None,
+    **kwargs
+) -> VecEnv:
+    kwargs = kwargs.copy()
+    kwargs["training"] = False
+    if override_n_envs is not None:
+        hparams_kwargs = hparams._asdict()
+        hparams_kwargs["n_envs"] = override_n_envs
+        if override_n_envs == 1:
+            hparams_kwargs["vec_env_class"] = "dummy"
+        hparams = EnvHyperparams(**hparams_kwargs)
+    return make_env(config, hparams, **kwargs)
+
+
+def _make_vec_env(
+    config: Config,
+    hparams: EnvHyperparams,
+    training: bool = True,
+    render: bool = False,
+    normalize_load_path: Optional[str] = None,
+    tb_writer: Optional[SummaryWriter] = None,
+) -> VecEnv:
+    (
+        _,
+        n_envs,
+        frame_stack,
+        make_kwargs,
+        no_reward_timeout_steps,
+        no_reward_fire_steps,
+        vec_env_class,
+        normalize,
+        normalize_kwargs,
+        rolling_length,
+        train_record_video,
+        video_step_interval,
+        initial_steps_to_truncate,
+    ) = hparams
+
     if "BulletEnv" in config.env_id:
         import pybullet_envs
 
@@ -134,13 +185,12 @@ def make_env(
     return venv
 
 
-def make_eval_env(
-    config: Config, override_n_envs: Optional[int] = None, **kwargs
+def _make_procgen_env(
+    config: Config,
+    hparams: EnvHyperparams,
+    training: bool = True,
+    render: bool = False,
+    normalize_load_path: Optional[str] = None,
+    tb_writer: Optional[SummaryWriter] = None,
 ) -> VecEnv:
-    kwargs = kwargs.copy()
-    kwargs["training"] = False
-    if override_n_envs is not None:
-        kwargs["n_envs"] = override_n_envs
-        if override_n_envs == 1:
-            kwargs["vec_env_class"] = "dummy"
-    return make_env(config, **kwargs)
+    pass

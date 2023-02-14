@@ -2,7 +2,7 @@ import os
 
 from datetime import datetime
 from dataclasses import dataclass
-from typing import Any, Dict, Optional, TypedDict, Union
+from typing import Any, Dict, NamedTuple, Optional, TypedDict, Union
 
 
 @dataclass
@@ -11,6 +11,22 @@ class RunArgs:
     env: str
     seed: Optional[int] = None
     use_deterministic_algorithms: bool = True
+
+
+class EnvHyperparams(NamedTuple):
+    is_procgen: bool = False
+    n_envs: int = 1
+    frame_stack: int = 1
+    make_kwargs: Optional[Dict[str, Any]] = None
+    no_reward_timeout_steps: Optional[int] = None
+    no_reward_fire_steps: Optional[int] = None
+    vec_env_class: str = "dummy"
+    normalize: bool = False
+    normalize_kwargs: Optional[Dict[str, Any]] = None
+    rolling_length: int = 100
+    train_record_video: bool = False
+    video_step_interval: Union[int, float] = 1_000_000
+    initial_steps_to_truncate: Optional[int] = None
 
 
 class Hyperparams(TypedDict, total=False):
