@@ -27,6 +27,7 @@ cost ($0.60/hr).
 ```
 git clone https://github.com/sgoodfriend/rl-algo-impls.git
 cd rl-algo-impls
+# git checkout BRANCH_NAME if running on non-main branch
 bash ./lambda_labs/setup.sh
 wandb login
 bash ./lambda_labs/benchmark.sh
