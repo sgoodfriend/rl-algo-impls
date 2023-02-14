@@ -209,17 +209,22 @@ procgen:procgen-coinrun-v0: &procgen-defaults
       distribution_mode: easy
   policy_hyperparams:
     activation_fn: relu
+    cnn_style: impala
+    cnn_feature_dim: 256
+    init_layers_orthogonal: true
+    cnn_layers_init_orthogonal: false
   algo_hyperparams:
     gamma: 0.999
     gae_lambda: 0.95
     n_steps: 256
-    batch_size: 32
-    n_epochs: 4
+    batch_size: 2048
+    n_epochs: 3
     ent_coef: 0.01
     clip_range: 0.2
-    clip_range_decay: linear
+    # clip_range_decay: linear
+    clip_range_vf: 0.2
     learning_rate: !!float 5e-4
-    learning_rate_decay: linear
+    # learning_rate_decay: linear
     vf_coef: 0.5
   eval_params:
     deterministic: false
