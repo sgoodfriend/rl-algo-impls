@@ -141,6 +141,9 @@ special case for all Atari games).
 
 ## procgen Setup
 
+procgen envs use gym3, which don't expose a straightforward way to set seed to allow for
+repeatable runs.
+
 [openai/procgen](https://github.com/openai/procgen) doesn't support Apple Silicon, but [patch
 instructions exist](https://github.com/openai/procgen/issues/69). The changes to the
 repo are for now in a fork since the openai/procgen project is in maintenance mode:
@@ -153,3 +156,5 @@ pip install -e .
 python -c "from procgen import ProcgenGym3Env; ProcgenGym3Env(num=1, env_name='coinrun')"
 python -m procgen.interactive
 ```
+
+Benchmarking on amd64 Linux machines (e.g., Lambda Labs and Google Colab) shouldn't need
