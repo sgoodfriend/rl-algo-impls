@@ -136,10 +136,10 @@ _atari: &atari-defaults
     deterministic: false
 
 impala-BreakoutNoFrameskip-v4:
-  <<*: atari-defaults
+  <<: *atari-defaults
   env_id: BreakoutNoFrameskip-v4
   policy_hyperparams:
-    <<*: atari-policy-defaults
+    <<: *atari-policy-defaults
     cnn_style: impala
     cnn_feature_dim: 256
     init_layers_orthogonal: true
