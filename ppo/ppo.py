@@ -180,9 +180,9 @@ class PPO(Algorithm):
 
         return self
 
-    def _collect_trajectories(self, obs: VecEnvObs) -> TrajectoryAccumulator:
+    def _collect_trajectories(self, obs: VecEnvObs) -> PPOTrajectoryAccumulator:
         self.policy.eval()
-        accumulator = TrajectoryAccumulator(self.env.num_envs)
+        accumulator = PPOTrajectoryAccumulator(self.env.num_envs)
         self.policy.reset_noise()
         for i in range(self.n_steps):
             if self.sde_sample_freq > 0 and i > 0 and i % self.sde_sample_freq == 0:
