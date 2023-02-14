@@ -68,11 +68,12 @@ class Config:
         return self.hyperparams.get("env_id") or self.args.env
 
     def model_name(self, include_seed: bool = True) -> str:
-        parts = [self.algo, self.env_id]
+        # Use arg env name instead of environment name
+        parts = [self.algo, self.args.env]
         if include_seed and self.args.seed is not None:
             parts.append(f"S{self.args.seed}")
 
-        # Assume that a custom env_id already has the necessary information in the name
+        # Assume that the custom arg name already has the necessary information
         if not self.hyperparams.get("env_id"):
             make_kwargs = self.env_hyperparams.get("make_kwargs", {})
             if make_kwargs:
