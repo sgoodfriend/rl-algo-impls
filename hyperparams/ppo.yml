@@ -112,7 +112,7 @@ CarRacing-v0:
 # PongNoFrameskip-v4
 # SpaceInvadersNoFrameskip-v4
 # QbertNoFrameskip-v4
-atari: &atari-defaults
+_atari: &atari-defaults
   n_timesteps: !!float 1e7
   policy_hyperparams:
     activation_fn: relu
@@ -193,20 +193,17 @@ HumanoidBulletEnv-v0:
     learning_rate: !!float 2.5e-4
     clip_range: 0.2
 
-procgen:procgen-coinrun-v0: &procgen-defaults
+_procgen: &procgen-defaults
   n_timesteps: !!float 25e6
-  # device: cpu
   env_hyperparams: &procgen-env-defaults
     n_envs: 64
     # frame_stack: 4
     # no_reward_timeout_steps: 1000
     # no_reward_fire_steps: 500
-    # vec_env_class: subproc
+    vec_env_class: subproc
     normalize: true
     normalize_kwargs:
       norm_obs: false
-    make_kwargs:
-      distribution_mode: easy
   policy_hyperparams:
     activation_fn: relu
     cnn_style: impala
@@ -229,3 +226,18 @@ procgen:procgen-coinrun-v0: &procgen-defaults
   eval_params:
     deterministic: false
     ignore_first_episode: true
+
+procgen-coinrun-v0-easy: &coinrun-defaults
+  <<: *procgen-defaults
+  env_id: procgen:procgen-coinrun-v0
+  env_hyperparams: &coinrun-env-defaults
+    <<: *procgen-env-defaults
+    make_kwargs:
+      distribution_mode: easy
+
+procgen-coinrun-v0-debug:
+  <<: *coinrun-defaults
+  device: cpu
+  env_hyperparams:
+    <<: *coinrun-env-defaults
+    vec_env_class: dummy

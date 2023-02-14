@@ -154,7 +154,7 @@ FrozenLake-v1:
     n_episodes: 10
     save_best: true
 
-atari: &atari-defaults
+_atari: &atari-defaults
   n_timesteps: !!float 1e7
   env_hyperparams:
     frame_stack: 4

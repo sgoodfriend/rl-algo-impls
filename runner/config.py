@@ -65,21 +65,25 @@ class Config:
 
     @property
     def env_id(self) -> str:
-        return self.args.env
+        return self.hyperparams.get("env_id") or self.args.env
 
     def model_name(self, include_seed: bool = True) -> str:
         parts = [self.algo, self.env_id]
         if include_seed and self.args.seed is not None:
             parts.append(f"S{self.args.seed}")
-        make_kwargs = self.env_hyperparams.get("make_kwargs", {})
-        if make_kwargs:
-            for k, v in make_kwargs.items():
-                if type(v) == bool and v:
-                    parts.append(k)
-                elif type(v) == int and v:
-                    parts.append(f"{k}{v}")
-                else:
-                    parts.append(str(v))
+
+        # Assume that a custom env_id already has the necessary information in the name
+        if not self.hyperparams.get("env_id"):
+            make_kwargs = self.env_hyperparams.get("make_kwargs", {})
+            if make_kwargs:
+                for k, v in make_kwargs.items():
+                    if type(v) == bool and v:
+                        parts.append(k)
+                    elif type(v) == int and v:
+                        parts.append(f"{k}{v}")
+                    else:
+                        parts.append(str(v))
+
         return "-".join(parts)
 
     @property
