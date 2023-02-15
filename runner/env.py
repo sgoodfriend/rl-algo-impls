@@ -1,4 +1,3 @@
-import dataclasses
 import gym
 import numpy as np
 import os
@@ -6,6 +5,7 @@ import os
 from gym.wrappers.resize_observation import ResizeObservation
 from gym.wrappers.gray_scale_observation import GrayScaleObservation
 from gym.wrappers.frame_stack import FrameStack
+from procgen.env import ProcgenEnv
 from stable_baselines3.common.atari_wrappers import (
     MaxAndSkipEnv,
     NoopResetEnv,
@@ -15,17 +15,21 @@ from stable_baselines3.common.vec_env.dummy_vec_env import DummyVecEnv
 from stable_baselines3.common.vec_env.subproc_vec_env import SubprocVecEnv
 from stable_baselines3.common.vec_env.vec_normalize import VecNormalize
 from torch.utils.tensorboard.writer import SummaryWriter
-from typing import Any, Callable, Dict, Optional, Union
+from typing import Callable, Optional, Union
 
 from runner.config import Config, EnvHyperparams
 from shared.policy.policy import VEC_NORMALIZE_FILENAME
 from wrappers.atari_wrappers import EpisodicLifeEnv, FireOnLifeStarttEnv, ClipRewardEnv
 from wrappers.episode_record_video import EpisodeRecordVideo
 from wrappers.episode_stats_writer import EpisodeStatsWriter
+from wrappers.get_rgb_observation import GetRgbObservation
 from wrappers.initial_step_truncate_wrapper import InitialStepTruncateWrapper
+from wrappers.is_vector_env import IsVectorEnv
 from wrappers.noop_env_seed import NoopEnvSeed
 from wrappers.transpose_image_observation import TransposeImageObservation
 from wrappers.video_compat_wrapper import VideoCompatWrapper
+
+GeneralVecEnv = Union[VecEnv, gym.vector.VectorEnv, gym.Wrapper]
 
 
 def make_env(
@@ -35,7 +39,7 @@ def make_env(
     render: bool = False,
     normalize_load_path: Optional[str] = None,
     tb_writer: Optional[SummaryWriter] = None,
-) -> VecEnv:
+) -> GeneralVecEnv:
     if hparams.is_procgen:
         return _make_procgen_env(
             config,
@@ -61,7 +65,7 @@ def make_eval_env(
     hparams: EnvHyperparams,
     override_n_envs: Optional[int] = None,
     **kwargs
-) -> VecEnv:
+) -> GeneralVecEnv:
     kwargs = kwargs.copy()
     kwargs["training"] = False
     if override_n_envs is not None:
@@ -80,7 +84,7 @@ def _make_vec_env(
     render: bool = False,
     normalize_load_path: Optional[str] = None,
     tb_writer: Optional[SummaryWriter] = None,
-) -> VecEnv:
+) -> GeneralVecEnv:
     (
         _,
         n_envs,
@@ -176,10 +180,15 @@ def _make_vec_env(
     if normalize:
         if normalize_load_path:
             venv = VecNormalize.load(
-                os.path.join(normalize_load_path, VEC_NORMALIZE_FILENAME), venv
+                os.path.join(normalize_load_path, VEC_NORMALIZE_FILENAME),
+                venv,  # type: ignore
             )
         else:
-            venv = VecNormalize(venv, training=training, **(normalize_kwargs or {}))
+            venv = VecNormalize(
+                venv,  # type: ignore
+                training=training,
+                **(normalize_kwargs or {}),
+            )
         if not training:
             venv.norm_reward = False
     return venv
@@ -192,5 +201,56 @@ def _make_procgen_env(
     render: bool = False,
     normalize_load_path: Optional[str] = None,
     tb_writer: Optional[SummaryWriter] = None,
-) -> VecEnv:
-    pass
+) -> GeneralVecEnv:
+    (
+        _,
+        n_envs,
+        frame_stack,
+        make_kwargs,
+        _,  # no_reward_timeout_steps
+        _,  # no_reward_fire_steps
+        _,  # vec_env_class
+        normalize,
+        normalize_kwargs,
+        rolling_length,
+        _,  # train_record_video
+        _,  # video_step_interval
+        _,  # initial_steps_to_truncate
+    ) = hparams
+
+    seed = config.seed(training=training)
+
+    make_kwargs = make_kwargs or {}
+    if not render:
+        make_kwargs["render_mode"] = "rgb_array"
+    if seed is not None:
+        make_kwargs["rand_seed"] = seed
+
+    envs = ProcgenEnv(n_envs, config.env_id, **make_kwargs)
+    envs = IsVectorEnv(envs)
+    envs = GetRgbObservation(envs)
+    # TODO: Handle Grayscale and/or FrameStack
+    envs = TransposeImageObservation(envs)
+
+    envs = gym.wrappers.RecordEpisodeStatistics(envs)
+
+    if seed is not None:
+        envs.action_space.seed(seed)
+        envs.observation_space.seed(seed)
+
+    if training:
+        assert tb_writer
+        envs = EpisodeStatsWriter(
+            envs, tb_writer, training=training, rolling_length=rolling_length
+        )
+    if normalize:
+        normalize_kwargs = normalize_kwargs or {}
+        # TODO: Handle reward stats saving/loading/syncing, but it's only important
+        # for checkpointing
+        envs = gym.wrappers.NormalizeReward(envs)
+        clip_obs = normalize_kwargs.get("clip_reward", 10.0)
+        envs = gym.wrappers.TransformReward(
+            envs, lambda r: np.clip(r, -clip_obs, clip_obs)
+        )
+
+    return envs

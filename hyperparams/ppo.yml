@@ -135,6 +135,14 @@ _atari: &atari-defaults
   eval_params:
     deterministic: false
 
+debug-PongNoFrameskip-v4:
+  <<: *atari-defaults
+  device: cpu
+  env_id: PongNoFrameskip-v4
+  env_hyperparams:
+    <<: *atari-env-defaults
+    vec_env_class: dummy
+
 impala-BreakoutNoFrameskip-v4:
   <<: *atari-defaults
   env_id: BreakoutNoFrameskip-v4
@@ -205,14 +213,11 @@ HumanoidBulletEnv-v0:
 
 _procgen: &procgen-defaults
   env_hyperparams: &procgen-env-defaults
+    is_procgen: true
     n_envs: 64
+    # grayscale: false
     # frame_stack: 4
-    # no_reward_timeout_steps: 1000
-    # no_reward_fire_steps: 500
-    vec_env_class: subproc
-    normalize: true
-    normalize_kwargs:
-      norm_obs: false
+    normalize: true # procgen only normalizes reward
   policy_hyperparams:
     activation_fn: relu
     cnn_style: impala
@@ -244,25 +249,22 @@ _procgen-easy: &procgen-easy-defaults
     make_kwargs:
       distribution_mode: easy
 
-procgen-coinrun-v0-easy: &coinrun-easy-defaults
+procgen-coinrun-easy: &coinrun-easy-defaults
   <<: *procgen-easy-defaults
-  env_id: procgen:procgen-coinrun-v0
+  env_id: coinrun
 
-procgen-coinrun-v0-debug:
+debug-procgen-coinrun:
   <<: *coinrun-easy-defaults
   device: cpu
-  env_hyperparams:
-    <<: *procgen-easy-env-defaults
-    vec_env_class: dummy
 
-procgen-starpilot-v0-easy:
+procgen-starpilot-easy:
   <<: *procgen-easy-defaults
-  env_id: procgen:procgen-starpilot-v0
+  env_id: starpilot
 
-procgen-bossfight-v0-easy:
+procgen-bossfight-easy:
   <<: *procgen-easy-defaults
-  env_id: procgen:procgen-bossfight-v0
+  env_id: bossfight
 
-procgen-bigfish-v0-easy:
+procgen-bigfish-easy:
   <<: *procgen-easy-defaults
-  env_id: procgen:procgen-bigfish-v0
+  env_id: bigfish

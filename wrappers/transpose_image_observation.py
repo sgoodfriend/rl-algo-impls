@@ -23,4 +23,12 @@ class TransposeImageObservation(ObservationWrapper):
         )
 
     def observation(self, obs: np.ndarray) -> np.ndarray:
-        return np.transpose(obs, axes=self._transpose_axes)
+        full_shape = obs.shape
+        obs_shape = self.observation_space.shape
+        addl_dims = len(full_shape) - len(obs_shape)
+        if addl_dims > 0:
+            transpose_axes = list(range(addl_dims))
+            transpose_axes.extend(a + addl_dims for a in self._transpose_axes)
+        else:
+            transpose_axes = self._transpose_axes
+        return np.transpose(obs, axes=transpose_axes)
