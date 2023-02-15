@@ -127,7 +127,7 @@ class PPO(Algorithm):
 
         self.gamma = gamma
         self.gae_lambda = gae_lambda
-        self.optimizer = Adam(self.policy.parameters(), lr=learning_rate)
+        self.optimizer = Adam(self.policy.parameters(), lr=learning_rate, eps=1e-7)
         self.lr_schedule = (
             linear_schedule(learning_rate, 0)
             if learning_rate_decay == "linear"
