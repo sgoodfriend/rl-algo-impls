@@ -27,6 +27,7 @@ cost ($0.60/hr).
 ```
 git clone https://github.com/sgoodfriend/rl-algo-impls.git
 cd rl-algo-impls
+# git checkout BRANCH_NAME if running on non-main branch
 bash ./lambda_labs/setup.sh
 wandb login
 bash ./lambda_labs/benchmark.sh
@@ -138,3 +139,23 @@ export WANDB_PROJECT_NAME=rl-algo-impls
 
 These are specified in yaml files in the hyperparams directory by game (`atari` is a
 special case for all Atari games).
+
+## procgen Setup
+
+procgen envs use gym3, which don't expose a straightforward way to set seed to allow for
+repeatable runs.
+
+[openai/procgen](https://github.com/openai/procgen) doesn't support Apple Silicon, but [patch
+instructions exist](https://github.com/openai/procgen/issues/69). The changes to the
+repo are for now in a fork since the openai/procgen project is in maintenance mode:
+
+```
+brew install wget cmake glow qt5
+git clone https://github.com/sgoodfriend/procgen.git
+cd procgen
+pip install -e .
+python -c "from procgen import ProcgenGym3Env; ProcgenGym3Env(num=1, env_name='coinrun')"
+python -m procgen.interactive
+```
+
+Benchmarking on amd64 Linux machines (e.g., Lambda Labs and Google Colab) shouldn't need

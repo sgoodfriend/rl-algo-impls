@@ -7,7 +7,7 @@ from gym.spaces import Box, Discrete, Space
 from stable_baselines3.common.vec_env.base_vec_env import VecEnv, VecEnvObs
 from typing import NamedTuple, Optional, Sequence, Tuple, TypeVar
 
-from shared.module import FeatureExtractor
+from shared.module.feature_extractor import FeatureExtractor
 from shared.policy.actor import PiForward, StateDependentNoiseActorHead, actor_head
 from shared.policy.critic import CriticHead
 from shared.policy.policy import ACTIVATION, Policy
@@ -86,6 +86,8 @@ class ActorCritic(OnPolicy):
         squash_output: bool = False,
         share_features_extractor: bool = True,
         cnn_feature_dim: int = 512,
+        cnn_style: str = "nature",
+        cnn_layers_init_orthogonal: Optional[bool] = None,
         **kwargs,
     ) -> None:
         super().__init__(env, **kwargs)
@@ -99,6 +101,8 @@ class ActorCritic(OnPolicy):
             activation,
             init_layers_orthogonal=init_layers_orthogonal,
             cnn_feature_dim=cnn_feature_dim,
+            cnn_style=cnn_style,
+            cnn_layers_init_orthogonal=cnn_layers_init_orthogonal,
         )
         self._pi = actor_head(
             self.action_space,
@@ -117,6 +121,8 @@ class ActorCritic(OnPolicy):
                 activation,
                 init_layers_orthogonal=init_layers_orthogonal,
                 cnn_feature_dim=cnn_feature_dim,
+                cnn_style=cnn_style,
+                cnn_layers_init_orthogonal=cnn_layers_init_orthogonal,
             )
             v_hidden_sizes = (self._v_feature_extractor.out_dim,) + tuple(
                 v_hidden_sizes

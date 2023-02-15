@@ -61,7 +61,7 @@ if __name__ == "__main__":
         virtual_display.start()
 
     # pool_size isn't a TrainArg so must be removed from args
-    pool_size = args.pool_size
+    pool_size = min(args.pool_size, len(args.seed))
     delattr(args, "pool_size")
 
     algos = args.algo if isinstance(args.algo, list) else [args.algo]

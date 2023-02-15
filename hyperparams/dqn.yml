@@ -79,7 +79,7 @@ LunarLander-v2:
   eval_params:
     step_freq: 25_000
 
-atari: &atari-defaults
+_atari: &atari-defaults
   n_timesteps: !!float 1e7
   env_hyperparams:
     frame_stack: 4

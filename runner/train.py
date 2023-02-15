@@ -13,8 +13,8 @@ from torch.utils.tensorboard.writer import SummaryWriter
 from typing import Any, Dict, Optional, Sequence
 
 from shared.callbacks.eval_callback import EvalCallback
+from runner.config import Config, EnvHyperparams, RunArgs
 from runner.env import make_env, make_eval_env
-from runner.config import Config, RunArgs
 from runner.running_utils import (
     ALGOS,
     load_hyperparams,
@@ -60,12 +60,14 @@ def train(args: TrainArgs):
 
     set_seeds(args.seed, args.use_deterministic_algorithms)
 
-    env = make_env(config, tb_writer=tb_writer, **config.env_hyperparams)
+    env = make_env(
+        config, EnvHyperparams(**config.env_hyperparams), tb_writer=tb_writer
+    )
     device = get_device(config.device, env)
     policy = make_policy(args.algo, env, device, **config.policy_hyperparams)
     algo = ALGOS[args.algo](policy, env, device, tb_writer, **config.algo_hyperparams)
 
-    eval_env = make_eval_env(config, **config.env_hyperparams)
+    eval_env = make_eval_env(config, EnvHyperparams(**config.env_hyperparams))
     record_best_videos = config.eval_params.get("record_best_videos", True)
     callback = EvalCallback(
         policy,
@@ -73,7 +75,9 @@ def train(args: TrainArgs):
         tb_writer,
         best_model_path=config.model_dir_path(best=True),
         **config.eval_params,
-        video_env=make_eval_env(config, override_n_envs=1, **config.env_hyperparams)
+        video_env=make_eval_env(
+            config, EnvHyperparams(**config.env_hyperparams), override_n_envs=1
+        )
         if record_best_videos
         else None,
         best_video_dir=config.best_videos_dir,

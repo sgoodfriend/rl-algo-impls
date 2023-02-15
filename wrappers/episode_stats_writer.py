@@ -4,7 +4,6 @@ import numpy as np
 from collections import deque
 from stable_baselines3.common.vec_env.base_vec_env import (
     VecEnvStepReturn,
-    VecEnvWrapper,
     VecEnvObs,
 )
 from torch.utils.tensorboard.writer import SummaryWriter
@@ -12,11 +11,15 @@ from torch.utils.tensorboard.writer import SummaryWriter
 from shared.stats import Episode, EpisodesStats
 
 
-class EpisodeStatsWriter(VecEnvWrapper):
+class EpisodeStatsWriter(gym.Wrapper):
     def __init__(
-        self, venv, tb_writer: SummaryWriter, training: bool = True, rolling_length=100
+        self,
+        env,
+        tb_writer: SummaryWriter,
+        training: bool = True,
+        rolling_length=100,
     ):
-        super().__init__(venv)
+        super().__init__(env)
         self.training = training
         self.tb_writer = tb_writer
         self.rolling_length = rolling_length
@@ -25,9 +28,9 @@ class EpisodeStatsWriter(VecEnvWrapper):
         self.episode_cnt = 0
         self.last_episode_cnt_print = 0
 
-    def step_wait(self) -> VecEnvStepReturn:
-        obs, rews, dones, infos = self.venv.step_wait()
-        self.total_steps += self.venv.num_envs
+    def step(self, actions: np.ndarray) -> VecEnvStepReturn:
+        obs, rews, dones, infos = self.env.step(actions)
+        self.total_steps += getattr(self.env, "num_envs", 1)
         step_episodes = []
         for info in infos:
             ep_info = info.get("episode")
@@ -54,4 +57,4 @@ class EpisodeStatsWriter(VecEnvWrapper):
         return obs, rews, dones, infos
 
     def reset(self) -> VecEnvObs:
-        return self.venv.reset()
+        return self.env.reset()

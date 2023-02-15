@@ -3,7 +3,8 @@ import torch
 import torch.nn as nn
 
 from typing import Sequence, Type
-from shared.module import FeatureExtractor, mlp
+from shared.module.feature_extractor import FeatureExtractor
+from shared.module.module import mlp
 
 
 class CriticHead(nn.Module):

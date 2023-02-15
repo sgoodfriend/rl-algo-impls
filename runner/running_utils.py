@@ -77,13 +77,15 @@ def load_hyperparams(algo: str, env_id: str, root_path: str) -> Hyperparams:
     hyperparams_path = os.path.join(root_path, HYPERPARAMS_PATH, f"{algo}.yml")
     with open(hyperparams_path, "r") as f:
         hyperparams_dict = yaml.safe_load(f)
+
+    if env_id in hyperparams_dict:
+        return hyperparams_dict[env_id]
+
     if "BulletEnv" in env_id:
         import pybullet_envs
     spec = gym.spec(env_id)
-    if env_id in hyperparams_dict:
-        return hyperparams_dict[env_id]
-    elif "AtariEnv" in str(spec.entry_point) and "atari" in hyperparams_dict:
-        return hyperparams_dict["atari"]
+    if "AtariEnv" in str(spec.entry_point) and "_atari" in hyperparams_dict:
+        return hyperparams_dict["_atari"]
     else:
         raise ValueError(f"{env_id} not specified in {algo} hyperparameters file")
 

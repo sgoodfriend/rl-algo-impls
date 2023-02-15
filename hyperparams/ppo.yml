@@ -81,12 +81,12 @@ LunarLander-v2:
     ent_coef_decay: linear
     normalize_advantage: false
 
-CarRacing-v0:
+CarRacing-v0: &carracing-defaults
   n_timesteps: !!float 4e6
   env_hyperparams:
     n_envs: 8
     frame_stack: 4
-  policy_hyperparams:
+  policy_hyperparams: &carracing-policy-defaults
     use_sde: true
     log_std_init: -2
     init_layers_orthogonal: false
@@ -108,20 +108,30 @@ CarRacing-v0:
     vf_coef: 0.5
     clip_range: 0.2
 
+impala-CarRacing-v0:
+  <<: *carracing-defaults
+  env_id: CarRacing-v0
+  policy_hyperparams:
+    <<: *carracing-policy-defaults
+    cnn_style: impala
+    init_layers_orthogonal: true
+    cnn_layers_init_orthogonal: false
+    hidden_sizes: []
+
 # BreakoutNoFrameskip-v4
 # PongNoFrameskip-v4
 # SpaceInvadersNoFrameskip-v4
 # QbertNoFrameskip-v4
-atari: &atari-defaults
+_atari: &atari-defaults
   n_timesteps: !!float 1e7
-  policy_hyperparams:
-    activation_fn: relu
   env_hyperparams: &atari-env-defaults
     n_envs: 8
     frame_stack: 4
     no_reward_timeout_steps: 1000
     no_reward_fire_steps: 500
     vec_env_class: subproc
+  policy_hyperparams: &atari-policy-defaults
+    activation_fn: relu
   algo_hyperparams:
     n_steps: 128
     batch_size: 256
@@ -134,6 +144,39 @@ atari: &atari-defaults
     ent_coef: 0.01
   eval_params:
     deterministic: false
+
+debug-PongNoFrameskip-v4:
+  <<: *atari-defaults
+  device: cpu
+  env_id: PongNoFrameskip-v4
+  env_hyperparams:
+    <<: *atari-env-defaults
+    vec_env_class: dummy
+
+_impala-atari: &impala-atari-defaults
+  <<: *atari-defaults
+  policy_hyperparams:
+    <<: *atari-policy-defaults
+    cnn_style: impala
+    cnn_feature_dim: 256
+    init_layers_orthogonal: true
+    cnn_layers_init_orthogonal: false
+
+impala-PongNoFrameskip-v4:
+  <<: *impala-atari-defaults
+  env_id: PongNoFrameskip-v4
+
+impala-BreakoutNoFrameskip-v4:
+  <<: *impala-atari-defaults
+  env_id: BreakoutNoFrameskip-v4
+
+impala-SpaceInvadersNoFrameskip-v4:
+  <<: *impala-atari-defaults
+  env_id: SpaceInvadersNoFrameskip-v4
+
+impala-QbertNoFrameskip-v4:
+  <<: *impala-atari-defaults
+  env_id: QbertNoFrameskip-v4
 
 HalfCheetahBulletEnv-v0: &pybullet-defaults
   n_timesteps: !!float 2e6
@@ -192,3 +235,61 @@ HumanoidBulletEnv-v0:
     gae_lambda: 0.95
     learning_rate: !!float 2.5e-4
     clip_range: 0.2
+
+_procgen: &procgen-defaults
+  env_hyperparams: &procgen-env-defaults
+    is_procgen: true
+    n_envs: 64
+    # grayscale: false
+    # frame_stack: 4
+    normalize: true # procgen only normalizes reward
+  policy_hyperparams:
+    activation_fn: relu
+    cnn_style: impala
+    cnn_feature_dim: 256
+    init_layers_orthogonal: true
+    cnn_layers_init_orthogonal: false
+  algo_hyperparams:
+    gamma: 0.999
+    gae_lambda: 0.95
+    n_steps: 256
+    batch_size: 2048
+    n_epochs: 3
+    ent_coef: 0.01
+    clip_range: 0.2
+    # clip_range_decay: linear
+    clip_range_vf: 0.2
+    learning_rate: !!float 5e-4
+    # learning_rate_decay: linear
+    vf_coef: 0.5
+  eval_params:
+    deterministic: false
+    ignore_first_episode: true
+
+_procgen-easy: &procgen-easy-defaults
+  <<: *procgen-defaults
+  n_timesteps: !!float 25e6
+  env_hyperparams: &procgen-easy-env-defaults
+    <<: *procgen-env-defaults
+    make_kwargs:
+      distribution_mode: easy
+
+procgen-coinrun-easy: &coinrun-easy-defaults
+  <<: *procgen-easy-defaults
+  env_id: coinrun
+
+debug-procgen-coinrun:
+  <<: *coinrun-easy-defaults
+  device: cpu
+
+procgen-starpilot-easy:
+  <<: *procgen-easy-defaults
+  env_id: starpilot
+
+procgen-bossfight-easy:
+  <<: *procgen-easy-defaults
+  env_id: bossfight
+
+procgen-bigfish-easy:
+  <<: *procgen-easy-defaults
+  env_id: bigfish

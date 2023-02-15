@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from typing import NamedTuple, Optional
 
 from runner.env import make_eval_env
-from runner.config import Config, RunArgs
+from runner.config import Config, EnvHyperparams, RunArgs
 from runner.running_utils import (
     load_hyperparams,
     set_seeds,
@@ -70,10 +70,10 @@ def evaluate_model(args: EvalArgs, root_dir: str) -> Evaluation:
 
     env = make_eval_env(
         config,
+        EnvHyperparams(**config.env_hyperparams),
         override_n_envs=args.n_envs,
         render=args.render,
         normalize_load_path=model_path,
-        **config.env_hyperparams,
     )
     device = get_device(config.device, env)
     policy = make_policy(

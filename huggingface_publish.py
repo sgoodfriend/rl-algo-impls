@@ -17,6 +17,7 @@ from huggingface_hub.repocard import metadata_save
 from pyvirtualdisplay.display import Display
 
 from publish.markdown_format import EvalTableData, model_card_text
+from runner.config import EnvHyperparams
 from runner.evaluate import EvalArgs, evaluate_model
 from runner.env import make_eval_env
 from shared.callbacks.eval_callback import evaluate
@@ -129,9 +130,9 @@ def publish(
         video_env = VecEpisodeRecorder(
             make_eval_env(
                 config,
+                EnvHyperparams(**config.env_hyperparams),
                 override_n_envs=1,
                 normalize_load_path=model_path,
-                **config.env_hyperparams,
             ),
             os.path.join(repo_dir_path, "replay"),
             max_video_length=3600,

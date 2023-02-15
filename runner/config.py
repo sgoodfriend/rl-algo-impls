@@ -2,7 +2,7 @@ import os
 
 from datetime import datetime
 from dataclasses import dataclass
-from typing import Any, Dict, Optional, TypedDict, Union
+from typing import Any, Dict, NamedTuple, Optional, TypedDict, Union
 
 
 @dataclass
@@ -11,6 +11,22 @@ class RunArgs:
     env: str
     seed: Optional[int] = None
     use_deterministic_algorithms: bool = True
+
+
+class EnvHyperparams(NamedTuple):
+    is_procgen: bool = False
+    n_envs: int = 1
+    frame_stack: int = 1
+    make_kwargs: Optional[Dict[str, Any]] = None
+    no_reward_timeout_steps: Optional[int] = None
+    no_reward_fire_steps: Optional[int] = None
+    vec_env_class: str = "dummy"
+    normalize: bool = False
+    normalize_kwargs: Optional[Dict[str, Any]] = None
+    rolling_length: int = 100
+    train_record_video: bool = False
+    video_step_interval: Union[int, float] = 1_000_000
+    initial_steps_to_truncate: Optional[int] = None
 
 
 class Hyperparams(TypedDict, total=False):
@@ -65,21 +81,26 @@ class Config:
 
     @property
     def env_id(self) -> str:
-        return self.args.env
+        return self.hyperparams.get("env_id") or self.args.env
 
     def model_name(self, include_seed: bool = True) -> str:
-        parts = [self.algo, self.env_id]
+        # Use arg env name instead of environment name
+        parts = [self.algo, self.args.env]
         if include_seed and self.args.seed is not None:
             parts.append(f"S{self.args.seed}")
-        make_kwargs = self.env_hyperparams.get("make_kwargs", {})
-        if make_kwargs:
-            for k, v in make_kwargs.items():
-                if type(v) == bool and v:
-                    parts.append(k)
-                elif type(v) == int and v:
-                    parts.append(f"{k}{v}")
-                else:
-                    parts.append(str(v))
+
+        # Assume that the custom arg name already has the necessary information
+        if not self.hyperparams.get("env_id"):
+            make_kwargs = self.env_hyperparams.get("make_kwargs", {})
+            if make_kwargs:
+                for k, v in make_kwargs.items():
+                    if type(v) == bool and v:
+                        parts.append(k)
+                    elif type(v) == int and v:
+                        parts.append(f"{k}{v}")
+                    else:
+                        parts.append(str(v))
+
         return "-".join(parts)
 
     @property

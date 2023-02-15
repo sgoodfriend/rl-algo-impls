@@ -15,15 +15,33 @@ from wrappers.vec_episode_recorder import VecEpisodeRecorder
 
 
 class EvaluateAccumulator(EpisodeAccumulator):
-    def __init__(self, num_envs: int, goal_episodes: int, print_returns: bool = True):
+    def __init__(
+        self,
+        num_envs: int,
+        goal_episodes: int,
+        print_returns: bool = True,
+        ignore_first_episode: bool = False,
+    ):
         super().__init__(num_envs)
         self.completed_episodes_by_env_idx = [[] for _ in range(num_envs)]
         self.goal_episodes_per_env = int(np.ceil(goal_episodes / num_envs))
         self.print_returns = print_returns
+        if ignore_first_episode:
+            first_done = set()
+
+            def should_record_done(idx: int) -> bool:
+                has_done_first_episode = idx in first_done
+                first_done.add(idx)
+                return has_done_first_episode
+
+            self.should_record_done = should_record_done
+        else:
+            self.should_record_done = lambda idx: True
 
     def on_done(self, ep_idx: int, episode: Episode) -> None:
         if (
-            len(self.completed_episodes_by_env_idx[ep_idx])
+            self.should_record_done(ep_idx)
+            and len(self.completed_episodes_by_env_idx[ep_idx])
             >= self.goal_episodes_per_env
         ):
             return
@@ -56,9 +74,12 @@ def evaluate(
     render: bool = False,
     deterministic: bool = True,
     print_returns: bool = True,
+    ignore_first_episode: bool = False,
 ) -> EpisodesStats:
     policy.eval()
-    episodes = EvaluateAccumulator(env.num_envs, n_episodes, print_returns)
+    episodes = EvaluateAccumulator(
+        env.num_envs, n_episodes, print_returns, ignore_first_episode
+    )
 
     obs = env.reset()
     while not episodes.is_done():
@@ -88,6 +109,7 @@ class EvalCallback(Callback):
         video_env: Optional[VecEnv] = None,
         best_video_dir: Optional[str] = None,
         max_video_length: int = 3600,
+        ignore_first_episode: bool = False,
     ) -> None:
         super().__init__()
         self.policy = policy
@@ -111,6 +133,8 @@ class EvalCallback(Callback):
         self.max_video_length = max_video_length
         self.best_video_base_path = None
 
+        self.ignore_first_episode = ignore_first_episode
+
     def on_step(self, timesteps_elapsed: int = 1) -> bool:
         super().on_step(timesteps_elapsed)
         if self.timesteps_elapsed // self.step_freq >= len(self.stats):
@@ -127,6 +151,7 @@ class EvalCallback(Callback):
             n_episodes or self.n_episodes,
             deterministic=self.deterministic,
             print_returns=print_returns or False,
+            ignore_first_episode=self.ignore_first_episode,
         )
         self.policy.train(True)
         print(f"Eval Timesteps: {self.timesteps_elapsed} | {eval_stat}")

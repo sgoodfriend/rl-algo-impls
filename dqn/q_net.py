@@ -5,7 +5,8 @@ import torch.nn as nn
 from gym.spaces import Discrete
 from typing import Sequence, Type
 
-from shared.module import FeatureExtractor, mlp
+from shared.module.feature_extractor import FeatureExtractor
+from shared.module.module import mlp
 
 
 class QNetwork(nn.Module):
