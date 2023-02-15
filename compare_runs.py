@@ -90,6 +90,8 @@ class RunGroupRuns:
     def data_frame(rows: Iterable[RunGroupRunsSelf]) -> pd.DataFrame:
         results = defaultdict(list)
         for r in rows:
+            if not r.control_runs or not r.experiment_runs:
+                continue
             results["algo"].append(r.algo)
             results["env"].append(r.env)
             results["control"].append(r.control)
@@ -123,7 +125,8 @@ if __name__ == "__main__":
         "-n",
         "--wandb-hostname-tag",
         type=str,
-        help="WandB tag for hostname (i.e. host_192-9-145-26)",
+        nargs="*",
+        help="WandB tags for hostname (i.e. host_192-9-145-26)",
     )
     parser.add_argument(
         "-c",
@@ -145,12 +148,12 @@ if __name__ == "__main__":
         nargs="*",
         help="Environments to exclude from comparison",
     )
-    parser.set_defaults(
-        wandb_hostname_tag="host_192-9-145-26",
-        wandb_control_tag=["benchmark_e4d1ed6", "benchmark_5598ebc"],
-        wandb_experiment_tag=["benchmark_680043d", "benchmark_5540e1f"],
-        exclude_envs=["CarRacing-v0"]
-    )
+    # parser.set_defaults(
+    #     wandb_hostname_tag=["host_192-9-145-26"],
+    #     wandb_control_tag=["benchmark_e4d1ed6", "benchmark_5598ebc"],
+    #     wandb_experiment_tag=["benchmark_680043d", "benchmark_5540e1f"],
+    #     exclude_envs=["CarRacing-v0"],
+    # )
     args = parser.parse_args()
     print(args)
 
@@ -161,9 +164,10 @@ if __name__ == "__main__":
     )
 
     runs_by_run_group: Dict[RunGroup, RunGroupRuns] = {}
+    wandb_hostname_tags = set(args.wandb_hostname_tag)
     for r in all_runs:
-        wandb_tags = r.config.get("wandb_tags", [])
-        if not wandb_tags or not args.wandb_hostname_tag in wandb_tags:
+        wandb_tags = set(r.config.get("wandb_tags", []))
+        if not wandb_tags or not wandb_hostname_tags & wandb_tags:
             continue
         rg = RunGroup(r.config["algo"], r.config["env"])
         if args.exclude_envs and rg.env_id in args.exclude_envs:
