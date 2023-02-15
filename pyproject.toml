@@ -28,6 +28,7 @@ pyvirtualdisplay = "^3.0"
 numexpr = "^2.8.4"
 gym3 = "^0.3.3"
 glfw = "1.12.0"
+ipython = "^8.10.0"
 
 [build-system]
 requires = ["poetry-core"]
