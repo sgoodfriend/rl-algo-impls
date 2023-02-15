@@ -81,12 +81,12 @@ LunarLander-v2:
     ent_coef_decay: linear
     normalize_advantage: false
 
-CarRacing-v0:
+CarRacing-v0: &carracing-defaults
   n_timesteps: !!float 4e6
   env_hyperparams:
     n_envs: 8
     frame_stack: 4
-  policy_hyperparams:
+  policy_hyperparams: &carracing-policy-defaults
     use_sde: true
     log_std_init: -2
     init_layers_orthogonal: false
@@ -107,6 +107,16 @@ CarRacing-v0:
     max_grad_norm: 0.5
     vf_coef: 0.5
     clip_range: 0.2
+
+impala-CarRacing-v0:
+  <<: *carracing-defaults
+  env_id: CarRacing-v0
+  policy_hyperparams:
+    <<: *carracing-policy-defaults
+    cnn_style: impala
+    init_layers_orthogonal: true
+    cnn_layers_init_orthogonal: false
+    hidden_sizes: []
 
 # BreakoutNoFrameskip-v4
 # PongNoFrameskip-v4
@@ -143,15 +153,30 @@ debug-PongNoFrameskip-v4:
     <<: *atari-env-defaults
     vec_env_class: dummy
 
-impala-BreakoutNoFrameskip-v4:
+_impala-atari: &impala-atari-defaults
   <<: *atari-defaults
-  env_id: BreakoutNoFrameskip-v4
   policy_hyperparams:
     <<: *atari-policy-defaults
     cnn_style: impala
     cnn_feature_dim: 256
     init_layers_orthogonal: true
     cnn_layers_init_orthogonal: false
+
+impala-PongNoFrameskip-v4:
+  <<: *impala-atari-defaults
+  env_id: PongNoFrameskip-v4
+
+impala-BreakoutNoFrameskip-v4:
+  <<: *impala-atari-defaults
+  env_id: BreakoutNoFrameskip-v4
+
+impala-SpaceInvadersNoFrameskip-v4:
+  <<: *impala-atari-defaults
+  env_id: SpaceInvadersNoFrameskip-v4
+
+impala-QbertNoFrameskip-v4:
+  <<: *impala-atari-defaults
+  env_id: QbertNoFrameskip-v4
 
 HalfCheetahBulletEnv-v0: &pybullet-defaults
   n_timesteps: !!float 2e6

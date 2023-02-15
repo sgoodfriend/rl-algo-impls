@@ -10,9 +10,10 @@ ALGOS=(
     "ppo"
 )
 ENVS=(
-    "procgen-coinrun-easy"
-    "procgen-starpilot-easy"
-    "procgen-bossfight-easy"
-    "procgen-bigfish-easy"
+    "impala-PongNoFrameskip-v4"
+    "impala-BreakoutNoFrameskip-v4"
+    "impala-SpaceInvadersNoFrameskip-v4"
+    "impala-QbertNoFrameskip-v4"
+    "impala-CarRacing-v0"
 )
 train_loop "${ALGOS[*]}" "${ENVS[*]}" | xargs -I CMD -P $BENCHMARK_MAX_PROCS bash -c CMD
