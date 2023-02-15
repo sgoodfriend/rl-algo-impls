@@ -243,7 +243,7 @@ def _make_procgen_env(
         envs = EpisodeStatsWriter(
             envs, tb_writer, training=training, rolling_length=rolling_length
         )
-    if normalize:
+    if normalize and training:
         normalize_kwargs = normalize_kwargs or {}
         # TODO: Handle reward stats saving/loading/syncing, but it's only important
         # for checkpointing
