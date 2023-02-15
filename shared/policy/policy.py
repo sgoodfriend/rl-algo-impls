@@ -66,3 +66,9 @@ class Policy(nn.Module, ABC):
         if self.device is not None:
             o = o.to(self.device)
         return o
+
+    def num_trainable_parameters(self) -> int:
+        return sum(p.numel() for p in self.parameters() if p.requires_grad)
+
+    def num_parameters(self) -> int:
+        return sum(p.numel() for p in self.parameters())

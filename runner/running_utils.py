@@ -172,7 +172,7 @@ def plot_eval_callback(callback: EvalCallback, tb_writer: SummaryWriter, run_nam
 Scalar = Union[bool, str, float, int, None]
 
 
-def flatten_hyperparameters(
+def hparam_dict(
     hyperparams: Hyperparams, args: Dict[str, Union[Scalar, list]]
 ) -> Dict[str, Scalar]:
     flattened = args.copy()

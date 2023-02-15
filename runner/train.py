@@ -22,7 +22,7 @@ from runner.running_utils import (
     get_device,
     make_policy,
     plot_eval_callback,
-    flatten_hyperparameters,
+    hparam_dict,
 )
 from shared.stats import EpisodesStats
 
@@ -102,7 +102,7 @@ def train(args: TrainArgs):
 
     best_eval_stats: EpisodesStats = callback.best  # type: ignore
     tb_writer.add_hparams(
-        flatten_hyperparameters(hyperparams, vars(args)),
+        hparam_dict(hyperparams, vars(args)),
         {
             "hparam/best_mean": best_eval_stats.score.mean,
             "hparam/best_result": best_eval_stats.score.mean
@@ -117,6 +117,10 @@ def train(args: TrainArgs):
     tb_writer.close()
 
     if wandb_enabled:
+        wandb.run.summary["num_parameters"] = policy.num_parameters()
+        wandb.run.summary[
+            "num_trainable_parameters"
+        ] = policy.num_trainable_parameters()
         shutil.make_archive(
             os.path.join(wandb.run.dir, config.model_dir_name()),
             "zip",
