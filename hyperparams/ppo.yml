@@ -265,6 +265,7 @@ _procgen: &procgen-defaults
   eval_params:
     deterministic: false
     ignore_first_episode: true
+    step_freq: !!float 1e5
 
 _procgen-easy: &procgen-easy-defaults
   <<: *procgen-defaults
