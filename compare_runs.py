@@ -143,16 +143,16 @@ if __name__ == "__main__":
         help="WandB tag for experiment commit (i.e. benchmark_5540e1f)",
     )
     parser.add_argument(
-        "--exclude_envs",
+        "--exclude-envs",
         type=str,
         nargs="*",
         help="Environments to exclude from comparison",
     )
     # parser.set_defaults(
-    #     wandb_hostname_tag=["host_192-9-145-26"],
-    #     wandb_control_tag=["benchmark_e4d1ed6", "benchmark_5598ebc"],
-    #     wandb_experiment_tag=["benchmark_680043d", "benchmark_5540e1f"],
-    #     exclude_envs=["CarRacing-v0"],
+    #     wandb_hostname_tag=["host_150-230-44-105", "host_155-248-214-128"],
+    #     wandb_control_tag=["benchmark_fbc943f"],
+    #     wandb_experiment_tag=["benchmark_f59bf74"],
+    #     exclude_envs=[],
     # )
     args = parser.parse_args()
     print(args)
@@ -166,15 +166,19 @@ if __name__ == "__main__":
     runs_by_run_group: Dict[RunGroup, RunGroupRuns] = {}
     wandb_hostname_tags = set(args.wandb_hostname_tag)
     for r in all_runs:
+        if r.state != "finished":
+            continue
         wandb_tags = set(r.config.get("wandb_tags", []))
         if not wandb_tags or not wandb_hostname_tags & wandb_tags:
             continue
-        rg = RunGroup(r.config["algo"], r.config["env"])
+        rg = RunGroup(r.config["algo"], r.config.get("env_id") or r.config["env"])
         if args.exclude_envs and rg.env_id in args.exclude_envs:
             continue
         if rg not in runs_by_run_group:
             runs_by_run_group[rg] = RunGroupRuns(
-                rg, args.wandb_control_tag, args.wandb_experiment_tag
+                rg,
+                args.wandb_control_tag,
+                args.wandb_experiment_tag,
             )
         runs_by_run_group[rg].add_run(r)
     df = RunGroupRuns.data_frame(runs_by_run_group.values()).round(decimals=2)
