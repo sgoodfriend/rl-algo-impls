@@ -38,12 +38,12 @@ def publish(
     api = wandb.Api()
     runs = [api.run(rp) for rp in wandb_run_paths]
     algo = runs[0].config["algo"]
-    env = runs[0].config["env"]
+    hyperparam_id = runs[0].config["env"]
     evaluations = [
         evaluate_model(
             EvalArgs(
                 algo,
-                env,
+                hyperparam_id,
                 seed=r.config.get("seed", None),
                 render=False,
                 best=True,
@@ -80,9 +80,10 @@ def publish(
 
         github_url = "https://github.com/sgoodfriend/rl-algo-impls"
         commit_hash = run_metadata.get("git", {}).get("commit", None)
+        env_id = runs[0].config.get("env_id") or runs[0].config["env"]
         card_text = model_card_text(
             algo,
-            env,
+            env_id,
             github_url,
             commit_hash,
             wandb_report_url,
@@ -97,7 +98,7 @@ def publish(
         metadata = {
             "library_name": "rl-algo-impls",
             "tags": [
-                env,
+                env_id,
                 algo,
                 "deep-reinforcement-learning",
                 "reinforcement-learning",
@@ -119,8 +120,8 @@ def publish(
                                 "name": "reinforcement-learning",
                             },
                             "dataset": {
-                                "name": env,
-                                "type": env,
+                                "name": env_id,
+                                "type": env_id,
                             },
                         }
                     ],
@@ -159,7 +160,7 @@ def publish(
             repo_id=huggingface_repo,
             folder_path=repo_dir_path,
             path_in_repo="",
-            commit_message=f"{algo.upper()} playing {env} from {github_url}/tree/{commit_hash}",
+            commit_message=f"{algo.upper()} playing {env_id} from {github_url}/tree/{commit_hash}",
             token=huggingface_token,
         )
         print(f"Pushed model to the hub: {repo_url}")
