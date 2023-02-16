@@ -7,6 +7,7 @@ from stable_baselines3.common.vec_env.base_vec_env import (
     VecEnvObs,
 )
 from torch.utils.tensorboard.writer import SummaryWriter
+from typing import Any, Dict, List
 
 from shared.stats import Episode, EpisodesStats
 
@@ -30,6 +31,16 @@ class EpisodeStatsWriter(gym.Wrapper):
 
     def step(self, actions: np.ndarray) -> VecEnvStepReturn:
         obs, rews, dones, infos = self.env.step(actions)
+        self._record_stats(infos)
+        return obs, rews, dones, infos
+
+    # Support for stable_baselines3.common.vec_env.VecEnvWrapper
+    def step_wait(self) -> VecEnvStepReturn:
+        obs, rews, dones, infos = self.env.step_wait()
+        self._record_stats(infos)
+        return obs, rews, dones, infos
+
+    def _record_stats(self, infos: List[Dict[str, Any]]) -> None:
         self.total_steps += getattr(self.env, "num_envs", 1)
         step_episodes = []
         for info in infos:
@@ -54,7 +65,6 @@ class EpisodeStatsWriter(gym.Wrapper):
                     f"{rolling_stats}"
                 )
                 self.last_episode_cnt_print += self.rolling_length
-        return obs, rews, dones, infos
 
     def reset(self) -> VecEnvObs:
         return self.env.reset()
