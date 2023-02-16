@@ -29,9 +29,11 @@ def publish(
     wandb_report_url: str,
     huggingface_user: Optional[str] = None,
     huggingface_token: Optional[str] = None,
+    virtual_display: bool = False,
 ) -> None:
-    virtual_display = Display(visible=False, size=(1400, 900))
-    virtual_display.start()
+    if virtual_display:
+        display = Display(visible=False, size=(1400, 900))
+        display.start()
 
     api = wandb.Api()
     runs = [api.run(rp) for rp in wandb_run_paths]
@@ -177,6 +179,9 @@ if __name__ == "__main__":
         type=str,
         help="Huggingface user or team to upload model cards",
         default=None,
+    )
+    parser.add_argument(
+        "--virtual-display", action="store_true", help="Use headless virtual display"
     )
     args = parser.parse_args()
     print(args)

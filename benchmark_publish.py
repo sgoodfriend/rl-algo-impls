@@ -33,6 +33,12 @@ if __name__ == "__main__":
         "--envs", type=str, nargs="*", help="Optional filter down to these envs"
     )
     parser.add_argument(
+        "--exclude-envs",
+        type=str,
+        nargs="*",
+        help="Environments to exclude from publishing",
+    )
+    parser.add_argument(
         "--huggingface-user",
         type=str,
         default=None,
@@ -44,9 +50,14 @@ if __name__ == "__main__":
         default=3,
         help="How many publish jobs can run in parallel",
     )
+    parser.add_argument(
+        "--virtual-display", action="store_true", help="Use headless virtual display"
+    )
     # parser.set_defaults(
-    #     wandb_tags=["benchmark_5598ebc", "host_192-9-145-26"],
-    #     wandb_report_url="https://api.wandb.ai/links/sgoodfriend/6p2sjqtn",
+    #     wandb_tags=["benchmark_e47a44c", "host_129-146-2-230"],
+    #     wandb_report_url="https://api.wandb.ai/links/sgoodfriend/v4wd7cp5",
+    #     envs=[],
+    #     exclude_envs=[],
     # )
     args = parser.parse_args()
     print(args)
@@ -65,9 +76,13 @@ if __name__ == "__main__":
 
     runs_paths_by_group = defaultdict(list)
     for r in runs:
+        if r.state != "finished":
+            continue
         algo = r.config["algo"]
         env = r.config["env"]
         if args.envs and env not in args.envs:
+            continue
+        if args.exclude_envs and env in args.exclude_envs:
             continue
         run_group = RunGroup(algo, env)
         runs_paths_by_group[run_group].append("/".join(r.path))
@@ -81,6 +96,8 @@ if __name__ == "__main__":
         if args.huggingface_user:
             publish_args.append("--huggingface-user")
             publish_args.append(args.huggingface_user)
+        if args.virtual_display:
+            publish_args.append("--virtual-display")
         subprocess.run(publish_args)
 
     tp = ThreadPool(args.pool_size)
