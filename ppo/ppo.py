@@ -1,6 +1,7 @@
 import numpy as np
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 from dataclasses import asdict, dataclass, field
 from torch.optim import Adam
@@ -118,6 +119,7 @@ class PPO(Algorithm):
         ent_coef: float = 0.0,
         ent_coef_decay: str = "none",
         vf_coef: float = 0.5,
+        ppo2_vf_coef_halving: bool = False,
         max_grad_norm: float = 0.5,
         update_rtg_between_epochs: bool = False,
         sde_sample_freq: int = -1,
@@ -153,6 +155,7 @@ class PPO(Algorithm):
             else constant_schedule(ent_coef)
         )
         self.vf_coef = vf_coef
+        self.ppo2_vf_coef_halving = ppo2_vf_coef_halving
 
         self.n_steps = n_steps
         self.batch_size = batch_size
@@ -273,11 +276,16 @@ class PPO(Algorithm):
         clip_ratio = torch.clamp(ratio, min=1 - pi_clip, max=1 + pi_clip)
         pi_loss = torch.maximum(-ratio * adv, -clip_ratio * adv).mean()
 
-        v_loss = (v - rtg).pow(2)
+        v_loss_unclipped = (v - rtg) ** 2
         if v_clip:
-            v_clipped = (torch.clamp(v, orig_v - v_clip, orig_v + v_clip) - rtg).pow(2)
-            v_loss = torch.maximum(v_loss, v_clipped)
-        v_loss = v_loss.mean()
+            v_loss_clipped = (
+                orig_v + torch.clamp(v - orig_v, -v_clip, v_clip) - rtg
+            ) ** 2
+            v_loss = torch.max(v_loss_unclipped, v_loss_clipped).mean()
+        else:
+            v_loss = v_loss_unclipped.mean()
+        if self.ppo2_vf_coef_halving:
+            v_loss *= 0.5
 
         entropy_loss = entropy.mean()
 
