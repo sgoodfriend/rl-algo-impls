@@ -24,7 +24,8 @@ class TrainEpochStats:
     episodes_done: int = 0
 
     def write_to_tensorboard(self, tb_writer: SummaryWriter, global_step: int) -> None:
-        tb_writer.add_scalars("losses", asdict(self), global_step=global_step)
+        for name, value in asdict(self).items():
+            tb_writer.add_scalar(f"losses/{name}", value, global_step=global_step)
 
 
 class VPGTrajectoryAccumulator(TrajectoryAccumulator):

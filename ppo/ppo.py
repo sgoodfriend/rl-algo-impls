@@ -85,7 +85,8 @@ class TrainStats:
         self.explained_var = explained_var
 
     def write_to_tensorboard(self, tb_writer: SummaryWriter, global_step: int) -> None:
-        tb_writer.add_scalars("losses", asdict(self), global_step=global_step)
+        for name, value in asdict(self).items():
+            tb_writer.add_scalar(f"losses/{name}", value, global_step=global_step)
 
     def __repr__(self) -> str:
         return " | ".join(
@@ -223,12 +224,14 @@ class PPO(Algorithm):
         )
 
         pi_clip = self.clip_range_schedule(progress)
-        v_clip = (
-            self.clip_range_vf_schedule(progress)
-            if self.clip_range_vf_schedule
-            else None
-        )
+        self.tb_writer.add_scalar("charts/pi_clip", pi_clip, timesteps_elapsed)
+        if self.clip_range_vf_schedule:
+            v_clip = self.clip_range_vf_schedule(progress)
+            self.tb_writer.add_scalar("charts/v_clip", v_clip, timesteps_elapsed)
+        else:
+            v_clip = None
         ent_coef = self.ent_coef_schedule(progress)
+        self.tb_writer.add_scalar("charts/ent_coef", ent_coef, timesteps_elapsed)
 
         obs = torch.as_tensor(
             np.concatenate([np.array(t.obs) for t in trajectories]), device=self.device

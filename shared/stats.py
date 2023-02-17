@@ -118,11 +118,8 @@ class EpisodesStats:
                     "length": self.length.mean,
                 }
             )
-        tb_writer.add_scalars(
-            main_tag,
-            stats,
-            global_step=global_step,
-        )
+        for name, value in stats.items():
+            tb_writer.add_scalar(f"{main_tag}/{name}", value, global_step=global_step)
 
 
 class EpisodeAccumulator:
