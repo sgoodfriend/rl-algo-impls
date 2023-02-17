@@ -243,6 +243,8 @@ _procgen: &procgen-defaults
     # grayscale: false
     # frame_stack: 4
     normalize: true # procgen only normalizes reward
+    make_kwargs: &procgen-make-kwargs-defaults
+      num_threads: 8
   policy_hyperparams: &procgen-policy-defaults
     activation_fn: relu
     cnn_style: impala
@@ -273,6 +275,7 @@ _procgen-easy: &procgen-easy-defaults
   env_hyperparams: &procgen-easy-env-defaults
     <<: *procgen-env-defaults
     make_kwargs:
+      <<: *procgen-make-kwargs-defaults
       distribution_mode: easy
 
 procgen-coinrun-easy: &coinrun-easy-defaults
@@ -302,10 +305,13 @@ _procgen-hard: &procgen-hard-defaults
     <<: *procgen-env-defaults
     n_envs: 256
     make_kwargs:
+      <<: *procgen-make-kwargs-defaults
       distribution_mode: hard
-  algo_hyperparams:
+  algo_hyperparams: &procgen-hard-algo-defaults
     <<: *procgen-algo-defaults
     batch_size: 8192
+    clip_range_decay: linear
+    learning_rate_decay: linear
   eval_params:
     <<: *procgen-eval-defaults
     step_freq: !!float 5e5
@@ -319,6 +325,9 @@ procgen-starpilot-hard-2xIMPALA:
   policy_hyperparams:
     <<: *procgen-policy-defaults
     impala_channels: [32, 64, 64]
+  algo_hyperparams:
+    <<: *procgen-hard-algo-defaults
+    learning_rate: !!float 3.3e-4
 
 procgen-starpilot-hard-2xIMPALA-fat:
   <<: *procgen-starpilot-hard-defaults
@@ -326,9 +335,15 @@ procgen-starpilot-hard-2xIMPALA-fat:
     <<: *procgen-policy-defaults
     impala_channels: [32, 64, 64]
     cnn_feature_dim: 512
+  algo_hyperparams:
+    <<: *procgen-hard-algo-defaults
+    learning_rate: !!float 2.5e-4
 
 procgen-starpilot-hard-4xIMPALA:
   <<: *procgen-starpilot-hard-defaults
   policy_hyperparams:
     <<: *procgen-policy-defaults
     impala_channels: [64, 128, 128]
+  algo_hyperparams:
+    <<: *procgen-hard-algo-defaults
+    learning_rate: !!float 2.1e-4

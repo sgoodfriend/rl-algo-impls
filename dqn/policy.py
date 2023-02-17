@@ -19,6 +19,7 @@ class DQNPolicy(Policy):
         cnn_feature_dim: int = 512,
         cnn_style: str = "nature",
         cnn_layers_init_orthogonal: Optional[bool] = None,
+        impala_channels: Sequence[int] = (16, 32, 32),
         **kwargs,
     ) -> None:
         super().__init__(env, **kwargs)
@@ -29,6 +30,7 @@ class DQNPolicy(Policy):
             cnn_feature_dim=cnn_feature_dim,
             cnn_style=cnn_style,
             cnn_layers_init_orthogonal=cnn_layers_init_orthogonal,
+            impala_channels=impala_channels,
         )
 
     def act(

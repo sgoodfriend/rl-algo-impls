@@ -67,6 +67,17 @@ def train(args: TrainArgs):
     policy = make_policy(args.algo, env, device, **config.policy_hyperparams)
     algo = ALGOS[args.algo](policy, env, device, tb_writer, **config.algo_hyperparams)
 
+    num_parameters = policy.num_parameters()
+    num_trainable_parameters = policy.num_trainable_parameters()
+    if wandb_enabled:
+        wandb.run.summary["num_parameters"] = num_parameters
+        wandb.run.summary["num_trainable_parameters"] = num_trainable_parameters
+    else:
+        print(
+            f"num_parameters = {num_parameters} ; "
+            f"num_trainable_parameters = {num_trainable_parameters}"
+        )
+
     eval_env = make_eval_env(config, EnvHyperparams(**config.env_hyperparams))
     record_best_videos = config.eval_params.get("record_best_videos", True)
     callback = EvalCallback(
@@ -117,10 +128,6 @@ def train(args: TrainArgs):
     tb_writer.close()
 
     if wandb_enabled:
-        wandb.run.summary["num_parameters"] = policy.num_parameters()
-        wandb.run.summary[
-            "num_trainable_parameters"
-        ] = policy.num_trainable_parameters()
         shutil.make_archive(
             os.path.join(wandb.run.dir, config.model_dir_name()),
             "zip",
