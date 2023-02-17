@@ -103,3 +103,28 @@ _atari: &atari-defaults
 PongNoFrameskip-v4:
   <<: *atari-defaults
   n_timesteps: !!float 2.5e6
+
+_impala-atari: &impala-atari-defaults
+  <<: *atari-defaults
+  policy_hyperparams:
+    cnn_style: impala
+    cnn_feature_dim: 256
+    init_layers_orthogonal: true
+    cnn_layers_init_orthogonal: false
+
+impala-PongNoFrameskip-v4:
+  <<: *impala-atari-defaults
+  env_id: PongNoFrameskip-v4
+  n_timesteps: !!float 2.5e6
+
+impala-BreakoutNoFrameskip-v4:
+  <<: *impala-atari-defaults
+  env_id: BreakoutNoFrameskip-v4
+
+impala-SpaceInvadersNoFrameskip-v4:
+  <<: *impala-atari-defaults
+  env_id: SpaceInvadersNoFrameskip-v4
+
+impala-QbertNoFrameskip-v4:
+  <<: *impala-atari-defaults
+  env_id: QbertNoFrameskip-v4

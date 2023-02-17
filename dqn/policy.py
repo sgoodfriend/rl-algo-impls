@@ -3,7 +3,7 @@ import os
 import torch
 
 from stable_baselines3.common.vec_env.base_vec_env import VecEnv, VecEnvObs
-from typing import Sequence, TypeVar
+from typing import Optional, Sequence, TypeVar
 
 from dqn.q_net import QNetwork
 from shared.policy.policy import Policy
@@ -16,10 +16,20 @@ class DQNPolicy(Policy):
         self,
         env: VecEnv,
         hidden_sizes: Sequence[int] = [],
+        cnn_feature_dim: int = 512,
+        cnn_style: str = "nature",
+        cnn_layers_init_orthogonal: Optional[bool] = None,
         **kwargs,
     ) -> None:
         super().__init__(env, **kwargs)
-        self.q_net = QNetwork(env.observation_space, env.action_space, hidden_sizes)
+        self.q_net = QNetwork(
+            env.observation_space,
+            env.action_space,
+            hidden_sizes,
+            cnn_feature_dim=cnn_feature_dim,
+            cnn_style=cnn_style,
+            cnn_layers_init_orthogonal=cnn_layers_init_orthogonal,
+        )
 
     def act(
         self, obs: VecEnvObs, eps: float = 0, deterministic: bool = True
