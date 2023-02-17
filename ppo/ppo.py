@@ -4,6 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from dataclasses import asdict, dataclass, field
+from time import perf_counter
 from torch.optim import Adam
 from stable_baselines3.common.vec_env.base_vec_env import VecEnv, VecEnvObs
 from torch.utils.tensorboard.writer import SummaryWriter
@@ -59,6 +60,7 @@ class TrainStepStats(NamedTuple):
     entropy_loss: float
     approx_kl: float
     clipped_frac: float
+    val_clipped_frac: float
 
 
 @dataclass
@@ -69,14 +71,18 @@ class TrainStats:
     entropy_loss: float
     approx_kl: float
     clipped_frac: float
+    val_clipped_frac: float
+    explained_var: float
 
-    def __init__(self, step_stats: List[TrainStepStats]) -> None:
+    def __init__(self, step_stats: List[TrainStepStats], explained_var: float) -> None:
         self.loss = np.mean([s.loss for s in step_stats]).item()
         self.pi_loss = np.mean([s.pi_loss for s in step_stats]).item()
         self.v_loss = np.mean([s.v_loss for s in step_stats]).item()
         self.entropy_loss = np.mean([s.entropy_loss for s in step_stats]).item()
         self.approx_kl = np.mean([s.approx_kl for s in step_stats]).item()
         self.clipped_frac = np.mean([s.clipped_frac for s in step_stats]).item()
+        self.val_clipped_frac = np.mean([s.val_clipped_frac for s in step_stats]).item()
+        self.explained_var = explained_var
 
     def write_to_tensorboard(self, tb_writer: SummaryWriter, global_step: int) -> None:
         tb_writer.add_scalars("losses", asdict(self), global_step=global_step)
@@ -90,6 +96,7 @@ class TrainStats:
                 f"E L: {round(self.entropy_loss, 2)}",
                 f"Apx KL Div: {round(self.approx_kl, 2)}",
                 f"Clip Frac: {round(self.clipped_frac, 2)}",
+                f"Val Clip Frac: {round(self.val_clipped_frac, 2)}",
             ]
         )
 
@@ -172,12 +179,19 @@ class PPO(Algorithm):
         obs = self.env.reset()
         ts_elapsed = 0
         while ts_elapsed < total_timesteps:
+            start_time = perf_counter()
             accumulator = self._collect_trajectories(obs)
-            progress = ts_elapsed / total_timesteps
-            train_stats = self.train(accumulator.all_trajectories, progress)
             rollout_steps = self.n_steps * self.env.num_envs
             ts_elapsed += rollout_steps
+            progress = ts_elapsed / total_timesteps
+            train_stats = self.train(accumulator.all_trajectories, progress, ts_elapsed)
             train_stats.write_to_tensorboard(self.tb_writer, ts_elapsed)
+            end_time = perf_counter()
+            self.tb_writer.add_scalar(
+                "train/steps_per_second",
+                rollout_steps / (end_time - start_time),
+                ts_elapsed,
+            )
             if callback:
                 callback.on_step(timesteps_elapsed=rollout_steps)
 
@@ -196,10 +210,17 @@ class PPO(Algorithm):
             obs = next_obs
         return accumulator
 
-    def train(self, trajectories: List[PPOTrajectory], progress: float) -> TrainStats:
+    def train(
+        self, trajectories: List[PPOTrajectory], progress: float, timesteps_elapsed: int
+    ) -> TrainStats:
         self.policy.train()
         learning_rate = self.lr_schedule(progress)
         self.optimizer.param_groups[0]["lr"] = learning_rate
+        self.tb_writer.add_scalar(
+            "charts/learning_rate",
+            self.optimizer.param_groups[0]["lr"],
+            timesteps_elapsed,
+        )
 
         pi_clip = self.clip_range_schedule(progress)
         v_clip = (
@@ -228,6 +249,7 @@ class PPO(Algorithm):
 
         step_stats = []
         for _ in range(self.n_epochs):
+            step_stats.clear()
             if self.update_rtg_between_epochs:
                 rtg, adv = compute_rtg_and_advantage(
                     trajectories, self.policy, self.gamma, self.gae_lambda, self.device
@@ -256,7 +278,13 @@ class PPO(Algorithm):
                     )
                 )
 
-        return TrainStats(step_stats)
+        y_pred, y_true = orig_v.cpu().numpy(), rtg.cpu().numpy()
+        var_y = np.var(y_true).item()
+        explained_var = (
+            np.nan if var_y == 0 else 1 - np.var(y_true - y_pred).item() / var_y
+        )
+
+        return TrainStats(step_stats, explained_var)
 
     def _train_step(
         self,
@@ -301,6 +329,12 @@ class PPO(Algorithm):
             clipped_frac = (
                 ((ratio - 1).abs() > pi_clip).float().mean().cpu().numpy().item()
             )
+            val_clipped_frac = (
+                (((v - orig_v).abs() > v_clip).float().mean().cpu().numpy().item())
+                if v_clip
+                else 0
+            )
+
         return TrainStepStats(
             loss.item(),
             pi_loss.item(),
@@ -308,4 +342,5 @@ class PPO(Algorithm):
             entropy_loss.item(),
             approx_kl,
             clipped_frac,
+            val_clipped_frac,
         )

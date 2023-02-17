@@ -5,6 +5,7 @@ import os
 from copy import deepcopy
 from stable_baselines3.common.vec_env.base_vec_env import VecEnv, VecEnvWrapper
 from stable_baselines3.common.vec_env.vec_normalize import VecNormalize
+from time import perf_counter
 from torch.utils.tensorboard.writer import SummaryWriter
 from typing import List, Optional, Union
 
@@ -145,6 +146,7 @@ class EvalCallback(Callback):
     def evaluate(
         self, n_episodes: Optional[int] = None, print_returns: Optional[bool] = None
     ) -> EpisodesStats:
+        start_time = perf_counter()
         eval_stat = evaluate(
             self.env,
             self.policy,
@@ -152,6 +154,12 @@ class EvalCallback(Callback):
             deterministic=self.deterministic,
             print_returns=print_returns or False,
             ignore_first_episode=self.ignore_first_episode,
+        )
+        end_time = perf_counter()
+        self.tb_writer.add_scalar(
+            "eval/steps_per_second",
+            eval_stat.length.sum() / (end_time - start_time),
+            self.timesteps_elapsed,
         )
         self.policy.train(True)
         print(f"Eval Timesteps: {self.timesteps_elapsed} | {eval_stat}")
