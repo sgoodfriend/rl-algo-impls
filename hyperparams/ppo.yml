@@ -249,7 +249,7 @@ _procgen: &procgen-defaults
     cnn_feature_dim: 256
     init_layers_orthogonal: true
     cnn_layers_init_orthogonal: false
-  algo_hyperparams:
+  algo_hyperparams: &procgen-algo-defaults
     gamma: 0.999
     gae_lambda: 0.95
     n_steps: 256
@@ -303,6 +303,9 @@ _procgen-hard: &procgen-hard-defaults
     n_envs: 256
     make_kwargs:
       distribution_mode: hard
+  algo_hyperparams:
+    <<: *procgen-algo-defaults
+    batch_size: 8192
   eval_params:
     <<: *procgen-eval-defaults
     step_freq: !!float 5e5
