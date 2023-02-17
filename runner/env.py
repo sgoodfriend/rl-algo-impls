@@ -5,7 +5,6 @@ import os
 from gym.wrappers.resize_observation import ResizeObservation
 from gym.wrappers.gray_scale_observation import GrayScaleObservation
 from gym.wrappers.frame_stack import FrameStack
-from procgen.env import ProcgenEnv
 from stable_baselines3.common.atari_wrappers import (
     MaxAndSkipEnv,
     NoopResetEnv,
@@ -202,6 +201,9 @@ def _make_procgen_env(
     normalize_load_path: Optional[str] = None,
     tb_writer: Optional[SummaryWriter] = None,
 ) -> GeneralVecEnv:
+    from procgen.env import ProcgenGym3Env, ToBaselinesVecEnv
+    from gym3 import ViewerWrapper, ExtractDictObWrapper
+
     (
         _,
         n_envs,
@@ -221,14 +223,16 @@ def _make_procgen_env(
     seed = config.seed(training=training)
 
     make_kwargs = make_kwargs or {}
-    if not render:
-        make_kwargs["render_mode"] = "rgb_array"
+    make_kwargs["render_mode"] = "rgb_array"
     if seed is not None:
         make_kwargs["rand_seed"] = seed
 
-    envs = ProcgenEnv(n_envs, config.env_id, **make_kwargs)
+    envs = ProcgenGym3Env(n_envs, config.env_id, **make_kwargs)
+    envs = ExtractDictObWrapper(envs, key="rgb")
+    if render:
+        envs = ViewerWrapper(envs, info_key="rgb")
+    envs = ToBaselinesVecEnv(envs)
     envs = IsVectorEnv(envs)
-    envs = GetRgbObservation(envs)
     # TODO: Handle Grayscale and/or FrameStack
     envs = TransposeImageObservation(envs)
 
