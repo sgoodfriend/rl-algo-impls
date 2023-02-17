@@ -27,6 +27,7 @@ class EnvHyperparams(NamedTuple):
     train_record_video: bool = False
     video_step_interval: Union[int, float] = 1_000_000
     initial_steps_to_truncate: Optional[int] = None
+    clip_atari_rewards: bool = True
 
 
 class Hyperparams(TypedDict, total=False):

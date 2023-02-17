@@ -98,6 +98,7 @@ def _make_vec_env(
         train_record_video,
         video_step_interval,
         initial_steps_to_truncate,
+        clip_atari_rewards,
     ) = hparams
 
     if "BulletEnv" in config.env_id:
@@ -138,7 +139,8 @@ def _make_vec_env(
                 action_meanings = env.unwrapped.get_action_meanings()
                 if "FIRE" in action_meanings:  # type: ignore
                     env = FireOnLifeStarttEnv(env, action_meanings.index("FIRE"))
-                env = ClipRewardEnv(env, training=training)
+                if clip_atari_rewards:
+                    env = ClipRewardEnv(env, training=training)
                 env = ResizeObservation(env, (84, 84))
                 env = GrayScaleObservation(env, keep_dim=False)
                 env = FrameStack(env, frame_stack)

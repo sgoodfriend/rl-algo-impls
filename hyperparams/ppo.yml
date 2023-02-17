@@ -145,6 +145,20 @@ _atari: &atari-defaults
   eval_params:
     deterministic: false
 
+_norm-rewards-atari: &norm-rewards-atari-default
+  <<: *atari-defaults
+  env_hyperparams:
+    <<: *atari-env-defaults
+    clip_atari_rewards: false
+    normalize: true
+    normalize_kwargs:
+      norm_obs: false
+      norm_reward: true
+
+norm-rewards-BreakoutNoFrameskip-v4:
+  <<: *norm-rewards-atari-default
+  env_id: BreakoutNoFrameskip-v4
+
 debug-PongNoFrameskip-v4:
   <<: *atari-defaults
   device: cpu
