@@ -243,7 +243,7 @@ _procgen: &procgen-defaults
     # grayscale: false
     # frame_stack: 4
     normalize: true # procgen only normalizes reward
-  policy_hyperparams:
+  policy_hyperparams: &procgen-policy-defaults
     activation_fn: relu
     cnn_style: impala
     cnn_feature_dim: 256
@@ -262,9 +262,9 @@ _procgen: &procgen-defaults
     learning_rate: !!float 5e-4
     # learning_rate_decay: linear
     vf_coef: 0.5
-  eval_params:
-    deterministic: false
+  eval_params: &procgen-eval-defaults
     ignore_first_episode: true
+    # deterministic: false
     step_freq: !!float 1e5
 
 _procgen-easy: &procgen-easy-defaults
@@ -294,3 +294,38 @@ procgen-bossfight-easy:
 procgen-bigfish-easy:
   <<: *procgen-easy-defaults
   env_id: bigfish
+
+_procgen-hard: &procgen-hard-defaults
+  <<: *procgen-defaults
+  n_timesteps: !!float 200e6
+  env_hyperparams: &procgen-hard-env-defaults
+    <<: *procgen-env-defaults
+    n_envs: 256
+    make_kwargs:
+      distribution_mode: hard
+  eval_params:
+    <<: *procgen-eval-defaults
+    step_freq: !!float 5e5
+
+procgen-starpilot-hard: &procgen-starpilot-hard-defaults
+  <<: *procgen-hard-defaults
+  env_id: starpilot
+
+procgen-starpilot-hard-2xIMPALA:
+  <<: *procgen-starpilot-hard-defaults
+  policy_hyperparams:
+    <<: *procgen-policy-defaults
+    impala_channels: [32, 64, 64]
+
+procgen-starpilot-hard-2xIMPALA-fat:
+  <<: *procgen-starpilot-hard-defaults
+  policy_hyperparams:
+    <<: *procgen-policy-defaults
+    impala_channels: [32, 64, 64]
+    cnn_feature_dim: 512
+
+procgen-starpilot-hard-4xIMPALA:
+  <<: *procgen-starpilot-hard-defaults
+  policy_hyperparams:
+    <<: *procgen-policy-defaults
+    impala_channels: [64, 128, 128]

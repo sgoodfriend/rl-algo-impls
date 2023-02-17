@@ -6,7 +6,7 @@ import torch.nn.functional as F
 from abc import ABC, abstractmethod
 from gym.spaces import Box, Discrete
 from stable_baselines3.common.preprocessing import get_flattened_obs_dim
-from typing import Dict, Optional, Type
+from typing import Dict, Optional, Sequence, Type
 
 from shared.module.module import layer_init
 
@@ -18,6 +18,7 @@ class CnnFeatureExtractor(nn.Module, ABC):
         in_channels: int,
         activation: Type[nn.Module] = nn.ReLU,
         init_layers_orthogonal: Optional[bool] = None,
+        **kwargs,
     ) -> None:
         super().__init__()
 
@@ -34,6 +35,7 @@ class NatureCnn(CnnFeatureExtractor):
         in_channels: int,
         activation: Type[nn.Module] = nn.ReLU,
         init_layers_orthogonal: Optional[bool] = None,
+        **kwargs,
     ) -> None:
         if init_layers_orthogonal is None:
             init_layers_orthogonal = True
@@ -117,12 +119,14 @@ class ImpalaCnn(CnnFeatureExtractor):
         in_channels: int,
         activation: Type[nn.Module] = nn.ReLU,
         init_layers_orthogonal: Optional[bool] = None,
+        impala_channels: Sequence[int] = (16, 32, 32),
+        **kwargs,
     ) -> None:
         if init_layers_orthogonal is None:
             init_layers_orthogonal = False
         super().__init__(in_channels, activation, init_layers_orthogonal)
         sequences = []
-        for out_channels in [16, 32, 32]:
+        for out_channels in impala_channels:
             sequences.append(
                 ConvSequence(
                     in_channels, out_channels, activation, init_layers_orthogonal
@@ -156,6 +160,7 @@ class FeatureExtractor(nn.Module):
         cnn_feature_dim: int = 512,
         cnn_style: str = "nature",
         cnn_layers_init_orthogonal: Optional[bool] = None,
+        impala_channels: Sequence[int] = (16, 32, 32),
     ) -> None:
         super().__init__()
         if isinstance(obs_space, Box):
@@ -165,6 +170,7 @@ class FeatureExtractor(nn.Module):
                     obs_space.shape[0],
                     activation,
                     init_layers_orthogonal=cnn_layers_init_orthogonal,
+                    impala_channels=impala_channels,
                 )
 
                 def preprocess(obs: torch.Tensor) -> torch.Tensor:
