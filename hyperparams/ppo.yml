@@ -81,6 +81,23 @@ LunarLander-v2:
     ent_coef_decay: linear
     normalize_advantage: false
 
+BipedalWalker-v3:
+  n_timesteps: !!float 10e6
+  env_hyperparams:
+    n_envs: 16
+    normalize: true
+  algo_hyperparams:
+    n_steps: 2048
+    batch_size: 64
+    gae_lambda: 0.95
+    gamma: 0.99
+    n_epochs: 10
+    ent_coef: 0.001
+    learning_rate: !!float 2.5e-4
+    learning_rate_decay: linear
+    clip_range: 0.2
+    clip_range_decay: linear
+
 CarRacing-v0: &carracing-defaults
   n_timesteps: !!float 4e6
   env_hyperparams:

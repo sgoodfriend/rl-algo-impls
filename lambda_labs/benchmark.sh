@@ -16,6 +16,7 @@ ENVS=(
     "MountainCarContinuous-v0"
     "Acrobot-v1"
     "LunarLander-v2"
+    "BipedalWalker-v3"
     # PyBullet
     "HalfCheetahBulletEnv-v0"
     "AntBulletEnv-v0"

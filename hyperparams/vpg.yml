@@ -81,6 +81,20 @@ LunarLander-v2:
   eval_params:
     deterministic: false
 
+BipedalWalker-v3:
+  n_timesteps: !!float 10e6
+  env_hyperparams:
+    n_envs: 16
+    normalize: true
+  algo_hyperparams:
+    n_steps: 2048
+    gae_lambda: 0.95
+    gamma: 0.99
+    pi_lr: !!float 1e-4
+    val_lr: !!float 2e-4
+    train_v_iters: 80
+    max_grad_norm: 0.5
+
 CarRacing-v0:
   n_timesteps: !!float 4e6
   env_hyperparams:
