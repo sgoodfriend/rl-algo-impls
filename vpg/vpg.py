@@ -19,6 +19,7 @@ from vpg.policy import VPGActorCritic
 @dataclass
 class TrainEpochStats:
     pi_loss: float
+    entropy_loss: float
     v_loss: float
     envs_with_done: int = 0
     episodes_done: int = 0
@@ -58,6 +59,7 @@ class VanillaPolicyGradient(Algorithm):
         n_steps: int = 4_000,
         sde_sample_freq: int = -1,
         update_rtg_between_v_iters: bool = False,
+        ent_coef: float = 0.0,
     ) -> None:
         super().__init__(policy, env, device, tb_writer)
         self.policy = policy
@@ -72,6 +74,8 @@ class VanillaPolicyGradient(Algorithm):
         self.train_v_iters = train_v_iters
         self.sde_sample_freq = sde_sample_freq
         self.update_rtg_between_v_iters = update_rtg_between_v_iters
+
+        self.ent_coef = ent_coef
 
     def learn(
         self: VanillaPolicyGradientSelf,
@@ -92,10 +96,15 @@ class VanillaPolicyGradient(Algorithm):
                 self.tb_writer, global_step=timesteps_elapsed
             )
             print(
-                f"Epoch: {epoch_cnt} | "
-                f"Pi Loss: {round(epoch_stats.pi_loss, 2)} | "
-                f"V Loss: {round(epoch_stats.v_loss, 2)} | "
-                f"Total Steps: {timesteps_elapsed}"
+                " | ".join(
+                    [
+                        f"Epoch: {epoch_cnt}",
+                        f"Pi Loss: {round(epoch_stats.pi_loss, 2)}",
+                        f"Epoch Loss: {round(epoch_stats.entropy_loss, 2)}",
+                        f"V Loss: {round(epoch_stats.v_loss, 2)}",
+                        f"Total Steps: {timesteps_elapsed}",
+                    ]
+                )
             )
             if callback:
                 callback.on_step(timesteps_elapsed=epoch_steps)
@@ -113,16 +122,36 @@ class VanillaPolicyGradient(Algorithm):
             trajectories, self.policy, self.gamma, self.gae_lambda, self.device
         )
 
-        pi_loss = self._update_pi(obs, act, adv)
+        _, logp, entropy = self.policy.pi(obs, act)
+        pi_loss = -(logp * adv).mean()
+        entropy_loss = entropy.mean()
+
+        actor_loss = pi_loss - self.ent_coef * entropy_loss
+
+        self.pi_optim.zero_grad()
+        actor_loss.backward()
+        nn.utils.clip_grad_norm_(self.policy.pi.parameters(), self.max_grad_norm)
+        self.pi_optim.step()
+
         v_loss = 0
         for _ in range(self.train_v_iters):
             if self.update_rtg_between_v_iters:
                 rtg = compute_advantage(
                     trajectories, self.policy, self.gamma, self.gae_lambda, self.device
                 )
-            v_loss = self._update_v(obs, rtg)
+            v = self.policy.v(obs)
+            v_loss = ((v - rtg) ** 2).mean()
 
-        return TrainEpochStats(pi_loss, v_loss)
+            self.val_optim.zero_grad()
+            v_loss.backward()
+            nn.utils.clip_grad_norm_(self.policy.v.parameters(), self.max_grad_norm)
+            self.val_optim.step()
+
+        return TrainEpochStats(
+            pi_loss.item(),
+            entropy_loss.item(),
+            v_loss.item(),  # type: ignore
+        )
 
     def _collect_trajectories(self) -> VPGTrajectoryAccumulator:
         self.policy.eval()
@@ -137,23 +166,3 @@ class VanillaPolicyGradient(Algorithm):
             accumulator.step(obs, action, next_obs, reward, done, value)
             obs = next_obs
         return accumulator
-
-    def _update_pi(
-        self, obs: torch.Tensor, act: torch.Tensor, adv: torch.Tensor
-    ) -> float:
-        self.pi_optim.zero_grad()
-        _, logp, _ = self.policy.pi(obs, act)
-        pi_loss = -(logp * adv).mean()
-        pi_loss.backward()
-        nn.utils.clip_grad_norm_(self.policy.pi.parameters(), self.max_grad_norm)
-        self.pi_optim.step()
-        return pi_loss.item()
-
-    def _update_v(self, obs: torch.Tensor, rtg: torch.Tensor) -> float:
-        self.val_optim.zero_grad()
-        v = self.policy.v(obs)
-        v_loss = ((v - rtg) ** 2).mean()
-        v_loss.backward()
-        nn.utils.clip_grad_norm_(self.policy.v.parameters(), self.max_grad_norm)
-        self.val_optim.step()
-        return v_loss.item()

@@ -86,14 +86,18 @@ BipedalWalker-v3:
   env_hyperparams:
     n_envs: 16
     normalize: true
+  policy_hyperparams:
+    hidden_sizes: [256, 256]
   algo_hyperparams:
-    n_steps: 2048
+    n_steps: 1600
     gae_lambda: 0.95
     gamma: 0.99
     pi_lr: !!float 1e-4
-    val_lr: !!float 2e-4
+    val_lr: !!float 1e-4
     train_v_iters: 80
     max_grad_norm: 0.5
+  eval_params:
+    deterministic: false
 
 CarRacing-v0:
   n_timesteps: !!float 4e6
@@ -180,11 +184,12 @@ _atari: &atari-defaults
     activation_fn: relu
   algo_hyperparams:
     n_steps: 2048
-    pi_lr: !!float 1e-4
+    pi_lr: !!float 5e-5
     gamma: 0.99
     gae_lambda: 0.95
-    val_lr: !!float 2e-4
+    val_lr: !!float 1e-4
     train_v_iters: 80
     max_grad_norm: 0.5
+    ent_coef: 0.01
   eval_params:
     deterministic: false
