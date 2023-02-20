@@ -8,11 +8,11 @@ from time import perf_counter
 from torch.optim import Adam
 from stable_baselines3.common.vec_env.base_vec_env import VecEnv, VecEnvObs
 from torch.utils.tensorboard.writer import SummaryWriter
-from typing import List, Optional, Sequence, NamedTuple, TypeVar
+from typing import List, Optional, NamedTuple, TypeVar
 
 from shared.algorithm import Algorithm
 from shared.callbacks.callback import Callback
-from shared.gae import compute_advantage, compute_rtg_and_advantage, RtgAdvantage
+from shared.gae import compute_advantage, compute_rtg_and_advantage
 from shared.policy.on_policy import ActorCritic
 from shared.schedule import constant_schedule, linear_schedule
 from shared.trajectory import Trajectory, TrajectoryAccumulator

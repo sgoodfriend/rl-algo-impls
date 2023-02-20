@@ -76,8 +76,8 @@ class ActorCritic(OnPolicy):
     def __init__(
         self,
         env: VecEnv,
-        pi_hidden_sizes: Sequence[int],
-        v_hidden_sizes: Sequence[int],
+        pi_hidden_sizes: Optional[Sequence[int]] = None,
+        v_hidden_sizes: Optional[Sequence[int]] = None,
         init_layers_orthogonal: bool = True,
         activation_fn: str = "tanh",
         log_std_init: float = -0.5,
@@ -92,6 +92,18 @@ class ActorCritic(OnPolicy):
         **kwargs,
     ) -> None:
         super().__init__(env, **kwargs)
+
+        pi_hidden_sizes = (
+            pi_hidden_sizes
+            if pi_hidden_sizes is not None
+            else default_hidden_sizes(env.observation_space)
+        )
+        v_hidden_sizes = (
+            v_hidden_sizes
+            if v_hidden_sizes is not None
+            else default_hidden_sizes(env.observation_space)
+        )
+
         activation = ACTIVATION[activation_fn]
         observation_space = env.observation_space
         self.action_space = env.action_space
