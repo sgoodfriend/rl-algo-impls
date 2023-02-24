@@ -173,7 +173,7 @@ FrozenLake-v1:
     save_best: true
 
 _atari: &atari-defaults
-  n_timesteps: !!float 1e7
+  n_timesteps: !!float 25e6
   env_hyperparams:
     n_envs: 4
     frame_stack: 4
