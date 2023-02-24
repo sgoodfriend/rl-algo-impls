@@ -3,11 +3,13 @@ import numpy as np
 
 from typing import Any, Dict, Tuple, Union
 
+from wrappers.vectorable_wrapper import VecotarableWrapper
+
 ObsType = Union[np.ndarray, dict]
 ActType = Union[int, float, np.ndarray, dict]
 
 
-class EpisodicLifeEnv(gym.Wrapper):
+class EpisodicLifeEnv(VecotarableWrapper):
     def __init__(self, env: gym.Env, training: bool = True, noop_act: int = 0) -> None:
         super().__init__(env)
         self.training = training
@@ -36,7 +38,7 @@ class EpisodicLifeEnv(gym.Wrapper):
         return obs
 
 
-class FireOnLifeStarttEnv(gym.Wrapper):
+class FireOnLifeStarttEnv(VecotarableWrapper):
     def __init__(self, env: gym.Env, fire_act: int = 1) -> None:
         super().__init__(env)
         self.fire_act = fire_act
@@ -69,7 +71,7 @@ class FireOnLifeStarttEnv(gym.Wrapper):
         return obs
 
 
-class ClipRewardEnv(gym.Wrapper):
+class ClipRewardEnv(VecotarableWrapper):
     def __init__(self, env: gym.Env, training: bool = True) -> None:
         super().__init__(env)
         self.training = training

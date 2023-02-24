@@ -149,7 +149,7 @@ _atari: &atari-defaults
     frame_stack: 4
     no_reward_timeout_steps: 1000
     no_reward_fire_steps: 500
-    vec_env_class: subproc
+    vec_env_class: async
   policy_hyperparams: &atari-policy-defaults
     activation_fn: relu
   algo_hyperparams:
@@ -185,7 +185,7 @@ debug-PongNoFrameskip-v4:
   env_id: PongNoFrameskip-v4
   env_hyperparams:
     <<: *atari-env-defaults
-    vec_env_class: dummy
+    vec_env_class: sync
 
 _impala-atari: &impala-atari-defaults
   <<: *atari-defaults
@@ -272,7 +272,7 @@ HumanoidBulletEnv-v0:
 
 _procgen: &procgen-defaults
   env_hyperparams: &procgen-env-defaults
-    is_procgen: true
+    env_type: procgen
     n_envs: 64
     # grayscale: false
     # frame_stack: 4

@@ -4,11 +4,13 @@ import numpy as np
 from gym.wrappers.monitoring.video_recorder import VideoRecorder
 from typing import Tuple, Union
 
+from wrappers.vectorable_wrapper import VecotarableWrapper
+
 ObsType = Union[np.ndarray, dict]
 ActType = Union[int, float, np.ndarray, dict]
 
 
-class EpisodeRecordVideo(gym.Wrapper):
+class EpisodeRecordVideo(VecotarableWrapper):
     def __init__(
         self,
         env: gym.Env,

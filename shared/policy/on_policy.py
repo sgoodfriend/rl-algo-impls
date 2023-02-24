@@ -4,13 +4,18 @@ import torch
 
 from abc import abstractmethod
 from gym.spaces import Box, Discrete, Space
-from stable_baselines3.common.vec_env.base_vec_env import VecEnv, VecEnvObs
 from typing import NamedTuple, Optional, Sequence, Tuple, TypeVar
 
 from shared.module.feature_extractor import FeatureExtractor
 from shared.policy.actor import PiForward, StateDependentNoiseActorHead, actor_head
 from shared.policy.critic import CriticHead
 from shared.policy.policy import ACTIVATION, Policy
+from wrappers.vectorable_wrapper import (
+    VecEnv,
+    VecEnvObs,
+    single_observation_space,
+    single_action_space,
+)
 
 
 class Step(NamedTuple):
@@ -93,20 +98,22 @@ class ActorCritic(OnPolicy):
     ) -> None:
         super().__init__(env, **kwargs)
 
+        observation_space = single_observation_space(env)
+        action_space = single_action_space(env)
+
         pi_hidden_sizes = (
             pi_hidden_sizes
             if pi_hidden_sizes is not None
-            else default_hidden_sizes(env.observation_space)
+            else default_hidden_sizes(observation_space)
         )
         v_hidden_sizes = (
             v_hidden_sizes
             if v_hidden_sizes is not None
-            else default_hidden_sizes(env.observation_space)
+            else default_hidden_sizes(observation_space)
         )
 
         activation = ACTIVATION[activation_fn]
-        observation_space = env.observation_space
-        self.action_space = env.action_space
+        self.action_space = action_space
         self.squash_output = squash_output
         self.share_features_extractor = share_features_extractor
         self._feature_extractor = FeatureExtractor(

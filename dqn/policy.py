@@ -2,11 +2,16 @@ import numpy as np
 import os
 import torch
 
-from stable_baselines3.common.vec_env.base_vec_env import VecEnv, VecEnvObs
 from typing import Optional, Sequence, TypeVar
 
 from dqn.q_net import QNetwork
 from shared.policy.policy import Policy
+from wrappers.vectorable_wrapper import (
+    VecEnv,
+    VecEnvObs,
+    single_observation_space,
+    single_action_space,
+)
 
 DQNPolicySelf = TypeVar("DQNPolicySelf", bound="DQNPolicy")
 
@@ -24,8 +29,8 @@ class DQNPolicy(Policy):
     ) -> None:
         super().__init__(env, **kwargs)
         self.q_net = QNetwork(
-            env.observation_space,
-            env.action_space,
+            single_observation_space(env),
+            single_action_space(env),
             hidden_sizes,
             cnn_feature_dim=cnn_feature_dim,
             cnn_style=cnn_style,

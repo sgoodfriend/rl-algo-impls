@@ -1,18 +1,14 @@
-import gym
 import numpy as np
 
 from collections import deque
-from stable_baselines3.common.vec_env.base_vec_env import (
-    VecEnvStepReturn,
-    VecEnvObs,
-)
 from torch.utils.tensorboard.writer import SummaryWriter
 from typing import Any, Dict, List
 
 from shared.stats import Episode, EpisodesStats
+from wrappers.vectorable_wrapper import VecotarableWrapper, VecEnvStepReturn, VecEnvObs
 
 
-class EpisodeStatsWriter(gym.Wrapper):
+class EpisodeStatsWriter(VecotarableWrapper):
     def __init__(
         self,
         env,

@@ -2,9 +2,6 @@ import itertools
 import numpy as np
 import os
 
-from copy import deepcopy
-from stable_baselines3.common.vec_env.base_vec_env import VecEnv, VecEnvWrapper
-from stable_baselines3.common.vec_env.vec_normalize import VecNormalize
 from time import perf_counter
 from torch.utils.tensorboard.writer import SummaryWriter
 from typing import List, Optional, Union
@@ -13,6 +10,7 @@ from shared.callbacks.callback import Callback
 from shared.policy.policy import Policy
 from shared.stats import Episode, EpisodeAccumulator, EpisodesStats
 from wrappers.vec_episode_recorder import VecEpisodeRecorder
+from wrappers.vectorable_wrapper import VecEnv
 
 
 class EvaluateAccumulator(EpisodeAccumulator):
@@ -139,7 +137,7 @@ class EvalCallback(Callback):
     def on_step(self, timesteps_elapsed: int = 1) -> bool:
         super().on_step(timesteps_elapsed)
         if self.timesteps_elapsed // self.step_freq >= len(self.stats):
-            sync_vec_normalize(self.policy.vec_normalize, self.env)
+            self.policy.sync_normalization(self.env)
             self.evaluate()
         return True
 
@@ -178,7 +176,7 @@ class EvalCallback(Callback):
             )
             if strictly_better and self.record_best_videos:
                 assert self.video_env and self.best_video_dir
-                sync_vec_normalize(self.policy.vec_normalize, self.video_env)
+                self.policy.sync_normalization(self.video_env)
                 self.best_video_base_path = os.path.join(
                     self.best_video_dir, str(self.timesteps_elapsed)
                 )
@@ -199,16 +197,3 @@ class EvalCallback(Callback):
         eval_stat.write_to_tensorboard(self.tb_writer, "eval", self.timesteps_elapsed)
 
         return eval_stat
-
-
-def sync_vec_normalize(
-    origin_vec_normalize: Optional[VecNormalize], destination_env: VecEnv
-) -> None:
-    if origin_vec_normalize is not None:
-        eval_env_wrapper = destination_env
-        while isinstance(eval_env_wrapper, VecEnvWrapper):
-            if isinstance(eval_env_wrapper, VecNormalize):
-                if hasattr(origin_vec_normalize, "obs_rms"):
-                    eval_env_wrapper.obs_rms = deepcopy(origin_vec_normalize.obs_rms)
-                eval_env_wrapper.ret_rms = deepcopy(origin_vec_normalize.ret_rms)
-            eval_env_wrapper = eval_env_wrapper.venv

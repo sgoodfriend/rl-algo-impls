@@ -2,10 +2,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from gym.spaces import Box
-from pathlib import Path
-from stable_baselines3.common.vec_env.base_vec_env import VecEnv, VecEnvObs
-from typing import NamedTuple, Optional, Sequence, TypeVar
+from typing import Optional, Sequence
 
 from shared.module.feature_extractor import FeatureExtractor
 from shared.policy.actor import (
@@ -23,6 +20,7 @@ from shared.policy.on_policy import (
     default_hidden_sizes,
 )
 from shared.policy.policy import ACTIVATION
+from wrappers.vectorable_wrapper import VecEnv, VecEnvObs, single_observation_space, single_action_space
 
 PI_FILE_NAME = "pi.pt"
 V_FILE_NAME = "v.pt"
@@ -54,8 +52,8 @@ class VPGActorCritic(OnPolicy):
     ) -> None:
         super().__init__(env, **kwargs)
         activation = ACTIVATION[activation_fn]
-        obs_space = env.observation_space
-        self.action_space = env.action_space
+        obs_space = single_observation_space(env)
+        self.action_space = single_action_space(env)
         self.use_sde = use_sde
         self.squash_output = squash_output
 

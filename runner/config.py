@@ -14,13 +14,13 @@ class RunArgs:
 
 
 class EnvHyperparams(NamedTuple):
-    is_procgen: bool = False
+    env_type: str = "gymvec"
     n_envs: int = 1
     frame_stack: int = 1
     make_kwargs: Optional[Dict[str, Any]] = None
     no_reward_timeout_steps: Optional[int] = None
     no_reward_fire_steps: Optional[int] = None
-    vec_env_class: str = "dummy"
+    vec_env_class: str = "sync"
     normalize: bool = False
     normalize_kwargs: Optional[Dict[str, Any]] = None
     rolling_length: int = 100

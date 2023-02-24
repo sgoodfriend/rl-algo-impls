@@ -3,11 +3,13 @@ import numpy as np
 
 from typing import Optional, Tuple, Union
 
+from wrappers.vectorable_wrapper import VecotarableWrapper
+
 ObsType = Union[np.ndarray, dict]
 ActType = Union[int, float, np.ndarray, dict]
 
 
-class NoRewardTimeout(gym.Wrapper):
+class NoRewardTimeout(VecotarableWrapper):
     def __init__(
         self, env: gym.Env, n_timeout_steps: int, n_fire_steps: Optional[int] = None
     ) -> None:

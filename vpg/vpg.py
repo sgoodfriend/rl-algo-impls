@@ -4,7 +4,6 @@ import torch.nn as nn
 
 from collections import defaultdict
 from dataclasses import dataclass, asdict
-from stable_baselines3.common.vec_env.base_vec_env import VecEnv, VecEnvObs
 from torch.optim import Adam
 from torch.utils.tensorboard.writer import SummaryWriter
 from typing import Optional, Sequence, TypeVar
@@ -14,6 +13,7 @@ from shared.callbacks.callback import Callback
 from shared.gae import compute_rtg_and_advantage, compute_advantage
 from shared.trajectory import Trajectory, TrajectoryAccumulator
 from vpg.policy import VPGActorCritic
+from wrappers.vectorable_wrapper import VecEnv
 
 
 @dataclass

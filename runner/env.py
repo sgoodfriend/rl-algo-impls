@@ -2,6 +2,8 @@ import gym
 import numpy as np
 import os
 
+from gym.vector.async_vector_env import AsyncVectorEnv
+from gym.vector.sync_vector_env import SyncVectorEnv
 from gym.wrappers.resize_observation import ResizeObservation
 from gym.wrappers.gray_scale_observation import GrayScaleObservation
 from gym.wrappers.frame_stack import FrameStack
@@ -9,26 +11,24 @@ from stable_baselines3.common.atari_wrappers import (
     MaxAndSkipEnv,
     NoopResetEnv,
 )
-from stable_baselines3.common.vec_env.base_vec_env import VecEnv
 from stable_baselines3.common.vec_env.dummy_vec_env import DummyVecEnv
 from stable_baselines3.common.vec_env.subproc_vec_env import SubprocVecEnv
 from stable_baselines3.common.vec_env.vec_normalize import VecNormalize
 from torch.utils.tensorboard.writer import SummaryWriter
-from typing import Callable, Optional, Union
+from typing import Callable, Optional
 
 from runner.config import Config, EnvHyperparams
 from shared.policy.policy import VEC_NORMALIZE_FILENAME
 from wrappers.atari_wrappers import EpisodicLifeEnv, FireOnLifeStarttEnv, ClipRewardEnv
 from wrappers.episode_record_video import EpisodeRecordVideo
 from wrappers.episode_stats_writer import EpisodeStatsWriter
-from wrappers.get_rgb_observation import GetRgbObservation
 from wrappers.initial_step_truncate_wrapper import InitialStepTruncateWrapper
 from wrappers.is_vector_env import IsVectorEnv
 from wrappers.noop_env_seed import NoopEnvSeed
+from wrappers.normalize import NormalizeObservation, NormalizeReward
 from wrappers.transpose_image_observation import TransposeImageObservation
+from wrappers.vectorable_wrapper import VecEnv
 from wrappers.video_compat_wrapper import VideoCompatWrapper
-
-GeneralVecEnv = Union[VecEnv, gym.vector.VectorEnv, gym.Wrapper]
 
 
 def make_env(
@@ -38,8 +38,8 @@ def make_env(
     render: bool = False,
     normalize_load_path: Optional[str] = None,
     tb_writer: Optional[SummaryWriter] = None,
-) -> GeneralVecEnv:
-    if hparams.is_procgen:
+) -> VecEnv:
+    if hparams.env_type == "procgen":
         return _make_procgen_env(
             config,
             hparams,
@@ -48,7 +48,7 @@ def make_env(
             normalize_load_path=normalize_load_path,
             tb_writer=tb_writer,
         )
-    else:
+    elif hparams.env_type in {"sb3vec", "gymvec"}:
         return _make_vec_env(
             config,
             hparams,
@@ -57,21 +57,23 @@ def make_env(
             normalize_load_path=normalize_load_path,
             tb_writer=tb_writer,
         )
+    else:
+        raise ValueError(f"env_type {hparams.env_type} not supported")
 
 
 def make_eval_env(
     config: Config,
     hparams: EnvHyperparams,
     override_n_envs: Optional[int] = None,
-    **kwargs
-) -> GeneralVecEnv:
+    **kwargs,
+) -> VecEnv:
     kwargs = kwargs.copy()
     kwargs["training"] = False
     if override_n_envs is not None:
         hparams_kwargs = hparams._asdict()
         hparams_kwargs["n_envs"] = override_n_envs
         if override_n_envs == 1:
-            hparams_kwargs["vec_env_class"] = "dummy"
+            hparams_kwargs["vec_env_class"] = "sync"
         hparams = EnvHyperparams(**hparams_kwargs)
     return make_env(config, hparams, **kwargs)
 
@@ -83,9 +85,9 @@ def _make_vec_env(
     render: bool = False,
     normalize_load_path: Optional[str] = None,
     tb_writer: Optional[SummaryWriter] = None,
-) -> GeneralVecEnv:
+) -> VecEnv:
     (
-        _,
+        env_type,
         n_envs,
         frame_stack,
         make_kwargs,
@@ -107,18 +109,18 @@ def _make_vec_env(
     spec = gym.spec(config.env_id)
     seed = config.seed(training=training)
 
-    def make(idx: int) -> Callable[[], gym.Env]:
-        env_kwargs = make_kwargs.copy() if make_kwargs is not None else {}
-        if "BulletEnv" in config.env_id and render:
-            env_kwargs["render"] = True
-        if "CarRacing" in config.env_id:
-            env_kwargs["verbose"] = 0
-        if "procgen" in config.env_id:
-            if not render:
-                env_kwargs["render_mode"] = "rgb_array"
+    make_kwargs = make_kwargs.copy() if make_kwargs is not None else {}
+    if "BulletEnv" in config.env_id and render:
+        make_kwargs["render"] = True
+    if "CarRacing" in config.env_id:
+        make_kwargs["verbose"] = 0
+    if "procgen" in config.env_id:
+        if not render:
+            make_kwargs["render_mode"] = "rgb_array"
 
+    def make(idx: int) -> Callable[[], gym.Env]:
         def _make() -> gym.Env:
-            env = gym.make(config.env_id, **env_kwargs)
+            env = gym.make(config.env_id, **make_kwargs)
             env = gym.wrappers.RecordEpisodeStatistics(env)
             env = VideoCompatWrapper(env)
             if training and train_record_video and idx == 0:
@@ -171,28 +173,46 @@ def _make_vec_env(
 
         return _make
 
-    VecEnvClass = {"dummy": DummyVecEnv, "subproc": SubprocVecEnv}[vec_env_class]
-    venv = VecEnvClass([make(i) for i in range(n_envs)])
+    if env_type == "sb3vec":
+        VecEnvClass = {"sync": DummyVecEnv, "async": SubprocVecEnv}[vec_env_class]
+    elif env_type == "gymvec":
+        VecEnvClass = {"sync": SyncVectorEnv, "async": AsyncVectorEnv}[vec_env_class]
+    else:
+        raise ValueError(f"env_type {env_type} unsupported")
+    envs = VecEnvClass([make(i) for i in range(n_envs)])
     if training:
         assert tb_writer
-        venv = EpisodeStatsWriter(
-            venv, tb_writer, training=training, rolling_length=rolling_length
+        envs = EpisodeStatsWriter(
+            envs, tb_writer, training=training, rolling_length=rolling_length
         )
     if normalize:
-        if normalize_load_path:
-            venv = VecNormalize.load(
-                os.path.join(normalize_load_path, VEC_NORMALIZE_FILENAME),
-                venv,  # type: ignore
-            )
+        normalize_kwargs = normalize_kwargs or {}
+        if env_type == "sb3vec":
+            if normalize_load_path:
+                envs = VecNormalize.load(
+                    os.path.join(normalize_load_path, VEC_NORMALIZE_FILENAME),
+                    envs,  # type: ignore
+                )
+            else:
+                envs = VecNormalize(
+                    envs,  # type: ignore
+                    training=training,
+                    **normalize_kwargs,
+                )
+            if not training:
+                envs.norm_reward = False
         else:
-            venv = VecNormalize(
-                venv,  # type: ignore
-                training=training,
-                **(normalize_kwargs or {}),
-            )
-        if not training:
-            venv.norm_reward = False
-    return venv
+            if normalize_kwargs.get("norm_obs", True):
+                envs = NormalizeObservation(
+                    envs, training=training, clip=normalize_kwargs.get("clip_obs", 10.0)
+                )
+            if training and normalize_kwargs.get("norm_reward", True):
+                envs = NormalizeReward(
+                    envs,
+                    training=training,
+                    clip=normalize_kwargs.get("clip_reward", 10.0),
+                )
+    return envs
 
 
 def _make_procgen_env(
@@ -202,9 +222,9 @@ def _make_procgen_env(
     render: bool = False,
     normalize_load_path: Optional[str] = None,
     tb_writer: Optional[SummaryWriter] = None,
-) -> GeneralVecEnv:
-    from procgen.env import ProcgenGym3Env, ToBaselinesVecEnv
+) -> VecEnv:
     from gym3 import ViewerWrapper, ExtractDictObWrapper
+    from procgen.env import ProcgenGym3Env, ToBaselinesVecEnv
 
     (
         _,
@@ -220,6 +240,7 @@ def _make_procgen_env(
         _,  # train_record_video
         _,  # video_step_interval
         _,  # initial_steps_to_truncate
+        _,  # clip_atari_rewards
     ) = hparams
 
     seed = config.seed(training=training)
@@ -251,12 +272,10 @@ def _make_procgen_env(
         )
     if normalize and training:
         normalize_kwargs = normalize_kwargs or {}
-        # TODO: Handle reward stats saving/loading/syncing, but it's only important
-        # for checkpointing
         envs = gym.wrappers.NormalizeReward(envs)
         clip_obs = normalize_kwargs.get("clip_reward", 10.0)
         envs = gym.wrappers.TransformReward(
             envs, lambda r: np.clip(r, -clip_obs, clip_obs)
         )
 
-    return envs
+    return envs  # type: ignore

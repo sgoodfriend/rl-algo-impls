@@ -7,7 +7,6 @@ import torch.nn.functional as F
 
 from collections import deque
 from torch.optim import Adam
-from stable_baselines3.common.vec_env.base_vec_env import VecEnv, VecEnvObs
 from torch.utils.tensorboard.writer import SummaryWriter
 from typing import List, NamedTuple, Optional, TypeVar
 
@@ -15,6 +14,7 @@ from dqn.policy import DQNPolicy
 from shared.algorithm import Algorithm
 from shared.callbacks.callback import Callback
 from shared.schedule import linear_schedule
+from wrappers.vectorable_wrapper import VecEnv, VecEnvObs
 
 
 class Transition(NamedTuple):
