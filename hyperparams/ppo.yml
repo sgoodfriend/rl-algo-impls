@@ -68,7 +68,7 @@ Acrobot-v1:
     ent_coef: 0.0
 
 LunarLander-v2:
-  n_timesteps: !!float 1e6
+  n_timesteps: !!float 4e6
   env_hyperparams:
     n_envs: 16
   algo_hyperparams:
@@ -77,8 +77,11 @@ LunarLander-v2:
     n_epochs: 4
     gae_lambda: 0.98
     gamma: 0.999
+    learning_rate: !!float 5e-4
+    learning_rate_decay: linear
+    clip_range: 0.2
+    clip_range_decay: linear
     ent_coef: 0.01
-    ent_coef_decay: linear
     normalize_advantage: false
 
 BipedalWalker-v3:
