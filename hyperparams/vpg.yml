@@ -124,6 +124,8 @@ CarRacing-v0:
 
 HalfCheetahBulletEnv-v0: &pybullet-defaults
   n_timesteps: !!float 2e6
+  env_hyperparams: &pybullet-env-defaults
+    normalize: true
   policy_hyperparams: &pybullet-policy-defaults
     hidden_sizes: [256, 256]
   algo_hyperparams: &pybullet-algo-defaults
