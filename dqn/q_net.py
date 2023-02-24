@@ -19,6 +19,7 @@ class QNetwork(nn.Module):
         cnn_feature_dim: int = 512,
         cnn_style: str = "nature",
         cnn_layers_init_orthogonal: Optional[bool] = None,
+        impala_channels: Sequence[int] = (16, 32, 32),
     ) -> None:
         super().__init__()
         assert isinstance(action_space, Discrete)
@@ -28,6 +29,7 @@ class QNetwork(nn.Module):
             cnn_feature_dim=cnn_feature_dim,
             cnn_style=cnn_style,
             cnn_layers_init_orthogonal=cnn_layers_init_orthogonal,
+            impala_channels=impala_channels,
         )
         layer_sizes = (
             (self._feature_extractor.out_dim,) + tuple(hidden_sizes) + (action_space.n,)
