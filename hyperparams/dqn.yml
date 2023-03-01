@@ -86,7 +86,7 @@ _atari: &atari-defaults
     no_reward_timeout_steps: 1_000
     no_reward_fire_steps: 500
     n_envs: 8
-    vec_env_class: "subproc"
+    vec_env_class: async
   algo_hyperparams:
     buffer_size: 100000
     learning_rate: !!float 1e-4

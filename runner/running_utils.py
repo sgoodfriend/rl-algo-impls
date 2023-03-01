@@ -10,21 +10,21 @@ import torch.backends.cudnn
 import yaml
 
 from gym.spaces import Box, Discrete
-from stable_baselines3.common.vec_env.base_vec_env import VecEnv
 from torch.utils.tensorboard.writer import SummaryWriter
 from typing import Dict, Optional, Type, Union
 
 from runner.config import Hyperparams
 from shared.algorithm import Algorithm
 from shared.callbacks.eval_callback import EvalCallback
+from shared.policy.on_policy import ActorCritic
 from shared.policy.policy import Policy
 
 from dqn.dqn import DQN
 from dqn.policy import DQNPolicy
+from ppo.ppo import PPO
 from vpg.vpg import VanillaPolicyGradient
 from vpg.policy import VPGActorCritic
-from ppo.ppo import PPO
-from ppo.policy import PPOActorCritic
+from wrappers.vectorable_wrapper import VecEnv, single_observation_space
 
 ALGOS: Dict[str, Type[Algorithm]] = {
     "dqn": DQN,
@@ -34,7 +34,7 @@ ALGOS: Dict[str, Type[Algorithm]] = {
 POLICIES: Dict[str, Type[Policy]] = {
     "dqn": DQNPolicy,
     "vpg": VPGActorCritic,
-    "ppo": PPOActorCritic,
+    "ppo": ActorCritic,
 }
 
 HYPERPARAMS_PATH = "hyperparams"
@@ -103,7 +103,7 @@ def get_device(device: str, env: VecEnv) -> torch.device:
     # Simple environments like Discreet and 1-D Boxes might also be better
     # served with the CPU.
     if device == "mps":
-        obs_space = env.observation_space
+        obs_space = single_observation_space(env)
         if isinstance(obs_space, Discrete):
             device = "cpu"
         elif isinstance(obs_space, Box) and len(obs_space.shape) == 1:

@@ -1,8 +1,9 @@
 import numpy as np
 
 from dataclasses import dataclass, field
-from stable_baselines3.common.vec_env.base_vec_env import VecEnvObs
 from typing import Generic, List, Optional, Type, TypeVar
+
+from wrappers.vectorable_wrapper import VecEnvObs
 
 
 @dataclass

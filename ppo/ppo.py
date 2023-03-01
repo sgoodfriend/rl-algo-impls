@@ -6,7 +6,6 @@ import torch.nn.functional as F
 from dataclasses import asdict, dataclass, field
 from time import perf_counter
 from torch.optim import Adam
-from stable_baselines3.common.vec_env.base_vec_env import VecEnv, VecEnvObs
 from torch.utils.tensorboard.writer import SummaryWriter
 from typing import List, Optional, NamedTuple, TypeVar
 
@@ -16,6 +15,7 @@ from shared.gae import compute_advantage, compute_rtg_and_advantage
 from shared.policy.on_policy import ActorCritic
 from shared.schedule import constant_schedule, linear_schedule
 from shared.trajectory import Trajectory, TrajectoryAccumulator
+from wrappers.vectorable_wrapper import VecEnv, VecEnvObs
 
 
 @dataclass

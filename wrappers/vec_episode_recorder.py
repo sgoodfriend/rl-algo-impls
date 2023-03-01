@@ -1,14 +1,18 @@
-import gym
 import numpy as np
 
+from gym.vector.sync_vector_env import SyncVectorEnv
 from gym.wrappers.monitoring.video_recorder import VideoRecorder
-from stable_baselines3.common.vec_env.base_vec_env import (
-    VecEnvStepReturn,
+from stable_baselines3.common.vec_env.base_vec_env import tile_images
+from typing import Optional
+
+from wrappers.vectorable_wrapper import (
+    VecotarableWrapper,
     VecEnvObs,
+    VecEnvStepReturn,
 )
 
 
-class VecEpisodeRecorder(gym.Wrapper):
+class VecEpisodeRecorder(VecotarableWrapper):
     def __init__(self, env, base_path: str, max_video_length: int = 3600):
         super().__init__(env)
         self.base_path = base_path
@@ -41,7 +45,7 @@ class VecEpisodeRecorder(gym.Wrapper):
         self._close_video_recorder()
 
         self.video_recorder = VideoRecorder(
-            self.env,
+            SyncVectorEnvRenderCompat(self.env),
             base_path=self.base_path,
         )
 
@@ -52,3 +56,25 @@ class VecEpisodeRecorder(gym.Wrapper):
         if self.video_recorder:
             self.video_recorder.close()
         self.video_recorder = None
+
+
+class SyncVectorEnvRenderCompat(VecotarableWrapper):
+    def __init__(self, env) -> None:
+        super().__init__(env)
+
+    def render(self, mode: str = "human") -> Optional[np.ndarray]:
+        base_env = self.env.unwrapped
+        if isinstance(base_env, SyncVectorEnv):
+            imgs = [env.render(mode="rgb_array") for env in base_env.envs]
+            bigimg = tile_images(imgs)
+            if mode == "humnan":
+                import cv2
+
+                cv2.imshow("vecenv", bigimg[:, :, ::-1])
+                cv2.waitKey(1)
+            elif mode == "rgb_array":
+                return bigimg
+            else:
+                raise NotImplemented(f"Render mode {mode} is not supported")
+        else:
+            return self.env.render(mode=mode)

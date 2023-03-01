@@ -104,7 +104,7 @@ CarRacing-v0:
   env_hyperparams:
     frame_stack: 4
     n_envs: 4
-    vec_env_class: "dummy"
+    vec_env_class: sync
   policy_hyperparams:
     use_sde: true
     log_std_init: -2
@@ -181,7 +181,7 @@ _atari: &atari-defaults
     frame_stack: 4
     no_reward_timeout_steps: 1000
     no_reward_fire_steps: 500
-    vec_env_class: subproc
+    vec_env_class: async
   policy_hyperparams:
     activation_fn: relu
   algo_hyperparams:

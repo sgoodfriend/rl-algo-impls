@@ -1,9 +1,8 @@
-import gym
-
 from typing import List, Optional
 
+from wrappers.vectorable_wrapper import VecotarableWrapper
 
-class NoopEnvSeed(gym.Wrapper):
+class NoopEnvSeed(VecotarableWrapper):
     """
     Wrapper to stop a seed call going to the underlying environment.
     """

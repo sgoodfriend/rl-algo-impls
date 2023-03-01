@@ -1,8 +1,10 @@
 import gym
 import numpy as np
 
+from wrappers.vectorable_wrapper import VecotarableWrapper
 
-class VideoCompatWrapper(gym.Wrapper):
+
+class VideoCompatWrapper(VecotarableWrapper):
     def __init__(self, env: gym.Env) -> None:
         super().__init__(env)
 
