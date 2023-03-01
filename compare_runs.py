@@ -77,7 +77,7 @@ class RunGroupRuns:
     def comparisons_by_metric(self) -> Dict[str, Comparison]:
         c_by_m = {}
         for metric in (
-            f"{s}_{m}"
+            f"{s}/{m}"
             for s, m in itertools.product(self.summary_stats, self.summary_metrics)
         ):
             c_by_m[metric] = Comparison(
