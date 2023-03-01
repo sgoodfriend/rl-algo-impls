@@ -2,6 +2,8 @@ import gym
 import numpy as np
 
 from numpy.typing import NDArray
+from typing import Tuple
+
 from wrappers.vectorable_wrapper import (
     VecotarableWrapper,
     single_observation_space,
@@ -9,7 +11,7 @@ from wrappers.vectorable_wrapper import (
 
 
 class RunningMeanStd:
-    def __init__(self, episilon=1e-4, shape=()) -> None:
+    def __init__(self, episilon: float = 1e-4, shape: Tuple[int, ...]=()) -> None:
         self.mean = np.zeros(shape, np.float64)
         self.var = np.ones(shape, np.float64)
         self.count = episilon
