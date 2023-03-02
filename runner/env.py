@@ -26,6 +26,7 @@ from wrappers.initial_step_truncate_wrapper import InitialStepTruncateWrapper
 from wrappers.is_vector_env import IsVectorEnv
 from wrappers.noop_env_seed import NoopEnvSeed
 from wrappers.normalize import NormalizeObservation, NormalizeReward
+from wrappers.sync_vector_env_render_compat import SyncVectorEnvRenderCompat
 from wrappers.transpose_image_observation import TransposeImageObservation
 from wrappers.vectorable_wrapper import VecEnv
 from wrappers.video_compat_wrapper import VideoCompatWrapper
@@ -180,6 +181,8 @@ def _make_vec_env(
     else:
         raise ValueError(f"env_type {env_type} unsupported")
     envs = VecEnvClass([make(i) for i in range(n_envs)])
+    if env_type == "gymvec" and vec_env_class == "sync":
+        envs = SyncVectorEnvRenderCompat(envs)
     if training:
         assert tb_writer
         envs = EpisodeStatsWriter(
