@@ -2,7 +2,7 @@ import numpy as np
 
 from dataclasses import dataclass
 from torch.utils.tensorboard.writer import SummaryWriter
-from typing import Dict, List, Optional, Sequence, TypeVar
+from typing import Dict, List, Optional, Sequence, Union, TypeVar
 
 
 @dataclass
@@ -148,3 +148,13 @@ class EpisodeAccumulator:
 
     def stats(self) -> EpisodesStats:
         return EpisodesStats(self.episodes)
+
+
+def log_scalars(
+    tb_writer: SummaryWriter,
+    main_tag: str,
+    tag_scalar_dict: Dict[str, Union[int, float]],
+    global_step: int,
+) -> None:
+    for tag, value in tag_scalar_dict.items():
+        tb_writer.add_scalar(f"{main_tag}/{tag}", value, global_step)

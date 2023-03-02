@@ -1,0 +1,132 @@
+CartPole-v1: &cartpole-defaults
+  n_timesteps: !!float 5e5
+  env_hyperparams:
+    n_envs: 8
+
+CartPole-v0:
+  <<: *cartpole-defaults
+
+MountainCar-v0:
+  n_timesteps: !!float 1e6
+  env_hyperparams:
+    n_envs: 16
+    normalize: true
+
+MountainCarContinuous-v0:
+  n_timesteps: !!float 1e5
+  env_hyperparams:
+    n_envs: 4
+    normalize: true
+  # policy_hyperparams:
+  #   use_sde: true
+  #   log_std_init: 0.0
+  #   init_layers_orthogonal: false
+  algo_hyperparams:
+    n_steps: 100
+    sde_sample_freq: 16
+
+Acrobot-v1:
+  n_timesteps: !!float 5e5
+  env_hyperparams:
+    normalize: true
+    n_envs: 16
+
+LunarLander-v2:
+  n_timesteps: !!float 1e6
+  env_hyperparams:
+    n_envs: 16
+    normalize: true
+    normalize_kwargs:
+      norm_obs: false
+      norm_reward: true
+  algo_hyperparams:
+    n_steps: 8
+    gamma: 0.999
+    gae_lambda: 0.98
+    learning_rate: !!float 5e-4
+    learning_rate_decay: linear
+    ent_coef: 0.01
+    vf_coef: 0.4
+
+BipedalWalker-v3:
+  n_timesteps: !!float 5e6
+  env_hyperparams:
+    n_envs: 16
+    normalize: true
+  policy_hyperparams:
+    use_sde: true
+    log_std_init: -2
+    init_layers_orthogonal: false
+  algo_hyperparams:
+    ent_coef: 0
+    max_grad_norm: 0.5
+    n_steps: 8
+    gae_lambda: 0.9
+    vf_coef: 0.4
+    gamma: 0.99
+    learning_rate: !!float 9.6e-4
+    learning_rate_decay: linear
+
+HalfCheetahBulletEnv-v0: &pybullet-defaults
+  n_timesteps: !!float 2e6
+  env_hyperparams:
+    n_envs: 4
+    normalize: true
+  policy_hyperparams:
+    use_sde: true
+    log_std_init: -2
+    init_layers_orthogonal: false
+  algo_hyperaparms: &pybullet-algo-defaults
+    n_steps: 8
+    ent_coef: 0
+    max_grad_norm: 0.5
+    gae_lambda: 0.9
+    gamma: 0.99
+    vf_coef: 0.4
+    learning_rate: !!float 9.6e-4
+    learning_rate_decay: linear
+
+AntBulletEnv-v0:
+  <<: *pybullet-defaults
+
+Walker2DBulletEnv-v0:
+  <<: *pybullet-defaults
+
+HopperBulletEnv-v0:
+  <<: *pybullet-defaults
+
+CarRacing-v0:
+  n_timesteps: !!float 4e6
+  env_hyperparams:
+    n_envs: 8
+    frame_stack: 4
+  policy_hyperparams:
+    use_sde: true
+    log_std_init: -2
+    init_layers_orthogonal: false
+    activation_fn: relu
+    share_features_extractor: false
+    cnn_feature_dim: 256
+    hidden_sizes: [256]
+  algo_hyperparams:
+    n_steps: 8
+    learning_rate: !!float 5e-5
+    learning_rate_decay: linear
+    gamma: 0.99
+    gae_lambda: 0.95
+    ent_coef: 0
+    sde_sample_freq: 4
+
+_atari: &atari-defaults
+  n_timesteps: !!float 1e7
+  env_hyperparams: &atari-env-defaults
+    n_envs: 16
+    frame_stack: 4
+    no_reward_timeout_steps: 1000
+    no_reward_fire_steps: 500
+    vec_env_class: async
+  policy_hyperparams: &atari-policy-defaults
+    activation_fn: relu
+  algo_hyperparams:
+    ent_coef: 0.01
+    vf_coef: 0.25
