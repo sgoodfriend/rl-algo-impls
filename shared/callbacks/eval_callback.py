@@ -75,7 +75,9 @@ def evaluate(
     print_returns: bool = True,
     ignore_first_episode: bool = False,
 ) -> EpisodesStats:
+    policy.sync_normalization(env)
     policy.eval()
+
     episodes = EvaluateAccumulator(
         env.num_envs, n_episodes, print_returns, ignore_first_episode
     )
@@ -137,7 +139,6 @@ class EvalCallback(Callback):
     def on_step(self, timesteps_elapsed: int = 1) -> bool:
         super().on_step(timesteps_elapsed)
         if self.timesteps_elapsed // self.step_freq >= len(self.stats):
-            self.policy.sync_normalization(self.env)
             self.evaluate()
         return True
 
@@ -176,7 +177,6 @@ class EvalCallback(Callback):
             )
             if strictly_better and self.record_best_videos:
                 assert self.video_env and self.best_video_dir
-                self.policy.sync_normalization(self.video_env)
                 self.best_video_base_path = os.path.join(
                     self.best_video_dir, str(self.timesteps_elapsed)
                 )

@@ -19,6 +19,7 @@ from shared.callbacks.eval_callback import EvalCallback
 from shared.policy.on_policy import ActorCritic
 from shared.policy.policy import Policy
 
+from a2c.a2c import A2C
 from dqn.dqn import DQN
 from dqn.policy import DQNPolicy
 from ppo.ppo import PPO
@@ -30,11 +31,13 @@ ALGOS: Dict[str, Type[Algorithm]] = {
     "dqn": DQN,
     "vpg": VanillaPolicyGradient,
     "ppo": PPO,
+    "a2c": A2C,
 }
 POLICIES: Dict[str, Type[Policy]] = {
     "dqn": DQNPolicy,
     "vpg": VPGActorCritic,
     "ppo": ActorCritic,
+    "a2c": ActorCritic,
 }
 
 HYPERPARAMS_PATH = "hyperparams"

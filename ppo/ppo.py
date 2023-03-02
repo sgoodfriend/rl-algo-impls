@@ -13,7 +13,7 @@ from shared.algorithm import Algorithm
 from shared.callbacks.callback import Callback
 from shared.gae import compute_advantage, compute_rtg_and_advantage
 from shared.policy.on_policy import ActorCritic
-from shared.schedule import constant_schedule, linear_schedule
+from shared.schedule import constant_schedule, linear_schedule, update_learning_rate
 from shared.trajectory import Trajectory, TrajectoryAccumulator
 from wrappers.vectorable_wrapper import VecEnv, VecEnvObs
 
@@ -216,7 +216,7 @@ class PPO(Algorithm):
     ) -> TrainStats:
         self.policy.train()
         learning_rate = self.lr_schedule(progress)
-        self.optimizer.param_groups[0]["lr"] = learning_rate
+        update_learning_rate(self.optimizer, learning_rate)
         self.tb_writer.add_scalar(
             "charts/learning_rate",
             self.optimizer.param_groups[0]["lr"],
@@ -318,9 +318,9 @@ class PPO(Algorithm):
         if self.ppo2_vf_coef_halving:
             v_loss *= 0.5
 
-        entropy_loss = entropy.mean()
+        entropy_loss = -entropy.mean()
 
-        loss = pi_loss - ent_coef * entropy_loss + self.vf_coef * v_loss
+        loss = pi_loss + ent_coef * entropy_loss + self.vf_coef * v_loss
 
         self.optimizer.zero_grad()
         loss.backward()

@@ -45,7 +45,8 @@ write-capable API token:
 git config --global credential.helper store
 huggingface-cli login
 # For example: python benchmark_publish.py --wandb-tags host_192-9-147-166 benchmark_1d4094f --wandb-report-url https://api.wandb.ai/links/sgoodfriend/099h4lvj
-python benchmark_publish.py --wandb-tags HOST_TAG COMMIT_TAG --wandb-report-url WANDB_REPORT_URL
+# --virtual-display likely must be specified if running on a remote machine.
+python benchmark_publish.py --wandb-tags HOST_TAG COMMIT_TAG --wandb-report-url WANDB_REPORT_URL [--virtual-display]
 ```
 
 ### Google Colab Pro+
