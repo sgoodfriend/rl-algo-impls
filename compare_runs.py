@@ -143,6 +143,12 @@ if __name__ == "__main__":
         help="WandB tag for experiment commit (i.e. benchmark_5540e1f)",
     )
     parser.add_argument(
+        "--envs",
+        type=str,
+        nargs="*",
+        help="If specified, only compare these envs",
+    )
+    parser.add_argument(
         "--exclude-envs",
         type=str,
         nargs="*",
@@ -173,6 +179,8 @@ if __name__ == "__main__":
             continue
         rg = RunGroup(r.config["algo"], r.config.get("env_id") or r.config["env"])
         if args.exclude_envs and rg.env_id in args.exclude_envs:
+            continue
+        if args.envs and rg.env_id not in args.envs:
             continue
         if rg not in runs_by_run_group:
             runs_by_run_group[rg] = RunGroupRuns(
