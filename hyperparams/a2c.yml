@@ -31,17 +31,22 @@ Acrobot-v1:
     normalize: true
     n_envs: 16
 
+# Tuned: Poorly
 LunarLander-v2:
   n_timesteps: !!float 1e6
   env_hyperparams:
     n_envs: 8
     normalize: true
   algo_hyperparams:
-    n_steps: 5
-    gamma: 0.995
-    learning_rate: !!float 8.3e-4
+    n_steps: 16
+    gamma: 0.9978284261050353
+    gae_lambda: 0.9709780642156547
+    learning_rate: !!float 2.02097e-05
     learning_rate_decay: linear
-    ent_coef: !!float 1e-5
+    ent_coef: !!float 5.43989e-06
+    max_grad_norm: 6.53699
+    normalize_advantage: true
+    vf_coef: 0.202146
 
 BipedalWalker-v3:
   n_timesteps: !!float 5e6
