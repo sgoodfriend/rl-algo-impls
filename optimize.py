@@ -1,14 +1,16 @@
+import dataclasses
 import logging
 import numpy as np
 import optuna
 import os
+import wandb
 
 from dataclasses import dataclass
 from optuna.pruners import MedianPruner
 from optuna.samplers import TPESampler
 from optuna.visualization import plot_optimization_history, plot_param_importances
 from torch.utils.tensorboard.writer import SummaryWriter
-from typing import Callable, NamedTuple, Optional, Union
+from typing import Callable, NamedTuple, Optional, Sequence, Union
 
 from a2c.optimize import sample_params as a2c_sample_params
 from runner.config import Config, RunArgs, EnvHyperparams
@@ -35,12 +37,18 @@ class OptimizeArgs(RunArgs):
     n_eval_envs: int = 8
     n_eval_episodes: int = 16
     timeout: Union[int, float, None] = None
+    wandb_project_name: Optional[str] = None
+    wandb_entity: Optional[str] = None
+    wandb_tags: Sequence[str] = dataclasses.field(default_factory=list)
+    wandb_group: Optional[str] = None
+
 
 @dataclass
 class StudyArgs:
     load_study: bool
     study_name: Optional[str] = None
     storage_path: Optional[str] = None
+
 
 class Args(NamedTuple):
     optimize_args: OptimizeArgs
@@ -49,9 +57,34 @@ class Args(NamedTuple):
 
 def parse_args() -> Args:
     parser = base_parser()
-    parser.add_argument("--load-study", action="store_true", help="Load a preexisting study, useful for parallelization")
+    parser.add_argument(
+        "--load-study",
+        action="store_true",
+        help="Load a preexisting study, useful for parallelization",
+    )
     parser.add_argument("--study-name", type=str, help="Optuna study name")
-    parser.add_argument("--storage-path", type=str, help="Path of database for Optuna to persist to")
+    parser.add_argument(
+        "--storage-path",
+        type=str,
+        help="Path of database for Optuna to persist to",
+    )
+    parser.add_argument(
+        "--wandb-project-name",
+        type=str,
+        default="rl-algo-impls-tuning",
+        help="WandB project name to upload tuning data to. If none, won't upload",
+    )
+    parser.add_argument(
+        "--wandb-entity",
+        type=str,
+        help="WandB team. None uses the default entity",
+    )
+    parser.add_argument(
+        "--wandb-tags", type=str, nargs="*", help="WandB tags to add to run"
+    )
+    parser.add_argument(
+        "--wandb-group", type=str, help="WandB group to group trials under"
+    )
     parser.add_argument(
         "--n-trials", type=int, default=100, help="Maximum number of trials"
     )
@@ -107,7 +140,10 @@ def parse_args() -> Args:
     if study_args.study_name is None:
         study_args.study_name = config.run_name
     if study_args.storage_path is None:
-        study_args.storage_path = f"sqlite:///{os.path.join(config.runs_dir, 'tuning.db')}"
+        study_args.storage_path = (
+            f"sqlite:///{os.path.join(config.runs_dir, 'tuning.db')}"
+        )
+    opt_args.wandb_group = opt_args.wandb_group or study_args.study_name
     return Args(opt_args, study_args)
 
 
@@ -119,6 +155,22 @@ def objective_fn(args: OptimizeArgs) -> Callable[[optuna.Trial], float]:
         else:
             raise ValueError(f"Optimizing {args.algo} isn't supported")
         config = Config(args, hyperparams, os.getcwd())
+
+        wandb_enabled = bool(args.wandb_project_name)
+        if wandb_enabled:
+            wandb.init(
+                project=args.wandb_project_name,
+                entity=args.wandb_entity,
+                config=hyperparams,
+                name=f"{config.model_name()}-{str(trial.number)}",
+                tags=args.wandb_tags,
+                group=args.wandb_group,
+                sync_tensorboard=True,
+                monitor_gym=True,
+                save_code=True,
+                reinit=True,
+            )
+            wandb.config.update(args)
 
         tb_writer = SummaryWriter(config.tensorboard_summary_path)
         set_seeds(args.seed, args.use_deterministic_algorithms)
@@ -158,7 +210,7 @@ def objective_fn(args: OptimizeArgs) -> Callable[[optuna.Trial], float]:
                 policy.save(config.model_dir_path(best=False))
 
         eval_stat: EpisodesStats = callback.last_eval_stat  # type: ignore
-        train_stat: EpisodesStats = callback.last_train_stat # type: ignore
+        train_stat: EpisodesStats = callback.last_train_stat  # type: ignore
 
         tb_writer.add_hparams(
             hparam_dict(hyperparams, vars(args)),
@@ -174,6 +226,11 @@ def objective_fn(args: OptimizeArgs) -> Callable[[optuna.Trial], float]:
             config.run_name,
         )
         tb_writer.close()
+
+        if wandb_enabled:
+            if callback.is_pruned:
+                wandb.run.summary["state"] = "pruned"
+            wandb.finish(quiet=True)
 
         if callback.is_pruned:
             raise optuna.exceptions.TrialPruned()
@@ -192,17 +249,17 @@ if __name__ == "__main__":
         assert study_args.study_name
         assert study_args.storage_path
         study = optuna.load_study(
-            study_name=study_args.study_name, 
+            study_name=study_args.study_name,
             storage=study_args.storage_path,
             sampler=sampler,
             pruner=pruner,
         )
     else:
         study = optuna.create_study(
-            study_name=study_args.study_name, 
-            storage=study_args.storage_path, 
-            sampler=sampler, 
-            pruner=pruner, 
+            study_name=study_args.study_name,
+            storage=study_args.storage_path,
+            sampler=sampler,
+            pruner=pruner,
             direction="maximize",
         )
 
@@ -230,4 +287,3 @@ if __name__ == "__main__":
     fig1.write_image("opt_history.png")
     fig2 = plot_param_importances(study)
     fig2.write_image("param_importances.png")
-    

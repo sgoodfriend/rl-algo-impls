@@ -76,6 +76,11 @@ class OptimizeCallback(Callback):
 
         score = self.last_score()
         print(f"  Score: {round(score, 2)}")
+        self.tb_writer.add_scalar(
+            "eval/score",
+            score,
+            self.timesteps_elapsed,
+        )
 
         self.trial.report(score, self.eval_step)
         if self.trial.should_prune():
