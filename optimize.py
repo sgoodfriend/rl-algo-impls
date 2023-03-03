@@ -8,7 +8,7 @@ from optuna.pruners import MedianPruner
 from optuna.samplers import TPESampler
 from optuna.visualization import plot_optimization_history, plot_param_importances
 from torch.utils.tensorboard.writer import SummaryWriter
-from typing import Callable, Union
+from typing import Callable, NamedTuple, Optional, Union
 
 from a2c.optimize import sample_params as a2c_sample_params
 from runner.config import Config, RunArgs, EnvHyperparams
@@ -36,9 +36,22 @@ class OptimizeArgs(RunArgs):
     n_eval_episodes: int = 16
     timeout: Union[int, float, None] = None
 
+@dataclass
+class StudyArgs:
+    load_study: bool
+    study_name: Optional[str] = None
+    storage_path: Optional[str] = None
 
-def parse_args() -> OptimizeArgs:
+class Args(NamedTuple):
+    optimize_args: OptimizeArgs
+    study_args: StudyArgs
+
+
+def parse_args() -> Args:
     parser = base_parser()
+    parser.add_argument("--load-study", action="store_true", help="Load a preexisting study, useful for parallelization")
+    parser.add_argument("--study-name", type=str, help="Optuna study name")
+    parser.add_argument("--storage-path", type=str, help="Path of database for Optuna to persist to")
     parser.add_argument(
         "--n-trials", type=int, default=100, help="Maximum number of trials"
     )
@@ -70,15 +83,32 @@ def parse_args() -> OptimizeArgs:
         help="Number of episodes to complete for evaluation",
     )
     parser.add_argument("--timeout", type=int, help="Seconds to timeout optimization")
-    parser.set_defaults(
-        algo="a2c",
-        env="LunarLander-v2",
-        seed=[1],
-    )
-    args = vars(parser.parse_args())
-    if args["seed"]:
-        args["seed"] = args["seed"][0]
-    return OptimizeArgs(**args)
+    # parser.set_defaults(
+    #     algo="a2c",
+    #     env="LunarLander-v2",
+    #     seed=[1],
+    #     n_trials=5,
+    #     n_startup_trials=2,
+    # )
+    optimize_dict, study_dict = {}, {}
+    for k, v in vars(parser.parse_args()).items():
+        if k in ("load_study", "study_name", "storage_path"):
+            study_dict[k] = v
+        else:
+            if k == "seed":
+                optimize_dict[k] = v[0]
+            else:
+                optimize_dict[k] = v
+
+    opt_args = OptimizeArgs(**optimize_dict)
+    study_args = StudyArgs(**study_dict)
+    hyperparams = load_hyperparams(opt_args.algo, opt_args.env, os.getcwd())
+    config = Config(opt_args, hyperparams, os.getcwd())
+    if study_args.study_name is None:
+        study_args.study_name = config.run_name
+    if study_args.storage_path is None:
+        study_args.storage_path = f"sqlite:///{os.path.join(config.runs_dir, 'tuning.db')}"
+    return Args(opt_args, study_args)
 
 
 def objective_fn(args: OptimizeArgs) -> Callable[[optuna.Trial], float]:
@@ -123,17 +153,16 @@ def objective_fn(args: OptimizeArgs) -> Callable[[optuna.Trial], float]:
             return np.nan
 
         if not callback.is_pruned:
-            eval_stats = callback.evaluate()
+            callback.evaluate()
             if not callback.is_pruned:
                 policy.save(config.model_dir_path(best=False))
-        else:
-            eval_stats: EpisodesStats = callback.last_eval_stat  # type: ignore
+        train_stat: EpisodesStats = callback.last_train_stat  # type: ignore
 
         tb_writer.add_hparams(
             hparam_dict(hyperparams, vars(args)),
             {
-                "hparam/last_mean": eval_stats.score.mean,
-                "hparam/last_result": eval_stats.score.mean - eval_stats.score.std,
+                "hparam/last_mean": train_stat.score.mean,
+                "hparam/last_result": train_stat.score.mean - train_stat.score.std,
                 "hparam/is_pruned": callback.is_pruned,
             },
             None,
@@ -144,24 +173,40 @@ def objective_fn(args: OptimizeArgs) -> Callable[[optuna.Trial], float]:
         if callback.is_pruned:
             raise optuna.exceptions.TrialPruned()
 
-        return eval_stats.score.mean
+        return train_stat.score.mean
 
     return objective
 
 
 if __name__ == "__main__":
-    args = parse_args()
+    opt_args, study_args = parse_args()
 
-    sampler = TPESampler(n_startup_trials=args.n_startup_trials)
-    pruner = MedianPruner(n_startup_trials=args.n_startup_trials)
-    study = optuna.create_study(sampler=sampler, pruner=pruner, direction="maximize")
+    sampler = TPESampler(n_startup_trials=opt_args.n_startup_trials)
+    pruner = MedianPruner(n_startup_trials=opt_args.n_startup_trials)
+    if study_args.load_study:
+        assert study_args.study_name
+        assert study_args.storage_path
+        study = optuna.load_study(
+            study_name=study_args.study_name, 
+            storage=study_args.storage_path,
+            sampler=sampler,
+            pruner=pruner,
+        )
+    else:
+        study = optuna.create_study(
+            study_name=study_args.study_name, 
+            storage=study_args.storage_path, 
+            sampler=sampler, 
+            pruner=pruner, 
+            direction="maximize",
+        )
 
     try:
         study.optimize(
-            objective_fn(args),
-            n_trials=args.n_trials,
-            n_jobs=args.n_jobs,
-            timeout=args.timeout,
+            objective_fn(opt_args),
+            n_trials=opt_args.n_trials,
+            n_jobs=opt_args.n_jobs,
+            timeout=opt_args.timeout,
         )
     except KeyboardInterrupt:
         pass
@@ -169,10 +214,12 @@ if __name__ == "__main__":
     best = study.best_trial
     print(f"Best Trial Value: {best.value}")
     print("Attributes:")
-    for key, value in best.user_attrs.items():
+    for key, value in list(best.params.items()) + list(best.user_attrs.items()):
         print(f"  {key}: {value}")
 
-    print(study.trials_dataframe().to_markdown(index=False))
+    df = study.trials_dataframe()
+    df = df[df.state == "COMPLETE"].sort_values(by=["value"], ascending=False)
+    print(df.to_markdown(index=False))
 
     fig1 = plot_optimization_history(study)
     fig1.write_image("opt_history.png")

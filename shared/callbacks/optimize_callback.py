@@ -8,7 +8,8 @@ from shared.callbacks.callback import Callback
 from shared.callbacks.eval_callback import evaluate
 from shared.policy.policy import Policy
 from shared.stats import EpisodesStats
-from wrappers.vectorable_wrapper import VecEnv
+from wrappers.episode_stats_writer import EpisodeStatsWriter
+from wrappers.vectorable_wrapper import VecEnv, find_wrapper
 
 
 class OptimizeCallback(Callback):
@@ -31,9 +32,14 @@ class OptimizeCallback(Callback):
         self.n_episodes = n_episodes
         self.deterministic = deterministic
 
+        stats_writer = find_wrapper(env, EpisodeStatsWriter)
+        assert stats_writer
+        self.stats_writer = stats_writer
+
         self.eval_step = 1
         self.is_pruned = False
         self.last_eval_stat = None
+        self.last_train_stat = None
 
     def on_step(self, timesteps_elapsed: int = 1) -> bool:
         super().on_step(timesteps_elapsed)
@@ -61,11 +67,15 @@ class OptimizeCallback(Callback):
         print(f"Eval Timesteps: {self.timesteps_elapsed} | {eval_stat}")
         eval_stat.write_to_tensorboard(self.tb_writer, "eval", self.timesteps_elapsed)
 
-        self.trial.report(eval_stat.score.mean, self.eval_step)
+        train_stat = EpisodesStats(self.stats_writer.episodes)
+        print(f"  Train Stat: {train_stat}")
+
+        self.trial.report(train_stat.score.mean, self.eval_step)
         if self.trial.should_prune():
             self.is_pruned = True
 
         self.eval_step += 1
         self.last_eval_stat = eval_stat
+        self.last_train_stat = train_stat
 
         return eval_stat
