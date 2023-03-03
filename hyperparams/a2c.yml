@@ -39,15 +39,15 @@ LunarLander-v2:
     normalize: true
   algo_hyperparams:
     n_steps: 2
-    gamma: 0.9996273991118078
-    gae_lambda: 0.9961122404003253
-    learning_rate: 0.0006475127561176012
+    gamma: 0.9993426414161681
+    gae_lambda: 0.9945733381816694
+    learning_rate: 0.0004399375662160262
     learning_rate_decay: none
-    ent_coef: !!float 2.5932707646547254e-05
+    ent_coef: !!float 9.947185227820854e-06
     ent_coef_decay: linear
-    max_grad_norm: 0.1382293288448143
+    max_grad_norm: 0.10454936115204616
     normalize_advantage: false
-    vf_coef: 0.21571771513096646
+    vf_coef: 0.20742810029031178
 
 BipedalWalker-v3:
   n_timesteps: !!float 5e6
