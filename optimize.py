@@ -92,10 +92,10 @@ def parse_args() -> Args:
     # )
     optimize_dict, study_dict = {}, {}
     for k, v in vars(parser.parse_args()).items():
-        if k in ("load_study", "study_name", "storage_path"):
+        if k in {"load_study", "study_name", "storage_path"}:
             study_dict[k] = v
         else:
-            if k == "seed":
+            if k in {"algo", "env", "seed"}:
                 optimize_dict[k] = v[0]
             else:
                 optimize_dict[k] = v
