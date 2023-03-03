@@ -30,6 +30,7 @@ gym3 = "^0.3.3"
 glfw = "1.12.0"
 ipython = "^8.10.0"
 optuna = "^3.1.0"
+dash = "^2.8.1"
 
 [build-system]
 requires = ["poetry-core"]
