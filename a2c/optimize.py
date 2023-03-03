@@ -24,7 +24,7 @@ def sample_params(trial: optuna.Trial, base_hyperparams: Hyperparams) -> Hyperpa
     # algo_hyperparams
     algo_hyperparams = hyperparams.get("algo_hyperparams", {})
 
-    learning_rate = trial.suggest_float("learning_rate", 1e-5, 1e-3, log=True)
+    learning_rate = trial.suggest_float("learning_rate", 1e-5, 2e-3, log=True)
     learning_rate_decay = trial.suggest_categorical(
         "learning_rate_decay", ["none", "linear"]
     )
