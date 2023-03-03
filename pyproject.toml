@@ -32,6 +32,7 @@ ipython = "^8.10.0"
 optuna = "^3.1.0"
 dash = "^2.8.1"
 optuna-dashboard = "^0.8.1"
+kaleido = "0.2.1"
 
 [build-system]
 requires = ["poetry-core"]
