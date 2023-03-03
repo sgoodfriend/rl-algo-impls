@@ -156,13 +156,18 @@ def objective_fn(args: OptimizeArgs) -> Callable[[optuna.Trial], float]:
             callback.evaluate()
             if not callback.is_pruned:
                 policy.save(config.model_dir_path(best=False))
-        train_stat: EpisodesStats = callback.last_train_stat  # type: ignore
+
+        eval_stat: EpisodesStats = callback.last_eval_stat  # type: ignore
+        train_stat: EpisodesStats = callback.last_train_stat # type: ignore
 
         tb_writer.add_hparams(
             hparam_dict(hyperparams, vars(args)),
             {
-                "hparam/last_mean": train_stat.score.mean,
-                "hparam/last_result": train_stat.score.mean - train_stat.score.std,
+                "hparam/last_mean": eval_stat.score.mean,
+                "hparam/last_result": eval_stat.score.mean - eval_stat.score.std,
+                "hparam/train_mean": train_stat.score.mean,
+                "hparam/train_result": train_stat.score.mean - train_stat.score.std,
+                "hparam/score": callback.last_score(),
                 "hparam/is_pruned": callback.is_pruned,
             },
             None,
@@ -173,7 +178,7 @@ def objective_fn(args: OptimizeArgs) -> Callable[[optuna.Trial], float]:
         if callback.is_pruned:
             raise optuna.exceptions.TrialPruned()
 
-        return train_stat.score.mean
+        return callback.last_score()
 
     return objective
 

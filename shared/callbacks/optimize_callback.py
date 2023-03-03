@@ -1,3 +1,4 @@
+import numpy as np
 import optuna
 
 from time import perf_counter
@@ -32,7 +33,7 @@ class OptimizeCallback(Callback):
         self.n_episodes = n_episodes
         self.deterministic = deterministic
 
-        stats_writer = find_wrapper(env, EpisodeStatsWriter)
+        stats_writer = find_wrapper(policy.env, EpisodeStatsWriter)
         assert stats_writer
         self.stats_writer = stats_writer
 
@@ -70,12 +71,23 @@ class OptimizeCallback(Callback):
         train_stat = EpisodesStats(self.stats_writer.episodes)
         print(f"  Train Stat: {train_stat}")
 
-        self.trial.report(train_stat.score.mean, self.eval_step)
+        self.last_eval_stat = eval_stat
+        self.last_train_stat = train_stat
+
+        score = self.last_score()
+        print(f"  Score: {round(score, 2)}")
+
+        self.trial.report(score, self.eval_step)
         if self.trial.should_prune():
             self.is_pruned = True
 
         self.eval_step += 1
-        self.last_eval_stat = eval_stat
-        self.last_train_stat = train_stat
 
         return eval_stat
+
+    def last_score(self) -> float:
+        eval_score = self.last_eval_stat.score.mean if self.last_eval_stat else np.NINF
+        train_score = (
+            self.last_train_stat.score.mean if self.last_train_stat else np.NINF
+        )
+        return (eval_score + train_score) / 2
