@@ -84,8 +84,8 @@ def parse_args() -> Args:
     )
     parser.add_argument("--timeout", type=int, help="Seconds to timeout optimization")
     # parser.set_defaults(
-    #     algo="a2c",
-    #     env="LunarLander-v2",
+    #     algo=["a2c"],
+    #     env=["LunarLander-v2"],
     #     seed=[1],
     #     n_trials=5,
     #     n_startup_trials=2,
