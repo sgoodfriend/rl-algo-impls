@@ -229,5 +229,5 @@ if __name__ == "__main__":
     fig1 = plot_optimization_history(study)
     fig1.write_image("opt_history.png")
     fig2 = plot_param_importances(study)
-    fig2.write_html("param_importances.png")
+    fig2.write_image("param_importances.png")
     
