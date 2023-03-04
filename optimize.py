@@ -228,8 +228,7 @@ def objective_fn(args: OptimizeArgs) -> Callable[[optuna.Trial], float]:
         tb_writer.close()
 
         if wandb_enabled:
-            if callback.is_pruned:
-                wandb.run.summary["state"] = "pruned"
+            wandb.run.summary["state"] = "Pruned" if callback.is_pruned else "Complete"
             wandb.finish(quiet=True)
 
         if callback.is_pruned:
