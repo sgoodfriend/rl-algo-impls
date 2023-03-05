@@ -38,6 +38,8 @@ videos of the running best model and the weights of the best and last model.
 Benchmarking runs are tagged with a shorted commit hash (i.e., `benchmark_5598ebc`) and
 hostname (i.e., `host_192-9-145-26`)
 
+#### Publishing models to Huggingface
+
 Publishing benchmarks to Huggingface requires logging into Huggingface with a
 write-capable API token:
 
@@ -47,6 +49,18 @@ huggingface-cli login
 # For example: python benchmark_publish.py --wandb-tags host_192-9-147-166 benchmark_1d4094f --wandb-report-url https://api.wandb.ai/links/sgoodfriend/099h4lvj
 # --virtual-display likely must be specified if running on a remote machine.
 python benchmark_publish.py --wandb-tags HOST_TAG COMMIT_TAG --wandb-report-url WANDB_REPORT_URL [--virtual-display]
+```
+
+#### Hyperparameter tuning with Optuna
+
+Hyperparameter tuning can be done with the `tuning/tuning.sh` script, which runs
+multiple processes of optimize.py. Start by doing all the setup meant for training
+before running `tuning/tuning.sh`:
+
+```
+# Setup similar to training above
+wandb login
+bash tuning/tuning.sh ALGO ENV N_JOBS
 ```
 
 ### Google Colab Pro+
