@@ -31,7 +31,7 @@ Acrobot-v1:
     normalize: true
     n_envs: 16
 
-# Tuned: Intermediate
+# Tuned
 LunarLander-v2:
   n_timesteps: !!float 1e6
   env_hyperparams:
@@ -101,6 +101,9 @@ CarRacing-v0:
   env_hyperparams:
     n_envs: 8
     frame_stack: 4
+    normalize_kwargs:
+      norm_obs: false
+      norm_reward: true
   policy_hyperparams:
     use_sde: true
     log_std_init: -2
