@@ -35,9 +35,9 @@ def sample_params(trial: optuna.Trial, base_hyperparams: Hyperparams) -> Hyperpa
     trial.set_user_attr("gamma", gamma)
     gae_lambda = 1 - trial.suggest_float("gae_lambda_om", 1e-4, 1e-1)
     trial.set_user_attr("gae_lambda", gae_lambda)
-    ent_coef = trial.suggest_float("ent_coef", 1e-7, 2.5e-2, log=True)
+    ent_coef = trial.suggest_float("ent_coef", 1e-8, 2.5e-2, log=True)
     ent_coef_decay = trial.suggest_categorical("ent_coef_decay", ["none", "linear"])
-    vf_coef = trial.suggest_float("vf_coef", 0.2, 0.6)
+    vf_coef = trial.suggest_float("vf_coef", 0.1, 0.7)
     max_grad_norm = trial.suggest_float("max_grad_norm", 1e-1, 1e1, log=True)
     use_rms_prop = trial.suggest_categorical("use_rms_prop", [True, False])
     normalize_advantage = trial.suggest_categorical(
