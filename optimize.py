@@ -240,6 +240,11 @@ def objective_fn(args: OptimizeArgs) -> Callable[[optuna.Trial], float]:
 
 
 if __name__ == "__main__":
+    from pyvirtualdisplay.display import Display
+
+    virtual_display = Display(visible=False, size=(1400, 900))
+    virtual_display.start()
+
     opt_args, study_args = parse_args()
 
     sampler = TPESampler(n_startup_trials=opt_args.n_startup_trials)
