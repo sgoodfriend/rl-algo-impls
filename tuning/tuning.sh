@@ -7,6 +7,7 @@ NOW=$(date +"%Y-%m-%dT%H:%M:%S")
 STUDY_NAME="$ALGO-$ENV-$NOW"
 STORAGE_PATH="sqlite:///runs/tuning.db"
 
+mkdir -p runs
 optuna create-study --study-name $STUDY_NAME --storage $STORAGE_PATH --direction maximize
 
 optimize () {
