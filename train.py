@@ -31,7 +31,7 @@ if __name__ == "__main__":
         "--wandb-project-name",
         type=str,
         default="rl-algo-impls",
-        help="WandB project namme to upload training data to. If none, won't upload.",
+        help="WandB project name to upload training data to. If none, won't upload.",
     )
     parser.add_argument(
         "--wandb-entity",

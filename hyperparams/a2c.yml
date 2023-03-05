@@ -31,17 +31,23 @@ Acrobot-v1:
     normalize: true
     n_envs: 16
 
+# Tuned
 LunarLander-v2:
   n_timesteps: !!float 1e6
   env_hyperparams:
-    n_envs: 8
+    n_envs: 16
     normalize: true
   algo_hyperparams:
-    n_steps: 5
-    gamma: 0.995
-    learning_rate: !!float 8.3e-4
-    learning_rate_decay: linear
-    ent_coef: !!float 1e-5
+    n_steps: 2
+    gamma: 0.9993426414161681
+    gae_lambda: 0.9945733381816694
+    learning_rate: 0.0004399375662160262
+    learning_rate_decay: none
+    ent_coef: !!float 9.947185227820854e-06
+    ent_coef_decay: linear
+    max_grad_norm: 0.10454936115204616
+    normalize_advantage: false
+    vf_coef: 0.20742810029031178
 
 BipedalWalker-v3:
   n_timesteps: !!float 5e6
@@ -95,6 +101,9 @@ CarRacing-v0:
   env_hyperparams:
     n_envs: 8
     frame_stack: 4
+    normalize_kwargs:
+      norm_obs: false
+      norm_reward: true
   policy_hyperparams:
     use_sde: true
     log_std_init: -2

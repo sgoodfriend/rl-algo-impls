@@ -1,3 +1,4 @@
+import logging
 import numpy as np
 import torch
 import torch.nn as nn
@@ -196,6 +197,10 @@ class A2C(Algorithm):
             )
 
             if callback:
-                callback.on_step(timesteps_elapsed=rollout_steps)
+                if not callback.on_step(timesteps_elapsed=rollout_steps):
+                    logging.info(
+                        f"Callback terminated training at {timesteps_elapsed} timesteps"
+                    )
+                    break
 
         return self
