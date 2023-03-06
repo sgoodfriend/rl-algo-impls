@@ -1,8 +1,10 @@
 import dataclasses
+import gc
 import logging
 import numpy as np
 import optuna
 import os
+import torch
 import wandb
 
 from dataclasses import dataclass
@@ -200,41 +202,48 @@ def objective_fn(args: OptimizeArgs) -> Callable[[optuna.Trial], float]:
         )
         try:
             algo.learn(config.n_timesteps, callback=callback)
+
+            if not callback.is_pruned:
+                callback.evaluate()
+                if not callback.is_pruned:
+                    policy.save(config.model_dir_path(best=False))
+
+            eval_stat: EpisodesStats = callback.last_eval_stat  # type: ignore
+            train_stat: EpisodesStats = callback.last_train_stat  # type: ignore
+
+            tb_writer.add_hparams(
+                hparam_dict(hyperparams, vars(args)),
+                {
+                    "hparam/last_mean": eval_stat.score.mean,
+                    "hparam/last_result": eval_stat.score.mean - eval_stat.score.std,
+                    "hparam/train_mean": train_stat.score.mean,
+                    "hparam/train_result": train_stat.score.mean - train_stat.score.std,
+                    "hparam/score": callback.last_score(),
+                    "hparam/is_pruned": callback.is_pruned,
+                },
+                None,
+                config.run_name,
+            )
+            tb_writer.close()
+
+            if wandb_enabled:
+                wandb.run.summary["state"] = (
+                    "Pruned" if callback.is_pruned else "Complete"
+                )
+                wandb.finish(quiet=True)
+
+            if callback.is_pruned:
+                raise optuna.exceptions.TrialPruned()
+
+            return callback.last_score()
         except AssertionError as e:
             logging.warning(e)
             return np.nan
-
-        if not callback.is_pruned:
-            callback.evaluate()
-            if not callback.is_pruned:
-                policy.save(config.model_dir_path(best=False))
-
-        eval_stat: EpisodesStats = callback.last_eval_stat  # type: ignore
-        train_stat: EpisodesStats = callback.last_train_stat  # type: ignore
-
-        tb_writer.add_hparams(
-            hparam_dict(hyperparams, vars(args)),
-            {
-                "hparam/last_mean": eval_stat.score.mean,
-                "hparam/last_result": eval_stat.score.mean - eval_stat.score.std,
-                "hparam/train_mean": train_stat.score.mean,
-                "hparam/train_result": train_stat.score.mean - train_stat.score.std,
-                "hparam/score": callback.last_score(),
-                "hparam/is_pruned": callback.is_pruned,
-            },
-            None,
-            config.run_name,
-        )
-        tb_writer.close()
-
-        if wandb_enabled:
-            wandb.run.summary["state"] = "Pruned" if callback.is_pruned else "Complete"
-            wandb.finish(quiet=True)
-
-        if callback.is_pruned:
-            raise optuna.exceptions.TrialPruned()
-
-        return callback.last_score()
+        finally:
+            env.close()
+            eval_env.close()
+            gc.collect()
+            torch.cuda.empty_cache()
 
     return objective
 
