@@ -60,7 +60,7 @@ before running `tuning/tuning.sh`:
 ```
 # Setup similar to training above
 wandb login
-bash tuning/tuning.sh ALGO ENV N_JOBS
+bash tuning/tuning.sh -a ALGO -e ENV -n N_JOBS
 ```
 
 ### Google Colab Pro+

@@ -50,7 +50,7 @@ def train(args: TrainArgs):
             project=args.wandb_project_name,
             entity=args.wandb_entity,
             config=asdict(hyperparams),
-            name=config.run_name,
+            name=config.run_name(),
             monitor_gym=True,
             save_code=True,
             tags=args.wandb_tags,
@@ -101,7 +101,7 @@ def train(args: TrainArgs):
 
     eval_stats = callback.evaluate(n_episodes=10, print_returns=True)
 
-    plot_eval_callback(callback, tb_writer, config.run_name)
+    plot_eval_callback(callback, tb_writer, config.run_name())
 
     log_dict: Dict[str, Any] = {
         "eval": eval_stats._asdict(),
@@ -111,7 +111,7 @@ def train(args: TrainArgs):
     log_dict.update(asdict(hyperparams))
     log_dict.update(vars(args))
     with open(config.logs_path, "a") as f:
-        yaml.dump({config.run_name: log_dict}, f)
+        yaml.dump({config.run_name(): log_dict}, f)
 
     best_eval_stats: EpisodesStats = callback.best  # type: ignore
     tb_writer.add_hparams(
@@ -124,7 +124,7 @@ def train(args: TrainArgs):
             "hparam/last_result": eval_stats.score.mean - eval_stats.score.std,
         },
         None,
-        config.run_name,
+        config.run_name(),
     )
 
     tb_writer.close()

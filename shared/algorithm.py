@@ -30,6 +30,10 @@ class Algorithm(ABC):
 
     @abstractmethod
     def learn(
-        self: AlgorithmSelf, total_timesteps: int, callback: Optional[Callback] = None
+        self: AlgorithmSelf,
+        train_timesteps: int,
+        callback: Optional[Callback] = None,
+        total_timesteps: Optional[int] = None,
+        start_timesteps: int = 0,
     ) -> AlgorithmSelf:
         ...

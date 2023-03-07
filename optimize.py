@@ -1,3 +1,4 @@
+import dataclasses
 import gc
 import inspect
 import logging
@@ -12,10 +13,10 @@ from optuna.pruners import MedianPruner
 from optuna.samplers import TPESampler
 from optuna.visualization import plot_optimization_history, plot_param_importances
 from torch.utils.tensorboard.writer import SummaryWriter
-from typing import Callable, NamedTuple, Optional, Sequence, Union
+from typing import Callable, List, NamedTuple, Optional, Sequence, Union
 
 from a2c.optimize import sample_params as a2c_sample_params
-from runner.config import Config, EnvHyperparams
+from runner.config import Config, EnvHyperparams, RunArgs
 from runner.env import make_env, make_eval_env
 from runner.running_utils import (
     base_parser,
@@ -26,8 +27,7 @@ from runner.running_utils import (
     ALGOS,
     hparam_dict,
 )
-from runner.train import TrainArgs
-from shared.callbacks.optimize_callback import OptimizeCallback
+from shared.callbacks.optimize_callback import Evaluation, OptimizeCallback, evaluation
 from shared.stats import EpisodesStats
 
 
@@ -43,10 +43,14 @@ class StudyArgs:
     n_eval_envs: int = 8
     n_eval_episodes: int = 16
     timeout: Union[int, float, None] = None
+    wandb_project_name: Optional[str] = None
+    wandb_entity: Optional[str] = None
+    wandb_tags: Sequence[str] = dataclasses.field(default_factory=list)
+    wandb_group: Optional[str] = None
 
 
 class Args(NamedTuple):
-    train_args: Sequence[TrainArgs]
+    train_args: Sequence[RunArgs]
     study_args: StudyArgs
 
 
@@ -126,37 +130,41 @@ def parse_args() -> Args:
             train_dict[k] = v
 
     study_args = StudyArgs(**study_dict)
-    train_args = TrainArgs.expand_from_dict(train_dict)
+    # Hyperparameter tuning across algos and envs not supported
+    assert len(train_dict["algo"]) == 1
+    assert len(train_dict["env"]) == 1
+    train_args = RunArgs.expand_from_dict(train_dict)
 
     if not all((study_args.study_name, study_args.storage_path)):
-        assert len(train_dict["algo"]) == 1
-        assert len(train_dict["env"]) == 1
-        hyperparams = load_hyperparams(train_args[0].algo, train_args[0].env, os.getcwd())
+        hyperparams = load_hyperparams(
+            train_args[0].algo, train_args[0].env, os.getcwd()
+        )
         config = Config(train_args[0], hyperparams, os.getcwd())
         if study_args.study_name is None:
-            study_args.study_name = config.run_name
+            study_args.study_name = config.run_name(include_seed=False)
         if study_args.storage_path is None:
             study_args.storage_path = (
                 f"sqlite:///{os.path.join(config.runs_dir, 'tuning.db')}"
             )
     # Default set group name to study name
-    for ta in train_args:
-        ta.wandb_group = ta.wandb_group or study_args.study_name
+    study_args.wandb_group = study_args.wandb_group or study_args.study_name
 
     return Args(train_args, study_args)
 
 
-def objective_fn(args: Sequence[TrainArgs]) -> Callable[[optuna.Trial], float]:
+def objective_fn(
+    args: Sequence[RunArgs], study_args: StudyArgs
+) -> Callable[[optuna.Trial], float]:
     def objective(trial: optuna.Trial) -> float:
         if len(args) == 1:
-            return simple_optimize(args[0], trial)
+            return simple_optimize(trial, args[0], study_args)
         else:
-            return stepwise_optimize(args, trial)
+            return stepwise_optimize(trial, args, study_args)
 
     return objective
 
 
-def simple_optimize(args: TrainArgs, trial: optuna.Trial) -> float:
+def simple_optimize(trial: optuna.Trial, args: RunArgs, study_args: StudyArgs) -> float:
     base_hyperparams = load_hyperparams(args.algo, args.env, os.getcwd())
     if args.algo == "a2c":
         hyperparams = a2c_sample_params(trial, base_hyperparams)
@@ -164,15 +172,15 @@ def simple_optimize(args: TrainArgs, trial: optuna.Trial) -> float:
         raise ValueError(f"Optimizing {args.algo} isn't supported")
     config = Config(args, hyperparams, os.getcwd())
 
-    wandb_enabled = bool(args.wandb_project_name)
+    wandb_enabled = bool(study_args.wandb_project_name)
     if wandb_enabled:
         wandb.init(
-            project=args.wandb_project_name,
-            entity=args.wandb_entity,
+            project=study_args.wandb_project_name,
+            entity=study_args.wandb_entity,
             config=asdict(hyperparams),
             name=f"{config.model_name()}-{str(trial.number)}",
-            tags=args.wandb_tags,
-            group=args.wandb_group,
+            tags=study_args.wandb_tags,
+            group=study_args.wandb_group,
             sync_tensorboard=True,
             monitor_gym=True,
             save_code=True,
@@ -193,15 +201,15 @@ def simple_optimize(args: TrainArgs, trial: optuna.Trial) -> float:
     eval_env = make_eval_env(
         config,
         EnvHyperparams(**config.env_hyperparams),
-        override_n_envs=args.n_eval_envs,
+        override_n_envs=study_args.n_eval_envs,
     )
     callback = OptimizeCallback(
         policy,
         eval_env,
         trial,
         tb_writer,
-        step_freq=config.n_timesteps // args.n_evaluations,
-        n_episodes=args.n_eval_episodes,
+        step_freq=config.n_timesteps // study_args.n_evaluations,
+        n_episodes=study_args.n_eval_episodes,
         deterministic=config.eval_params.get("deterministic", True),
     )
     try:
@@ -222,11 +230,11 @@ def simple_optimize(args: TrainArgs, trial: optuna.Trial) -> float:
                 "hparam/last_result": eval_stat.score.mean - eval_stat.score.std,
                 "hparam/train_mean": train_stat.score.mean,
                 "hparam/train_result": train_stat.score.mean - train_stat.score.std,
-                "hparam/score": callback.last_score(),
+                "hparam/score": callback.last_score,
                 "hparam/is_pruned": callback.is_pruned,
             },
             None,
-            config.run_name,
+            config.run_name(),
         )
         tb_writer.close()
 
@@ -237,7 +245,7 @@ def simple_optimize(args: TrainArgs, trial: optuna.Trial) -> float:
         if callback.is_pruned:
             raise optuna.exceptions.TrialPruned()
 
-        return callback.last_score()
+        return callback.last_score
     except AssertionError as e:
         logging.warning(e)
         return np.nan
@@ -248,8 +256,130 @@ def simple_optimize(args: TrainArgs, trial: optuna.Trial) -> float:
         torch.cuda.empty_cache()
 
 
-def stepwise_optimize(args: Sequence[TrainArgs], trial: optuna.Trial) -> float:
-    return np.nan
+def stepwise_optimize(
+    trial: optuna.Trial, args: Sequence[RunArgs], study_args: StudyArgs
+) -> float:
+    algo = args[0].algo
+    env_id = args[0].env
+    base_hyperparams = load_hyperparams(algo, env_id, os.getcwd())
+    if algo == "a2c":
+        hyperparams = a2c_sample_params(trial, base_hyperparams)
+    else:
+        raise ValueError(f"Optimizing {algo} isn't supported")
+
+    wandb_enabled = bool(study_args.wandb_project_name)
+    if wandb_enabled:
+        wandb.init(
+            project=study_args.wandb_project_name,
+            entity=study_args.wandb_entity,
+            config=asdict(hyperparams),
+            name=f"{study_args.study_name}-{str(trial.number)}",
+            tags=study_args.wandb_tags,
+            group=study_args.wandb_group,
+            save_code=True,
+            reinit=True,
+        )
+
+    score = -np.inf
+
+    for i in range(study_args.n_evaluations):
+        evaluations: List[Evaluation] = []
+
+        for arg in args:
+            config = Config(arg, hyperparams, os.getcwd())
+
+            tb_writer = SummaryWriter(config.tensorboard_summary_path)
+            set_seeds(arg.seed, arg.use_deterministic_algorithms)
+
+            env = make_env(
+                config,
+                EnvHyperparams(**config.env_hyperparams),
+                normalize_load_path=config.model_dir_path() if i > 0 else None,
+                tb_writer=tb_writer,
+            )
+            device = get_device(config.device, env)
+            policy = make_policy(arg.algo, env, device, **config.policy_hyperparams)
+            if i > 0:
+                policy.load(config.model_dir_path())
+            algo = ALGOS[arg.algo](
+                policy, env, device, tb_writer, **config.algo_hyperparams
+            )
+
+            eval_env = make_eval_env(
+                config,
+                EnvHyperparams(**config.env_hyperparams),
+                normalize_load_path=config.model_dir_path() if i > 0 else None,
+                override_n_envs=study_args.n_eval_envs,
+            )
+
+            start_timesteps = int(i * config.n_timesteps / study_args.n_evaluations)
+            train_timesteps = (
+                int((i + 1) * config.n_timesteps / study_args.n_evaluations)
+                - start_timesteps
+            )
+
+            try:
+                algo.learn(
+                    train_timesteps,
+                    callback=None,
+                    total_timesteps=config.n_timesteps,
+                    start_timesteps=start_timesteps,
+                )
+
+                evaluations.append(
+                    evaluation(
+                        policy,
+                        eval_env,
+                        tb_writer,
+                        study_args.n_eval_episodes,
+                        config.eval_params.get("deterministic", True),
+                        start_timesteps + train_timesteps,
+                    )
+                )
+
+                policy.save(config.model_dir_path())
+
+                tb_writer.close()
+
+            except AssertionError as e:
+                logging.warning(e)
+                if wandb_enabled:
+                    wandb_finish("Error")
+                return np.nan
+            finally:
+                env.close()
+                eval_env.close()
+                gc.collect()
+                torch.cuda.empty_cache()
+
+        d = {}
+        for idx, e in enumerate(evaluations):
+            d[f"{idx}/eval_mean"] = e.eval_stat.score.mean
+            d[f"{idx}/train_mean"] = e.train_stat.score.mean
+            d[f"{idx}/score"] = e.score
+        d["eval"] = np.mean([e.eval_stat.score.mean for e in evaluations]).item()
+        d["train"] = np.mean([e.train_stat.score.mean for e in evaluations]).item()
+        score = np.mean([e.score for e in evaluations]).item()
+        d["score"] = score
+
+        step = i + 1
+        wandb.log(d, step=step)
+
+        print(f"Trial #{trial.number} Step {step} Score: {round(score, 2)}")
+        trial.report(score, step)
+        if trial.should_prune():
+            if wandb_enabled:
+                wandb_finish("Pruned")
+            raise optuna.exceptions.TrialPruned()
+
+    if wandb_enabled:
+        wandb_finish("Complete")
+    return score
+
+
+def wandb_finish(state: str) -> None:
+    wandb.run.summary["state"] = state
+    wandb.finish(quiet=True)
 
 
 if __name__ == "__main__":
@@ -282,7 +412,7 @@ if __name__ == "__main__":
 
     try:
         study.optimize(
-            objective_fn(train_args),
+            objective_fn(train_args, study_args),
             n_trials=study_args.n_trials,
             n_jobs=study_args.n_jobs,
             timeout=study_args.timeout,

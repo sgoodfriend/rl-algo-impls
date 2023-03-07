@@ -138,9 +138,8 @@ class Config:
 
         return "-".join(parts)
 
-    @property
-    def run_name(self) -> str:
-        parts = [self.model_name(), self.run_id]
+    def run_name(self, include_seed: bool = True) -> str:
+        parts = [self.model_name(include_seed=include_seed), self.run_id]
         return "-".join(parts)
 
     @property
@@ -170,7 +169,7 @@ class Config:
 
     @property
     def tensorboard_summary_path(self) -> str:
-        return os.path.join(self.runs_dir, self.run_name)
+        return os.path.join(self.runs_dir, self.run_name())
 
     @property
     def logs_path(self) -> str:

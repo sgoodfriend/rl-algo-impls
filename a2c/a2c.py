@@ -71,8 +71,15 @@ class A2C(Algorithm):
         self.normalize_advantage = normalize_advantage
 
     def learn(
-        self: A2CSelf, total_timesteps: int, callback: Optional[Callback] = None
+        self: A2CSelf,
+        train_timesteps: int,
+        callback: Optional[Callback] = None,
+        total_timesteps: Optional[int] = None,
+        start_timesteps: int = 0,
     ) -> A2CSelf:
+        if total_timesteps is None:
+            total_timesteps = train_timesteps
+        assert start_timesteps + train_timesteps <= total_timesteps
         epoch_dim = (self.n_steps, self.env.num_envs)
         step_dim = (self.env.num_envs,)
         obs_space = single_observation_space(self.env)
@@ -88,8 +95,8 @@ class A2C(Algorithm):
         next_obs = self.env.reset()
         next_episode_starts = np.ones(step_dim, dtype=np.byte)
 
-        timesteps_elapsed = 0
-        while timesteps_elapsed < total_timesteps:
+        timesteps_elapsed = start_timesteps
+        while timesteps_elapsed < start_timesteps + train_timesteps:
             start_time = perf_counter()
 
             progress = timesteps_elapsed / total_timesteps

@@ -3,7 +3,7 @@ import optuna
 
 from time import perf_counter
 from torch.utils.tensorboard.writer import SummaryWriter
-from typing import Union
+from typing import NamedTuple, Union
 
 from shared.callbacks.callback import Callback
 from shared.callbacks.eval_callback import evaluate
@@ -11,6 +11,12 @@ from shared.policy.policy import Policy
 from shared.stats import EpisodesStats
 from wrappers.episode_stats_writer import EpisodeStatsWriter
 from wrappers.vectorable_wrapper import VecEnv, find_wrapper
+
+
+class Evaluation(NamedTuple):
+    eval_stat: EpisodesStats
+    train_stat: EpisodesStats
+    score: float
 
 
 class OptimizeCallback(Callback):
@@ -41,6 +47,7 @@ class OptimizeCallback(Callback):
         self.is_pruned = False
         self.last_eval_stat = None
         self.last_train_stat = None
+        self.last_score = -np.inf
 
     def on_step(self, timesteps_elapsed: int = 1) -> bool:
         super().on_step(timesteps_elapsed)
@@ -49,38 +56,16 @@ class OptimizeCallback(Callback):
             return not self.is_pruned
         return True
 
-    def evaluate(self) -> EpisodesStats:
-        start_time = perf_counter()
-        eval_stat = evaluate(
-            self.env,
+    def evaluate(self) -> None:
+        self.last_eval_stat, self.last_train_stat, score = evaluation(
             self.policy,
+            self.env,
+            self.tb_writer,
             self.n_episodes,
-            deterministic=self.deterministic,
-            print_returns=False,
-        )
-        end_time = perf_counter()
-        self.tb_writer.add_scalar(
-            "eval/steps_per_second",
-            eval_stat.length.sum() / (end_time - start_time),
+            self.deterministic,
             self.timesteps_elapsed,
         )
-        self.policy.train()
-        print(f"Eval Timesteps: {self.timesteps_elapsed} | {eval_stat}")
-        eval_stat.write_to_tensorboard(self.tb_writer, "eval", self.timesteps_elapsed)
-
-        train_stat = EpisodesStats(self.stats_writer.episodes)
-        print(f"  Train Stat: {train_stat}")
-
-        self.last_eval_stat = eval_stat
-        self.last_train_stat = train_stat
-
-        score = self.last_score()
-        print(f"  Score: {round(score, 2)}")
-        self.tb_writer.add_scalar(
-            "eval/score",
-            score,
-            self.timesteps_elapsed,
-        )
+        self.last_score = score
 
         self.trial.report(score, self.eval_step)
         if self.trial.should_prune():
@@ -88,11 +73,45 @@ class OptimizeCallback(Callback):
 
         self.eval_step += 1
 
-        return eval_stat
 
-    def last_score(self) -> float:
-        eval_score = self.last_eval_stat.score.mean if self.last_eval_stat else np.NINF
-        train_score = (
-            self.last_train_stat.score.mean if self.last_train_stat else np.NINF
-        )
-        return (eval_score + train_score) / 2
+def evaluation(
+    policy: Policy,
+    env: VecEnv,
+    tb_writer: SummaryWriter,
+    n_episodes: int,
+    deterministic: bool,
+    timesteps_elapsed: int,
+) -> Evaluation:
+    start_time = perf_counter()
+    eval_stat = evaluate(
+        env,
+        policy,
+        n_episodes,
+        deterministic=deterministic,
+        print_returns=False,
+    )
+    end_time = perf_counter()
+    tb_writer.add_scalar(
+        "eval/steps_per_second",
+        eval_stat.length.sum() / (end_time - start_time),
+        timesteps_elapsed,
+    )
+    policy.train()
+    print(f"Eval Timesteps: {timesteps_elapsed} | {eval_stat}")
+    eval_stat.write_to_tensorboard(tb_writer, "eval", timesteps_elapsed)
+
+    stats_writer = find_wrapper(policy.env, EpisodeStatsWriter)
+    assert stats_writer
+
+    train_stat = EpisodesStats(stats_writer.episodes)
+    print(f"  Train Stat: {train_stat}")
+
+    score = (eval_stat.score.mean + train_stat.score.mean) / 2
+    print(f"  Score: {round(score, 2)}")
+    tb_writer.add_scalar(
+        "eval/score",
+        score,
+        timesteps_elapsed,
+    )
+
+    return Evaluation(eval_stat, train_stat, score)
