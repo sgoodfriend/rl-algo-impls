@@ -102,6 +102,7 @@ CarRacing-v0:
   env_hyperparams:
     n_envs: 8
     frame_stack: 4
+    normalize: true
     normalize_kwargs:
       norm_obs: false
       norm_reward: true
@@ -114,13 +115,14 @@ CarRacing-v0:
     cnn_feature_dim: 256
     hidden_sizes: [256]
   algo_hyperparams:
-    n_steps: 8
-    learning_rate: !!float 5e-5
+    n_steps: 512
+    learning_rate: !!float 1.62e-5
     learning_rate_decay: linear
-    gamma: 0.99
-    gae_lambda: 0.95
+    gamma: 0.997
+    gae_lambda: 0.975
     ent_coef: 0
-    sde_sample_freq: 4
+    sde_sample_freq: 128
+    vf_coef: 0.64
 
 _atari: &atari-defaults
   n_timesteps: !!float 1e7

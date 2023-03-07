@@ -7,8 +7,8 @@ BENCHMARK_MAX_PROCS="${BENCHMARK_MAX_PROCS:-6}"
 ALGOS=(
     # "vpg"
     # "dqn"
-    # "ppo"
-    "a2c"
+    "ppo"
+    # "a2c"
 )
 ENVS=(
     # Basic
