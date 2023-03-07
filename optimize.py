@@ -7,7 +7,7 @@ import os
 import torch
 import wandb
 
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from optuna.pruners import MedianPruner
 from optuna.samplers import TPESampler
 from optuna.visualization import plot_optimization_history, plot_param_importances
@@ -163,7 +163,7 @@ def objective_fn(args: OptimizeArgs) -> Callable[[optuna.Trial], float]:
             wandb.init(
                 project=args.wandb_project_name,
                 entity=args.wandb_entity,
-                config=hyperparams,
+                config=asdict(hyperparams),
                 name=f"{config.model_name()}-{str(trial.number)}",
                 tags=args.wandb_tags,
                 group=args.wandb_group,

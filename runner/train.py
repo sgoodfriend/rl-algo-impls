@@ -8,7 +8,7 @@ import shutil
 import wandb
 import yaml
 
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from torch.utils.tensorboard.writer import SummaryWriter
 from typing import Any, Dict, Optional, Sequence
 
@@ -48,7 +48,7 @@ def train(args: TrainArgs):
         wandb.init(
             project=args.wandb_project_name,
             entity=args.wandb_entity,
-            config=hyperparams,  # type: ignore
+            config=asdict(hyperparams),
             name=config.run_name,
             monitor_gym=True,
             save_code=True,
@@ -106,7 +106,7 @@ def train(args: TrainArgs):
     }
     if callback.best:
         log_dict["best_eval"] = callback.best._asdict()
-    log_dict.update(hyperparams)
+    log_dict.update(asdict(hyperparams))
     log_dict.update(vars(args))
     with open(config.logs_path, "a") as f:
         yaml.dump({config.run_name: log_dict}, f)

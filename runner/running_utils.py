@@ -9,6 +9,7 @@ import torch
 import torch.backends.cudnn
 import yaml
 
+from dataclasses import asdict
 from gym.spaces import Box, Discrete
 from torch.utils.tensorboard.writer import SummaryWriter
 from typing import Dict, Optional, Type, Union
@@ -82,13 +83,13 @@ def load_hyperparams(algo: str, env_id: str, root_path: str) -> Hyperparams:
         hyperparams_dict = yaml.safe_load(f)
 
     if env_id in hyperparams_dict:
-        return hyperparams_dict[env_id]
+        return Hyperparams(**hyperparams_dict[env_id])
 
     if "BulletEnv" in env_id:
         import pybullet_envs
     spec = gym.spec(env_id)
     if "AtariEnv" in str(spec.entry_point) and "_atari" in hyperparams_dict:
-        return hyperparams_dict["_atari"]
+        return Hyperparams(**hyperparams_dict["_atari"])
     else:
         raise ValueError(f"{env_id} not specified in {algo} hyperparameters file")
 
@@ -182,7 +183,7 @@ def hparam_dict(
     for k, v in flattened.items():
         if isinstance(v, list):
             flattened[k] = json.dumps(v)
-    for k, v in hyperparams.items():
+    for k, v in asdict(hyperparams).items():
         if isinstance(v, dict):
             for sk, sv in v.items():
                 key = f"{k}/{sk}"

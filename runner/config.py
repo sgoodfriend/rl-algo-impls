@@ -1,8 +1,10 @@
+import dataclasses
+import inspect
 import os
 
 from datetime import datetime
 from dataclasses import dataclass
-from typing import Any, Dict, NamedTuple, Optional, TypedDict, Union
+from typing import Any, Dict, NamedTuple, Optional, Type, TypeVar, Union
 
 
 @dataclass
@@ -30,13 +32,26 @@ class EnvHyperparams(NamedTuple):
     clip_atari_rewards: bool = True
 
 
-class Hyperparams(TypedDict, total=False):
-    device: str
-    n_timesteps: Union[int, float]
-    env_hyperparams: Dict[str, Any]
-    policy_hyperparams: Dict[str, Any]
-    algo_hyperparams: Dict[str, Any]
-    eval_params: Dict[str, Any]
+HyperparamsSelf = TypeVar("HyperparamsSelf", bound="Hyperparams")
+
+
+@dataclass
+class Hyperparams:
+    device: str = "auto"
+    n_timesteps: Union[int, float] = 100_000
+    env_hyperparams: Dict[str, Any] = dataclasses.field(default_factory=dict)
+    policy_hyperparams: Dict[str, Any] = dataclasses.field(default_factory=dict)
+    algo_hyperparams: Dict[str, Any] = dataclasses.field(default_factory=dict)
+    eval_params: Dict[str, Any] = dataclasses.field(default_factory=dict)
+    env_id: Optional[str] = None
+
+    @classmethod
+    def from_dict_with_extra_fields(
+        cls: Type[HyperparamsSelf], d: Dict[str, Any]
+    ) -> HyperparamsSelf:
+        return cls(
+            **{k: v for k, v in d.items() if k in inspect.signature(cls).parameters}
+        )
 
 
 @dataclass
@@ -54,27 +69,27 @@ class Config:
 
     @property
     def device(self) -> str:
-        return self.hyperparams.get("device", "auto")
+        return self.hyperparams.device
 
     @property
     def n_timesteps(self) -> int:
-        return int(self.hyperparams.get("n_timesteps", 100_000))
+        return int(self.hyperparams.n_timesteps)
 
     @property
     def env_hyperparams(self) -> Dict[str, Any]:
-        return self.hyperparams.get("env_hyperparams", {})
+        return self.hyperparams.env_hyperparams
 
     @property
     def policy_hyperparams(self) -> Dict[str, Any]:
-        return self.hyperparams.get("policy_hyperparams", {})
+        return self.hyperparams.policy_hyperparams
 
     @property
     def algo_hyperparams(self) -> Dict[str, Any]:
-        return self.hyperparams.get("algo_hyperparams", {})
+        return self.hyperparams.algo_hyperparams
 
     @property
     def eval_params(self) -> Dict[str, Any]:
-        return self.hyperparams.get("eval_params", {})
+        return self.hyperparams.eval_params
 
     @property
     def algo(self) -> str:
@@ -82,7 +97,7 @@ class Config:
 
     @property
     def env_id(self) -> str:
-        return self.hyperparams.get("env_id") or self.args.env
+        return self.hyperparams.env_id or self.args.env
 
     def model_name(self, include_seed: bool = True) -> str:
         # Use arg env name instead of environment name
@@ -91,7 +106,7 @@ class Config:
             parts.append(f"S{self.args.seed}")
 
         # Assume that the custom arg name already has the necessary information
-        if not self.hyperparams.get("env_id"):
+        if not self.hyperparams.env_id:
             make_kwargs = self.env_hyperparams.get("make_kwargs", {})
             if make_kwargs:
                 for k, v in make_kwargs.items():

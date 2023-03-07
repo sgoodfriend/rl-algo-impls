@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from typing import NamedTuple, Optional
 
 from runner.env import make_eval_env
-from runner.config import Config, EnvHyperparams, RunArgs
+from runner.config import Config, EnvHyperparams, Hyperparams, RunArgs
 from runner.running_utils import (
     load_hyperparams,
     set_seeds,
@@ -40,16 +40,16 @@ def evaluate_model(args: EvalArgs, root_dir: str) -> Evaluation:
 
         api = wandb.Api()
         run = api.run(args.wandb_run_path)
-        hyperparams = run.config
+        params = run.config
 
-        args.algo = hyperparams["algo"]
-        args.env = hyperparams["env"]
-        args.seed = hyperparams.get("seed", None)
-        args.use_deterministic_algorithms = hyperparams.get(
+        args.algo = params["algo"]
+        args.env = params["env"]
+        args.seed = params.get("seed", None)
+        args.use_deterministic_algorithms = params.get(
             "use_deterministic_algorithms", True
         )
 
-        config = Config(args, hyperparams, root_dir)
+        config = Config(args, Hyperparams.from_dict_with_extra_fields(params), root_dir)
         model_path = config.model_dir_path(best=args.best, downloaded=True)
 
         model_archive_name = config.model_dir_name(best=args.best, extension=".zip")
