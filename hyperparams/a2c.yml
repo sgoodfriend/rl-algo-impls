@@ -77,7 +77,7 @@ HalfCheetahBulletEnv-v0: &pybullet-defaults
     use_sde: true
     log_std_init: -2
     init_layers_orthogonal: false
-  algo_hyperaparms: &pybullet-algo-defaults
+  algo_hyperparams: &pybullet-algo-defaults
     n_steps: 8
     ent_coef: 0
     max_grad_norm: 0.5
