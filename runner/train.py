@@ -32,6 +32,7 @@ class TrainArgs(RunArgs):
     wandb_project_name: Optional[str] = None
     wandb_entity: Optional[str] = None
     wandb_tags: Sequence[str] = dataclasses.field(default_factory=list)
+    wandb_group: Optional[str] = None
 
 
 def train(args: TrainArgs):
@@ -53,6 +54,7 @@ def train(args: TrainArgs):
             monitor_gym=True,
             save_code=True,
             tags=args.wandb_tags,
+            group=args.wandb_group,
         )
         wandb.config.update(args)
 

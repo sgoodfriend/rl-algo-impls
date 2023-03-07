@@ -3,26 +3,10 @@ import os
 
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
 
-import itertools
-
-from argparse import Namespace
 from multiprocessing import Pool
-from typing import Any, Dict
 
 from runner.running_utils import base_parser
 from runner.train import train, TrainArgs
-
-
-def args_dict(algo: str, env: str, seed: str, args: Namespace) -> Dict[str, Any]:
-    d = vars(args).copy()
-    d.update(
-        {
-            "algo": algo,
-            "env": env,
-            "seed": seed,
-        }
-    )
-    return d
 
 
 if __name__ == "__main__":
@@ -64,17 +48,11 @@ if __name__ == "__main__":
     pool_size = min(args.pool_size, len(args.seed))
     delattr(args, "pool_size")
 
-    algos = args.algo if isinstance(args.algo, list) else [args.algo]
-    envs = args.env if isinstance(args.env, list) else [args.env]
-    seeds = args.seed if isinstance(args.seed, list) else [args.seed]
-    if all(len(arg) == 1 for arg in [algos, envs, seeds]):
-        train(TrainArgs(**args_dict(algos[0], envs[0], seeds[0], args)))
+    train_args = TrainArgs.expand_from_dict(vars(args))
+    if len(train_args) == 1:
+        train(train_args[0])
     else:
         # Force a new process for each job to get around wandb not allowing more than one
         # wandb.tensorboard.patch call per process.
         with Pool(pool_size, maxtasksperchild=1) as p:
-            train_args = [
-                TrainArgs(**args_dict(algo, env, seed, args))
-                for algo, env, seed in itertools.product(algos, envs, seeds)
-            ]
             p.map(train, train_args)

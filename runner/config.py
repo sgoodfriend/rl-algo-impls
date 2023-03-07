@@ -1,10 +1,14 @@
 import dataclasses
 import inspect
+import itertools
 import os
 
 from datetime import datetime
 from dataclasses import dataclass
-from typing import Any, Dict, NamedTuple, Optional, Type, TypeVar, Union
+from typing import Any, Dict, List, NamedTuple, Optional, Type, TypeVar, Union
+
+
+RunArgsSelf = TypeVar("RunArgsSelf", bound="RunArgs")
 
 
 @dataclass
@@ -13,6 +17,21 @@ class RunArgs:
     env: str
     seed: Optional[int] = None
     use_deterministic_algorithms: bool = True
+
+    @classmethod
+    def expand_from_dict(
+        cls: Type[RunArgsSelf], d: Dict[str, Any]
+    ) -> List[RunArgsSelf]:
+        maybe_listify = lambda v: [v] if isinstance(v, str) or isinstance(v, int) else v
+        algos = maybe_listify(d["algo"])
+        envs = maybe_listify(d["env"])
+        seeds = maybe_listify(d["seed"])
+        args = []
+        for algo, env, seed in itertools.product(algos, envs, seeds):
+            _d = d.copy()
+            _d.update({"algo": algo, "env": env, "seed": seed})
+            args.append(cls(**_d))
+        return args
 
 
 class EnvHyperparams(NamedTuple):
