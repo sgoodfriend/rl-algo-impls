@@ -267,6 +267,7 @@ class PPO(Algorithm):
                 mb_adv = adv[mb_idxs]
                 if self.normalize_advantage:
                     mb_adv = (mb_adv - mb_adv.mean(-1)) / (mb_adv.std(-1) + 1e-8)
+                self.policy.reset_noise(self.batch_size)
                 step_stats.append(
                     self._train_step(
                         pi_clip,
