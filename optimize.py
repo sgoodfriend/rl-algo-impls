@@ -115,13 +115,13 @@ def parse_args() -> Args:
         help="Number of episodes to complete for evaluation",
     )
     parser.add_argument("--timeout", type=int, help="Seconds to timeout optimization")
-    parser.set_defaults(
-        algo=["a2c"],
-        env=["CartPole-v1"],
-        seed=[1],
-        n_trials=5,
-        n_startup_trials=2,
-    )
+    # parser.set_defaults(
+    #     algo=["a2c"],
+    #     env=["LunarLander-v2"],
+    #     seed=[100, 200, 300],
+    #     n_trials=5,
+    #     n_startup_trials=2,
+    # )
     train_dict, study_dict = {}, {}
     for k, v in vars(parser.parse_args()).items():
         if k in inspect.signature(StudyArgs).parameters:
