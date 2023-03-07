@@ -113,6 +113,12 @@ class TanhBijector:
         return torch.log(1.0 - torch.tanh(x) ** 2 + self.epsilon)
 
 
+def sum_independent_dims(tensor: torch.Tensor) -> torch.Tensor:
+    if len(tensor.shape) > 1:
+        return tensor.sum(dim=1)
+    return tensor.sum()
+
+
 class StateDependentNoiseDistribution(Normal):
     def __init__(
         self,
@@ -132,7 +138,7 @@ class StateDependentNoiseDistribution(Normal):
 
     def log_prob(self, a: torch.Tensor) -> torch.Tensor:
         gaussian_a = self.bijector.inverse(a) if self.bijector else a
-        log_prob = super().log_prob(gaussian_a).sum(axis=-1)
+        log_prob = sum_independent_dims(super().log_prob(gaussian_a))
         if self.bijector:
             log_prob -= torch.sum(self.bijector.log_prob_correction(gaussian_a), dim=1)
         return log_prob
@@ -250,7 +256,7 @@ class StateDependentNoiseActorHead(Actor):
         entropy = None
         if a is not None:
             logp_a = pi.log_prob(a)
-            entropy = -logp_a
+            entropy = -logp_a if self.bijector else sum_independent_dims(pi.entropy())
         return PiForward(pi, logp_a, entropy)
 
     def sample_weights(self, batch_size: int = 1) -> None:
