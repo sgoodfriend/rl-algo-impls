@@ -166,8 +166,9 @@ def objective_fn(
 
 def simple_optimize(trial: optuna.Trial, args: RunArgs, study_args: StudyArgs) -> float:
     base_hyperparams = load_hyperparams(args.algo, args.env, os.getcwd())
+    base_config = Config(args, base_hyperparams, os.getcwd())
     if args.algo == "a2c":
-        hyperparams = a2c_sample_params(trial, base_hyperparams)
+        hyperparams = a2c_sample_params(trial, base_hyperparams, base_config)
     else:
         raise ValueError(f"Optimizing {args.algo} isn't supported")
     config = Config(args, hyperparams, os.getcwd())
@@ -262,8 +263,9 @@ def stepwise_optimize(
     algo = args[0].algo
     env_id = args[0].env
     base_hyperparams = load_hyperparams(algo, env_id, os.getcwd())
+    base_config = Config(args[0], base_hyperparams, os.getcwd())
     if algo == "a2c":
-        hyperparams = a2c_sample_params(trial, base_hyperparams)
+        hyperparams = a2c_sample_params(trial, base_hyperparams, base_config)
     else:
         raise ValueError(f"Optimizing {algo} isn't supported")
 

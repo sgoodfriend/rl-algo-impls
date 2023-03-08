@@ -5,7 +5,7 @@ import os
 
 from datetime import datetime
 from dataclasses import dataclass
-from typing import Any, Dict, List, NamedTuple, Optional, Type, TypeVar, Union
+from typing import Any, Dict, List, Optional, Type, TypeVar, Union
 
 
 RunArgsSelf = TypeVar("RunArgsSelf", bound="RunArgs")
@@ -34,7 +34,8 @@ class RunArgs:
         return args
 
 
-class EnvHyperparams(NamedTuple):
+@dataclass
+class EnvHyperparams:
     env_type: str = "gymvec"
     n_envs: int = 1
     frame_stack: int = 1

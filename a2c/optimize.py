@@ -1,25 +1,30 @@
 import optuna
 
 from copy import deepcopy
-from typing import Any, Dict
 
-from runner.config import Hyperparams
+from runner.config import Config, Hyperparams, EnvHyperparams
+from runner.env import make_eval_env
+from shared.policy.optimize_on_policy import sample_on_policy_hyperparams
+from tuning.optimize_env import sample_env_hyperparams
 
 
-def sample_params(trial: optuna.Trial, base_hyperparams: Hyperparams) -> Hyperparams:
+def sample_params(
+    trial: optuna.Trial,
+    base_hyperparams: Hyperparams,
+    base_config: Config,
+) -> Hyperparams:
     hyperparams = deepcopy(base_hyperparams)
 
+    base_env_hyperparams = EnvHyperparams(**hyperparams.env_hyperparams)
+    env = make_eval_env(base_config, base_env_hyperparams, override_n_envs=1)
+
     # env_hyperparams
-    env_hyperparams = hyperparams.env_hyperparams
-
-    n_envs = 2 ** trial.suggest_int("n_envs_exp", 1, 5)
-    trial.set_user_attr("n_envs", n_envs)
-    normalize = trial.suggest_categorical("normalize", [False, True])
-
-    env_hyperparams.update({"n_envs": n_envs, "normalize": normalize})
+    env_hyperparams = sample_env_hyperparams(trial, hyperparams.env_hyperparams, env)
 
     # policy_hyperparams
-    policy_hyperparams = hyperparams.policy_hyperparams
+    policy_hyperparams = sample_on_policy_hyperparams(
+        trial, hyperparams.policy_hyperparams, env
+    )
 
     # algo_hyperparams
     algo_hyperparams = hyperparams.algo_hyperparams
@@ -64,5 +69,9 @@ def sample_params(trial: optuna.Trial, base_hyperparams: Hyperparams) -> Hyperpa
         sde_sample_freq = 2 ** trial.suggest_int("sde_sample_freq_exp", 0, n_steps_exp)
         trial.set_user_attr("sde_sample_freq", sde_sample_freq)
         algo_hyperparams["sde_sample_freq"] = sde_sample_freq
+    elif "sde_sample_freq" in algo_hyperparams:
+        del algo_hyperparams["sde_sample_freq"]
+
+    env.close()
 
     return hyperparams

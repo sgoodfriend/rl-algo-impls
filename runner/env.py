@@ -2,6 +2,7 @@ import gym
 import numpy as np
 import os
 
+from dataclasses import asdict, astuple
 from gym.vector.async_vector_env import AsyncVectorEnv
 from gym.vector.sync_vector_env import SyncVectorEnv
 from gym.wrappers.resize_observation import ResizeObservation
@@ -71,7 +72,7 @@ def make_eval_env(
     kwargs = kwargs.copy()
     kwargs["training"] = False
     if override_n_envs is not None:
-        hparams_kwargs = hparams._asdict()
+        hparams_kwargs = asdict(hparams)
         hparams_kwargs["n_envs"] = override_n_envs
         if override_n_envs == 1:
             hparams_kwargs["vec_env_class"] = "sync"
@@ -102,7 +103,7 @@ def _make_vec_env(
         video_step_interval,
         initial_steps_to_truncate,
         clip_atari_rewards,
-    ) = hparams
+    ) = astuple(hparams)
 
     if "BulletEnv" in config.env_id:
         import pybullet_envs
@@ -230,9 +231,9 @@ def _make_procgen_env(
     from procgen.env import ProcgenGym3Env, ToBaselinesVecEnv
 
     (
-        _,
+        _,  # env_type
         n_envs,
-        frame_stack,
+        _,  # frame_stack
         make_kwargs,
         _,  # no_reward_timeout_steps
         _,  # no_reward_fire_steps
@@ -244,7 +245,7 @@ def _make_procgen_env(
         _,  # video_step_interval
         _,  # initial_steps_to_truncate
         _,  # clip_atari_rewards
-    ) = hparams
+    ) = astuple(hparams)
 
     seed = config.seed(training=training)
 

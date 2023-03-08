@@ -117,7 +117,6 @@ CarRacing-v0:
   algo_hyperparams:
     n_steps: 512
     learning_rate: !!float 1.62e-5
-    learning_rate_decay: linear
     gamma: 0.997
     gae_lambda: 0.975
     ent_coef: 0
