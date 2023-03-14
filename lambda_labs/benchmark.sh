@@ -1,15 +1,17 @@
-source benchmarks/train_loop.sh
+while getopts a:j:s: flag
+do
+    case "${flag}" in
+        a) algo=${OPTARG};;
+        j) n_jobs=${OPTARG};;
+        p) project_name=${OPTARG};;
+        s) seeds=${OPTARG};;
+    esac
+done
 
-# export WANDB_PROJECT_NAME="rl-algo-impls"
+n_jobs="${n_jobs:-6}"
+project_name="${project_name:-rl-algo-impls-benchmarks}"
+seeds="${seeds:-1 2 3}"
 
-BENCHMARK_MAX_PROCS="${BENCHMARK_MAX_PROCS:-6}"
-
-ALGOS=(
-    # "vpg"
-    # "dqn"
-    "ppo"
-    # "a2c"
-)
 ENVS=(
     # Basic
     "CartPole-v1"
@@ -31,4 +33,4 @@ ENVS=(
     "SpaceInvadersNoFrameskip-v4"
     "QbertNoFrameskip-v4"
 )
-train_loop "${ALGOS[*]}" "${ENVS[*]}" | xargs -I CMD -P $BENCHMARK_MAX_PROCS bash -c CMD
+bash benchmarks/train_loop.sh -a $algo -e "${ENVS[*]}" -p $project_name -s "$seeds" | xargs -I CMD -P $n_jobs bash -c CMD

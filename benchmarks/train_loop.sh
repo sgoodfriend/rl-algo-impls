@@ -1,15 +1,18 @@
-train_loop () {
-    local WANDB_TAGS="benchmark_$(git rev-parse --short HEAD) host_$(hostname)"
-    local algo
-    local env
-    local seed
-    local WANDB_PROJECT_NAME="${WANDB_PROJECT_NAME:-rl-algo-impls-benchmarks}"
-    local SEEDS="${SEEDS:-1 2 3}"
-    for algo in $(echo $1); do
-        for env in $(echo $2); do
-            for seed in $SEEDS; do
-                echo python train.py --algo $algo --env $env --seed $seed --pool-size 1 --wandb-tags $WANDB_TAGS --wandb-project-name $WANDB_PROJECT_NAME
-            done
-        done
+while getopts a:e:s:p: flag
+do
+    case "${flag}" in
+        a) algo=${OPTARG};;
+        e) envs=${OPTARG};;
+        s) seeds=${OPTARG};;
+        p) project_name=${OPTARG};;
+    esac
+done
+
+WANDB_TAGS="benchmark_$(git rev-parse --short HEAD) host_$(hostname)"
+project_name="${project_name:-rl-algo-impls-benchmarks}"
+seeds="${seeds:-1 2 3}"
+for env in $(echo $envs); do
+    for seed in $seeds; do
+        echo python train.py --algo $algo --env $env --seed $seed --pool-size 1 --wandb-tags $WANDB_TAGS --wandb-project-name $project_name
     done
-}
+done
