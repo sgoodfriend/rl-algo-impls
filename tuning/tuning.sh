@@ -1,4 +1,4 @@
-while getopts a:e:j:n:s: flag
+while getopts a:e:j:n:s:i: flag
 do
     case "${flag}" in
         a) algo=${OPTARG};;
@@ -6,6 +6,7 @@ do
         j) n_jobs=${OPTARG};;
         n) study_name=${OPTARG};;
         s) seeds=${OPTARG};;
+        i) increment=${OPTARG};;
     esac
 done
 
@@ -13,13 +14,13 @@ TZ="America/Los_Angeles"
 NOW=$(date +"%Y-%m-%dT%H:%M:%S")
 study_name="${study_name:-$algo-$env-$NOW}"
 STORAGE_PATH="sqlite:///runs/tuning.db"
-
+increment="${increment:-100}"
 
 mkdir -p runs
 optuna create-study --study-name $study_name --storage $STORAGE_PATH --direction maximize --skip-if-exists
 
 optimize () {
-    for ((j=100;j<=n_jobs*100;j+=100)); do
+    for ((j=$increment;j<=n_jobs*100+$increment;j+=100)); do
         seed=()
         for ((s=0;s<seeds;s++)); do
             seed+="$((j+s*100/seeds)) "
