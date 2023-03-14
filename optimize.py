@@ -9,7 +9,7 @@ import torch
 import wandb
 
 from dataclasses import asdict, dataclass
-from optuna.pruners import MedianPruner
+from optuna.pruners import HyperbandPruner
 from optuna.samplers import TPESampler
 from optuna.visualization import plot_optimization_history, plot_param_importances
 from torch.utils.tensorboard.writer import SummaryWriter
@@ -38,7 +38,6 @@ class StudyArgs:
     storage_path: Optional[str] = None
     n_trials: int = 100
     n_jobs: int = 1
-    n_startup_trials: int = 5
     n_evaluations: int = 4
     n_eval_envs: int = 8
     n_eval_episodes: int = 16
@@ -91,12 +90,6 @@ def parse_args() -> Args:
         "--n-jobs", type=int, default=1, help="Number of jobs to run in parallel"
     )
     parser.add_argument(
-        "--n-startup-trials",
-        type=int,
-        default=5,
-        help="Stop random sampling after this number of trials",
-    )
-    parser.add_argument(
         "--n-evaluations",
         type=int,
         default=4,
@@ -117,10 +110,9 @@ def parse_args() -> Args:
     parser.add_argument("--timeout", type=int, help="Seconds to timeout optimization")
     # parser.set_defaults(
     #     algo=["a2c"],
-    #     env=["LunarLander-v2"],
+    #     env=["CartPole-v1"],
     #     seed=[100, 200, 300],
     #     n_trials=5,
-    #     n_startup_trials=2,
     # )
     train_dict, study_dict = {}, {}
     for k, v in vars(parser.parse_args()).items():
@@ -392,8 +384,8 @@ if __name__ == "__main__":
 
     train_args, study_args = parse_args()
 
-    sampler = TPESampler(n_startup_trials=study_args.n_startup_trials)
-    pruner = MedianPruner(n_startup_trials=study_args.n_startup_trials)
+    sampler = TPESampler(**TPESampler.hyperopt_parameters())
+    pruner = HyperbandPruner()
     if study_args.load_study:
         assert study_args.study_name
         assert study_args.storage_path
