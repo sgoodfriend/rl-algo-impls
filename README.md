@@ -30,7 +30,7 @@ cd rl-algo-impls
 # git checkout BRANCH_NAME if running on non-main branch
 bash ./scripts/setup.sh
 wandb login
-bash ./scripts/benchmark.sh
+bash ./scripts/benchmark.sh [-a {"ppo"}] [-e ENVS] [-j {6}] [-p {rl-algo-impls-benchmarks}] [-s {"1 2 3"}]
 ```
 
 Benchmarking runs are by default upload to a rl-algo-impls-benchmarks project. Runs upload

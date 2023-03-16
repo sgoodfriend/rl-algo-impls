@@ -163,7 +163,7 @@ git clone git@github.com:sgoodfriend/rl-algo-impls.git
 cd rl-algo-impls
 bash ./lambda_labs/setup.sh
 wandb login
-bash ./lambda_labs/benchmark.sh
+bash ./lambda_labs/benchmark.sh [-a {"ppo"}] [-e ENVS] [-j {6}] [-p {rl-algo-impls-benchmarks}] [-s {"1 2 3"}]
 ```
 
 ### Alternative: Google Colab Pro+
