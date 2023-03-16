@@ -36,19 +36,19 @@ LunarLander-v2:
   device: cpu
   n_timesteps: !!float 1e6
   env_hyperparams:
-    n_envs: 16
+    n_envs: 4
     normalize: true
   algo_hyperparams:
     n_steps: 2
-    gamma: 0.9993426414161681
-    gae_lambda: 0.9945733381816694
-    learning_rate: 0.0004399375662160262
-    learning_rate_decay: none
-    ent_coef: !!float 9.947185227820854e-06
-    ent_coef_decay: linear
-    max_grad_norm: 0.10454936115204616
-    normalize_advantage: false
-    vf_coef: 0.20742810029031178
+    gamma: 0.9955517404308908
+    gae_lambda: 0.9875340918797773
+    learning_rate: 0.0013814130817068916
+    learning_rate_decay: linear
+    ent_coef: !!float 3.388369146384422e-7
+    ent_coef_decay: none
+    max_grad_norm: 3.33982095073364
+    normalize_advantage: true
+    vf_coef: 0.1667838310548184
 
 BipedalWalker-v3:
   n_timesteps: !!float 5e6
