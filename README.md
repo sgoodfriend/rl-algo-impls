@@ -28,9 +28,9 @@ cost ($0.60/hr).
 git clone https://github.com/sgoodfriend/rl-algo-impls.git
 cd rl-algo-impls
 # git checkout BRANCH_NAME if running on non-main branch
-bash ./lambda_labs/setup.sh
+bash ./scripts/setup.sh
 wandb login
-bash ./lambda_labs/benchmark.sh
+bash ./scripts/benchmark.sh
 ```
 
 Benchmarking runs are by default upload to a rl-algo-impls-benchmarks project. Runs upload
@@ -60,14 +60,14 @@ before running `tuning/tuning.sh`:
 ```
 # Setup similar to training above
 wandb login
-bash tuning/tuning.sh -a ALGO -e ENV -j N_JOBS -s NUM_SEEDS
+bash scripts/tuning.sh -a ALGO -e ENV -j N_JOBS -s NUM_SEEDS
 ```
 
 ### Google Colab Pro+
 
-3 notebooks in the repo are setup to be used with Google Colab:
+3 notebooks in the colab directory are setup to be used with Google Colab:
 
-- [benchmarks/colab_benchmark.ipynb](https://github.com/sgoodfriend/rl-algo-impls/tree/main/benchmarks#:~:text=colab_benchmark.ipynb):
+- [colab_benchmark.ipynb](https://github.com/sgoodfriend/rl-algo-impls/tree/main/benchmarks#:~:text=colab_benchmark.ipynb):
   Even with a Google Colab Pro+ subscription you'd need to only run parts of the
   benchmark. The file recommends 4 splits (basic+pybullet, carcarcing, atari1, atari2)
   because it would otherwise exceed the 24-hour session limit. This mostly comes from
@@ -120,13 +120,14 @@ Training, benchmarking, and watching the agents playing the environments can be 
 locally:
 
 ```
-python train.py [-h] [--algo {ppo}] [--env ENV [ENV ...]] [--seed [SEED ...]] [--wandb-project-name WANDB_PROJECT_NAME] [--wandb-tags [WANDB_TAGS ...]] [--pool-size POOL_SIZE]
+python train.py [-h] [--algo {ppo}] [--env ENV [ENV ...]] [--seed [SEED ...]] [--wandb-project-name WANDB_PROJECT_NAME] [--wandb-tags [WANDB_TAGS ...]] [--pool-size POOL_SIZE] [-virtual-display]
 ```
 
 train.py by default uploads to the rl-algo-impls WandB project. Training creates videos
 of the running best model, which will cause popups. Creating the first video requires a
 display, so you shouldn't shutoff the display until the video of the initial model is
-created (1-5 minutes depending on environment).
+created (1-5 minutes depending on environment). The --virtual-display flag should allow
+headless mode, but that hasn't been reliable on macOS.
 
 ```
 python enjoy.py [-h] [--algo {ppo}] [--env ENV] [--seed SEED] [--render RENDER] [--best BEST] [--n_episodes N_EPISODES] [--deterministic-eval DETERMINISTIC_EVAL] [--no-print-returns]
@@ -139,16 +140,6 @@ trained with those parameters and renders the agent playing the environment.
 
 The second enjoy.py downloads the model and hyperparameters from a WandB run. An
 example run path is `sgoodfriend/rl-algo-impls-benchmarks/09gea50g`
-
-```
-export WANDB_PROJECT_NAME=rl-algo-impls
-# Run any one of these benchmarking scripts normally meant for Google Colab
-./benchmarks/colab_basic.sh
-./benchmarks/colab_pybullet.sh
-./benchmarks/colab_carracing.sh
-./benchmarks/colab_atari1.sh
-./benchmarks/colab_atari2.sh
-```
 
 ## Hyperparameters
 
@@ -173,4 +164,5 @@ python -c "from procgen import ProcgenGym3Env; ProcgenGym3Env(num=1, env_name='c
 python -m procgen.interactive
 ```
 
-Benchmarking on amd64 Linux machines (e.g., Lambda Labs and Google Colab) shouldn't need
+amd64 Linux machines (e.g., Lambda Labs and Google Colab) should install procgen with
+`python -m pip install '.[procgen]'`
