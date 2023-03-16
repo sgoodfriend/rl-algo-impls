@@ -56,6 +56,9 @@ procgen = [
     "procgen; platform_machine=='x86_64'",
 ]
 
+[project.urls]
+"Homepage" = "https://github.com/sgoodfriend/rl-algo-impls"
+
 [build-system]
 requires = ["setuptools==65.5.0"]
 build-backend = "setuptools.build_meta"
