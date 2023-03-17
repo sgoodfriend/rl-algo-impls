@@ -50,7 +50,7 @@ test = [
     "isort",
 ]
 procgen = [
-    "numexpr",
+    "numexpr >= 2.8.4",
     "gym3",
     "glfw >= 1.12.0, < 1.13",
     "procgen; platform_machine=='x86_64'",
