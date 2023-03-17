@@ -36,7 +36,7 @@ class RunArgs:
 
 @dataclass
 class EnvHyperparams:
-    env_type: str = "gymvec"
+    env_type: str = "sb3vec"
     n_envs: int = 1
     frame_stack: int = 1
     make_kwargs: Optional[Dict[str, Any]] = None
@@ -50,6 +50,7 @@ class EnvHyperparams:
     video_step_interval: Union[int, float] = 1_000_000
     initial_steps_to_truncate: Optional[int] = None
     clip_atari_rewards: bool = True
+    normalize_type: Optional[str] = "gymlike"
 
 
 HyperparamsSelf = TypeVar("HyperparamsSelf", bound="Hyperparams")
