@@ -35,6 +35,7 @@ dependencies = [
     "dash",
     "kaleido",
     "PyYAML",
+    "scikit-learn",
 ]
 
 [tool.setuptools]
