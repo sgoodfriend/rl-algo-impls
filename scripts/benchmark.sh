@@ -48,7 +48,7 @@ for algo in $(echo $algos); do
         BENCHMARK_ENVS="${DISCRETE_ENVS[*]} ${BOX_ENVS[*]}"
     fi
     algo_envs=$envs
-    if [ -z $algo_envs ]; then
+    if [ -z "$algo_envs" ]; then
         echo "-e unspecified; therefore, benchmark training on ${BENCHMARK_ENVS[*]}"
         algo_envs=${BENCHMARK_ENVS[*]}
     fi
