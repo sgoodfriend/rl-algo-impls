@@ -13,6 +13,6 @@ project_name="${project_name:-rl-algo-impls-benchmarks}"
 seeds="${seeds:-1 2 3}"
 for env in $(echo $envs); do
     for seed in $seeds; do
-        echo python train.py --algo $algo --env $env --seed $seed --pool-size 1 --wandb-tags $WANDB_TAGS --wandb-project-name $project_name
+        echo python train.py --algo $algo --env $env --seed $seed --pool-size 1 --wandb-tags $WANDB_TAGS --wandb-project-name $project_name --virtual-display
     done
 done
