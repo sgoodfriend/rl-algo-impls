@@ -274,7 +274,7 @@ def stepwise_optimize(
             project=study_args.wandb_project_name,
             entity=study_args.wandb_entity,
             config=asdict(hyperparams),
-            name=f"{study_args.study_name}-{str(trial.number)}",
+            name=f"{str(trial.number)}-S{base_config.seed()}",
             tags=study_args.wandb_tags,
             group=study_args.wandb_group,
             save_code=True,
