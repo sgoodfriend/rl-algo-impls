@@ -1,0 +1,1 @@
+echo "benchmark_$(git rev-parse --short HEAD) host_$(hostname)"

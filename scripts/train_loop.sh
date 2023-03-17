@@ -8,7 +8,7 @@ do
     esac
 done
 
-WANDB_TAGS="benchmark_$(git rev-parse --short HEAD) host_$(hostname)"
+WANDB_TAGS=$(bash scripts/tags_benchmark.sh)
 project_name="${project_name:-rl-algo-impls-benchmarks}"
 seeds="${seeds:-1 2 3}"
 for env in $(echo $envs); do
