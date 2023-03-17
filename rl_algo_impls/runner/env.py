@@ -31,6 +31,7 @@ from rl_algo_impls.wrappers.initial_step_truncate_wrapper import (
     InitialStepTruncateWrapper,
 )
 from rl_algo_impls.wrappers.is_vector_env import IsVectorEnv
+from rl_algo_impls.wrappers.no_reward_timeout import NoRewardTimeout
 from rl_algo_impls.wrappers.noop_env_seed import NoopEnvSeed
 from rl_algo_impls.wrappers.normalize import NormalizeObservation, NormalizeReward
 from rl_algo_impls.wrappers.sync_vector_env_render_compat import (
@@ -168,8 +169,6 @@ def _make_vec_env(
                     env = FrameStack(env, frame_stack)
 
             if no_reward_timeout_steps:
-                from wrappers.no_reward_timeout import NoRewardTimeout
-
                 env = NoRewardTimeout(
                     env, no_reward_timeout_steps, n_fire_steps=no_reward_fire_steps
                 )
