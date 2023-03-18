@@ -112,6 +112,7 @@ def _make_vec_env(
         video_step_interval,
         initial_steps_to_truncate,
         clip_atari_rewards,
+        normalize_type,
     ) = astuple(hparams)
 
     if "BulletEnv" in config.env_id:
@@ -191,14 +192,18 @@ def _make_vec_env(
     envs = VecEnvClass([make(i) for i in range(n_envs)])
     if env_type == "gymvec" and vec_env_class == "sync":
         envs = SyncVectorEnvRenderCompat(envs)
+    if env_type == "sb3vec":
+        envs = IsVectorEnv(envs)
     if training:
         assert tb_writer
         envs = EpisodeStatsWriter(
             envs, tb_writer, training=training, rolling_length=rolling_length
         )
     if normalize:
+        if normalize_type is None:
+            normalize_type = "sb3" if env_type == "sb3vec" else "gymlike"
         normalize_kwargs = normalize_kwargs or {}
-        if env_type == "sb3vec":
+        if normalize_type == "sb3":
             if normalize_load_path:
                 envs = VecNormalize.load(
                     os.path.join(normalize_load_path, VEC_NORMALIZE_FILENAME),
@@ -212,7 +217,7 @@ def _make_vec_env(
                 )
             if not training:
                 envs.norm_reward = False
-        else:
+        elif normalize_type == "gymlike":
             if normalize_kwargs.get("norm_obs", True):
                 envs = NormalizeObservation(
                     envs, training=training, clip=normalize_kwargs.get("clip_obs", 10.0)
@@ -223,6 +228,10 @@ def _make_vec_env(
                     training=training,
                     clip=normalize_kwargs.get("clip_reward", 10.0),
                 )
+        else:
+            raise ValueError(
+                f"normalize_type {normalize_type} not supported (sb3 or gymlike)"
+            )
     return envs
 
 
