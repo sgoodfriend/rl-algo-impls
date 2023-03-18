@@ -50,7 +50,7 @@ class EnvHyperparams:
     video_step_interval: Union[int, float] = 1_000_000
     initial_steps_to_truncate: Optional[int] = None
     clip_atari_rewards: bool = True
-    normalize_type: Optional[str] = None
+    normalize_type: Optional[str] = "gymlike"
 
 
 HyperparamsSelf = TypeVar("HyperparamsSelf", bound="Hyperparams")
