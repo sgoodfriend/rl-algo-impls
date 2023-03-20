@@ -16,6 +16,7 @@ from torch.utils.tensorboard.writer import SummaryWriter
 from typing import Dict, Optional, Type, Union
 
 from rl_algo_impls.runner.config import Hyperparams
+from rl_algo_impls.runner.env import import_for_env_id
 from rl_algo_impls.shared.algorithm import Algorithm
 from rl_algo_impls.shared.callbacks.eval_callback import EvalCallback
 from rl_algo_impls.shared.policy.on_policy import ActorCritic
@@ -81,8 +82,7 @@ def load_hyperparams(algo: str, env_id: str) -> Hyperparams:
     if env_id in hyperparams_dict:
         return Hyperparams(**hyperparams_dict[env_id])
 
-    if "BulletEnv" in env_id:
-        import pybullet_envs
+    import_for_env_id(env_id)
     spec = gym.spec(env_id)
     if "AtariEnv" in str(spec.entry_point) and "_atari" in hyperparams_dict:
         return Hyperparams(**hyperparams_dict["_atari"])

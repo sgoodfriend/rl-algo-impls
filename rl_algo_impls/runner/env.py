@@ -115,8 +115,7 @@ def _make_vec_env(
         normalize_type,
     ) = astuple(hparams)
 
-    if "BulletEnv" in config.env_id:
-        import pybullet_envs
+    import_for_env_id(config.env_id)
 
     spec = gym.spec(config.env_id)
     seed = config.seed(training=training)
@@ -168,6 +167,8 @@ def _make_vec_env(
                 env = HwcToChwObservation(env)
                 if frame_stack > 1:
                     env = FrameStack(env, frame_stack)
+            elif "Microrts" in config.env_id:
+                env = HwcToChwObservation(env)
 
             if no_reward_timeout_steps:
                 env = NoRewardTimeout(
@@ -299,3 +300,10 @@ def _make_procgen_env(
         )
 
     return envs  # type: ignore
+
+
+def import_for_env_id(env_id: str) -> None:
+    if "BulletEnv" in env_id:
+        import pybullet_envs
+    if "Microrts" in env_id:
+        import gym_microrts

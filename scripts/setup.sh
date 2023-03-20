@@ -7,4 +7,4 @@ sudo apt install -y swig
 python3 -m pip install --upgrade pip
 pip install --upgrade torch torchvision torchaudio
 
-python -m pip install --upgrade '.[test,procgen]'
+python -m pip install --upgrade '.[test,procgen,microrts]'

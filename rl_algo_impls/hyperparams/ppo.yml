@@ -152,7 +152,7 @@ _atari: &atari-defaults
     vec_env_class: async
   policy_hyperparams: &atari-policy-defaults
     activation_fn: relu
-  algo_hyperparams:
+  algo_hyperparams: &atari-algo-defaults
     n_steps: 128
     batch_size: 256
     n_epochs: 4
@@ -211,6 +211,29 @@ impala-SpaceInvadersNoFrameskip-v4:
 impala-QbertNoFrameskip-v4:
   <<: *impala-atari-defaults
   env_id: QbertNoFrameskip-v4
+
+MicrortsMining-v1: &microrts-defaults
+  <<: *atari-defaults
+  n_timesteps: !!float 2e6
+  env_hyperparams: &microrts-env-defaults
+    n_envs: 8
+    vec_env_class: async
+  policy_hyperparams:
+    <<: *atari-policy-defaults
+    cnn_style: microrts
+    cnn_feature_dim: 128
+  algo_hyperparams:
+    <<: *atari-algo-defaults
+    clip_range_decay: none
+    clip_range_vf: 0.1
+
+debug-MicrortsMining-v1:
+  <<: *microrts-defaults
+  env_id: MicrortsMining-v1
+  device: cpu
+  env_hyperparams:
+    <<: *microrts-env-defaults
+    vec_env_class: sync
 
 HalfCheetahBulletEnv-v0: &pybullet-defaults
   n_timesteps: !!float 2e6
