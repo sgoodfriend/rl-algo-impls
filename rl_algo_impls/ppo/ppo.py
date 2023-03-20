@@ -129,7 +129,7 @@ class PPO(Algorithm):
         ent_coef: float = 0.0,
         ent_coef_decay: str = "none",
         vf_coef: float = 0.5,
-        ppo2_vf_coef_halving: bool = False,
+        ppo2_vf_coef_halving: bool = True,
         max_grad_norm: float = 0.5,
         update_rtg_between_epochs: bool = False,
         sde_sample_freq: int = -1,
