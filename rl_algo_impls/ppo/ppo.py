@@ -13,8 +13,7 @@ from rl_algo_impls.shared.callbacks.callback import Callback
 from rl_algo_impls.shared.gae import compute_advantage, compute_rtg_and_advantage
 from rl_algo_impls.shared.policy.on_policy import ActorCritic
 from rl_algo_impls.shared.schedule import (
-    constant_schedule,
-    linear_schedule,
+    schedule,
     update_learning_rate,
 )
 from rl_algo_impls.shared.trajectory import Trajectory, TrajectoryAccumulator
@@ -141,30 +140,14 @@ class PPO(Algorithm):
         self.gamma = gamma
         self.gae_lambda = gae_lambda
         self.optimizer = Adam(self.policy.parameters(), lr=learning_rate, eps=1e-7)
-        self.lr_schedule = (
-            linear_schedule(learning_rate, 0)
-            if learning_rate_decay == "linear"
-            else constant_schedule(learning_rate)
-        )
+        self.lr_schedule = schedule(learning_rate_decay, learning_rate)
         self.max_grad_norm = max_grad_norm
-        self.clip_range_schedule = (
-            linear_schedule(clip_range, 0)
-            if clip_range_decay == "linear"
-            else constant_schedule(clip_range)
-        )
+        self.clip_range_schedule = schedule(clip_range_decay, clip_range)
         self.clip_range_vf_schedule = None
         if clip_range_vf:
-            self.clip_range_vf_schedule = (
-                linear_schedule(clip_range_vf, 0)
-                if clip_range_vf_decay == "linear"
-                else constant_schedule(clip_range_vf)
-            )
+            self.clip_range_vf_schedule = schedule(clip_range_vf_decay, clip_range_vf)
         self.normalize_advantage = normalize_advantage
-        self.ent_coef_schedule = (
-            linear_schedule(ent_coef, 0)
-            if ent_coef_decay == "linear"
-            else constant_schedule(ent_coef)
-        )
+        self.ent_coef_schedule = schedule(ent_coef_decay, ent_coef)
         self.vf_coef = vf_coef
         self.ppo2_vf_coef_halving = ppo2_vf_coef_halving
 

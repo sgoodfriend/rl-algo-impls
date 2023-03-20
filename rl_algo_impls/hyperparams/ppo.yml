@@ -224,6 +224,8 @@ MicrortsMining-v1: &microrts-defaults
     cnn_feature_dim: 128
   algo_hyperparams:
     <<: *atari-algo-defaults
+    learning_rate: !!float 3.5e-4
+    learning_rate_decay: spike
     clip_range_decay: none
     clip_range_vf: 0.1
 
