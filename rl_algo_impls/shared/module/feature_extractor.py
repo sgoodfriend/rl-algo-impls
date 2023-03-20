@@ -210,7 +210,10 @@ class FeatureExtractor(nn.Module):
                 def preprocess(obs: torch.Tensor) -> torch.Tensor:
                     if len(obs.shape) == 3:
                         obs = obs.unsqueeze(0)
-                    return obs.float() / range_size
+                    if range_size == 1:
+                        return obs
+                    else:
+                        return obs.float() / range_size
 
                 with torch.no_grad():
                     cnn_out = cnn(preprocess(torch.as_tensor(obs_space.sample())))
