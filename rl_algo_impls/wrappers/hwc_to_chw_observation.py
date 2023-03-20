@@ -5,7 +5,7 @@ from gym import ObservationWrapper
 from gym.spaces import Box
 
 
-class TransposeImageObservation(ObservationWrapper):
+class HwcToChwObservation(ObservationWrapper):
     def __init__(self, env: gym.Env) -> None:
         super().__init__(env)
 

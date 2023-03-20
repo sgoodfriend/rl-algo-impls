@@ -27,6 +27,7 @@ from rl_algo_impls.wrappers.atari_wrappers import (
 )
 from rl_algo_impls.wrappers.episode_record_video import EpisodeRecordVideo
 from rl_algo_impls.wrappers.episode_stats_writer import EpisodeStatsWriter
+from rl_algo_impls.wrappers.hwc_to_chw_observation import HwcToChwObservation
 from rl_algo_impls.wrappers.initial_step_truncate_wrapper import (
     InitialStepTruncateWrapper,
 )
@@ -37,7 +38,6 @@ from rl_algo_impls.wrappers.normalize import NormalizeObservation, NormalizeRewa
 from rl_algo_impls.wrappers.sync_vector_env_render_compat import (
     SyncVectorEnvRenderCompat,
 )
-from rl_algo_impls.wrappers.transpose_image_observation import TransposeImageObservation
 from rl_algo_impls.wrappers.vectorable_wrapper import VecEnv
 from rl_algo_impls.wrappers.video_compat_wrapper import VideoCompatWrapper
 
@@ -165,7 +165,7 @@ def _make_vec_env(
             elif "procgen" in config.env_id:
                 # env = GrayScaleObservation(env, keep_dim=False)
                 env = NoopEnvSeed(env)
-                env = TransposeImageObservation(env)
+                env = HwcToChwObservation(env)
                 if frame_stack > 1:
                     env = FrameStack(env, frame_stack)
 
@@ -277,7 +277,7 @@ def _make_procgen_env(
     envs = ToBaselinesVecEnv(envs)
     envs = IsVectorEnv(envs)
     # TODO: Handle Grayscale and/or FrameStack
-    envs = TransposeImageObservation(envs)
+    envs = HwcToChwObservation(envs)
 
     envs = gym.wrappers.RecordEpisodeStatistics(envs)
 
