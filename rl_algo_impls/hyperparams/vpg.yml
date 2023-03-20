@@ -175,9 +175,9 @@ FrozenLake-v1:
     save_best: true
 
 _atari: &atari-defaults
-  n_timesteps: !!float 25e6
+  n_timesteps: !!float 10e6
   env_hyperparams:
-    n_envs: 4
+    n_envs: 2
     frame_stack: 4
     no_reward_timeout_steps: 1000
     no_reward_fire_steps: 500
@@ -185,7 +185,7 @@ _atari: &atari-defaults
   policy_hyperparams:
     activation_fn: relu
   algo_hyperparams:
-    n_steps: 2048
+    n_steps: 3072
     pi_lr: !!float 5e-5
     gamma: 0.99
     gae_lambda: 0.95
