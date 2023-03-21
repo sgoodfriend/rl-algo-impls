@@ -75,7 +75,7 @@ def evaluate_model(args: EvalArgs, root_dir: str) -> Evaluation:
         render=args.render,
         normalize_load_path=model_path,
     )
-    device = get_device(config.device, env)
+    device = get_device(config, env)
     policy = make_policy(
         args.algo,
         env,

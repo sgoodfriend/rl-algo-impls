@@ -15,8 +15,8 @@ from pathlib import Path
 from torch.utils.tensorboard.writer import SummaryWriter
 from typing import Dict, Optional, Type, Union
 
-from rl_algo_impls.runner.config import Hyperparams
-from rl_algo_impls.runner.env import import_for_env_id
+from rl_algo_impls.runner.config import Config, Hyperparams
+from rl_algo_impls.runner.env import import_for_env_id, is_microrts
 from rl_algo_impls.shared.algorithm import Algorithm
 from rl_algo_impls.shared.callbacks.eval_callback import EvalCallback
 from rl_algo_impls.shared.policy.on_policy import ActorCritic
@@ -93,7 +93,8 @@ def load_hyperparams(algo: str, env_id: str) -> Hyperparams:
         raise ValueError(f"{env_id} not specified in {algo} hyperparameters file")
 
 
-def get_device(device: str, env: VecEnv) -> torch.device:
+def get_device(config: Config, env: VecEnv) -> torch.device:
+    device = config.device
     # cuda by default
     if device == "auto":
         device = "cuda"
@@ -110,6 +111,8 @@ def get_device(device: str, env: VecEnv) -> torch.device:
         if isinstance(obs_space, Discrete):
             device = "cpu"
         elif isinstance(obs_space, Box) and len(obs_space.shape) == 1:
+            device = "cpu"
+        if is_microrts(config):
             device = "cpu"
     print(f"Device: {device}")
     return torch.device(device)

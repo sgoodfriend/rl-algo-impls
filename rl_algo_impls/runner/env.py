@@ -117,17 +117,15 @@ def _make_vec_env(
 
     import_for_env_id(config.env_id)
 
-    spec = gym.spec(config.env_id)
     seed = config.seed(training=training)
 
     make_kwargs = make_kwargs.copy() if make_kwargs is not None else {}
-    if "BulletEnv" in config.env_id and render:
+    if is_bullet_env(config) and render:
         make_kwargs["render"] = True
-    if "CarRacing" in config.env_id:
+    if is_car_racing(config):
         make_kwargs["verbose"] = 0
-    if "procgen" in config.env_id:
-        if not render:
-            make_kwargs["render_mode"] = "rgb_array"
+    if is_gym_procgen(config) and not render:
+        make_kwargs["render_mode"] = "rgb_array"
 
     def make(idx: int) -> Callable[[], gym.Env]:
         def _make() -> gym.Env:
@@ -145,7 +143,7 @@ def _make_vec_env(
                 env = InitialStepTruncateWrapper(
                     env, idx * initial_steps_to_truncate // n_envs
                 )
-            if "AtariEnv" in spec.entry_point:  # type: ignore
+            if is_atari(config):  # type: ignore
                 env = NoopResetEnv(env, noop_max=30)
                 env = MaxAndSkipEnv(env, skip=4)
                 env = EpisodicLifeEnv(env, training=training)
@@ -157,17 +155,17 @@ def _make_vec_env(
                 env = ResizeObservation(env, (84, 84))
                 env = GrayScaleObservation(env, keep_dim=False)
                 env = FrameStack(env, frame_stack)
-            elif "CarRacing" in config.env_id:
+            elif is_car_racing(config):
                 env = ResizeObservation(env, (64, 64))
                 env = GrayScaleObservation(env, keep_dim=False)
                 env = FrameStack(env, frame_stack)
-            elif "procgen" in config.env_id:
+            elif is_gym_procgen(config):
                 # env = GrayScaleObservation(env, keep_dim=False)
                 env = NoopEnvSeed(env)
                 env = HwcToChwObservation(env)
                 if frame_stack > 1:
                     env = FrameStack(env, frame_stack)
-            elif "Microrts" in config.env_id:
+            elif is_microrts(config):
                 env = HwcToChwObservation(env)
 
             if no_reward_timeout_steps:
@@ -307,3 +305,24 @@ def import_for_env_id(env_id: str) -> None:
         import pybullet_envs
     if "Microrts" in env_id:
         import gym_microrts
+
+
+def is_atari(config: Config) -> bool:
+    spec = gym.spec(config.env_id)
+    return "AtariEnv" in str(spec.entry_point)
+
+
+def is_bullet_env(config: Config) -> bool:
+    return "BulletEnv" in config.env_id
+
+
+def is_car_racing(config: Config) -> bool:
+    return "CarRacing" in config.env_id
+
+
+def is_gym_procgen(config: Config) -> bool:
+    return "procgen" in config.env_id
+
+
+def is_microrts(config: Config) -> bool:
+    return "Microrts" in config.env_id

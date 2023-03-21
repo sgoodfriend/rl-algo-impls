@@ -65,7 +65,7 @@ def train(args: TrainArgs):
     env = make_env(
         config, EnvHyperparams(**config.env_hyperparams), tb_writer=tb_writer
     )
-    device = get_device(config.device, env)
+    device = get_device(config, env)
     policy = make_policy(args.algo, env, device, **config.policy_hyperparams)
     algo = ALGOS[args.algo](policy, env, device, tb_writer, **config.algo_hyperparams)
 
