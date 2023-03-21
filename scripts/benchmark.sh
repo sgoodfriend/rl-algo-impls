@@ -6,8 +6,8 @@ do
         -p) project_name=$2 ;;
         -s) seeds=$2 ;;
         -e) envs=$2 ;;
-        --procgen) procgen=t
-        --microrts) microrts=t
+        --procgen) procgen=t ;;
+        --microrts) microrts=t ;;
     esac
     shift
 done
@@ -51,13 +51,13 @@ for algo in $(echo $algos); do
             "procgen-bigfish-easy"
         )
         algo_envs=${PROCGEN_ENVS[*]}
-    elif [ "$microrts" = "t"]; then
+    elif [ "$microrts" = "t" ]; then
         MICRORTS_ENVS=(
             "MicrortsMining-v1"
             "MicrortsAttackSparseReward-v1"
             "MicrortsRandomEnemyShapedReward3-v1"
         )
-        algo_envs=${PROCGEN_ENVS[*]}
+        algo_envs=${MICRORTS_ENVS[*]}
     elif [ -z "$envs" ]; then
         if [ "$algo" = "dqn" ]; then
             BENCHMARK_ENVS="${DISCRETE_ENVS[*]}"
