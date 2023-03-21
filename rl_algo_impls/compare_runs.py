@@ -194,5 +194,6 @@ def compare_runs() -> None:
     df.loc["mean"] = df.mean(numeric_only=True)
     print(df.to_markdown())
 
+
 if __name__ == "__main__":
     compare_runs()
