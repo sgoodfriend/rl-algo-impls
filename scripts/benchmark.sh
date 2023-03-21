@@ -54,7 +54,7 @@ for algo in $(echo $algos); do
     elif [ "$microrts" = "t" ]; then
         MICRORTS_ENVS=(
             "MicrortsMining-v1"
-            "MicrortsAttackSparseReward-v1"
+            "MicrortsAttackShapedReward-v1"
             "MicrortsRandomEnemyShapedReward3-v1"
         )
         algo_envs=${MICRORTS_ENVS[*]}
