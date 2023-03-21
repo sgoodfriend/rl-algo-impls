@@ -65,6 +65,8 @@ for algo in $(echo $algos); do
             BENCHMARK_ENVS="${DISCRETE_ENVS[*]} ${BOX_ENVS[*]}"
         fi
         algo_envs=${BENCHMARK_ENVS[*]}
+    else
+        algo_envs=$envs
     fi
 
     bash scripts/train_loop.sh -a $algo -e "$algo_envs" -p $project_name -s "$seeds" | xargs -I CMD -P $n_jobs bash -c CMD
