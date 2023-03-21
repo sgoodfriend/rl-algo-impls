@@ -52,7 +52,7 @@ def publish(
                 no_print_returns=True,
                 wandb_run_path="/".join(r.path),
             ),
-            os.path.dirname(__file__),
+            os.getcwd(),
         )
         for r in runs
     ]
