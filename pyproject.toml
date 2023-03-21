@@ -1,6 +1,6 @@
 [project]
 name = "rl_algo_impls"
-version = "0.0.5"
+version = "0.0.6"
 description = "Implementations of reinforcement learning algorithms"
 authors = [
     {name = "Scott Goodfriend", email = "goodfriend.scott@gmail.com"},
@@ -55,6 +55,10 @@ procgen = [
     "gym3",
     "glfw >= 1.12.0, < 1.13",
     "procgen; platform_machine=='x86_64'",
+]
+microrts = [
+    "numpy < 1.24.0", # Support for gym-microrts < 0.6.0
+    "gym-microrts == 0.2.0",
 ]
 
 [project.urls]

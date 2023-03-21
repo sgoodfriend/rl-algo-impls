@@ -6,12 +6,13 @@ do
         -p) project_name=$2 ;;
         -s) seeds=$2 ;;
         -e) envs=$2 ;;
-        --procgen) procgen=t
+        --procgen) procgen=t ;;
+        --microrts) microrts=t ;;
     esac
     shift
 done
 
-algos="${algos:-ppo}"
+algos="${algos:-ppo a2c dqn vpg}"
 n_jobs="${n_jobs:-6}"
 project_name="${project_name:-rl-algo-impls-benchmarks}"
 seeds="${seeds:-1 2 3}"
@@ -42,25 +43,28 @@ BOX_ENVS=(
 )
 
 for algo in $(echo $algos); do
-    if [ "$algo" = "dqn" ]; then
-        BENCHMARK_ENVS="${DISCRETE_ENVS[*]}"
-    else
-        BENCHMARK_ENVS="${DISCRETE_ENVS[*]} ${BOX_ENVS[*]}"
-    fi
-    algo_envs=$envs
-    if [ -z "$algo_envs" ]; then
-        echo "-e unspecified; therefore, benchmark training on ${BENCHMARK_ENVS[*]}"
-        algo_envs=${BENCHMARK_ENVS[*]}
-    fi
-
-    PROCGEN_ENVS=(
-        "procgen-coinrun-easy"
-        "procgen-starpilot-easy"
-        "procgen-bossfight-easy"
-        "procgen-bigfish-easy"
-    )
     if [ "$procgen" = "t" ]; then
+        PROCGEN_ENVS=(
+            "procgen-coinrun-easy"
+            "procgen-starpilot-easy"
+            "procgen-bossfight-easy"
+            "procgen-bigfish-easy"
+        )
         algo_envs=${PROCGEN_ENVS[*]}
+    elif [ "$microrts" = "t" ]; then
+        MICRORTS_ENVS=(
+            "MicrortsMining-v1"
+            "MicrortsAttackShapedReward-v1"
+            "MicrortsRandomEnemyShapedReward3-v1"
+        )
+        algo_envs=${MICRORTS_ENVS[*]}
+    elif [ -z "$envs" ]; then
+        if [ "$algo" = "dqn" ]; then
+            BENCHMARK_ENVS="${DISCRETE_ENVS[*]}"
+        else
+            BENCHMARK_ENVS="${DISCRETE_ENVS[*]} ${BOX_ENVS[*]}"
+        fi
+        algo_envs=${BENCHMARK_ENVS[*]}
     fi
 
     bash scripts/train_loop.sh -a $algo -e "$algo_envs" -p $project_name -s "$seeds" | xargs -I CMD -P $n_jobs bash -c CMD

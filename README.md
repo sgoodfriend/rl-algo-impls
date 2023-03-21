@@ -166,3 +166,11 @@ python -m procgen.interactive
 
 amd64 Linux machines (e.g., Lambda Labs and Google Colab) should install procgen with
 `python -m pip install '.[procgen]'`
+
+## gym-microrts Setup
+
+```
+python -m pip install -e '.[microrts]'
+```
+
+Requires Java SDK to also be installed.

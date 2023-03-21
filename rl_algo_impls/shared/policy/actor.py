@@ -1,9 +1,11 @@
 import gym
+import numpy as np
 import torch
 import torch.nn as nn
 
 from abc import ABC, abstractmethod
-from gym.spaces import Box, Discrete
+from gym.spaces import Box, Discrete, MultiDiscrete
+from numpy.typing import NDArray
 from torch.distributions import Categorical, Distribution, Normal
 from typing import NamedTuple, Optional, Sequence, Type, TypeVar, Union
 
@@ -42,6 +44,66 @@ class CategoricalActorHead(Actor):
     def forward(self, obs: torch.Tensor, a: Optional[torch.Tensor] = None) -> PiForward:
         logits = self._fc(obs)
         pi = Categorical(logits=logits)
+        logp_a = None
+        entropy = None
+        if a is not None:
+            logp_a = pi.log_prob(a)
+            entropy = pi.entropy()
+        return PiForward(pi, logp_a, entropy)
+
+
+class MultiCategorical(Categorical):
+    def __init__(
+        self, nvec: NDArray[np.int64], probs=None, logits=None, validate_args=None
+    ):
+        # Either probs or logits should be set
+        assert (probs is not None) != (logits is not None)
+        if probs:
+            self.dists = [
+                Categorical(probs=p, validate_args=validate_args)
+                for p in torch.split(probs, nvec.tolist(), dim=1)
+            ]
+        else:
+            assert logits is not None
+            self.dists = [
+                Categorical(logits=lg, validate_args=validate_args)
+                for lg in torch.split(logits, nvec.tolist(), dim=1)
+            ]
+
+    def log_prob(self, action: torch.Tensor) -> torch.Tensor:
+        prob_stack = torch.stack(
+            [c.log_prob(a) for a, c in zip(action.T, self.dists)], dim=-1
+        )
+        return prob_stack.sum(dim=-1)
+
+    def entropy(self):
+        return torch.stack([c.entropy() for c in self.dists], dim=-1).sum(dim=-1)
+
+    def sample(self, sample_shape: torch.Size = torch.Size()):
+        return torch.stack([c.sample(sample_shape) for c in self.dists], dim=-1)
+
+
+class MultiDiscreteActorHead(Actor):
+    def __init__(
+        self,
+        nvec: NDArray[np.int64],
+        hidden_sizes: Sequence[int] = (32,),
+        activation: Type[nn.Module] = nn.ReLU,
+        init_layers_orthogonal: bool = True,
+    ) -> None:
+        super().__init__()
+        self.nvec = nvec
+        layer_sizes = tuple(hidden_sizes) + (nvec.sum(),)
+        self._fc = mlp(
+            layer_sizes,
+            activation,
+            init_layers_orthogonal=init_layers_orthogonal,
+            final_layer_gain=0.01,
+        )
+
+    def forward(self, obs: torch.Tensor, a: Optional[torch.Tensor] = None) -> PiForward:
+        logits = self._fc(obs)
+        pi = MultiCategorical(self.nvec, logits=logits)
         logp_a = None
         entropy = None
         if a is not None:
@@ -306,5 +368,12 @@ def actor_head(
                 init_layers_orthogonal=init_layers_orthogonal,
                 log_std_init=log_std_init,
             )
+    elif isinstance(action_space, MultiDiscrete):
+        return MultiDiscreteActorHead(
+            action_space.nvec,
+            hidden_sizes=hidden_sizes,
+            activation=activation,
+            init_layers_orthogonal=init_layers_orthogonal,
+        )
     else:
         raise ValueError(f"Unsupported action space: {action_space}")

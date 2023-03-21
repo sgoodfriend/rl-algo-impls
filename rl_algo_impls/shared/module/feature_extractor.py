@@ -1,4 +1,5 @@
 import gym
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -145,9 +146,40 @@ class ImpalaCnn(CnnFeatureExtractor):
         return self.seq(obs)
 
 
+class MicrortsCnn(CnnFeatureExtractor):
+    """
+    Base CNN architecture for Gym-MicroRTS
+    """
+
+    def __init__(
+        self,
+        in_channels: int,
+        activation: Type[nn.Module] = nn.ReLU,
+        init_layers_orthogonal: Optional[bool] = None,
+        **kwargs,
+    ) -> None:
+        if init_layers_orthogonal is None:
+            init_layers_orthogonal = True
+        super().__init__(in_channels, activation, init_layers_orthogonal)
+        self.cnn = nn.Sequential(
+            layer_init(
+                nn.Conv2d(in_channels, 16, kernel_size=3, stride=2),
+                init_layers_orthogonal,
+            ),
+            activation(),
+            layer_init(nn.Conv2d(16, 32, kernel_size=2), init_layers_orthogonal),
+            activation(),
+            nn.Flatten(),
+        )
+
+    def forward(self, obs: torch.Tensor) -> torch.Tensor:
+        return self.cnn(obs)
+
+
 CNN_EXTRACTORS_BY_STYLE: Dict[str, Type[CnnFeatureExtractor]] = {
     "nature": NatureCnn,
     "impala": ImpalaCnn,
+    "microrts": MicrortsCnn,
 }
 
 
@@ -173,10 +205,12 @@ class FeatureExtractor(nn.Module):
                     impala_channels=impala_channels,
                 )
 
+                range_size = np.max(obs_space.high) - np.min(obs_space.low)
+
                 def preprocess(obs: torch.Tensor) -> torch.Tensor:
                     if len(obs.shape) == 3:
                         obs = obs.unsqueeze(0)
-                    return obs.float() / 255.0
+                    return obs.float() / range_size
 
                 with torch.no_grad():
                     cnn_out = cnn(preprocess(torch.as_tensor(obs_space.sample())))
