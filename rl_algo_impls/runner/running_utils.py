@@ -84,8 +84,11 @@ def load_hyperparams(algo: str, env_id: str) -> Hyperparams:
 
     import_for_env_id(env_id)
     spec = gym.spec(env_id)
-    if "AtariEnv" in str(spec.entry_point) and "_atari" in hyperparams_dict:
+    entry_point_name = str(spec.entry_point)  # type: ignore
+    if "AtariEnv" in entry_point_name and "_atari" in hyperparams_dict:
         return Hyperparams(**hyperparams_dict["_atari"])
+    elif "gym_microrts" in entry_point_name and "_microrts" in hyperparams_dict:
+        return Hyperparams(**hyperparams_dict["_microrts"])
     else:
         raise ValueError(f"{env_id} not specified in {algo} hyperparameters file")
 
