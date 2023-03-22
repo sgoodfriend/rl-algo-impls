@@ -162,6 +162,7 @@ def publish(
             path_in_repo="",
             commit_message=f"{algo.upper()} playing {env_id} from {github_url}/tree/{commit_hash}",
             token=huggingface_token,
+            delete_patterns="*",
         )
         print(f"Pushed model to the hub: {repo_url}")
 
