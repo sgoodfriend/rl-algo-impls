@@ -54,8 +54,8 @@ def benchmark_publish() -> None:
         "--virtual-display", action="store_true", help="Use headless virtual display"
     )
     # parser.set_defaults(
-    #     wandb_tags=["benchmark_e47a44c", "host_129-146-2-230"],
-    #     wandb_report_url="https://api.wandb.ai/links/sgoodfriend/v4wd7cp5",
+    #     wandb_tags=["benchmark_2067e21", "host_155-248-199-228"],
+    #     wandb_report_url="https://api.wandb.ai/links/sgoodfriend/09frjfcs",
     #     envs=[],
     #     exclude_envs=[],
     # )
