@@ -90,7 +90,7 @@ class A2C(Algorithm):
         logprobs = np.zeros(epoch_dim, dtype=np.float32)
 
         next_obs = self.env.reset()
-        next_episode_starts = np.ones(step_dim, dtype=np.byte)
+        next_episode_starts = np.full(step_dim, True, dtype=np.bool8)
 
         timesteps_elapsed = start_timesteps
         while timesteps_elapsed < start_timesteps + train_timesteps:
