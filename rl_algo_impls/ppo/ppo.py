@@ -1,8 +1,9 @@
+import logging
 import numpy as np
 import torch
 import torch.nn as nn
 
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass
 from time import perf_counter
 from torch.optim import Adam
 from torch.utils.tensorboard.writer import SummaryWriter
@@ -10,49 +11,22 @@ from typing import List, Optional, NamedTuple, TypeVar
 
 from rl_algo_impls.shared.algorithm import Algorithm
 from rl_algo_impls.shared.callbacks.callback import Callback
-from rl_algo_impls.shared.gae import compute_advantage, compute_rtg_and_advantage
+from rl_algo_impls.shared.gae import (
+    compute_advantages,
+)
 from rl_algo_impls.shared.policy.on_policy import ActorCritic
 from rl_algo_impls.shared.schedule import (
     schedule,
     update_learning_rate,
 )
-from rl_algo_impls.shared.trajectory import Trajectory, TrajectoryAccumulator
-from rl_algo_impls.wrappers.vectorable_wrapper import VecEnv, VecEnvObs
-
-
-@dataclass
-class PPOTrajectory(Trajectory):
-    logp_a: List[float] = field(default_factory=list)
-
-    def add(
-        self,
-        obs: np.ndarray,
-        act: np.ndarray,
-        next_obs: np.ndarray,
-        rew: float,
-        terminated: bool,
-        v: float,
-        logp_a: float,
-    ):
-        super().add(obs, act, next_obs, rew, terminated, v)
-        self.logp_a.append(logp_a)
-
-
-class PPOTrajectoryAccumulator(TrajectoryAccumulator):
-    def __init__(self, num_envs: int) -> None:
-        super().__init__(num_envs, PPOTrajectory)
-
-    def step(
-        self,
-        obs: VecEnvObs,
-        action: np.ndarray,
-        next_obs: VecEnvObs,
-        reward: np.ndarray,
-        done: np.ndarray,
-        val: np.ndarray,
-        logp_a: np.ndarray,
-    ) -> None:
-        super().step(obs, action, next_obs, reward, done, val, logp_a)
+from rl_algo_impls.shared.stats import log_scalars
+from rl_algo_impls.wrappers.action_mask_wrapper import ActionMaskWrapper
+from rl_algo_impls.wrappers.vectorable_wrapper import (
+    VecEnv,
+    find_wrapper,
+    single_observation_space,
+    single_action_space,
+)
 
 
 class TrainStepStats(NamedTuple):
@@ -131,11 +105,11 @@ class PPO(Algorithm):
         vf_coef: float = 0.5,
         ppo2_vf_coef_halving: bool = True,
         max_grad_norm: float = 0.5,
-        update_rtg_between_epochs: bool = False,
         sde_sample_freq: int = -1,
     ) -> None:
         super().__init__(policy, env, device, tb_writer)
         self.policy = policy
+        self.action_masker = find_wrapper(env, ActionMaskWrapper)
 
         self.gamma = gamma
         self.gae_lambda = gae_lambda
@@ -146,7 +120,13 @@ class PPO(Algorithm):
         self.clip_range_vf_schedule = None
         if clip_range_vf:
             self.clip_range_vf_schedule = schedule(clip_range_vf_decay, clip_range_vf)
+
+        if normalize_advantage:
+            assert (
+                env.num_envs * n_steps > 1 and batch_size > 1
+            ), f"Each minibatch must be larger than 1 to support normalization"
         self.normalize_advantage = normalize_advantage
+
         self.ent_coef_schedule = schedule(ent_coef_decay, ent_coef)
         self.vf_coef = vf_coef
         self.ppo2_vf_coef_halving = ppo2_vf_coef_halving
@@ -156,181 +136,235 @@ class PPO(Algorithm):
         self.n_epochs = n_epochs
         self.sde_sample_freq = sde_sample_freq
 
-        self.update_rtg_between_epochs = update_rtg_between_epochs
-
     def learn(
         self: PPOSelf,
-        total_timesteps: int,
+        train_timesteps: int,
         callback: Optional[Callback] = None,
+        total_timesteps: Optional[int] = None,
+        start_timesteps: int = 0,
     ) -> PPOSelf:
-        obs = self.env.reset()
-        ts_elapsed = 0
-        while ts_elapsed < total_timesteps:
+        if total_timesteps is None:
+            total_timesteps = train_timesteps
+        assert start_timesteps + train_timesteps <= total_timesteps
+
+        epoch_dim = (self.n_steps, self.env.num_envs)
+        step_dim = (self.env.num_envs,)
+        obs_space = single_observation_space(self.env)
+        act_space = single_action_space(self.env)
+
+        next_obs = self.env.reset()
+        next_action_masks = (
+            self.action_masker.action_masks() if self.action_masker else None
+        )
+        next_episode_starts = np.full(step_dim, True, dtype=np.bool8)
+
+        obs = np.zeros(epoch_dim + obs_space.shape, dtype=obs_space.dtype)  # type: ignore
+        actions = np.zeros(epoch_dim + act_space.shape, dtype=act_space.dtype)  # type: ignore
+        rewards = np.zeros(epoch_dim, dtype=np.float32)
+        episode_starts = np.zeros(epoch_dim, dtype=np.bool8)
+        values = np.zeros(epoch_dim, dtype=np.float32)
+        logprobs = np.zeros(epoch_dim, dtype=np.float32)
+        action_masks = (
+            np.zeros(
+                (self.n_steps,) + next_action_masks.shape, dtype=next_action_masks.dtype
+            )
+            if next_action_masks is not None
+            else None
+        )
+
+        timesteps_elapsed = start_timesteps
+        while timesteps_elapsed < start_timesteps + train_timesteps:
             start_time = perf_counter()
-            accumulator = self._collect_trajectories(obs)
-            rollout_steps = self.n_steps * self.env.num_envs
-            ts_elapsed += rollout_steps
-            progress = ts_elapsed / total_timesteps
-            train_stats = self.train(accumulator.all_trajectories, progress, ts_elapsed)
-            train_stats.write_to_tensorboard(self.tb_writer, ts_elapsed)
+
+            progress = timesteps_elapsed / total_timesteps
+            ent_coef = self.ent_coef_schedule(progress)
+            learning_rate = self.lr_schedule(progress)
+            update_learning_rate(self.optimizer, learning_rate)
+            pi_clip = self.clip_range_schedule(progress)
+            chart_scalars = {
+                "learning_rate": self.optimizer.param_groups[0]["lr"],
+                "ent_coef": ent_coef,
+                "pi_clip": pi_clip,
+            }
+            if self.clip_range_vf_schedule:
+                v_clip = self.clip_range_vf_schedule(progress)
+                chart_scalars["v_clip"] = v_clip
+            else:
+                v_clip = None
+            log_scalars(self.tb_writer, "charts", chart_scalars, timesteps_elapsed)
+
+            self.policy.eval()
+            self.policy.reset_noise()
+            for s in range(self.n_steps):
+                timesteps_elapsed += self.env.num_envs
+                if self.sde_sample_freq > 0 and s > 0 and s % self.sde_sample_freq == 0:
+                    self.policy.reset_noise()
+
+                obs[s] = next_obs
+                episode_starts[s] = next_episode_starts
+                if action_masks is not None:
+                    action_masks[s] = next_action_masks
+
+                (
+                    actions[s],
+                    values[s],
+                    logprobs[s],
+                    clamped_action,
+                ) = self.policy.step(next_obs, action_masks=next_action_masks)
+                next_obs, rewards[s], next_episode_starts, _ = self.env.step(
+                    clamped_action
+                )
+                next_action_masks = (
+                    self.action_masker.action_masks() if self.action_masker else None
+                )
+
+            self.policy.train()
+
+            advantages = compute_advantages(
+                rewards,
+                values,
+                episode_starts,
+                next_episode_starts,
+                next_obs,
+                self.policy,
+                self.gamma,
+                self.gae_lambda,
+            )
+            returns = advantages + values
+
+            b_obs = torch.tensor(obs.reshape((-1,) + obs_space.shape)).to(self.device)  # type: ignore
+            b_actions = torch.tensor(actions.reshape((-1,) + act_space.shape)).to(  # type: ignore
+                self.device
+            )
+            b_logprobs = torch.tensor(logprobs.reshape(-1)).to(self.device)
+            b_action_masks = (
+                torch.tensor(action_masks.reshape((-1,) + next_action_masks.shape[1:])).to(  # type: ignore
+                    self.device
+                )
+                if action_masks is not None
+                else None
+            )
+
+            b_advantages = torch.tensor(advantages.reshape(-1)).to(self.device)
+
+            y_pred = values.reshape(-1)
+            b_values = torch.tensor(y_pred).to(self.device)
+            y_true = returns.reshape(-1)
+            b_returns = torch.tensor(y_true).to(self.device)
+
+            step_stats = []
+            for _ in range(self.n_epochs):
+                b_idxs = torch.randperm(len(b_obs))
+                # Only record last epoch's stats
+                step_stats.clear()
+                for i in range(0, len(b_obs), self.batch_size):
+                    self.policy.reset_noise(self.batch_size)
+
+                    mb_idxs = b_idxs[i : i + self.batch_size]
+
+                    mb_obs = b_obs[mb_idxs]
+                    mb_actions = b_actions[mb_idxs]
+                    mb_values = b_values[mb_idxs]
+                    mb_logprobs = b_logprobs[mb_idxs]
+                    mb_action_masks = (
+                        b_action_masks[mb_idxs] if b_action_masks is not None else None
+                    )
+
+                    mb_adv = b_advantages[mb_idxs]
+                    if self.normalize_advantage:
+                        mb_adv = (mb_adv - mb_adv.mean()) / (mb_adv.std() + 1e-8)
+                    mb_returns = b_returns[mb_idxs]
+
+                    new_logprobs, entropy, new_values = self.policy(
+                        mb_obs, mb_actions, action_masks=mb_action_masks
+                    )
+
+                    logratio = new_logprobs - mb_logprobs
+                    ratio = torch.exp(logratio)
+                    clipped_ratio = torch.clamp(ratio, min=1 - pi_clip, max=1 + pi_clip)
+                    pi_loss = torch.maximum(
+                        -ratio * mb_adv, -clipped_ratio * mb_adv
+                    ).mean()
+
+                    v_loss_unclipped = (new_values - mb_returns) ** 2
+                    if v_clip:
+                        v_loss_clipped = (
+                            mb_values
+                            + torch.clamp(new_values - mb_values, -v_clip, v_clip)
+                            - mb_returns
+                        ) ** 2
+                        v_loss = torch.max(v_loss_unclipped, v_loss_clipped).mean()
+                    else:
+                        v_loss = v_loss_unclipped.mean()
+
+                    if self.ppo2_vf_coef_halving:
+                        v_loss *= 0.5
+
+                    entropy_loss = -entropy.mean()
+
+                    loss = pi_loss + ent_coef * entropy_loss + self.vf_coef * v_loss
+
+                    self.optimizer.zero_grad()
+                    loss.backward()
+                    nn.utils.clip_grad_norm_(
+                        self.policy.parameters(), self.max_grad_norm
+                    )
+                    self.optimizer.step()
+
+                    with torch.no_grad():
+                        approx_kl = ((ratio - 1) - logratio).mean().cpu().numpy().item()
+                        clipped_frac = (
+                            ((ratio - 1).abs() > pi_clip)
+                            .float()
+                            .mean()
+                            .cpu()
+                            .numpy()
+                            .item()
+                        )
+                        val_clipped_frac = (
+                            ((new_values - mb_values).abs() > v_clip)
+                            .float()
+                            .mean()
+                            .cpu()
+                            .numpy()
+                            .item()
+                            if v_clip
+                            else 0
+                        )
+
+                    step_stats.append(
+                        TrainStepStats(
+                            loss.item(),
+                            pi_loss.item(),
+                            v_loss.item(),
+                            entropy_loss.item(),
+                            approx_kl,
+                            clipped_frac,
+                            val_clipped_frac,
+                        )
+                    )
+
+            var_y = np.var(y_true).item()
+            explained_var = (
+                np.nan if var_y == 0 else 1 - np.var(y_true - y_pred).item() / var_y
+            )
+            TrainStats(step_stats, explained_var).write_to_tensorboard(
+                self.tb_writer, timesteps_elapsed
+            )
+
             end_time = perf_counter()
+            rollout_steps = self.n_steps * self.env.num_envs
             self.tb_writer.add_scalar(
                 "train/steps_per_second",
                 rollout_steps / (end_time - start_time),
-                ts_elapsed,
+                timesteps_elapsed,
             )
+
             if callback:
-                callback.on_step(timesteps_elapsed=rollout_steps)
+                if not callback.on_step(timesteps_elapsed=rollout_steps):
+                    logging.info(
+                        f"Callback terminated training at {timesteps_elapsed} timesteps"
+                    )
+                    break
 
         return self
-
-    def _collect_trajectories(self, obs: VecEnvObs) -> PPOTrajectoryAccumulator:
-        self.policy.eval()
-        accumulator = PPOTrajectoryAccumulator(self.env.num_envs)
-        self.policy.reset_noise()
-        for i in range(self.n_steps):
-            if self.sde_sample_freq > 0 and i > 0 and i % self.sde_sample_freq == 0:
-                self.policy.reset_noise()
-            action, value, logp_a, clamped_action = self.policy.step(obs)
-            next_obs, reward, done, _ = self.env.step(clamped_action)
-            accumulator.step(obs, action, next_obs, reward, done, value, logp_a)
-            obs = next_obs
-        return accumulator
-
-    def train(
-        self, trajectories: List[PPOTrajectory], progress: float, timesteps_elapsed: int
-    ) -> TrainStats:
-        self.policy.train()
-        learning_rate = self.lr_schedule(progress)
-        update_learning_rate(self.optimizer, learning_rate)
-        self.tb_writer.add_scalar(
-            "charts/learning_rate",
-            self.optimizer.param_groups[0]["lr"],
-            timesteps_elapsed,
-        )
-
-        pi_clip = self.clip_range_schedule(progress)
-        self.tb_writer.add_scalar("charts/pi_clip", pi_clip, timesteps_elapsed)
-        if self.clip_range_vf_schedule:
-            v_clip = self.clip_range_vf_schedule(progress)
-            self.tb_writer.add_scalar("charts/v_clip", v_clip, timesteps_elapsed)
-        else:
-            v_clip = None
-        ent_coef = self.ent_coef_schedule(progress)
-        self.tb_writer.add_scalar("charts/ent_coef", ent_coef, timesteps_elapsed)
-
-        obs = torch.as_tensor(
-            np.concatenate([np.array(t.obs) for t in trajectories]), device=self.device
-        )
-        act = torch.as_tensor(
-            np.concatenate([np.array(t.act) for t in trajectories]), device=self.device
-        )
-        rtg, adv = compute_rtg_and_advantage(
-            trajectories, self.policy, self.gamma, self.gae_lambda, self.device
-        )
-        orig_v = torch.as_tensor(
-            np.concatenate([np.array(t.v) for t in trajectories]), device=self.device
-        )
-        orig_logp_a = torch.as_tensor(
-            np.concatenate([np.array(t.logp_a) for t in trajectories]),
-            device=self.device,
-        )
-
-        step_stats = []
-        for _ in range(self.n_epochs):
-            step_stats.clear()
-            if self.update_rtg_between_epochs:
-                rtg, adv = compute_rtg_and_advantage(
-                    trajectories, self.policy, self.gamma, self.gae_lambda, self.device
-                )
-            else:
-                adv = compute_advantage(
-                    trajectories, self.policy, self.gamma, self.gae_lambda, self.device
-                )
-            idxs = torch.randperm(len(obs))
-            for i in range(0, len(obs), self.batch_size):
-                mb_idxs = idxs[i : i + self.batch_size]
-                mb_adv = adv[mb_idxs]
-                if self.normalize_advantage:
-                    mb_adv = (mb_adv - mb_adv.mean(-1)) / (mb_adv.std(-1) + 1e-8)
-                self.policy.reset_noise(self.batch_size)
-                step_stats.append(
-                    self._train_step(
-                        pi_clip,
-                        v_clip,
-                        ent_coef,
-                        obs[mb_idxs],
-                        act[mb_idxs],
-                        rtg[mb_idxs],
-                        mb_adv,
-                        orig_v[mb_idxs],
-                        orig_logp_a[mb_idxs],
-                    )
-                )
-
-        y_pred, y_true = orig_v.cpu().numpy(), rtg.cpu().numpy()
-        var_y = np.var(y_true).item()
-        explained_var = (
-            np.nan if var_y == 0 else 1 - np.var(y_true - y_pred).item() / var_y
-        )
-
-        return TrainStats(step_stats, explained_var)
-
-    def _train_step(
-        self,
-        pi_clip: float,
-        v_clip: Optional[float],
-        ent_coef: float,
-        obs: torch.Tensor,
-        act: torch.Tensor,
-        rtg: torch.Tensor,
-        adv: torch.Tensor,
-        orig_v: torch.Tensor,
-        orig_logp_a: torch.Tensor,
-    ) -> TrainStepStats:
-        logp_a, entropy, v = self.policy(obs, act)
-        logratio = logp_a - orig_logp_a
-        ratio = torch.exp(logratio)
-        clip_ratio = torch.clamp(ratio, min=1 - pi_clip, max=1 + pi_clip)
-        pi_loss = torch.maximum(-ratio * adv, -clip_ratio * adv).mean()
-
-        v_loss_unclipped = (v - rtg) ** 2
-        if v_clip:
-            v_loss_clipped = (
-                orig_v + torch.clamp(v - orig_v, -v_clip, v_clip) - rtg
-            ) ** 2
-            v_loss = torch.max(v_loss_unclipped, v_loss_clipped).mean()
-        else:
-            v_loss = v_loss_unclipped.mean()
-        if self.ppo2_vf_coef_halving:
-            v_loss *= 0.5
-
-        entropy_loss = -entropy.mean()
-
-        loss = pi_loss + ent_coef * entropy_loss + self.vf_coef * v_loss
-
-        self.optimizer.zero_grad()
-        loss.backward()
-        nn.utils.clip_grad_norm_(self.policy.parameters(), self.max_grad_norm)
-        self.optimizer.step()
-
-        with torch.no_grad():
-            approx_kl = ((ratio - 1) - logratio).mean().cpu().numpy().item()
-            clipped_frac = (
-                ((ratio - 1).abs() > pi_clip).float().mean().cpu().numpy().item()
-            )
-            val_clipped_frac = (
-                (((v - orig_v).abs() > v_clip).float().mean().cpu().numpy().item())
-                if v_clip
-                else 0
-            )
-
-        return TrainStepStats(
-            loss.item(),
-            pi_loss.item(),
-            v_loss.item(),
-            entropy_loss.item(),
-            approx_kl,
-            clipped_frac,
-            val_clipped_frac,
-        )

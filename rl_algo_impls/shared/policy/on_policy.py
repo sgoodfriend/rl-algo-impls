@@ -77,7 +77,7 @@ class OnPolicy(Policy):
         ...
 
     @abstractmethod
-    def step(self, obs: VecEnvObs) -> Step:
+    def step(self, obs: VecEnvObs, action_masks: Optional[np.ndarray] = None) -> Step:
         ...
 
 
@@ -162,10 +162,13 @@ class ActorCritic(OnPolicy):
         )
 
     def _pi_forward(
-        self, obs: torch.Tensor, action: Optional[torch.Tensor] = None
+        self,
+        obs: torch.Tensor,
+        action_masks: Optional[torch.Tensor],
+        action: Optional[torch.Tensor] = None,
     ) -> Tuple[PiForward, torch.Tensor]:
         p_fe = self._feature_extractor(obs)
-        pi_forward = self._pi(p_fe, action)
+        pi_forward = self._pi(p_fe, actions=action, action_masks=action_masks)
 
         return pi_forward, p_fe
 
@@ -173,8 +176,13 @@ class ActorCritic(OnPolicy):
         v_fe = self._v_feature_extractor(obs) if self._v_feature_extractor else p_fc
         return self._v(v_fe)
 
-    def forward(self, obs: torch.Tensor, action: torch.Tensor) -> ACForward:
-        (_, logp_a, entropy), p_fc = self._pi_forward(obs, action)
+    def forward(
+        self,
+        obs: torch.Tensor,
+        action: torch.Tensor,
+        action_masks: Optional[torch.Tensor] = None,
+    ) -> ACForward:
+        (_, logp_a, entropy), p_fc = self._pi_forward(obs, action_masks, action=action)
         v = self._v_forward(obs, p_fc)
 
         assert logp_a is not None
@@ -192,10 +200,11 @@ class ActorCritic(OnPolicy):
             v = self._v(fe)
         return v.cpu().numpy()
 
-    def step(self, obs: VecEnvObs) -> Step:
+    def step(self, obs: VecEnvObs, action_masks: Optional[np.ndarray] = None) -> Step:
         o = self._as_tensor(obs)
+        a_masks = self._as_tensor(action_masks) if action_masks is not None else None
         with torch.no_grad():
-            (pi, _, _), p_fc = self._pi_forward(o)
+            (pi, _, _), p_fc = self._pi_forward(o, action_masks=a_masks)
             a = pi.sample()
             logp_a = pi.log_prob(a)
 
@@ -205,13 +214,21 @@ class ActorCritic(OnPolicy):
         clamped_a_np = clamp_actions(a_np, self.action_space, self.squash_output)
         return Step(a_np, v.cpu().numpy(), logp_a.cpu().numpy(), clamped_a_np)
 
-    def act(self, obs: np.ndarray, deterministic: bool = True) -> np.ndarray:
+    def act(
+        self,
+        obs: np.ndarray,
+        deterministic: bool = True,
+        action_masks: Optional[np.ndarray] = None,
+    ) -> np.ndarray:
         if not deterministic:
-            return self.step(obs).clamped_a
+            return self.step(obs, action_masks=action_masks).clamped_a
         else:
             o = self._as_tensor(obs)
+            a_masks = (
+                self._as_tensor(action_masks) if action_masks is not None else None
+            )
             with torch.no_grad():
-                (pi, _, _), _ = self._pi_forward(o)
+                (pi, _, _), _ = self._pi_forward(o, action_masks=a_masks)
                 a = pi.mode
             return clamp_actions(a.cpu().numpy(), self.action_space, self.squash_output)
 

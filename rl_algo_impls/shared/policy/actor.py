@@ -6,8 +6,8 @@ import torch.nn as nn
 from abc import ABC, abstractmethod
 from gym.spaces import Box, Discrete, MultiDiscrete
 from numpy.typing import NDArray
-from torch.distributions import Categorical, Distribution, Normal
-from typing import NamedTuple, Optional, Sequence, Type, TypeVar, Union
+from torch.distributions import Categorical, Distribution, Normal, constraints
+from typing import Dict, NamedTuple, Optional, Sequence, Type, TypeVar, Union
 
 from rl_algo_impls.shared.module.module import mlp
 
@@ -20,7 +20,12 @@ class PiForward(NamedTuple):
 
 class Actor(nn.Module, ABC):
     @abstractmethod
-    def forward(self, obs: torch.Tensor, a: Optional[torch.Tensor] = None) -> PiForward:
+    def forward(
+        self,
+        obs: torch.Tensor,
+        actions: Optional[torch.Tensor] = None,
+        action_masks: Optional[torch.Tensor] = None,
+    ) -> PiForward:
         ...
 
 
@@ -41,34 +46,53 @@ class CategoricalActorHead(Actor):
             final_layer_gain=0.01,
         )
 
-    def forward(self, obs: torch.Tensor, a: Optional[torch.Tensor] = None) -> PiForward:
+    def forward(
+        self,
+        obs: torch.Tensor,
+        actions: Optional[torch.Tensor] = None,
+        action_masks: Optional[torch.Tensor] = None,
+    ) -> PiForward:
         logits = self._fc(obs)
-        pi = Categorical(logits=logits)
+        pi = MaskedCategorical(logits=logits, mask=action_masks)
         logp_a = None
         entropy = None
-        if a is not None:
-            logp_a = pi.log_prob(a)
+        if actions is not None:
+            logp_a = pi.log_prob(actions)
             entropy = pi.entropy()
         return PiForward(pi, logp_a, entropy)
 
 
-class MultiCategorical(Categorical):
+class MultiCategorical(Distribution):
     def __init__(
-        self, nvec: NDArray[np.int64], probs=None, logits=None, validate_args=None
+        self,
+        nvec: NDArray[np.int64],
+        probs=None,
+        logits=None,
+        validate_args=None,
+        masks: Optional[torch.Tensor] = None,
     ):
         # Either probs or logits should be set
-        assert (probs is not None) != (logits is not None)
+        assert (probs is None) != (logits is None)
+        masks_split = (
+            torch.split(masks, nvec.tolist(), dim=1)
+            if masks is not None
+            else [None] * len(nvec)
+        )
         if probs:
             self.dists = [
-                Categorical(probs=p, validate_args=validate_args)
-                for p in torch.split(probs, nvec.tolist(), dim=1)
+                MaskedCategorical(probs=p, validate_args=validate_args, mask=m)
+                for p, m in zip(torch.split(probs, nvec.tolist(), dim=1), masks_split)
             ]
+            param = probs
         else:
             assert logits is not None
             self.dists = [
-                Categorical(logits=lg, validate_args=validate_args)
-                for lg in torch.split(logits, nvec.tolist(), dim=1)
+                MaskedCategorical(logits=lg, validate_args=validate_args, mask=m)
+                for lg, m in zip(torch.split(logits, nvec.tolist(), dim=1), masks_split)
             ]
+            param = logits
+        batch_shape = param.size()[:-1] if param.ndimension() > 1 else torch.Size()
+        super().__init__(batch_shape=batch_shape, validate_args=validate_args)
 
     def log_prob(self, action: torch.Tensor) -> torch.Tensor:
         prob_stack = torch.stack(
@@ -81,6 +105,34 @@ class MultiCategorical(Categorical):
 
     def sample(self, sample_shape: torch.Size = torch.Size()):
         return torch.stack([c.sample(sample_shape) for c in self.dists], dim=-1)
+
+    @property
+    def arg_constraints(self) -> Dict[str, constraints.Constraint]:
+        # Constraints handled by child distributions in dist
+        return {}
+
+
+class MaskedCategorical(Categorical):
+    def __init__(
+        self,
+        probs=None,
+        logits=None,
+        validate_args=None,
+        mask: Optional[torch.Tensor] = None,
+    ):
+        if mask is not None:
+            assert logits is not None, "mask requires logits and not probs"
+            logits = torch.where(mask, logits, -1e8)
+        self.mask = mask
+        super().__init__(probs, logits, validate_args)
+
+    def entropy(self) -> torch.Tensor:
+        if self.mask is None:
+            return super().entropy()
+        # If mask set, then use approximation for entropy
+        p_log_p = self.logits * self.probs
+        masked = torch.where(self.mask, p_log_p, 0)
+        return -masked.sum(-1)
 
 
 class MultiDiscreteActorHead(Actor):
@@ -101,13 +153,18 @@ class MultiDiscreteActorHead(Actor):
             final_layer_gain=0.01,
         )
 
-    def forward(self, obs: torch.Tensor, a: Optional[torch.Tensor] = None) -> PiForward:
+    def forward(
+        self,
+        obs: torch.Tensor,
+        actions: Optional[torch.Tensor] = None,
+        action_masks: Optional[torch.Tensor] = None,
+    ) -> PiForward:
         logits = self._fc(obs)
-        pi = MultiCategorical(self.nvec, logits=logits)
+        pi = MultiCategorical(self.nvec, logits=logits, masks=action_masks)
         logp_a = None
         entropy = None
-        if a is not None:
-            logp_a = pi.log_prob(a)
+        if actions is not None:
+            logp_a = pi.log_prob(actions)
             entropy = pi.entropy()
         return PiForward(pi, logp_a, entropy)
 
@@ -146,12 +203,20 @@ class GaussianActorHead(Actor):
         std = torch.exp(self.log_std)
         return GaussianDistribution(mu, std)
 
-    def forward(self, obs: torch.Tensor, a: Optional[torch.Tensor] = None) -> PiForward:
+    def forward(
+        self,
+        obs: torch.Tensor,
+        actions: Optional[torch.Tensor] = None,
+        action_masks: Optional[torch.Tensor] = None,
+    ) -> PiForward:
+        assert (
+            not action_masks
+        ), f"{self.__class__.__name__} does not support action_masks"
         pi = self._distribution(obs)
         logp_a = None
         entropy = None
-        if a is not None:
-            logp_a = pi.log_prob(a)
+        if actions is not None:
+            logp_a = pi.log_prob(actions)
             entropy = pi.entropy()
         return PiForward(pi, logp_a, entropy)
 
@@ -311,12 +376,20 @@ class StateDependentNoiseActorHead(Actor):
             ones = ones.to(self.device)
         return ones * std
 
-    def forward(self, obs: torch.Tensor, a: Optional[torch.Tensor] = None) -> PiForward:
+    def forward(
+        self,
+        obs: torch.Tensor,
+        actions: Optional[torch.Tensor] = None,
+        action_masks: Optional[torch.Tensor] = None,
+    ) -> PiForward:
+        assert (
+            not action_masks
+        ), f"{self.__class__.__name__} does not support action_masks"
         pi = self._distribution(obs)
         logp_a = None
         entropy = None
-        if a is not None:
-            logp_a = pi.log_prob(a)
+        if actions is not None:
+            logp_a = pi.log_prob(actions)
             entropy = -logp_a if self.bijector else sum_independent_dims(pi.entropy())
         return PiForward(pi, logp_a, entropy)
 

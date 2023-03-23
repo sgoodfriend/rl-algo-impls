@@ -51,6 +51,7 @@ class EnvHyperparams:
     initial_steps_to_truncate: Optional[int] = None
     clip_atari_rewards: bool = True
     normalize_type: Optional[str] = None
+    mask_actions: bool = False
 
 
 HyperparamsSelf = TypeVar("HyperparamsSelf", bound="Hyperparams")

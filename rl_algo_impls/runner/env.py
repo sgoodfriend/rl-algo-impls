@@ -20,6 +20,7 @@ from typing import Callable, Optional
 
 from rl_algo_impls.runner.config import Config, EnvHyperparams
 from rl_algo_impls.shared.policy.policy import VEC_NORMALIZE_FILENAME
+from rl_algo_impls.wrappers.action_mask_wrapper import ActionMaskWrapper
 from rl_algo_impls.wrappers.atari_wrappers import (
     EpisodicLifeEnv,
     FireOnLifeStarttEnv,
@@ -113,6 +114,7 @@ def _make_vec_env(
         initial_steps_to_truncate,
         clip_atari_rewards,
         normalize_type,
+        mask_actions,
     ) = astuple(hparams)
 
     import_for_env_id(config.env_id)
@@ -193,6 +195,8 @@ def _make_vec_env(
         envs = SyncVectorEnvRenderCompat(envs)
     if env_type == "sb3vec":
         envs = IsVectorEnv(envs)
+    if mask_actions:
+        envs = ActionMaskWrapper(envs)
     if training:
         assert tb_writer
         envs = EpisodeStatsWriter(
@@ -260,6 +264,8 @@ def _make_procgen_env(
         _,  # video_step_interval
         _,  # initial_steps_to_truncate
         _,  # clip_atari_rewards
+        _,  # normalize_type
+        _,  # mask_actions
     ) = astuple(hparams)
 
     seed = config.seed(training=training)

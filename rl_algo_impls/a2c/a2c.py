@@ -10,6 +10,7 @@ from typing import Optional, TypeVar
 
 from rl_algo_impls.shared.algorithm import Algorithm
 from rl_algo_impls.shared.callbacks.callback import Callback
+from rl_algo_impls.shared.gae import compute_advantages
 from rl_algo_impls.shared.policy.on_policy import ActorCritic
 from rl_algo_impls.shared.schedule import schedule, update_learning_rate
 from rl_algo_impls.shared.stats import log_scalars
@@ -84,7 +85,7 @@ class A2C(Algorithm):
         obs = np.zeros(epoch_dim + obs_space.shape, dtype=obs_space.dtype)
         actions = np.zeros(epoch_dim + act_space.shape, dtype=act_space.dtype)
         rewards = np.zeros(epoch_dim, dtype=np.float32)
-        episode_starts = np.zeros(epoch_dim, dtype=np.byte)
+        episode_starts = np.zeros(epoch_dim, dtype=np.bool8)
         values = np.zeros(epoch_dim, dtype=np.float32)
         logprobs = np.zeros(epoch_dim, dtype=np.float32)
 
@@ -126,23 +127,16 @@ class A2C(Algorithm):
                     clamped_action
                 )
 
-            advantages = np.zeros(epoch_dim, dtype=np.float32)
-            last_gae_lam = 0
-            for t in reversed(range(self.n_steps)):
-                if t == self.n_steps - 1:
-                    next_nonterminal = 1.0 - next_episode_starts
-                    next_value = self.policy.value(next_obs)
-                else:
-                    next_nonterminal = 1.0 - episode_starts[t + 1]
-                    next_value = values[t + 1]
-                delta = (
-                    rewards[t] + self.gamma * next_value * next_nonterminal - values[t]
-                )
-                last_gae_lam = (
-                    delta
-                    + self.gamma * self.gae_lambda * next_nonterminal * last_gae_lam
-                )
-                advantages[t] = last_gae_lam
+            advantages = compute_advantages(
+                rewards,
+                values,
+                episode_starts,
+                next_episode_starts,
+                next_obs,
+                self.policy,
+                self.gamma,
+                self.gae_lambda,
+            )
             returns = advantages + values
 
             b_obs = torch.tensor(obs.reshape((-1,) + obs_space.shape)).to(self.device)
