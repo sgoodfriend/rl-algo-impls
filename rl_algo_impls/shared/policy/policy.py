@@ -46,7 +46,12 @@ class Policy(nn.Module, ABC):
         return self
 
     @abstractmethod
-    def act(self, obs: VecEnvObs, deterministic: bool = True) -> np.ndarray:
+    def act(
+        self,
+        obs: VecEnvObs,
+        deterministic: bool = True,
+        action_masks: Optional[np.ndarray] = None,
+    ) -> np.ndarray:
         ...
 
     def save(self, path: str) -> None:

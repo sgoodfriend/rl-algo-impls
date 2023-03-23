@@ -5,6 +5,7 @@ from typing import NamedTuple, Sequence
 
 from rl_algo_impls.shared.policy.on_policy import OnPolicy
 from rl_algo_impls.shared.trajectory import Trajectory
+from rl_algo_impls.wrappers.vectorable_wrapper import VecEnvObs
 
 
 class RtgAdvantage(NamedTuple):
@@ -19,7 +20,7 @@ def discounted_cumsum(x: np.ndarray, gamma: float) -> np.ndarray:
     return dc
 
 
-def compute_advantage(
+def compute_advantage_from_trajectories(
     trajectories: Sequence[Trajectory],
     policy: OnPolicy,
     gamma: float,
@@ -40,7 +41,7 @@ def compute_advantage(
     )
 
 
-def compute_rtg_and_advantage(
+def compute_rtg_and_advantage_from_trajectories(
     trajectories: Sequence[Trajectory],
     policy: OnPolicy,
     gamma: float,
@@ -65,3 +66,29 @@ def compute_rtg_and_advantage(
         ),
         torch.as_tensor(np.concatenate(advantages), dtype=torch.float32, device=device),
     )
+
+
+def compute_advantages(
+    rewards: np.ndarray,
+    values: np.ndarray,
+    episode_starts: np.ndarray,
+    next_episode_starts: np.ndarray,
+    next_obs: VecEnvObs,
+    policy: OnPolicy,
+    gamma: float,
+    gae_lambda: float,
+) -> np.ndarray:
+    advantages = np.zeros_like(rewards)
+    last_gae_lam = 0
+    n_steps = advantages.shape[0]
+    for t in reversed(range(n_steps)):
+        if t == n_steps - 1:
+            next_nonterminal = 1.0 - next_episode_starts
+            next_value = policy.value(next_obs)
+        else:
+            next_nonterminal = 1.0 - episode_starts[t + 1]
+            next_value = values[t + 1]
+        delta = rewards[t] + gamma * next_value * next_nonterminal - values[t]
+        last_gae_lam = delta + gamma * gae_lambda * next_nonterminal * last_gae_lam
+        advantages[t] = last_gae_lam
+    return advantages

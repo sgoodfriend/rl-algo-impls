@@ -10,7 +10,7 @@ from typing import Optional, Sequence, TypeVar
 
 from rl_algo_impls.shared.algorithm import Algorithm
 from rl_algo_impls.shared.callbacks.callback import Callback
-from rl_algo_impls.shared.gae import compute_rtg_and_advantage, compute_advantage
+from rl_algo_impls.shared.gae import compute_rtg_and_advantage_from_trajectories
 from rl_algo_impls.shared.trajectory import Trajectory, TrajectoryAccumulator
 from rl_algo_impls.vpg.policy import VPGActorCritic
 from rl_algo_impls.wrappers.vectorable_wrapper import VecEnv
@@ -58,7 +58,6 @@ class VanillaPolicyGradient(Algorithm):
         max_grad_norm: float = 10.0,
         n_steps: int = 4_000,
         sde_sample_freq: int = -1,
-        update_rtg_between_v_iters: bool = False,
         ent_coef: float = 0.0,
     ) -> None:
         super().__init__(policy, env, device, tb_writer)
@@ -73,7 +72,6 @@ class VanillaPolicyGradient(Algorithm):
         self.n_steps = n_steps
         self.train_v_iters = train_v_iters
         self.sde_sample_freq = sde_sample_freq
-        self.update_rtg_between_v_iters = update_rtg_between_v_iters
 
         self.ent_coef = ent_coef
 
@@ -118,7 +116,7 @@ class VanillaPolicyGradient(Algorithm):
         act = torch.as_tensor(
             np.concatenate([np.array(t.act) for t in trajectories]), device=self.device
         )
-        rtg, adv = compute_rtg_and_advantage(
+        rtg, adv = compute_rtg_and_advantage_from_trajectories(
             trajectories, self.policy, self.gamma, self.gae_lambda, self.device
         )
 
@@ -135,10 +133,6 @@ class VanillaPolicyGradient(Algorithm):
 
         v_loss = 0
         for _ in range(self.train_v_iters):
-            if self.update_rtg_between_v_iters:
-                rtg = compute_advantage(
-                    trajectories, self.policy, self.gamma, self.gae_lambda, self.device
-                )
             v = self.policy.v(obs)
             v_loss = ((v - rtg) ** 2).mean()
 

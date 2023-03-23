@@ -9,8 +9,9 @@ from typing import List, Optional, Union
 from rl_algo_impls.shared.callbacks.callback import Callback
 from rl_algo_impls.shared.policy.policy import Policy
 from rl_algo_impls.shared.stats import Episode, EpisodeAccumulator, EpisodesStats
+from rl_algo_impls.wrappers.action_mask_wrapper import ActionMaskWrapper
 from rl_algo_impls.wrappers.vec_episode_recorder import VecEpisodeRecorder
-from rl_algo_impls.wrappers.vectorable_wrapper import VecEnv
+from rl_algo_impls.wrappers.vectorable_wrapper import VecEnv, find_wrapper
 
 
 class EvaluateAccumulator(EpisodeAccumulator):
@@ -83,8 +84,13 @@ def evaluate(
     )
 
     obs = env.reset()
+    action_masker = find_wrapper(env, ActionMaskWrapper)
     while not episodes.is_done():
-        act = policy.act(obs, deterministic=deterministic)
+        act = policy.act(
+            obs,
+            deterministic=deterministic,
+            action_masks=action_masker.action_masks() if action_masker else None,
+        )
         obs, rew, done, _ = env.step(act)
         episodes.step(rew, done)
         if render:

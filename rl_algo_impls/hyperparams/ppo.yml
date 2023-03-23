@@ -218,6 +218,7 @@ _microrts: &microrts-defaults
   env_hyperparams: &microrts-env-defaults
     n_envs: 8
     vec_env_class: sync
+    mask_actions: true
   policy_hyperparams:
     <<: *atari-policy-defaults
     cnn_style: microrts
@@ -227,10 +228,23 @@ _microrts: &microrts-defaults
     clip_range_decay: none
     clip_range_vf: 0.1
 
-debug-MicrortsMining-v1:
+_no-mask-microrts: &no-mask-microrts-defaults
   <<: *microrts-defaults
+  env_hyperparams:
+    <<: *microrts-env-defaults
+    mask_actions: false
+
+MicrortsMining-v1-NoMask:
+  <<: *no-mask-microrts-defaults
   env_id: MicrortsMining-v1
-  device: cpu
+
+MicrortsAttackShapedReward-v1-NoMask:
+  <<: *no-mask-microrts-defaults
+  env_id: MicrortsAttackShapedReward-v1
+
+MicrortsRandomEnemyShapedReward3-v1-NoMask:
+  <<: *no-mask-microrts-defaults
+  env_id: MicrortsRandomEnemyShapedReward3-v1
 
 HalfCheetahBulletEnv-v0: &pybullet-defaults
   n_timesteps: !!float 2e6
