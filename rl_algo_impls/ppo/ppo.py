@@ -106,6 +106,8 @@ class PPO(Algorithm):
         ppo2_vf_coef_halving: bool = True,
         max_grad_norm: float = 0.5,
         sde_sample_freq: int = -1,
+        update_advantage_between_epochs: bool = False,
+        update_returns_between_epochs: bool = False,
     ) -> None:
         super().__init__(policy, env, device, tb_writer)
         self.policy = policy
@@ -135,6 +137,9 @@ class PPO(Algorithm):
         self.batch_size = batch_size
         self.n_epochs = n_epochs
         self.sde_sample_freq = sde_sample_freq
+
+        self.update_advantage_between_epochs = update_advantage_between_epochs
+        self.update_returns_between_epochs = update_returns_between_epochs
 
     def learn(
         self: PPOSelf,
@@ -220,18 +225,6 @@ class PPO(Algorithm):
 
             self.policy.train()
 
-            advantages = compute_advantages(
-                rewards,
-                values,
-                episode_starts,
-                next_episode_starts,
-                next_obs,
-                self.policy,
-                self.gamma,
-                self.gae_lambda,
-            )
-            returns = advantages + values
-
             b_obs = torch.tensor(obs.reshape((-1,) + obs_space.shape)).to(self.device)  # type: ignore
             b_actions = torch.tensor(actions.reshape((-1,) + act_space.shape)).to(  # type: ignore
                 self.device
@@ -245,15 +238,33 @@ class PPO(Algorithm):
                 else None
             )
 
-            b_advantages = torch.tensor(advantages.reshape(-1)).to(self.device)
-
             y_pred = values.reshape(-1)
             b_values = torch.tensor(y_pred).to(self.device)
-            y_true = returns.reshape(-1)
-            b_returns = torch.tensor(y_true).to(self.device)
 
             step_stats = []
-            for _ in range(self.n_epochs):
+            # Define variables that will definitely be set through the first epoch
+            advantages: np.ndarray = None  # type: ignore
+            b_advantages: torch.Tensor = None  # type: ignore
+            y_true: np.ndarray = None  # type: ignore
+            b_returns: torch.Tensor = None  # type: ignore
+            for e in range(self.n_epochs):
+                if e == 0 or self.update_advantage_between_epochs:
+                    advantages = compute_advantages(
+                        rewards,
+                        values,
+                        episode_starts,
+                        next_episode_starts,
+                        next_obs,
+                        self.policy,
+                        self.gamma,
+                        self.gae_lambda,
+                    )
+                    b_advantages = torch.tensor(advantages.reshape(-1)).to(self.device)
+                if e == 0 or self.update_returns_between_epochs:
+                    returns = advantages + values
+                    y_true = returns.reshape(-1)
+                    b_returns = torch.tensor(y_true).to(self.device)
+
                 b_idxs = torch.randperm(len(b_obs))
                 # Only record last epoch's stats
                 step_stats.clear()
