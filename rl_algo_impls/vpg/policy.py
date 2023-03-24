@@ -99,7 +99,10 @@ class VPGActorCritic(OnPolicy):
             v = self.v(o)
         return v.cpu().numpy()
 
-    def step(self, obs: VecEnvObs) -> Step:
+    def step(self, obs: VecEnvObs, action_masks: Optional[np.ndarray] = None) -> Step:
+        assert (
+            action_masks is None
+        ), f"action_masks not currently supported in {self.__class__.__name__}"
         o = self._as_tensor(obs)
         with torch.no_grad():
             pi, _, _ = self.pi(o)
@@ -112,7 +115,15 @@ class VPGActorCritic(OnPolicy):
         clamped_a_np = clamp_actions(a_np, self.action_space, self.squash_output)
         return Step(a_np, v.cpu().numpy(), logp_a.cpu().numpy(), clamped_a_np)
 
-    def act(self, obs: np.ndarray, deterministic: bool = True) -> np.ndarray:
+    def act(
+        self,
+        obs: np.ndarray,
+        deterministic: bool = True,
+        action_masks: Optional[np.ndarray] = None,
+    ) -> np.ndarray:
+        assert (
+            action_masks is None
+        ), f"action_masks not currently supported in {self.__class__.__name__}"
         if not deterministic:
             return self.step(obs).clamped_a
         else:

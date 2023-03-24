@@ -39,9 +39,16 @@ class DQNPolicy(Policy):
         )
 
     def act(
-        self, obs: VecEnvObs, eps: float = 0, deterministic: bool = True
+        self,
+        obs: VecEnvObs,
+        eps: float = 0,
+        deterministic: bool = True,
+        action_masks: Optional[np.ndarray] = None,
     ) -> np.ndarray:
         assert eps == 0 if deterministic else eps >= 0
+        assert (
+            action_masks is None
+        ), f"action_masks not currently supported in {self.__class__.__name__}"
         if not deterministic and np.random.random() < eps:
             return np.array(
                 [
