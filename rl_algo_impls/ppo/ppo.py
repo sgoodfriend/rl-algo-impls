@@ -106,7 +106,7 @@ class PPO(Algorithm):
         ppo2_vf_coef_halving: bool = False,
         max_grad_norm: float = 0.5,
         sde_sample_freq: int = -1,
-        update_advantage_between_epochs: bool = False,
+        update_advantage_between_epochs: bool = True,
         update_returns_between_epochs: bool = False,
     ) -> None:
         super().__init__(policy, env, device, tb_writer)
