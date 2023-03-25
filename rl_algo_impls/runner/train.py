@@ -14,7 +14,7 @@ from typing import Any, Dict, Optional, Sequence
 
 from rl_algo_impls.shared.callbacks.eval_callback import EvalCallback
 from rl_algo_impls.runner.config import Config, EnvHyperparams, RunArgs
-from rl_algo_impls.runner.env import make_env, make_eval_env
+from rl_algo_impls.shared.vec_env import make_env, make_eval_env
 from rl_algo_impls.runner.running_utils import (
     ALGOS,
     load_hyperparams,

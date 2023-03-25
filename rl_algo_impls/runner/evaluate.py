@@ -4,7 +4,7 @@ import shutil
 from dataclasses import dataclass
 from typing import NamedTuple, Optional
 
-from rl_algo_impls.runner.env import make_eval_env
+from rl_algo_impls.shared.vec_env import make_eval_env
 from rl_algo_impls.runner.config import Config, EnvHyperparams, Hyperparams, RunArgs
 from rl_algo_impls.runner.running_utils import (
     load_hyperparams,

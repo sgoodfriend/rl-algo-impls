@@ -17,7 +17,7 @@ from typing import Callable, List, NamedTuple, Optional, Sequence, Union
 
 from rl_algo_impls.a2c.optimize import sample_params as a2c_sample_params
 from rl_algo_impls.runner.config import Config, EnvHyperparams, RunArgs
-from rl_algo_impls.runner.env import make_env, make_eval_env
+from rl_algo_impls.shared.vec_env import make_env, make_eval_env
 from rl_algo_impls.runner.running_utils import (
     base_parser,
     load_hyperparams,

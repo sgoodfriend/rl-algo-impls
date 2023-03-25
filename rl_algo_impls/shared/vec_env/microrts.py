@@ -1,0 +1,70 @@
+from dataclasses import astuple
+from typing import Optional
+
+import gym
+import numpy as np
+from torch.utils.tensorboard.writer import SummaryWriter
+
+from rl_algo_impls.runner.config import Config, EnvHyperparams
+from rl_algo_impls.wrappers.episode_stats_writer import EpisodeStatsWriter
+from rl_algo_impls.wrappers.is_vector_env import IsVectorEnv
+from rl_algo_impls.wrappers.microrts_stats_recorder import MicrortsStatsRecorder
+from rl_algo_impls.wrappers.vectorable_wrapper import VecEnv
+
+
+def make_microrts_env(
+    config: Config,
+    hparams: EnvHyperparams,
+    training: bool = True,
+    render: bool = False,
+    normalize_load_path: Optional[str] = None,
+    tb_writer: Optional[SummaryWriter] = None,
+) -> VecEnv:
+    import gym_microrts
+    from gym_microrts import microrts_ai
+    from gym_microrts.envs.vec_env import MicroRTSGridModeVecEnv
+
+    (
+        _,  # env_type
+        n_envs,
+        _,  # frame_stack
+        make_kwargs,
+        _,  # no_reward_timeout_steps
+        _,  # no_reward_fire_steps
+        _,  # vec_env_class
+        _,  # normalize
+        _,  # normalize_kwargs,
+        rolling_length,
+        _,  # train_record_video
+        _,  # video_step_interval
+        _,  # initial_steps_to_truncate
+        _,  # clip_atari_rewards
+        _,  # normalize_type
+        _,  # mask_actions
+    ) = astuple(hparams)
+
+    seed = config.seed(training=training)
+
+    make_kwargs = make_kwargs or {}
+    if "num_selfplay_envs" not in make_kwargs:
+        make_kwargs["num_selfplay_envs"] = 0
+    if "num_bot_envs" not in make_kwargs:
+        make_kwargs["num_bot_envs"] = n_envs - make_kwargs["num_selfplay_envs"]
+    if "reward_weight" in make_kwargs:
+        make_kwargs["reward_weight"] = np.array(make_kwargs["reward_weight"])
+    envs = MicroRTSGridModeVecEnv(**make_kwargs)
+    envs = IsVectorEnv(envs)
+
+    if seed is not None:
+        envs.action_space.seed(seed)
+        envs.observation_space.seed(seed)
+
+    envs = gym.wrappers.RecordEpisodeStatistics(envs)
+    envs = MicrortsStatsRecorder(envs, config.algo_hyperparams.get("gamma", 0.99))
+    if training:
+        assert tb_writer
+        envs = EpisodeStatsWriter(
+            envs, tb_writer, training=training, rolling_length=rolling_length
+        )
+
+    return envs

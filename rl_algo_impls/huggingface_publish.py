@@ -19,7 +19,7 @@ from pyvirtualdisplay.display import Display
 from rl_algo_impls.publish.markdown_format import EvalTableData, model_card_text
 from rl_algo_impls.runner.config import EnvHyperparams
 from rl_algo_impls.runner.evaluate import EvalArgs, evaluate_model
-from rl_algo_impls.runner.env import make_eval_env
+from rl_algo_impls.shared.vec_env import make_eval_env
 from rl_algo_impls.shared.callbacks.eval_callback import evaluate
 from rl_algo_impls.wrappers.vec_episode_recorder import VecEpisodeRecorder
 
