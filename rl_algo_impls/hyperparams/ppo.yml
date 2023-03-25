@@ -219,15 +219,17 @@ _microrts: &microrts-defaults
     n_envs: 8
     vec_env_class: sync
     mask_actions: true
-  policy_hyperparams:
+  policy_hyperparams: &microrts-policy-defaults
     <<: *atari-policy-defaults
     cnn_style: microrts
     cnn_feature_dim: 128
-  algo_hyperparams:
+  algo_hyperparams: &microrts-algo-defaults
     <<: *atari-algo-defaults
     clip_range_decay: none
     clip_range_vf: 0.1
     ppo2_vf_coef_halving: true
+  eval_params:
+    deterministic: true
 
 _no-mask-microrts: &no-mask-microrts-defaults
   <<: *microrts-defaults
@@ -246,6 +248,34 @@ MicrortsAttackShapedReward-v1-NoMask:
 MicrortsRandomEnemyShapedReward3-v1-NoMask:
   <<: *no-mask-microrts-defaults
   env_id: MicrortsRandomEnemyShapedReward3-v1
+
+_microrts_ai: &microrts-ai-defaults
+  <<: *microrts-defaults
+  n_timesteps: !!float 100e6
+  env_hyperparams:
+    n_envs: 24
+    env_class: microrts
+    make_kwargs:
+      num_selfplay_envs: 0
+      max_steps: 2000
+      render_theme: 2
+      map_path: maps/16x16/basesWorkers16x16.xml
+      reward_weight: [10.0, 1.0, 1.0, 0.2, 1.0, 4.0]
+  policy_hyperparams:
+    <<: *microrts-policy-defaults
+    cnn_feature_dim: 256
+  algo_hyperparams:
+    <<: *microrts-algo-defaults
+    learning_rate: !!float 2.5e-4
+    learning_rate_decay: linear
+    n_steps: 256
+    batch_size: 1536
+    n_epochs: 4
+    ent_coef: 0.01
+    vf_coef: 0.5
+    max_grad_norm: 0.5
+    clip_range: 0.1
+    clip_range_vf: 0.1
 
 HalfCheetahBulletEnv-v0: &pybullet-defaults
   n_timesteps: !!float 2e6
