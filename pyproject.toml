@@ -60,6 +60,10 @@ microrts = [
     "numpy < 1.24.0", # Support for gym-microrts < 0.6.0
     "gym-microrts == 0.3.2",
 ]
+jupyter = [
+    "jupyter",
+    "notebook"
+]
 
 [project.urls]
 "Homepage" = "https://github.com/sgoodfriend/rl-algo-impls"
