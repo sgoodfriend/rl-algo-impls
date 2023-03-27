@@ -254,7 +254,7 @@ _microrts_ai: &microrts-ai-defaults
   n_timesteps: !!float 100e6
   env_hyperparams:
     n_envs: 24
-    env_class: microrts
+    env_type: microrts
     make_kwargs:
       num_selfplay_envs: 0
       max_steps: 2000
