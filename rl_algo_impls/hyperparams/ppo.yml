@@ -229,7 +229,7 @@ _microrts: &microrts-defaults
     clip_range_vf: 0.1
     ppo2_vf_coef_halving: true
   eval_params:
-    deterministic: true
+    deterministic: false # Good idea because MultiCategorical mode isn't great
 
 _no-mask-microrts: &no-mask-microrts-defaults
   <<: *microrts-defaults
