@@ -6,7 +6,9 @@ import numpy as np
 from torch.utils.tensorboard.writer import SummaryWriter
 
 from rl_algo_impls.runner.config import Config, EnvHyperparams
+from rl_algo_impls.wrappers.action_mask_wrapper import MicrortsMaskWrapper
 from rl_algo_impls.wrappers.episode_stats_writer import EpisodeStatsWriter
+from rl_algo_impls.wrappers.hwc_to_chw_observation import HwcToChwObservation
 from rl_algo_impls.wrappers.is_vector_env import IsVectorEnv
 from rl_algo_impls.wrappers.microrts_stats_recorder import MicrortsStatsRecorder
 from rl_algo_impls.wrappers.vectorable_wrapper import VecEnv
@@ -22,7 +24,10 @@ def make_microrts_env(
 ) -> VecEnv:
     import gym_microrts
     from gym_microrts import microrts_ai
-    from gym_microrts.envs.vec_env import MicroRTSGridModeVecEnv
+
+    from rl_algo_impls.shared.vec_env.microrts_compat import (
+        MicroRTSGridModeVecEnvCompat,
+    )
 
     (
         _,  # env_type
@@ -41,6 +46,7 @@ def make_microrts_env(
         _,  # clip_atari_rewards
         _,  # normalize_type
         _,  # mask_actions
+        bots,
     ) = astuple(hparams)
 
     seed = config.seed(training=training)
@@ -52,8 +58,22 @@ def make_microrts_env(
         make_kwargs["num_bot_envs"] = n_envs - make_kwargs["num_selfplay_envs"]
     if "reward_weight" in make_kwargs:
         make_kwargs["reward_weight"] = np.array(make_kwargs["reward_weight"])
-    envs = MicroRTSGridModeVecEnv(**make_kwargs)
+    if bots:
+        ai2s = []
+        for ai_name, n in bots.items():
+            for _ in range(n):
+                if len(ai2s) >= make_kwargs["num_bot_envs"]:
+                    break
+                ai = getattr(microrts_ai, ai_name)
+                assert ai, f"{ai_name} not in microrts_ai"
+                ai2s.append(ai)
+    else:
+        ai2s = [microrts_ai.randomAI for _ in make_kwargs["num_bot_envs"]]
+    make_kwargs["ai2s"] = ai2s
+    envs = MicroRTSGridModeVecEnvCompat(**make_kwargs)
+    envs = HwcToChwObservation(envs)
     envs = IsVectorEnv(envs)
+    envs = MicrortsMaskWrapper(envs)
 
     if seed is not None:
         envs.action_space.seed(seed)

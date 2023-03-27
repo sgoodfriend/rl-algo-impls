@@ -15,6 +15,7 @@ from stable_baselines3.common.vec_env.vec_normalize import VecNormalize
 from torch.utils.tensorboard.writer import SummaryWriter
 
 from rl_algo_impls.runner.config import Config, EnvHyperparams
+from rl_algo_impls.shared.policy.policy import VEC_NORMALIZE_FILENAME
 from rl_algo_impls.shared.vec_env.utils import (
     import_for_env_id,
     is_atari,
@@ -23,8 +24,7 @@ from rl_algo_impls.shared.vec_env.utils import (
     is_gym_procgen,
     is_microrts,
 )
-from rl_algo_impls.shared.policy.policy import VEC_NORMALIZE_FILENAME
-from rl_algo_impls.wrappers.action_mask_wrapper import ActionMaskWrapper
+from rl_algo_impls.wrappers.action_mask_wrapper import SingleActionMaskWrapper
 from rl_algo_impls.wrappers.atari_wrappers import (
     ClipRewardEnv,
     EpisodicLifeEnv,
@@ -72,6 +72,7 @@ def make_vec_env(
         clip_atari_rewards,
         normalize_type,
         mask_actions,
+        _,  # bots
     ) = astuple(hparams)
 
     import_for_env_id(config.env_id)
@@ -153,7 +154,7 @@ def make_vec_env(
     if env_type == "sb3vec":
         envs = IsVectorEnv(envs)
     if mask_actions:
-        envs = ActionMaskWrapper(envs)
+        envs = SingleActionMaskWrapper(envs)
     if training:
         assert tb_writer
         envs = EpisodeStatsWriter(

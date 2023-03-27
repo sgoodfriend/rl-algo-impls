@@ -1,17 +1,20 @@
 import itertools
-import numpy as np
 import os
-
 from time import perf_counter
-from torch.utils.tensorboard.writer import SummaryWriter
 from typing import List, Optional, Union
+
+import numpy as np
+from torch.utils.tensorboard.writer import SummaryWriter
 
 from rl_algo_impls.shared.callbacks.callback import Callback
 from rl_algo_impls.shared.policy.policy import Policy
 from rl_algo_impls.shared.stats import Episode, EpisodeAccumulator, EpisodesStats
-from rl_algo_impls.wrappers.action_mask_wrapper import ActionMaskWrapper
+from rl_algo_impls.wrappers.action_mask_wrapper import (
+    SingleActionMaskWrapper,
+    find_action_masker,
+)
 from rl_algo_impls.wrappers.vec_episode_recorder import VecEpisodeRecorder
-from rl_algo_impls.wrappers.vectorable_wrapper import VecEnv, find_wrapper
+from rl_algo_impls.wrappers.vectorable_wrapper import VecEnv
 
 
 class EvaluateAccumulator(EpisodeAccumulator):
@@ -84,7 +87,7 @@ def evaluate(
     )
 
     obs = env.reset()
-    action_masker = find_wrapper(env, ActionMaskWrapper)
+    action_masker = find_action_masker(env)
     while not episodes.is_done():
         act = policy.act(
             obs,

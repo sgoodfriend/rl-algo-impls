@@ -1,8 +1,8 @@
+from typing import Dict, List, Optional, Tuple, Type, TypeVar, Union
+
 import numpy as np
 from gym import Env, Space, Wrapper
-
 from stable_baselines3.common.vec_env import VecEnv as SB3VecEnv
-from typing import Dict, List, Optional, Type, TypeVar, Tuple, Union
 
 VecEnvObs = Union[np.ndarray, Dict[str, np.ndarray], Tuple[np.ndarray, ...]]
 VecEnvStepReturn = Tuple[VecEnvObs, np.ndarray, np.ndarray, List[Dict]]

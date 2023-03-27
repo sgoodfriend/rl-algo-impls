@@ -1,11 +1,11 @@
-import numpy as np
-
 from typing import Any, Dict, List
 
+import numpy as np
+
 from rl_algo_impls.wrappers.vectorable_wrapper import (
-    VecotarableWrapper,
-    VecEnvStepReturn,
     VecEnvObs,
+    VecEnvStepReturn,
+    VecotarableWrapper,
 )
 
 
@@ -20,8 +20,8 @@ class MicrortsStatsRecorder(VecotarableWrapper):
         self.raw_rewards = [[] for _ in range(self.num_envs)]
         return obs
 
-    def step(self) -> VecEnvStepReturn:
-        obs, rews, dones, infos = self.env.step()
+    def step(self, actions: np.ndarray) -> VecEnvStepReturn:
+        obs, rews, dones, infos = self.env.step(actions)
         self._update_infos(infos, dones)
         return obs, rews, dones, infos
 

@@ -1,9 +1,9 @@
+from dataclasses import astuple
+from typing import Optional
+
 import gym
 import numpy as np
-
-from dataclasses import astuple
 from torch.utils.tensorboard.writer import SummaryWriter
-from typing import Optional
 
 from rl_algo_impls.runner.config import Config, EnvHyperparams
 from rl_algo_impls.wrappers.episode_stats_writer import EpisodeStatsWriter
@@ -20,7 +20,7 @@ def make_procgen_env(
     normalize_load_path: Optional[str] = None,
     tb_writer: Optional[SummaryWriter] = None,
 ) -> VecEnv:
-    from gym3 import ViewerWrapper, ExtractDictObWrapper
+    from gym3 import ExtractDictObWrapper, ViewerWrapper
     from procgen.env import ProcgenGym3Env, ToBaselinesVecEnv
 
     (
@@ -40,6 +40,7 @@ def make_procgen_env(
         _,  # clip_atari_rewards
         _,  # normalize_type
         _,  # mask_actions
+        _,  # bots
     ) = astuple(hparams)
 
     seed = config.seed(training=training)

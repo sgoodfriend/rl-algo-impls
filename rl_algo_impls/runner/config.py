@@ -2,11 +2,9 @@ import dataclasses
 import inspect
 import itertools
 import os
-
-from datetime import datetime
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Any, Dict, List, Optional, Type, TypeVar, Union
-
 
 RunArgsSelf = TypeVar("RunArgsSelf", bound="RunArgs")
 
@@ -52,6 +50,7 @@ class EnvHyperparams:
     clip_atari_rewards: bool = True
     normalize_type: Optional[str] = None
     mask_actions: bool = False
+    bots: Optional[Dict[str, int]] = None
 
 
 HyperparamsSelf = TypeVar("HyperparamsSelf", bound="Hyperparams")
