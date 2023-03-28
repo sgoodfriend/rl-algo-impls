@@ -58,7 +58,11 @@ procgen = [
 ]
 microrts = [
     "numpy < 1.24.0", # Support for gym-microrts < 0.6.0
-    "gym-microrts == 0.2.0",
+    "gym-microrts == 0.3.2",
+]
+jupyter = [
+    "jupyter",
+    "notebook"
 ]
 
 [project.urls]
@@ -67,3 +71,6 @@ microrts = [
 [build-system]
 requires = ["setuptools==65.5.0", "setuptools-scm"]
 build-backend = "setuptools.build_meta"
+
+[tool.isort]
+profile = "black" 

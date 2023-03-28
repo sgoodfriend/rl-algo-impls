@@ -2,11 +2,9 @@ import dataclasses
 import inspect
 import itertools
 import os
-
-from datetime import datetime
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Any, Dict, List, Optional, Type, TypeVar, Union
-
 
 RunArgsSelf = TypeVar("RunArgsSelf", bound="RunArgs")
 
@@ -52,6 +50,7 @@ class EnvHyperparams:
     clip_atari_rewards: bool = True
     normalize_type: Optional[str] = None
     mask_actions: bool = False
+    bots: Optional[Dict[str, int]] = None
 
 
 HyperparamsSelf = TypeVar("HyperparamsSelf", bound="Hyperparams")
@@ -66,6 +65,7 @@ class Hyperparams:
     algo_hyperparams: Dict[str, Any] = dataclasses.field(default_factory=dict)
     eval_params: Dict[str, Any] = dataclasses.field(default_factory=dict)
     env_id: Optional[str] = None
+    additional_keys_to_log: List[str] = dataclasses.field(default_factory=list)
 
     @classmethod
     def from_dict_with_extra_fields(
@@ -120,6 +120,10 @@ class Config:
     @property
     def env_id(self) -> str:
         return self.hyperparams.env_id or self.args.env
+
+    @property
+    def additional_keys_to_log(self) -> List[str]:
+        return self.hyperparams.additional_keys_to_log
 
     def model_name(self, include_seed: bool = True) -> str:
         # Use arg env name instead of environment name

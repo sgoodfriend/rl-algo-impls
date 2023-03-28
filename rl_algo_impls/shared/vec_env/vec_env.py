@@ -1,30 +1,34 @@
-import gym
-import numpy as np
 import os
+from dataclasses import astuple
+from typing import Callable, Optional
 
-from dataclasses import asdict, astuple
+import gym
 from gym.vector.async_vector_env import AsyncVectorEnv
 from gym.vector.sync_vector_env import SyncVectorEnv
-from gym.wrappers.resize_observation import ResizeObservation
-from gym.wrappers.gray_scale_observation import GrayScaleObservation
 from gym.wrappers.frame_stack import FrameStack
-from stable_baselines3.common.atari_wrappers import (
-    MaxAndSkipEnv,
-    NoopResetEnv,
-)
+from gym.wrappers.gray_scale_observation import GrayScaleObservation
+from gym.wrappers.resize_observation import ResizeObservation
+from stable_baselines3.common.atari_wrappers import MaxAndSkipEnv, NoopResetEnv
 from stable_baselines3.common.vec_env.dummy_vec_env import DummyVecEnv
 from stable_baselines3.common.vec_env.subproc_vec_env import SubprocVecEnv
 from stable_baselines3.common.vec_env.vec_normalize import VecNormalize
 from torch.utils.tensorboard.writer import SummaryWriter
-from typing import Callable, Optional
 
 from rl_algo_impls.runner.config import Config, EnvHyperparams
 from rl_algo_impls.shared.policy.policy import VEC_NORMALIZE_FILENAME
-from rl_algo_impls.wrappers.action_mask_wrapper import ActionMaskWrapper
+from rl_algo_impls.shared.vec_env.utils import (
+    import_for_env_id,
+    is_atari,
+    is_bullet_env,
+    is_car_racing,
+    is_gym_procgen,
+    is_microrts,
+)
+from rl_algo_impls.wrappers.action_mask_wrapper import SingleActionMaskWrapper
 from rl_algo_impls.wrappers.atari_wrappers import (
+    ClipRewardEnv,
     EpisodicLifeEnv,
     FireOnLifeStarttEnv,
-    ClipRewardEnv,
 )
 from rl_algo_impls.wrappers.episode_record_video import EpisodeRecordVideo
 from rl_algo_impls.wrappers.episode_stats_writer import EpisodeStatsWriter
@@ -43,54 +47,7 @@ from rl_algo_impls.wrappers.vectorable_wrapper import VecEnv
 from rl_algo_impls.wrappers.video_compat_wrapper import VideoCompatWrapper
 
 
-def make_env(
-    config: Config,
-    hparams: EnvHyperparams,
-    training: bool = True,
-    render: bool = False,
-    normalize_load_path: Optional[str] = None,
-    tb_writer: Optional[SummaryWriter] = None,
-) -> VecEnv:
-    if hparams.env_type == "procgen":
-        return _make_procgen_env(
-            config,
-            hparams,
-            training=training,
-            render=render,
-            normalize_load_path=normalize_load_path,
-            tb_writer=tb_writer,
-        )
-    elif hparams.env_type in {"sb3vec", "gymvec"}:
-        return _make_vec_env(
-            config,
-            hparams,
-            training=training,
-            render=render,
-            normalize_load_path=normalize_load_path,
-            tb_writer=tb_writer,
-        )
-    else:
-        raise ValueError(f"env_type {hparams.env_type} not supported")
-
-
-def make_eval_env(
-    config: Config,
-    hparams: EnvHyperparams,
-    override_n_envs: Optional[int] = None,
-    **kwargs,
-) -> VecEnv:
-    kwargs = kwargs.copy()
-    kwargs["training"] = False
-    if override_n_envs is not None:
-        hparams_kwargs = asdict(hparams)
-        hparams_kwargs["n_envs"] = override_n_envs
-        if override_n_envs == 1:
-            hparams_kwargs["vec_env_class"] = "sync"
-        hparams = EnvHyperparams(**hparams_kwargs)
-    return make_env(config, hparams, **kwargs)
-
-
-def _make_vec_env(
+def make_vec_env(
     config: Config,
     hparams: EnvHyperparams,
     training: bool = True,
@@ -115,6 +72,7 @@ def _make_vec_env(
         clip_atari_rewards,
         normalize_type,
         mask_actions,
+        _,  # bots
     ) = astuple(hparams)
 
     import_for_env_id(config.env_id)
@@ -196,7 +154,7 @@ def _make_vec_env(
     if env_type == "sb3vec":
         envs = IsVectorEnv(envs)
     if mask_actions:
-        envs = ActionMaskWrapper(envs)
+        envs = SingleActionMaskWrapper(envs)
     if training:
         assert tb_writer
         envs = EpisodeStatsWriter(
@@ -236,99 +194,3 @@ def _make_vec_env(
                 f"normalize_type {normalize_type} not supported (sb3 or gymlike)"
             )
     return envs
-
-
-def _make_procgen_env(
-    config: Config,
-    hparams: EnvHyperparams,
-    training: bool = True,
-    render: bool = False,
-    normalize_load_path: Optional[str] = None,
-    tb_writer: Optional[SummaryWriter] = None,
-) -> VecEnv:
-    from gym3 import ViewerWrapper, ExtractDictObWrapper
-    from procgen.env import ProcgenGym3Env, ToBaselinesVecEnv
-
-    (
-        _,  # env_type
-        n_envs,
-        _,  # frame_stack
-        make_kwargs,
-        _,  # no_reward_timeout_steps
-        _,  # no_reward_fire_steps
-        _,  # vec_env_class
-        normalize,
-        normalize_kwargs,
-        rolling_length,
-        _,  # train_record_video
-        _,  # video_step_interval
-        _,  # initial_steps_to_truncate
-        _,  # clip_atari_rewards
-        _,  # normalize_type
-        _,  # mask_actions
-    ) = astuple(hparams)
-
-    seed = config.seed(training=training)
-
-    make_kwargs = make_kwargs or {}
-    make_kwargs["render_mode"] = "rgb_array"
-    if seed is not None:
-        make_kwargs["rand_seed"] = seed
-
-    envs = ProcgenGym3Env(n_envs, config.env_id, **make_kwargs)
-    envs = ExtractDictObWrapper(envs, key="rgb")
-    if render:
-        envs = ViewerWrapper(envs, info_key="rgb")
-    envs = ToBaselinesVecEnv(envs)
-    envs = IsVectorEnv(envs)
-    # TODO: Handle Grayscale and/or FrameStack
-    envs = HwcToChwObservation(envs)
-
-    envs = gym.wrappers.RecordEpisodeStatistics(envs)
-
-    if seed is not None:
-        envs.action_space.seed(seed)
-        envs.observation_space.seed(seed)
-
-    if training:
-        assert tb_writer
-        envs = EpisodeStatsWriter(
-            envs, tb_writer, training=training, rolling_length=rolling_length
-        )
-    if normalize and training:
-        normalize_kwargs = normalize_kwargs or {}
-        envs = gym.wrappers.NormalizeReward(envs)
-        clip_obs = normalize_kwargs.get("clip_reward", 10.0)
-        envs = gym.wrappers.TransformReward(
-            envs, lambda r: np.clip(r, -clip_obs, clip_obs)
-        )
-
-    return envs  # type: ignore
-
-
-def import_for_env_id(env_id: str) -> None:
-    if "BulletEnv" in env_id:
-        import pybullet_envs
-    if "Microrts" in env_id:
-        import gym_microrts
-
-
-def is_atari(config: Config) -> bool:
-    spec = gym.spec(config.env_id)
-    return "AtariEnv" in str(spec.entry_point)
-
-
-def is_bullet_env(config: Config) -> bool:
-    return "BulletEnv" in config.env_id
-
-
-def is_car_racing(config: Config) -> bool:
-    return "CarRacing" in config.env_id
-
-
-def is_gym_procgen(config: Config) -> bool:
-    return "procgen" in config.env_id
-
-
-def is_microrts(config: Config) -> bool:
-    return "Microrts" in config.env_id

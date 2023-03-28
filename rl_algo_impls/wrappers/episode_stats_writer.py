@@ -1,14 +1,14 @@
-import numpy as np
-
 from collections import deque
+from typing import Any, Dict, List, Optional
+
+import numpy as np
 from torch.utils.tensorboard.writer import SummaryWriter
-from typing import Any, Dict, List
 
 from rl_algo_impls.shared.stats import Episode, EpisodesStats
 from rl_algo_impls.wrappers.vectorable_wrapper import (
-    VecotarableWrapper,
-    VecEnvStepReturn,
     VecEnvObs,
+    VecEnvStepReturn,
+    VecotarableWrapper,
 )
 
 
@@ -19,6 +19,7 @@ class EpisodeStatsWriter(VecotarableWrapper):
         tb_writer: SummaryWriter,
         training: bool = True,
         rolling_length=100,
+        additional_keys_to_log: Optional[List[str]] = None,
     ):
         super().__init__(env)
         self.training = training
@@ -28,6 +29,9 @@ class EpisodeStatsWriter(VecotarableWrapper):
         self.total_steps = 0
         self.episode_cnt = 0
         self.last_episode_cnt_print = 0
+        self.additional_keys_to_log = (
+            additional_keys_to_log if additional_keys_to_log is not None else []
+        )
 
     def step(self, actions: np.ndarray) -> VecEnvStepReturn:
         obs, rews, dones, infos = self.env.step(actions)
@@ -46,7 +50,8 @@ class EpisodeStatsWriter(VecotarableWrapper):
         for info in infos:
             ep_info = info.get("episode")
             if ep_info:
-                episode = Episode(ep_info["r"], ep_info["l"])
+                additional_info = {k: info[k] for k in self.additional_keys_to_log}
+                episode = Episode(ep_info["r"], ep_info["l"], info=additional_info)
                 step_episodes.append(episode)
                 self.episodes.append(episode)
         if step_episodes:

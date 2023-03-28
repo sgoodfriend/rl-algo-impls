@@ -6,7 +6,8 @@ os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
 from multiprocessing import Pool
 
 from rl_algo_impls.runner.running_utils import base_parser
-from rl_algo_impls.runner.train import train as runner_train, TrainArgs
+from rl_algo_impls.runner.train import TrainArgs
+from rl_algo_impls.runner.train import train as runner_train
 
 
 def train() -> None:

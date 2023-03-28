@@ -3,7 +3,7 @@ import optuna
 from copy import deepcopy
 
 from rl_algo_impls.runner.config import Config, Hyperparams, EnvHyperparams
-from rl_algo_impls.runner.env import make_eval_env
+from rl_algo_impls.shared.vec_env import make_eval_env
 from rl_algo_impls.shared.policy.optimize_on_policy import sample_on_policy_hyperparams
 from rl_algo_impls.tuning.optimize_env import sample_env_hyperparams
 

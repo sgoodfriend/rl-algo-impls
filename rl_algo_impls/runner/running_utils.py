@@ -1,33 +1,32 @@
 import argparse
-import gym
 import json
-import matplotlib.pyplot as plt
-import numpy as np
 import os
 import random
+from dataclasses import asdict
+from pathlib import Path
+from typing import Dict, Optional, Type, Union
+
+import gym
+import matplotlib.pyplot as plt
+import numpy as np
 import torch
 import torch.backends.cudnn
 import yaml
-
-from dataclasses import asdict
 from gym.spaces import Box, Discrete
-from pathlib import Path
 from torch.utils.tensorboard.writer import SummaryWriter
-from typing import Dict, Optional, Type, Union
-
-from rl_algo_impls.runner.config import Config, Hyperparams
-from rl_algo_impls.runner.env import import_for_env_id, is_microrts
-from rl_algo_impls.shared.algorithm import Algorithm
-from rl_algo_impls.shared.callbacks.eval_callback import EvalCallback
-from rl_algo_impls.shared.policy.on_policy import ActorCritic
-from rl_algo_impls.shared.policy.policy import Policy
 
 from rl_algo_impls.a2c.a2c import A2C
 from rl_algo_impls.dqn.dqn import DQN
 from rl_algo_impls.dqn.policy import DQNPolicy
 from rl_algo_impls.ppo.ppo import PPO
-from rl_algo_impls.vpg.vpg import VanillaPolicyGradient
+from rl_algo_impls.runner.config import Config, Hyperparams
+from rl_algo_impls.shared.algorithm import Algorithm
+from rl_algo_impls.shared.callbacks.eval_callback import EvalCallback
+from rl_algo_impls.shared.vec_env.utils import import_for_env_id, is_microrts
+from rl_algo_impls.shared.policy.on_policy import ActorCritic
+from rl_algo_impls.shared.policy.policy import Policy
 from rl_algo_impls.vpg.policy import VPGActorCritic
+from rl_algo_impls.vpg.vpg import VanillaPolicyGradient
 from rl_algo_impls.wrappers.vectorable_wrapper import VecEnv, single_observation_space
 
 ALGOS: Dict[str, Type[Algorithm]] = {

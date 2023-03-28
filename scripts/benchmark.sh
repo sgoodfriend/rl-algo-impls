@@ -9,6 +9,7 @@ do
         --procgen) procgen=t ;;
         --microrts) microrts=t ;;
         --no-mask-microrts) no_mask_microrts=t ;;
+        --microrts-ai) microrts_ai=t ;;
     esac
     shift
 done
@@ -66,6 +67,12 @@ for algo in $(echo $algos); do
             "MicrortsRandomEnemyShapedReward3-v1-NoMask"
         )
         algo_envs=${NO_MASK_MICRORTS_ENVS[*]}
+    elif [ "$microrts_ai" == "t" ]; then
+        MICRORTS_AI_ENVS=(
+            "MicrortsDefeatCoacAIShaped-v3"
+            "MicrortsDefeatCoacAIShaped-v3-diverseBots"
+        )
+        algo_envs=${MICRORTS_AI_ENVS[*]}
     elif [ -z "$envs" ]; then
         if [ "$algo" = "dqn" ]; then
             BENCHMARK_ENVS="${DISCRETE_ENVS[*]}"
