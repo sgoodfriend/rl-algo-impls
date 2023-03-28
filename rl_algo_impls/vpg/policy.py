@@ -1,21 +1,15 @@
+from typing import Optional, Sequence, Tuple
+
 import numpy as np
 import torch
 import torch.nn as nn
 
-from typing import Optional, Sequence
-
+from rl_algo_impls.shared.actor import Actor, PiForward, actor_head
 from rl_algo_impls.shared.module.feature_extractor import FeatureExtractor
-from rl_algo_impls.shared.policy.actor import (
-    PiForward,
-    Actor,
-    StateDependentNoiseActorHead,
-    actor_head,
-)
 from rl_algo_impls.shared.policy.critic import CriticHead
 from rl_algo_impls.shared.policy.on_policy import (
-    Step,
-    ACForward,
     OnPolicy,
+    Step,
     clamp_actions,
     default_hidden_sizes,
 )
@@ -23,8 +17,8 @@ from rl_algo_impls.shared.policy.policy import ACTIVATION
 from rl_algo_impls.wrappers.vectorable_wrapper import (
     VecEnv,
     VecEnvObs,
-    single_observation_space,
     single_action_space,
+    single_observation_space,
 )
 
 PI_FILE_NAME = "pi.pt"
@@ -40,6 +34,13 @@ class VPGActor(Actor):
     def forward(self, obs: torch.Tensor, a: Optional[torch.Tensor] = None) -> PiForward:
         fe = self.feature_extractor(obs)
         return self.head(fe, a)
+
+    def sample_weights(self, batch_size: int = 1) -> None:
+        self.head.sample_weights(batch_size=batch_size)
+
+    @property
+    def action_shape(self) -> Tuple[int, ...]:
+        return self.head.action_shape
 
 
 class VPGActorCritic(OnPolicy):
@@ -138,7 +139,10 @@ class VPGActorCritic(OnPolicy):
         self.reset_noise()
 
     def reset_noise(self, batch_size: Optional[int] = None) -> None:
-        if isinstance(self.pi.head, StateDependentNoiseActorHead):
-            self.pi.head.sample_weights(
-                batch_size=batch_size if batch_size else self.env.num_envs
-            )
+        self.pi.sample_weights(
+            batch_size=batch_size if batch_size else self.env.num_envs
+        )
+
+    @property
+    def action_shape(self) -> Tuple[int, ...]:
+        return self.pi.action_shape

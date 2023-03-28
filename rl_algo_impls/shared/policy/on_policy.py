@@ -1,24 +1,20 @@
+from abc import abstractmethod
+from typing import NamedTuple, Optional, Sequence, Tuple, TypeVar
+
 import gym
 import numpy as np
 import torch
-
-from abc import abstractmethod
 from gym.spaces import Box, Discrete, Space
-from typing import NamedTuple, Optional, Sequence, Tuple, TypeVar
 
+from rl_algo_impls.shared.actor import PiForward, actor_head
 from rl_algo_impls.shared.module.feature_extractor import FeatureExtractor
-from rl_algo_impls.shared.policy.actor import (
-    PiForward,
-    StateDependentNoiseActorHead,
-    actor_head,
-)
 from rl_algo_impls.shared.policy.critic import CriticHead
 from rl_algo_impls.shared.policy.policy import ACTIVATION, Policy
 from rl_algo_impls.wrappers.vectorable_wrapper import (
     VecEnv,
     VecEnvObs,
-    single_observation_space,
     single_action_space,
+    single_observation_space,
 )
 
 
@@ -80,6 +76,11 @@ class OnPolicy(Policy):
     def step(self, obs: VecEnvObs, action_masks: Optional[np.ndarray] = None) -> Step:
         ...
 
+    @property
+    @abstractmethod
+    def action_shape(self) -> Tuple[int, ...]:
+        ...
+
 
 class ActorCritic(OnPolicy):
     def __init__(
@@ -98,6 +99,7 @@ class ActorCritic(OnPolicy):
         cnn_style: str = "nature",
         cnn_layers_init_orthogonal: Optional[bool] = None,
         impala_channels: Sequence[int] = (16, 32, 32),
+        actor_head_style: str = "single",
         **kwargs,
     ) -> None:
         super().__init__(env, **kwargs)
@@ -138,6 +140,7 @@ class ActorCritic(OnPolicy):
             use_sde=use_sde,
             full_std=full_std,
             squash_output=squash_output,
+            actor_head_style=actor_head_style,
         )
 
         if not share_features_extractor:
@@ -237,7 +240,10 @@ class ActorCritic(OnPolicy):
         self.reset_noise()
 
     def reset_noise(self, batch_size: Optional[int] = None) -> None:
-        if isinstance(self._pi, StateDependentNoiseActorHead):
-            self._pi.sample_weights(
-                batch_size=batch_size if batch_size else self.env.num_envs
-            )
+        self._pi.sample_weights(
+            batch_size=batch_size if batch_size else self.env.num_envs
+        )
+
+    @property
+    def action_shape(self) -> Tuple[int, ...]:
+        return self._pi.action_shape
