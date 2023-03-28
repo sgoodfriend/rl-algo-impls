@@ -1,14 +1,17 @@
-import numpy as np
-
+import dataclasses
+from collections import defaultdict
 from dataclasses import dataclass
+from typing import Any, Dict, List, Optional, Sequence, TypeVar, Union
+
+import numpy as np
 from torch.utils.tensorboard.writer import SummaryWriter
-from typing import Dict, List, Optional, Sequence, Union, TypeVar
 
 
 @dataclass
 class Episode:
     score: float = 0
     length: int = 0
+    info: Dict[str, Dict[str, Any]] = dataclasses.field(default_factory=dict)
 
 
 StatisticSelf = TypeVar("StatisticSelf", bound="Statistic")
@@ -75,12 +78,25 @@ class EpisodesStats:
     simple: bool
     score: Statistic
     length: Statistic
+    additional_stats: Dict[str, Statistic]
 
     def __init__(self, episodes: Sequence[Episode], simple: bool = False) -> None:
         self.episodes = episodes
         self.simple = simple
         self.score = Statistic(np.array([e.score for e in episodes]))
         self.length = Statistic(np.array([e.length for e in episodes]), round_digits=0)
+        additional_values = defaultdict(list)
+        for e in self.episodes:
+            if e.info:
+                for k, v in e.info.items():
+                    if isinstance(v, dict):
+                        for k2, v2 in v.items():
+                            additional_values[f"{k}_{k2}"].append(v2)
+                    else:
+                        additional_values[k].append(v)
+        self.additional_stats = {
+            k: Statistic(np.array(values)) for k, values in additional_values.items()
+        }
 
     def __gt__(self: EpisodesStatsSelf, o: EpisodesStatsSelf) -> bool:
         return self.score > o.score
@@ -118,6 +134,8 @@ class EpisodesStats:
                     "length": self.length.mean,
                 }
             )
+            for k, addl_stats in self.additional_stats.items():
+                stats[k] = addl_stats.mean
         for name, value in stats.items():
             tb_writer.add_scalar(f"{main_tag}/{name}", value, global_step=global_step)
 
@@ -131,19 +149,19 @@ class EpisodeAccumulator:
     def episodes(self) -> List[Episode]:
         return self._episodes
 
-    def step(self, reward: np.ndarray, done: np.ndarray) -> None:
+    def step(self, reward: np.ndarray, done: np.ndarray, info: List[Dict]) -> None:
         for idx, current in enumerate(self.current_episodes):
             current.score += reward[idx]
             current.length += 1
             if done[idx]:
                 self._episodes.append(current)
                 self.current_episodes[idx] = Episode()
-                self.on_done(idx, current)
+                self.on_done(idx, current, info[idx])
 
     def __len__(self) -> int:
         return len(self.episodes)
 
-    def on_done(self, ep_idx: int, episode: Episode) -> None:
+    def on_done(self, ep_idx: int, episode: Episode, info: Dict) -> None:
         pass
 
     def stats(self) -> EpisodesStats:

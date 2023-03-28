@@ -84,7 +84,11 @@ def make_microrts_env(
     if training:
         assert tb_writer
         envs = EpisodeStatsWriter(
-            envs, tb_writer, training=training, rolling_length=rolling_length
+            envs,
+            tb_writer,
+            training=training,
+            rolling_length=rolling_length,
+            additional_keys_to_log=config.additional_keys_to_log,
         )
 
     return envs

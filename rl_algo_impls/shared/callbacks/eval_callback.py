@@ -1,7 +1,7 @@
 import itertools
 import os
 from time import perf_counter
-from typing import List, Optional, Union
+from typing import Dict, List, Optional, Union
 
 import numpy as np
 from torch.utils.tensorboard.writer import SummaryWriter
@@ -9,10 +9,7 @@ from torch.utils.tensorboard.writer import SummaryWriter
 from rl_algo_impls.shared.callbacks.callback import Callback
 from rl_algo_impls.shared.policy.policy import Policy
 from rl_algo_impls.shared.stats import Episode, EpisodeAccumulator, EpisodesStats
-from rl_algo_impls.wrappers.action_mask_wrapper import (
-    SingleActionMaskWrapper,
-    find_action_masker,
-)
+from rl_algo_impls.wrappers.action_mask_wrapper import find_action_masker
 from rl_algo_impls.wrappers.vec_episode_recorder import VecEpisodeRecorder
 from rl_algo_impls.wrappers.vectorable_wrapper import VecEnv
 
@@ -24,6 +21,7 @@ class EvaluateAccumulator(EpisodeAccumulator):
         goal_episodes: int,
         print_returns: bool = True,
         ignore_first_episode: bool = False,
+        additional_keys_to_log: Optional[List[str]] = None,
     ):
         super().__init__(num_envs)
         self.completed_episodes_by_env_idx = [[] for _ in range(num_envs)]
@@ -40,8 +38,11 @@ class EvaluateAccumulator(EpisodeAccumulator):
             self.should_record_done = should_record_done
         else:
             self.should_record_done = lambda idx: True
+        self.additional_keys_to_log = additional_keys_to_log
 
-    def on_done(self, ep_idx: int, episode: Episode) -> None:
+    def on_done(self, ep_idx: int, episode: Episode, info: Dict) -> None:
+        if self.additional_keys_to_log:
+            episode.info = {k: info[k] for k in self.additional_keys_to_log}
         if (
             self.should_record_done(ep_idx)
             and len(self.completed_episodes_by_env_idx[ep_idx])
@@ -78,12 +79,17 @@ def evaluate(
     deterministic: bool = True,
     print_returns: bool = True,
     ignore_first_episode: bool = False,
+    additional_keys_to_log: Optional[List[str]] = None,
 ) -> EpisodesStats:
     policy.sync_normalization(env)
     policy.eval()
 
     episodes = EvaluateAccumulator(
-        env.num_envs, n_episodes, print_returns, ignore_first_episode
+        env.num_envs,
+        n_episodes,
+        print_returns,
+        ignore_first_episode,
+        additional_keys_to_log=additional_keys_to_log,
     )
 
     obs = env.reset()
@@ -94,8 +100,8 @@ def evaluate(
             deterministic=deterministic,
             action_masks=action_masker.action_masks() if action_masker else None,
         )
-        obs, rew, done, _ = env.step(act)
-        episodes.step(rew, done)
+        obs, rew, done, info = env.step(act)
+        episodes.step(rew, done, info)
         if render:
             env.render()
     stats = EpisodesStats(episodes.episodes)
@@ -120,6 +126,7 @@ class EvalCallback(Callback):
         best_video_dir: Optional[str] = None,
         max_video_length: int = 3600,
         ignore_first_episode: bool = False,
+        additional_keys_to_log: Optional[List[str]] = None,
     ) -> None:
         super().__init__()
         self.policy = policy
@@ -142,8 +149,8 @@ class EvalCallback(Callback):
             os.makedirs(best_video_dir, exist_ok=True)
         self.max_video_length = max_video_length
         self.best_video_base_path = None
-
         self.ignore_first_episode = ignore_first_episode
+        self.additional_keys_to_log = additional_keys_to_log
 
     def on_step(self, timesteps_elapsed: int = 1) -> bool:
         super().on_step(timesteps_elapsed)
@@ -162,6 +169,7 @@ class EvalCallback(Callback):
             deterministic=self.deterministic,
             print_returns=print_returns or False,
             ignore_first_episode=self.ignore_first_episode,
+            additional_keys_to_log=self.additional_keys_to_log,
         )
         end_time = perf_counter()
         self.tb_writer.add_scalar(

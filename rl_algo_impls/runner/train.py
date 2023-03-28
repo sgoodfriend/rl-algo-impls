@@ -5,26 +5,26 @@ os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
 
 import dataclasses
 import shutil
-import wandb
-import yaml
-
 from dataclasses import asdict, dataclass
-from torch.utils.tensorboard.writer import SummaryWriter
 from typing import Any, Dict, Optional, Sequence
 
-from rl_algo_impls.shared.callbacks.eval_callback import EvalCallback
+import yaml
+from torch.utils.tensorboard.writer import SummaryWriter
+
+import wandb
 from rl_algo_impls.runner.config import Config, EnvHyperparams, RunArgs
-from rl_algo_impls.shared.vec_env import make_env, make_eval_env
 from rl_algo_impls.runner.running_utils import (
     ALGOS,
-    load_hyperparams,
-    set_seeds,
     get_device,
+    hparam_dict,
+    load_hyperparams,
     make_policy,
     plot_eval_callback,
-    hparam_dict,
+    set_seeds,
 )
+from rl_algo_impls.shared.callbacks.eval_callback import EvalCallback
 from rl_algo_impls.shared.stats import EpisodesStats
+from rl_algo_impls.shared.vec_env import make_env, make_eval_env
 
 
 @dataclass
@@ -94,6 +94,7 @@ def train(args: TrainArgs):
         if record_best_videos
         else None,
         best_video_dir=config.best_videos_dir,
+        additional_keys_to_log=config.additional_keys_to_log,
     )
     algo.learn(config.n_timesteps, callback=callback)
 
