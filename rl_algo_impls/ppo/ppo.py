@@ -150,6 +150,7 @@ class PPO(Algorithm):
         step_dim = (self.env.num_envs,)
         obs_space = single_observation_space(self.env)
         act_space = single_action_space(self.env)
+        act_shape = self.policy.action_shape
 
         next_obs = self.env.reset()
         next_action_masks = (
@@ -158,7 +159,7 @@ class PPO(Algorithm):
         next_episode_starts = np.full(step_dim, True, dtype=np.bool8)
 
         obs = np.zeros(epoch_dim + obs_space.shape, dtype=obs_space.dtype)  # type: ignore
-        actions = np.zeros(epoch_dim + act_space.shape, dtype=act_space.dtype)  # type: ignore
+        actions = np.zeros(epoch_dim + act_shape, dtype=act_space.dtype)  # type: ignore
         rewards = np.zeros(epoch_dim, dtype=np.float32)
         episode_starts = np.zeros(epoch_dim, dtype=np.bool8)
         values = np.zeros(epoch_dim, dtype=np.float32)
@@ -220,7 +221,7 @@ class PPO(Algorithm):
             self.policy.train()
 
             b_obs = torch.tensor(obs.reshape((-1,) + obs_space.shape)).to(self.device)  # type: ignore
-            b_actions = torch.tensor(actions.reshape((-1,) + act_space.shape)).to(  # type: ignore
+            b_actions = torch.tensor(actions.reshape((-1,) + act_shape)).to(  # type: ignore
                 self.device
             )
             b_logprobs = torch.tensor(logprobs.reshape(-1)).to(self.device)
