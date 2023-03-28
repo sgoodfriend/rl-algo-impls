@@ -270,8 +270,8 @@ _microrts_ai: &microrts-ai-defaults
     <<: *microrts-algo-defaults
     learning_rate: !!float 2.5e-4
     learning_rate_decay: linear
-    n_steps: 256
-    batch_size: 1536
+    n_steps: 512
+    batch_size: 3072
     n_epochs: 4
     ent_coef: 0.01
     vf_coef: 0.5
