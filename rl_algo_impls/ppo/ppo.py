@@ -1,31 +1,25 @@
 import logging
+from dataclasses import asdict, dataclass
+from time import perf_counter
+from typing import List, NamedTuple, Optional, TypeVar
+
 import numpy as np
 import torch
 import torch.nn as nn
-
-from dataclasses import asdict, dataclass
-from time import perf_counter
 from torch.optim import Adam
 from torch.utils.tensorboard.writer import SummaryWriter
-from typing import List, Optional, NamedTuple, TypeVar
 
 from rl_algo_impls.shared.algorithm import Algorithm
 from rl_algo_impls.shared.callbacks.callback import Callback
-from rl_algo_impls.shared.gae import (
-    compute_advantages,
-)
+from rl_algo_impls.shared.gae import compute_advantages
 from rl_algo_impls.shared.policy.on_policy import ActorCritic
-from rl_algo_impls.shared.schedule import (
-    schedule,
-    update_learning_rate,
-)
+from rl_algo_impls.shared.schedule import schedule, update_learning_rate
 from rl_algo_impls.shared.stats import log_scalars
-from rl_algo_impls.wrappers.action_mask_wrapper import ActionMaskWrapper
+from rl_algo_impls.wrappers.action_mask_wrapper import find_action_masker
 from rl_algo_impls.wrappers.vectorable_wrapper import (
     VecEnv,
-    find_wrapper,
-    single_observation_space,
     single_action_space,
+    single_observation_space,
 )
 
 
@@ -111,7 +105,7 @@ class PPO(Algorithm):
     ) -> None:
         super().__init__(policy, env, device, tb_writer)
         self.policy = policy
-        self.action_masker = find_wrapper(env, ActionMaskWrapper)
+        self.action_masker = find_action_masker(env)
 
         self.gamma = gamma
         self.gae_lambda = gae_lambda
