@@ -1,11 +1,11 @@
+from typing import Optional, Sequence, Type
+
 import gym
 import torch as th
 import torch.nn as nn
-
 from gym.spaces import Discrete
-from typing import Optional, Sequence, Type
 
-from rl_algo_impls.shared.module.feature_extractor import FeatureExtractor
+from rl_algo_impls.shared.encoder import Encoder
 from rl_algo_impls.shared.module.module import mlp
 
 
@@ -23,7 +23,7 @@ class QNetwork(nn.Module):
     ) -> None:
         super().__init__()
         assert isinstance(action_space, Discrete)
-        self._feature_extractor = FeatureExtractor(
+        self._feature_extractor = Encoder(
             observation_space,
             activation,
             cnn_feature_dim=cnn_feature_dim,

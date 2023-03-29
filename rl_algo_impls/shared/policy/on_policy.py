@@ -7,7 +7,7 @@ import torch
 from gym.spaces import Box, Discrete, Space
 
 from rl_algo_impls.shared.actor import PiForward, actor_head
-from rl_algo_impls.shared.module.feature_extractor import FeatureExtractor
+from rl_algo_impls.shared.encoder import Encoder
 from rl_algo_impls.shared.policy.critic import CriticHead
 from rl_algo_impls.shared.policy.policy import ACTIVATION, Policy
 from rl_algo_impls.wrappers.vectorable_wrapper import (
@@ -122,7 +122,7 @@ class ActorCritic(OnPolicy):
         self.action_space = action_space
         self.squash_output = squash_output
         self.share_features_extractor = share_features_extractor
-        self._feature_extractor = FeatureExtractor(
+        self._feature_extractor = Encoder(
             observation_space,
             activation,
             init_layers_orthogonal=init_layers_orthogonal,
@@ -144,7 +144,7 @@ class ActorCritic(OnPolicy):
         )
 
         if not share_features_extractor:
-            self._v_feature_extractor = FeatureExtractor(
+            self._v_feature_extractor = Encoder(
                 observation_space,
                 activation,
                 init_layers_orthogonal=init_layers_orthogonal,
