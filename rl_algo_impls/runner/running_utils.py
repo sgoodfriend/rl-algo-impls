@@ -22,9 +22,9 @@ from rl_algo_impls.ppo.ppo import PPO
 from rl_algo_impls.runner.config import Config, Hyperparams
 from rl_algo_impls.shared.algorithm import Algorithm
 from rl_algo_impls.shared.callbacks.eval_callback import EvalCallback
-from rl_algo_impls.shared.vec_env.utils import import_for_env_id, is_microrts
 from rl_algo_impls.shared.policy.on_policy import ActorCritic
 from rl_algo_impls.shared.policy.policy import Policy
+from rl_algo_impls.shared.vec_env.utils import import_for_env_id, is_microrts
 from rl_algo_impls.vpg.policy import VPGActorCritic
 from rl_algo_impls.vpg.vpg import VanillaPolicyGradient
 from rl_algo_impls.wrappers.vectorable_wrapper import VecEnv, single_observation_space
@@ -192,6 +192,8 @@ def hparam_dict(
                     flattened[key] = str(sv)
                 else:
                     flattened[key] = sv
+        elif isinstance(v, list):
+            flattened[k] = json.dumps(v)
         else:
             flattened[k] = v  # type: ignore
     return flattened  # type: ignore
