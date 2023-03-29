@@ -65,4 +65,4 @@ class CategoricalActorHead(Actor):
 
     @property
     def action_shape(self) -> Tuple[int, ...]:
-        return (1,)
+        return ()
