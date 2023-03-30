@@ -16,7 +16,7 @@ class QNetwork(nn.Module):
         action_space: gym.Space,
         hidden_sizes: Sequence[int] = [],
         activation: Type[nn.Module] = nn.ReLU,  # Used by stable-baselines3
-        cnn_feature_dim: int = 512,
+        cnn_flatten_dim: int = 512,
         cnn_style: str = "nature",
         cnn_layers_init_orthogonal: Optional[bool] = None,
         impala_channels: Sequence[int] = (16, 32, 32),
@@ -26,7 +26,7 @@ class QNetwork(nn.Module):
         self._feature_extractor = Encoder(
             observation_space,
             activation,
-            cnn_feature_dim=cnn_feature_dim,
+            cnn_flatten_dim=cnn_flatten_dim,
             cnn_style=cnn_style,
             cnn_layers_init_orthogonal=cnn_layers_init_orthogonal,
             impala_channels=impala_channels,

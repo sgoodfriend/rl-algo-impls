@@ -74,7 +74,8 @@ class VPGActorCritic(OnPolicy):
         )
         pi_head = actor_head(
             self.action_space,
-            (pi_feature_extractor.out_dim,) + tuple(hidden_sizes),
+            pi_feature_extractor.out_dim,
+            tuple(hidden_sizes),
             init_layers_orthogonal,
             activation,
             log_std_init=log_std_init,
@@ -88,7 +89,8 @@ class VPGActorCritic(OnPolicy):
             obs_space, activation, init_layers_orthogonal=init_layers_orthogonal
         )
         v_head = CriticHead(
-            (v_feature_extractor.out_dim,) + tuple(hidden_sizes),
+            v_feature_extractor.out_dim,
+            tuple(hidden_sizes),
             activation=activation,
             init_layers_orthogonal=init_layers_orthogonal,
         )

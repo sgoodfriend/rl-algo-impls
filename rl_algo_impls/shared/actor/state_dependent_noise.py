@@ -1,4 +1,4 @@
-from typing import Optional, Sequence, Tuple, Type, TypeVar, Union
+from typing import Optional, Tuple, Type, TypeVar, Union
 
 import torch
 import torch.nn as nn
@@ -87,7 +87,8 @@ class StateDependentNoiseActorHead(Actor):
     def __init__(
         self,
         act_dim: int,
-        hidden_sizes: Sequence[int] = (32,),
+        in_dim: int,
+        hidden_sizes: Tuple[int, ...] = (32,),
         activation: Type[nn.Module] = nn.Tanh,
         init_layers_orthogonal: bool = True,
         log_std_init: float = -0.5,
@@ -97,7 +98,7 @@ class StateDependentNoiseActorHead(Actor):
     ) -> None:
         super().__init__()
         self.act_dim = act_dim
-        layer_sizes = tuple(hidden_sizes) + (self.act_dim,)
+        layer_sizes = (in_dim,) + hidden_sizes + (act_dim,)
         if len(layer_sizes) == 2:
             self.latent_net = nn.Identity()
         elif len(layer_sizes) > 2:

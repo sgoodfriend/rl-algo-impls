@@ -1,9 +1,10 @@
 from typing import Optional, Sequence, Type
 
+import gym
 import torch
 import torch.nn as nn
 
-from rl_algo_impls.shared.encoder.cnn import CnnFeatureExtractor
+from rl_algo_impls.shared.encoder.cnn import FlattenedCnnEncoder
 from rl_algo_impls.shared.module.module import layer_init
 
 
@@ -53,37 +54,39 @@ class ConvSequence(nn.Module):
         return self.seq(x)
 
 
-class ImpalaCnn(CnnFeatureExtractor):
+class ImpalaCnn(FlattenedCnnEncoder):
     """
     IMPALA-style CNN architecture
     """
 
     def __init__(
         self,
-        in_channels: int,
-        activation: Type[nn.Module] = nn.ReLU,
-        init_layers_orthogonal: Optional[bool] = None,
+        obs_space: gym.Space,
+        activation: Type[nn.Module],
+        cnn_init_layers_orthogonal: Optional[bool],
+        linear_init_layers_orthogonal: bool,
+        cnn_flatten_dim: int,
         impala_channels: Sequence[int] = (16, 32, 32),
         **kwargs,
     ) -> None:
-        if init_layers_orthogonal is None:
-            init_layers_orthogonal = False
-        super().__init__(in_channels, activation, init_layers_orthogonal)
+        if cnn_init_layers_orthogonal is None:
+            cnn_init_layers_orthogonal = False
+        in_channels = obs_space.shape[0]  # type: ignore
         sequences = []
         for out_channels in impala_channels:
             sequences.append(
                 ConvSequence(
-                    in_channels, out_channels, activation, init_layers_orthogonal
+                    in_channels, out_channels, activation, cnn_init_layers_orthogonal
                 )
             )
             in_channels = out_channels
-        sequences.extend(
-            [
-                activation(),
-                nn.Flatten(),
-            ]
+        sequences.append(activation())
+        cnn = nn.Sequential(*sequences)
+        super().__init__(
+            obs_space,
+            activation,
+            linear_init_layers_orthogonal,
+            cnn_flatten_dim,
+            cnn,
+            **kwargs,
         )
-        self.seq = nn.Sequential(*sequences)
-
-    def forward(self, obs: torch.Tensor) -> torch.Tensor:
-        return self.seq(obs)

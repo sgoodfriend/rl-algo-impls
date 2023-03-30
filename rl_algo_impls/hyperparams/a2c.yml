@@ -112,7 +112,7 @@ CarRacing-v0:
     init_layers_orthogonal: false
     activation_fn: relu
     share_features_extractor: false
-    cnn_feature_dim: 256
+    cnn_flatten_dim: 256
     hidden_sizes: [256]
   algo_hyperparams:
     n_steps: 512

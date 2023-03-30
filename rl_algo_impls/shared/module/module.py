@@ -1,7 +1,7 @@
+from typing import Sequence, Type
+
 import numpy as np
 import torch.nn as nn
-
-from typing import Sequence, Type
 
 
 def mlp(

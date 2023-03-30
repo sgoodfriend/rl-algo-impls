@@ -1,21 +1,29 @@
-import gym
+from typing import Sequence, Type
+
+import numpy as np
 import torch
 import torch.nn as nn
 
-from typing import Sequence, Type
-
+from rl_algo_impls.shared.encoder import EncoderOutDim
 from rl_algo_impls.shared.module.module import mlp
 
 
 class CriticHead(nn.Module):
     def __init__(
         self,
-        hidden_sizes: Sequence[int] = (32,),
+        in_dim: EncoderOutDim,
+        hidden_sizes: Sequence[int] = (),
         activation: Type[nn.Module] = nn.Tanh,
         init_layers_orthogonal: bool = True,
     ) -> None:
         super().__init__()
-        layer_sizes = tuple(hidden_sizes) + (1,)
+        seq = []
+        if isinstance(in_dim, tuple):
+            seq.append(nn.Flatten())
+            in_channels = int(np.prod(in_dim))
+        else:
+            in_channels = in_dim
+        layer_sizes = (in_channels,) + tuple(hidden_sizes) + (1,)
         self._fc = mlp(
             layer_sizes,
             activation,

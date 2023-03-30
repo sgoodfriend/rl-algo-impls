@@ -1,4 +1,4 @@
-from typing import Sequence, Type
+from typing import Tuple, Type
 
 import gym
 import torch.nn as nn
@@ -8,15 +8,18 @@ from rl_algo_impls.shared.actor.actor import Actor
 from rl_algo_impls.shared.actor.categorical import CategoricalActorHead
 from rl_algo_impls.shared.actor.gaussian import GaussianActorHead
 from rl_algo_impls.shared.actor.gridnet import GridnetActorHead
+from rl_algo_impls.shared.actor.gridnet_decoder import GridnetDecoder
 from rl_algo_impls.shared.actor.multi_discrete import MultiDiscreteActorHead
 from rl_algo_impls.shared.actor.state_dependent_noise import (
     StateDependentNoiseActorHead,
 )
+from rl_algo_impls.shared.encoder import EncoderOutDim
 
 
 def actor_head(
     action_space: gym.Space,
-    hidden_sizes: Sequence[int],
+    in_dim: EncoderOutDim,
+    hidden_sizes: Tuple[int, ...],
     init_layers_orthogonal: bool,
     activation: Type[nn.Module],
     log_std_init: float = -0.5,
@@ -30,16 +33,20 @@ def actor_head(
     ), "use_sde only valid if Box action_space"
     assert not squash_output or use_sde, "squash_output only valid if use_sde"
     if isinstance(action_space, Discrete):
+        assert isinstance(in_dim, int)
         return CategoricalActorHead(
             action_space.n,  # type: ignore
+            in_dim=in_dim,
             hidden_sizes=hidden_sizes,
             activation=activation,
             init_layers_orthogonal=init_layers_orthogonal,
         )
     elif isinstance(action_space, Box):
+        assert isinstance(in_dim, int)
         if use_sde:
             return StateDependentNoiseActorHead(
                 action_space.shape[0],  # type: ignore
+                in_dim=in_dim,
                 hidden_sizes=hidden_sizes,
                 activation=activation,
                 init_layers_orthogonal=init_layers_orthogonal,
@@ -50,6 +57,7 @@ def actor_head(
         else:
             return GaussianActorHead(
                 action_space.shape[0],  # type: ignore
+                in_dim=in_dim,
                 hidden_sizes=hidden_sizes,
                 activation=activation,
                 init_layers_orthogonal=init_layers_orthogonal,
@@ -59,6 +67,7 @@ def actor_head(
         if actor_head_style == "single":
             return MultiDiscreteActorHead(
                 action_space.nvec,  # type: ignore
+                in_dim=in_dim,
                 hidden_sizes=hidden_sizes,
                 activation=activation,
                 init_layers_orthogonal=init_layers_orthogonal,
@@ -67,6 +76,16 @@ def actor_head(
             return GridnetActorHead(
                 action_space.nvec[0],  # type: ignore
                 action_space.nvec[1:],  # type: ignore
+                in_dim=in_dim,
+                hidden_sizes=hidden_sizes,
+                activation=activation,
+                init_layers_orthogonal=init_layers_orthogonal,
+            )
+        elif actor_head_style == "gridnet_decoder":
+            return GridnetDecoder(
+                action_space.nvec[0],  # type: ignore
+                action_space.nvec[1:],  # type: ignore
+                in_dim=in_dim,
                 hidden_sizes=hidden_sizes,
                 activation=activation,
                 init_layers_orthogonal=init_layers_orthogonal,

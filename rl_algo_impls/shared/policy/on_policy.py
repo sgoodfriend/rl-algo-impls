@@ -95,7 +95,7 @@ class ActorCritic(OnPolicy):
         full_std: bool = True,
         squash_output: bool = False,
         share_features_extractor: bool = True,
-        cnn_feature_dim: int = 512,
+        cnn_flatten_dim: int = 512,
         cnn_style: str = "nature",
         cnn_layers_init_orthogonal: Optional[bool] = None,
         impala_channels: Sequence[int] = (16, 32, 32),
@@ -126,14 +126,15 @@ class ActorCritic(OnPolicy):
             observation_space,
             activation,
             init_layers_orthogonal=init_layers_orthogonal,
-            cnn_feature_dim=cnn_feature_dim,
+            cnn_flatten_dim=cnn_flatten_dim,
             cnn_style=cnn_style,
             cnn_layers_init_orthogonal=cnn_layers_init_orthogonal,
             impala_channels=impala_channels,
         )
         self._pi = actor_head(
             self.action_space,
-            (self._feature_extractor.out_dim,) + tuple(pi_hidden_sizes),
+            self._feature_extractor.out_dim,
+            tuple(pi_hidden_sizes),
             init_layers_orthogonal,
             activation,
             log_std_init=log_std_init,
@@ -148,17 +149,16 @@ class ActorCritic(OnPolicy):
                 observation_space,
                 activation,
                 init_layers_orthogonal=init_layers_orthogonal,
-                cnn_feature_dim=cnn_feature_dim,
+                cnn_flatten_dim=cnn_flatten_dim,
                 cnn_style=cnn_style,
                 cnn_layers_init_orthogonal=cnn_layers_init_orthogonal,
             )
-            v_hidden_sizes = (self._v_feature_extractor.out_dim,) + tuple(
-                v_hidden_sizes
-            )
+            critic_in_dim = self._v_feature_extractor.out_dim
         else:
             self._v_feature_extractor = None
-            v_hidden_sizes = (self._feature_extractor.out_dim,) + tuple(v_hidden_sizes)
+            critic_in_dim = self._feature_extractor.out_dim
         self._v = CriticHead(
+            in_dim=critic_in_dim,
             hidden_sizes=v_hidden_sizes,
             activation=activation,
             init_layers_orthogonal=init_layers_orthogonal,
