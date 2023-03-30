@@ -94,12 +94,7 @@ class MultiDiscreteActorHead(Actor):
     ) -> PiForward:
         logits = self._fc(obs)
         pi = MultiCategorical(self.nvec, logits=logits, masks=action_masks)
-        logp_a = None
-        entropy = None
-        if actions is not None:
-            logp_a = pi.log_prob(actions)
-            entropy = pi.entropy()
-        return PiForward(pi, logp_a, entropy)
+        return self.pi_forward(pi, actions)
 
     @property
     def action_shape(self) -> Tuple[int, ...]:

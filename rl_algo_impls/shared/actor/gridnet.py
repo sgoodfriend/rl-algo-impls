@@ -27,7 +27,7 @@ class GridnetDistribution(Distribution):
         masks = masks.view(-1, masks.shape[-1])
         split_masks = torch.split(masks[:, 1:], action_vec.tolist(), dim=1)
 
-        grid_logits = logits.view(-1, action_vec.sum())
+        grid_logits = logits.reshape(-1, action_vec.sum())
         split_logits = torch.split(grid_logits, action_vec.tolist(), dim=1)
         self.categoricals = [
             MaskedCategorical(logits=lg, validate_args=validate_args, mask=m)
@@ -101,12 +101,7 @@ class GridnetActorHead(Actor):
         ), f"No mask case unhandled in {self.__class__.__name__}"
         logits = self._fc(obs)
         pi = GridnetDistribution(self.map_size, self.action_vec, logits, action_masks)
-        logp_a = None
-        entropy = None
-        if actions is not None:
-            logp_a = pi.log_prob(actions)
-            entropy = pi.entropy()
-        return PiForward(pi, logp_a, entropy)
+        return self.pi_forward(pi, actions)
 
     @property
     def action_shape(self) -> Tuple[int, ...]:

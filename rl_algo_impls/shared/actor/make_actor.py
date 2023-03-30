@@ -86,7 +86,6 @@ def actor_head(
                 action_space.nvec[0],  # type: ignore
                 action_space.nvec[1:],  # type: ignore
                 in_dim=in_dim,
-                hidden_sizes=hidden_sizes,
                 activation=activation,
                 init_layers_orthogonal=init_layers_orthogonal,
             )

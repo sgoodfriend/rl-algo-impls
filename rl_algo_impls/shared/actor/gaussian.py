@@ -54,12 +54,7 @@ class GaussianActorHead(Actor):
             not action_masks
         ), f"{self.__class__.__name__} does not support action_masks"
         pi = self._distribution(obs)
-        logp_a = None
-        entropy = None
-        if actions is not None:
-            logp_a = pi.log_prob(actions)
-            entropy = pi.entropy()
-        return PiForward(pi, logp_a, entropy)
+        return self.pi_forward(pi, actions)
 
     @property
     def action_shape(self) -> Tuple[int, ...]:

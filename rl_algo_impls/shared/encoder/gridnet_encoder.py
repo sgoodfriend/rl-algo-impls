@@ -15,15 +15,15 @@ class GridnetEncoder(CnnEncoder):
 
     def __init__(
         self,
-        obs_shape: gym.Space,
+        obs_space: gym.Space,
         activation: Type[nn.Module] = nn.ReLU,
         cnn_init_layers_orthogonal: Optional[bool] = None,
         **kwargs
     ) -> None:
         if cnn_init_layers_orthogonal is None:
             cnn_init_layers_orthogonal = True
-        super().__init__(obs_shape, **kwargs)
-        in_channels = obs_shape.shape[0]  # type: ignore
+        super().__init__(obs_space, **kwargs)
+        in_channels = obs_space.shape[0]  # type: ignore
         self.encoder = nn.Sequential(
             layer_init(
                 nn.Conv2d(in_channels, 32, kernel_size=3, padding=1),
@@ -57,7 +57,7 @@ class GridnetEncoder(CnnEncoder):
             self._out_dim = encoder_out.shape[1:]
 
     def forward(self, obs: torch.Tensor) -> torch.Tensor:
-        return self.encoder(obs)
+        return self.encoder(super().forward(obs))
 
     @property
     def out_dim(self) -> EncoderOutDim:

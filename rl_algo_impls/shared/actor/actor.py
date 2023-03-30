@@ -30,3 +30,13 @@ class Actor(nn.Module, ABC):
     @abstractmethod
     def action_shape(self) -> Tuple[int, ...]:
         ...
+
+    def pi_forward(
+        self, distribution: Distribution, actions: Optional[torch.Tensor] = None
+    ) -> PiForward:
+        logp_a = None
+        entropy = None
+        if actions is not None:
+            logp_a = distribution.log_prob(actions)
+            entropy = distribution.entropy()
+        return PiForward(distribution, logp_a, entropy)

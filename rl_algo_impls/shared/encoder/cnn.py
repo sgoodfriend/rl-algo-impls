@@ -26,6 +26,9 @@ class CnnEncoder(nn.Module, ABC):
             obs = obs.unsqueeze(0)
         return obs.float() / self.range_size
 
+    def forward(self, obs: torch.Tensor) -> torch.Tensor:
+        return self.preprocess(obs)
+
     @property
     @abstractmethod
     def out_dim(self) -> EncoderOutDim:
@@ -57,7 +60,7 @@ class FlattenedCnnEncoder(CnnEncoder):
         )
 
     def forward(self, obs: torch.Tensor) -> torch.Tensor:
-        return self.fc(self.cnn(self.preprocess(obs)))
+        return self.fc(self.cnn(super().forward(obs)))
 
     @property
     def out_dim(self) -> EncoderOutDim:

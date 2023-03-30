@@ -174,12 +174,7 @@ class StateDependentNoiseActorHead(Actor):
             not action_masks
         ), f"{self.__class__.__name__} does not support action_masks"
         pi = self._distribution(obs)
-        logp_a = None
-        entropy = None
-        if actions is not None:
-            logp_a = pi.log_prob(actions)
-            entropy = -logp_a if self.bijector else sum_independent_dims(pi.entropy())
-        return PiForward(pi, logp_a, entropy)
+        return self.pi_forward(pi, actions)
 
     def sample_weights(self, batch_size: int = 1) -> None:
         std = self._get_std()
@@ -191,3 +186,17 @@ class StateDependentNoiseActorHead(Actor):
     @property
     def action_shape(self) -> Tuple[int, ...]:
         return (self.act_dim,)
+
+    def pi_forward(
+        self, distribution: Distribution, actions: Optional[torch.Tensor] = None
+    ) -> PiForward:
+        logp_a = None
+        entropy = None
+        if actions is not None:
+            logp_a = distribution.log_prob(actions)
+            entropy = (
+                -logp_a
+                if self.bijector
+                else sum_independent_dims(distribution.entropy())
+            )
+        return PiForward(distribution, logp_a, entropy)

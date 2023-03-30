@@ -279,6 +279,24 @@ _microrts_ai: &microrts-ai-defaults
     clip_range: 0.1
     clip_range_vf: 0.1
 
+MicrortsAttackPassiveEnemySparseReward-v3:
+  <<: *microrts-ai-defaults
+  n_timesteps: !!float 2e6
+  env_id: MicrortsAttackPassiveEnemySparseReward-v3 # Workaround to keep model name simple
+  env_hyperparams:
+    <<: *microrts-ai-env-defaults
+    bots:
+      passiveAI: 24
+
+MicrortsDefeatRandomEnemySparseReward-v3:
+  <<: *microrts-ai-defaults
+  n_timesteps: !!float 2e6
+  env_id: MicrortsDefeatRandomEnemySparseReward-v3 # Workaround to keep model name simple
+  env_hyperparams:
+    <<: *microrts-ai-env-defaults
+    bots:
+      randomBiasedAI: 24
+
 MicrortsDefeatCoacAIShaped-v3: &microrts-coacai-defaults
   <<: *microrts-ai-defaults
   env_id: MicrortsDefeatCoacAIShaped-v3 # Workaround to keep model name simple
@@ -305,24 +323,6 @@ enc-dec-MicrortsDefeatCoacAIShaped-v3-diverseBots:
     cnn_style: gridnet_encoder
     actor_head_style: gridnet_decoder
     v_hidden_sizes: [128]
-
-MicrortsAttackPassiveEnemySparseReward-v3:
-  <<: *microrts-ai-defaults
-  n_timesteps: !!float 2e6
-  env_id: MicrortsAttackPassiveEnemySparseReward-v3 # Workaround to keep model name simple
-  env_hyperparams:
-    <<: *microrts-ai-env-defaults
-    bots:
-      passiveAI: 24
-
-MicrortsDefeatRandomEnemySparseReward-v3:
-  <<: *microrts-ai-defaults
-  n_timesteps: !!float 2e6
-  env_id: MicrortsDefeatRandomEnemySparseReward-v3 # Workaround to keep model name simple
-  env_hyperparams:
-    <<: *microrts-ai-env-defaults
-    bots:
-      randomBiasedAI: 24
 
 HalfCheetahBulletEnv-v0: &pybullet-defaults
   n_timesteps: !!float 2e6
