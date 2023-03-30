@@ -288,7 +288,7 @@ MicrortsAttackPassiveEnemySparseReward-v3:
     bots:
       passiveAI: 24
 
-MicrortsDefeatRandomEnemySparseReward-v3:
+MicrortsDefeatRandomEnemySparseReward-v3: &microrts-random-ai-defaults
   <<: *microrts-ai-defaults
   n_timesteps: !!float 2e6
   env_id: MicrortsDefeatRandomEnemySparseReward-v3 # Workaround to keep model name simple
@@ -296,6 +296,14 @@ MicrortsDefeatRandomEnemySparseReward-v3:
     <<: *microrts-ai-env-defaults
     bots:
       randomBiasedAI: 24
+
+enc-dec-MicrortsDefeatRandomEnemySparseReward-v3:
+  <<: *microrts-random-ai-defaults
+  policy_hyperparams:
+    <<: *microrts-ai-policy-defaults
+    cnn_style: gridnet_encoder
+    actor_head_style: gridnet_decoder
+    v_hidden_sizes: [128]
 
 MicrortsDefeatCoacAIShaped-v3: &microrts-coacai-defaults
   <<: *microrts-ai-defaults
