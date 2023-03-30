@@ -24,12 +24,15 @@ class CriticHead(nn.Module):
         else:
             in_channels = in_dim
         layer_sizes = (in_channels,) + tuple(hidden_sizes) + (1,)
-        self._fc = mlp(
-            layer_sizes,
-            activation,
-            init_layers_orthogonal=init_layers_orthogonal,
-            final_layer_gain=1.0,
+        seq.append(
+            mlp(
+                layer_sizes,
+                activation,
+                init_layers_orthogonal=init_layers_orthogonal,
+                final_layer_gain=1.0,
+            )
         )
+        self._fc = nn.Sequential(*seq)
 
     def forward(self, obs: torch.Tensor) -> torch.Tensor:
         v = self._fc(obs)
