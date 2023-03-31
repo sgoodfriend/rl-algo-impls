@@ -8,4 +8,4 @@ sudo apt install -y default-jdk
 python3 -m pip install --upgrade pip
 pip install --upgrade torch torchvision torchaudio
 
-python -m pip install --upgrade '.[test,procgen,microrts]'
+python -m pip install --upgrade '.[all]'

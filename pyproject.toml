@@ -1,6 +1,6 @@
 [project]
 name = "rl_algo_impls"
-version = "0.0.7"
+version = "0.0.8"
 description = "Implementations of reinforcement learning algorithms"
 authors = [
     {name = "Scott Goodfriend", email = "goodfriend.scott@gmail.com"},
@@ -67,6 +67,11 @@ microrts = [
 jupyter = [
     "jupyter",
     "notebook"
+]
+all = [
+    "rl-algo-impls[test]",
+    "rl-algo-impls[procgen]",
+    "rl-algo-impls[microrts]",
 ]
 
 [project.urls]
