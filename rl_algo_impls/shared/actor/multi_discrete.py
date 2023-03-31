@@ -1,4 +1,4 @@
-from typing import Dict, Optional, Sequence, Tuple, Type
+from typing import Dict, Optional, Tuple, Type
 
 import numpy as np
 import torch
@@ -8,6 +8,7 @@ from torch.distributions import Distribution, constraints
 
 from rl_algo_impls.shared.actor.actor import Actor, PiForward
 from rl_algo_impls.shared.actor.categorical import MaskedCategorical
+from rl_algo_impls.shared.encoder import EncoderOutDim
 from rl_algo_impls.shared.module.module import mlp
 
 
@@ -69,13 +70,15 @@ class MultiDiscreteActorHead(Actor):
     def __init__(
         self,
         nvec: NDArray[np.int64],
-        hidden_sizes: Sequence[int] = (32,),
+        in_dim: EncoderOutDim,
+        hidden_sizes: Tuple[int, ...] = (32,),
         activation: Type[nn.Module] = nn.ReLU,
         init_layers_orthogonal: bool = True,
     ) -> None:
         super().__init__()
         self.nvec = nvec
-        layer_sizes = tuple(hidden_sizes) + (nvec.sum(),)
+        assert isinstance(in_dim, int)
+        layer_sizes = (in_dim,) + hidden_sizes + (nvec.sum(),)
         self._fc = mlp(
             layer_sizes,
             activation,
@@ -91,12 +94,7 @@ class MultiDiscreteActorHead(Actor):
     ) -> PiForward:
         logits = self._fc(obs)
         pi = MultiCategorical(self.nvec, logits=logits, masks=action_masks)
-        logp_a = None
-        entropy = None
-        if actions is not None:
-            logp_a = pi.log_prob(actions)
-            entropy = pi.entropy()
-        return PiForward(pi, logp_a, entropy)
+        return self.pi_forward(pi, actions)
 
     @property
     def action_shape(self) -> Tuple[int, ...]:

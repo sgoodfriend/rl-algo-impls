@@ -7,7 +7,7 @@ import torch
 from gym.spaces import Box, Discrete, Space
 
 from rl_algo_impls.shared.actor import PiForward, actor_head
-from rl_algo_impls.shared.module.feature_extractor import FeatureExtractor
+from rl_algo_impls.shared.encoder import Encoder
 from rl_algo_impls.shared.policy.critic import CriticHead
 from rl_algo_impls.shared.policy.policy import ACTIVATION, Policy
 from rl_algo_impls.wrappers.vectorable_wrapper import (
@@ -95,7 +95,7 @@ class ActorCritic(OnPolicy):
         full_std: bool = True,
         squash_output: bool = False,
         share_features_extractor: bool = True,
-        cnn_feature_dim: int = 512,
+        cnn_flatten_dim: int = 512,
         cnn_style: str = "nature",
         cnn_layers_init_orthogonal: Optional[bool] = None,
         impala_channels: Sequence[int] = (16, 32, 32),
@@ -122,18 +122,19 @@ class ActorCritic(OnPolicy):
         self.action_space = action_space
         self.squash_output = squash_output
         self.share_features_extractor = share_features_extractor
-        self._feature_extractor = FeatureExtractor(
+        self._feature_extractor = Encoder(
             observation_space,
             activation,
             init_layers_orthogonal=init_layers_orthogonal,
-            cnn_feature_dim=cnn_feature_dim,
+            cnn_flatten_dim=cnn_flatten_dim,
             cnn_style=cnn_style,
             cnn_layers_init_orthogonal=cnn_layers_init_orthogonal,
             impala_channels=impala_channels,
         )
         self._pi = actor_head(
             self.action_space,
-            (self._feature_extractor.out_dim,) + tuple(pi_hidden_sizes),
+            self._feature_extractor.out_dim,
+            tuple(pi_hidden_sizes),
             init_layers_orthogonal,
             activation,
             log_std_init=log_std_init,
@@ -144,21 +145,20 @@ class ActorCritic(OnPolicy):
         )
 
         if not share_features_extractor:
-            self._v_feature_extractor = FeatureExtractor(
+            self._v_feature_extractor = Encoder(
                 observation_space,
                 activation,
                 init_layers_orthogonal=init_layers_orthogonal,
-                cnn_feature_dim=cnn_feature_dim,
+                cnn_flatten_dim=cnn_flatten_dim,
                 cnn_style=cnn_style,
                 cnn_layers_init_orthogonal=cnn_layers_init_orthogonal,
             )
-            v_hidden_sizes = (self._v_feature_extractor.out_dim,) + tuple(
-                v_hidden_sizes
-            )
+            critic_in_dim = self._v_feature_extractor.out_dim
         else:
             self._v_feature_extractor = None
-            v_hidden_sizes = (self._feature_extractor.out_dim,) + tuple(v_hidden_sizes)
+            critic_in_dim = self._feature_extractor.out_dim
         self._v = CriticHead(
+            in_dim=critic_in_dim,
             hidden_sizes=v_hidden_sizes,
             activation=activation,
             init_layers_orthogonal=init_layers_orthogonal,

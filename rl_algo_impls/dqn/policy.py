@@ -1,16 +1,16 @@
-import numpy as np
 import os
-import torch
-
 from typing import Optional, Sequence, TypeVar
+
+import numpy as np
+import torch
 
 from rl_algo_impls.dqn.q_net import QNetwork
 from rl_algo_impls.shared.policy.policy import Policy
 from rl_algo_impls.wrappers.vectorable_wrapper import (
     VecEnv,
     VecEnvObs,
-    single_observation_space,
     single_action_space,
+    single_observation_space,
 )
 
 DQNPolicySelf = TypeVar("DQNPolicySelf", bound="DQNPolicy")
@@ -21,7 +21,7 @@ class DQNPolicy(Policy):
         self,
         env: VecEnv,
         hidden_sizes: Sequence[int] = [],
-        cnn_feature_dim: int = 512,
+        cnn_flatten_dim: int = 512,
         cnn_style: str = "nature",
         cnn_layers_init_orthogonal: Optional[bool] = None,
         impala_channels: Sequence[int] = (16, 32, 32),
@@ -32,7 +32,7 @@ class DQNPolicy(Policy):
             single_observation_space(env),
             single_action_space(env),
             hidden_sizes,
-            cnn_feature_dim=cnn_feature_dim,
+            cnn_flatten_dim=cnn_flatten_dim,
             cnn_style=cnn_style,
             cnn_layers_init_orthogonal=cnn_layers_init_orthogonal,
             impala_channels=impala_channels,

@@ -1,4 +1,4 @@
-from typing import Optional, Sequence, Tuple, Type
+from typing import Optional, Tuple, Type
 
 import torch
 import torch.nn as nn
@@ -35,12 +35,13 @@ class CategoricalActorHead(Actor):
     def __init__(
         self,
         act_dim: int,
-        hidden_sizes: Sequence[int] = (32,),
+        in_dim: int,
+        hidden_sizes: Tuple[int, ...] = (32,),
         activation: Type[nn.Module] = nn.Tanh,
         init_layers_orthogonal: bool = True,
     ) -> None:
         super().__init__()
-        layer_sizes = tuple(hidden_sizes) + (act_dim,)
+        layer_sizes = (in_dim,) + hidden_sizes + (act_dim,)
         self._fc = mlp(
             layer_sizes,
             activation,
@@ -56,12 +57,7 @@ class CategoricalActorHead(Actor):
     ) -> PiForward:
         logits = self._fc(obs)
         pi = MaskedCategorical(logits=logits, mask=action_masks)
-        logp_a = None
-        entropy = None
-        if actions is not None:
-            logp_a = pi.log_prob(actions)
-            entropy = pi.entropy()
-        return PiForward(pi, logp_a, entropy)
+        return self.pi_forward(pi, actions)
 
     @property
     def action_shape(self) -> Tuple[int, ...]:

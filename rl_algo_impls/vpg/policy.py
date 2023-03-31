@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 
 from rl_algo_impls.shared.actor import Actor, PiForward, actor_head
-from rl_algo_impls.shared.module.feature_extractor import FeatureExtractor
+from rl_algo_impls.shared.encoder import Encoder
 from rl_algo_impls.shared.policy.critic import CriticHead
 from rl_algo_impls.shared.policy.on_policy import (
     OnPolicy,
@@ -26,7 +26,7 @@ V_FILE_NAME = "v.pt"
 
 
 class VPGActor(Actor):
-    def __init__(self, feature_extractor: FeatureExtractor, head: Actor) -> None:
+    def __init__(self, feature_extractor: Encoder, head: Actor) -> None:
         super().__init__()
         self.feature_extractor = feature_extractor
         self.head = head
@@ -69,12 +69,13 @@ class VPGActorCritic(OnPolicy):
             else default_hidden_sizes(obs_space)
         )
 
-        pi_feature_extractor = FeatureExtractor(
+        pi_feature_extractor = Encoder(
             obs_space, activation, init_layers_orthogonal=init_layers_orthogonal
         )
         pi_head = actor_head(
             self.action_space,
-            (pi_feature_extractor.out_dim,) + tuple(hidden_sizes),
+            pi_feature_extractor.out_dim,
+            tuple(hidden_sizes),
             init_layers_orthogonal,
             activation,
             log_std_init=log_std_init,
@@ -84,11 +85,12 @@ class VPGActorCritic(OnPolicy):
         )
         self.pi = VPGActor(pi_feature_extractor, pi_head)
 
-        v_feature_extractor = FeatureExtractor(
+        v_feature_extractor = Encoder(
             obs_space, activation, init_layers_orthogonal=init_layers_orthogonal
         )
         v_head = CriticHead(
-            (v_feature_extractor.out_dim,) + tuple(hidden_sizes),
+            v_feature_extractor.out_dim,
+            tuple(hidden_sizes),
             activation=activation,
             init_layers_orthogonal=init_layers_orthogonal,
         )

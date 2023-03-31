@@ -1,4 +1,4 @@
-from typing import Optional, Sequence, Tuple, Type, TypeVar, Union
+from typing import Optional, Tuple, Type, TypeVar, Union
 
 import torch
 import torch.nn as nn
@@ -87,7 +87,8 @@ class StateDependentNoiseActorHead(Actor):
     def __init__(
         self,
         act_dim: int,
-        hidden_sizes: Sequence[int] = (32,),
+        in_dim: int,
+        hidden_sizes: Tuple[int, ...] = (32,),
         activation: Type[nn.Module] = nn.Tanh,
         init_layers_orthogonal: bool = True,
         log_std_init: float = -0.5,
@@ -97,7 +98,7 @@ class StateDependentNoiseActorHead(Actor):
     ) -> None:
         super().__init__()
         self.act_dim = act_dim
-        layer_sizes = tuple(hidden_sizes) + (self.act_dim,)
+        layer_sizes = (in_dim,) + hidden_sizes + (act_dim,)
         if len(layer_sizes) == 2:
             self.latent_net = nn.Identity()
         elif len(layer_sizes) > 2:
@@ -173,12 +174,7 @@ class StateDependentNoiseActorHead(Actor):
             not action_masks
         ), f"{self.__class__.__name__} does not support action_masks"
         pi = self._distribution(obs)
-        logp_a = None
-        entropy = None
-        if actions is not None:
-            logp_a = pi.log_prob(actions)
-            entropy = -logp_a if self.bijector else sum_independent_dims(pi.entropy())
-        return PiForward(pi, logp_a, entropy)
+        return self.pi_forward(pi, actions)
 
     def sample_weights(self, batch_size: int = 1) -> None:
         std = self._get_std()
@@ -190,3 +186,17 @@ class StateDependentNoiseActorHead(Actor):
     @property
     def action_shape(self) -> Tuple[int, ...]:
         return (self.act_dim,)
+
+    def pi_forward(
+        self, distribution: Distribution, actions: Optional[torch.Tensor] = None
+    ) -> PiForward:
+        logp_a = None
+        entropy = None
+        if actions is not None:
+            logp_a = distribution.log_prob(actions)
+            entropy = (
+                -logp_a
+                if self.bijector
+                else sum_independent_dims(distribution.entropy())
+            )
+        return PiForward(distribution, logp_a, entropy)

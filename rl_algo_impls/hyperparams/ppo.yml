@@ -112,7 +112,7 @@ CarRacing-v0: &carracing-defaults
     init_layers_orthogonal: false
     activation_fn: relu
     share_features_extractor: false
-    cnn_feature_dim: 256
+    cnn_flatten_dim: 256
     hidden_sizes: [256]
   algo_hyperparams:
     n_steps: 512
@@ -192,7 +192,7 @@ _impala-atari: &impala-atari-defaults
   policy_hyperparams:
     <<: *atari-policy-defaults
     cnn_style: impala
-    cnn_feature_dim: 256
+    cnn_flatten_dim: 256
     init_layers_orthogonal: true
     cnn_layers_init_orthogonal: false
 
@@ -222,7 +222,7 @@ _microrts: &microrts-defaults
   policy_hyperparams: &microrts-policy-defaults
     <<: *atari-policy-defaults
     cnn_style: microrts
-    cnn_feature_dim: 128
+    cnn_flatten_dim: 128
   algo_hyperparams: &microrts-algo-defaults
     <<: *atari-algo-defaults
     clip_range_decay: none
@@ -262,9 +262,9 @@ _microrts_ai: &microrts-ai-defaults
       render_theme: 2
       map_path: maps/16x16/basesWorkers16x16.xml
       reward_weight: [10.0, 1.0, 1.0, 0.2, 1.0, 4.0]
-  policy_hyperparams:
+  policy_hyperparams: &microrts-ai-policy-defaults
     <<: *microrts-policy-defaults
-    cnn_feature_dim: 256
+    cnn_flatten_dim: 256
     actor_head_style: gridnet
   algo_hyperparams:
     <<: *microrts-algo-defaults
@@ -279,25 +279,6 @@ _microrts_ai: &microrts-ai-defaults
     clip_range: 0.1
     clip_range_vf: 0.1
 
-MicrortsDefeatCoacAIShaped-v3: &microrts-coacai-defaults
-  <<: *microrts-ai-defaults
-  env_id: MicrortsDefeatCoacAIShaped-v3 # Workaround to keep model name simple
-  n_timesteps: !!float 300e6
-  env_hyperparams: &microrts-coacai-env-defaults
-    <<: *microrts-ai-env-defaults
-    bots:
-      coacAI: 24
-
-MicrortsDefeatCoacAIShaped-v3-diverseBots:
-  <<: *microrts-coacai-defaults
-  env_hyperparams:
-    <<: *microrts-coacai-env-defaults
-    bots:
-      coacAI: 18
-      randomBiasedAI: 2
-      lightRushAI: 2
-      workerRushAI: 2
-
 MicrortsAttackPassiveEnemySparseReward-v3:
   <<: *microrts-ai-defaults
   n_timesteps: !!float 2e6
@@ -307,7 +288,7 @@ MicrortsAttackPassiveEnemySparseReward-v3:
     bots:
       passiveAI: 24
 
-MicrortsDefeatRandomEnemySparseReward-v3:
+MicrortsDefeatRandomEnemySparseReward-v3: &microrts-random-ai-defaults
   <<: *microrts-ai-defaults
   n_timesteps: !!float 2e6
   env_id: MicrortsDefeatRandomEnemySparseReward-v3 # Workaround to keep model name simple
@@ -315,6 +296,41 @@ MicrortsDefeatRandomEnemySparseReward-v3:
     <<: *microrts-ai-env-defaults
     bots:
       randomBiasedAI: 24
+
+enc-dec-MicrortsDefeatRandomEnemySparseReward-v3:
+  <<: *microrts-random-ai-defaults
+  policy_hyperparams:
+    <<: *microrts-ai-policy-defaults
+    cnn_style: gridnet_encoder
+    actor_head_style: gridnet_decoder
+    v_hidden_sizes: [128]
+
+MicrortsDefeatCoacAIShaped-v3: &microrts-coacai-defaults
+  <<: *microrts-ai-defaults
+  env_id: MicrortsDefeatCoacAIShaped-v3 # Workaround to keep model name simple
+  n_timesteps: !!float 300e6
+  env_hyperparams: &microrts-coacai-env-defaults
+    <<: *microrts-ai-env-defaults
+    bots:
+      coacAI: 24
+
+MicrortsDefeatCoacAIShaped-v3-diverseBots: &microrts-diverse-defaults
+  <<: *microrts-coacai-defaults
+  env_hyperparams:
+    <<: *microrts-coacai-env-defaults
+    bots:
+      coacAI: 18
+      randomBiasedAI: 2
+      lightRushAI: 2
+      workerRushAI: 2
+
+enc-dec-MicrortsDefeatCoacAIShaped-v3-diverseBots:
+  <<: *microrts-diverse-defaults
+  policy_hyperparams:
+    <<: *microrts-ai-policy-defaults
+    cnn_style: gridnet_encoder
+    actor_head_style: gridnet_decoder
+    v_hidden_sizes: [128]
 
 HalfCheetahBulletEnv-v0: &pybullet-defaults
   n_timesteps: !!float 2e6
@@ -386,7 +402,7 @@ _procgen: &procgen-defaults
   policy_hyperparams: &procgen-policy-defaults
     activation_fn: relu
     cnn_style: impala
-    cnn_feature_dim: 256
+    cnn_flatten_dim: 256
     init_layers_orthogonal: true
     cnn_layers_init_orthogonal: false
   algo_hyperparams: &procgen-algo-defaults
@@ -472,7 +488,7 @@ procgen-starpilot-hard-2xIMPALA-fat:
   policy_hyperparams:
     <<: *procgen-policy-defaults
     impala_channels: [32, 64, 64]
-    cnn_feature_dim: 512
+    cnn_flatten_dim: 512
   algo_hyperparams:
     <<: *procgen-hard-algo-defaults
     learning_rate: !!float 2.5e-4

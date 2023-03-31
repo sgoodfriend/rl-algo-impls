@@ -112,7 +112,15 @@ def get_device(config: Config, env: VecEnv) -> torch.device:
         elif isinstance(obs_space, Box) and len(obs_space.shape) == 1:
             device = "cpu"
         if is_microrts(config):
-            device = "cpu"
+            try:
+                from gym_microrts.envs.vec_env import MicroRTSGridModeVecEnv
+
+                # Models that move more than one unit at a time should use mps
+                if not isinstance(env.unwrapped, MicroRTSGridModeVecEnv):
+                    device = "cpu"
+            except ModuleNotFoundError:
+                # Likely on gym_microrts v0.0.2 to match ppo-implementation-details
+                device = "cpu"
     print(f"Device: {device}")
     return torch.device(device)
 

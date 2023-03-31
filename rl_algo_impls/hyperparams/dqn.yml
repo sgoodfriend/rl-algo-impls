@@ -108,7 +108,7 @@ _impala-atari: &impala-atari-defaults
   <<: *atari-defaults
   policy_hyperparams:
     cnn_style: impala
-    cnn_feature_dim: 256
+    cnn_flatten_dim: 256
     init_layers_orthogonal: true
     cnn_layers_init_orthogonal: false
 
