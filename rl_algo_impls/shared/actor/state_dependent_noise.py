@@ -108,8 +108,6 @@ class StateDependentNoiseActorHead(Actor):
                 output_activation=activation,
                 init_layers_orthogonal=init_layers_orthogonal,
             )
-        else:
-            raise ValueError("hidden_sizes must be of at least length 1")
         self.mu_net = mlp(
             layer_sizes[-2:],
             activation,
@@ -117,7 +115,7 @@ class StateDependentNoiseActorHead(Actor):
             final_layer_gain=0.01,
         )
         self.full_std = full_std
-        std_dim = (hidden_sizes[-1], act_dim if self.full_std else 1)
+        std_dim = (layer_sizes[-2], act_dim if self.full_std else 1)
         self.log_std = nn.Parameter(
             torch.ones(std_dim, dtype=torch.float32) * log_std_init
         )
