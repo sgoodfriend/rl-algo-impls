@@ -57,6 +57,7 @@ class GridnetDecoder(Actor):
                     32, action_vec.sum(), 3, stride=2, padding=1, output_padding=1
                 ),
                 init_layers_orthogonal=init_layers_orthogonal,
+                std=0.01,
             ),
             Transpose((0, 2, 3, 1)),
         )

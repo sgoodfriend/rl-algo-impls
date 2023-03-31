@@ -10,12 +10,15 @@ def mlp(
     output_activation: Type[nn.Module] = nn.Identity,
     init_layers_orthogonal: bool = False,
     final_layer_gain: float = np.sqrt(2),
+    hidden_layer_gain: float = np.sqrt(2),
 ) -> nn.Module:
     layers = []
     for i in range(len(layer_sizes) - 2):
         layers.append(
             layer_init(
-                nn.Linear(layer_sizes[i], layer_sizes[i + 1]), init_layers_orthogonal
+                nn.Linear(layer_sizes[i], layer_sizes[i + 1]),
+                init_layers_orthogonal,
+                std=hidden_layer_gain,
             )
         )
         layers.append(activation())

@@ -266,7 +266,7 @@ _microrts_ai: &microrts-ai-defaults
     <<: *microrts-policy-defaults
     cnn_flatten_dim: 256
     actor_head_style: gridnet
-  algo_hyperparams:
+  algo_hyperparams: &microrts-ai-algo-defaults
     <<: *microrts-algo-defaults
     learning_rate: !!float 2.5e-4
     learning_rate_decay: linear
