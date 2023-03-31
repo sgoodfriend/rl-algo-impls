@@ -49,7 +49,9 @@ class FlattenedCnnEncoder(CnnEncoder):
         self.cnn = cnn
         self.flattened_dim = cnn_flatten_dim
         with torch.no_grad():
-            cnn_out = cnn(self.preprocess(torch.as_tensor(obs_space.sample())))  # type: ignore
+            cnn_out = torch.flatten(
+                cnn(self.preprocess(torch.as_tensor(obs_space.sample()))), start_dim=1
+            )
         self.fc = nn.Sequential(
             nn.Flatten(),
             layer_init(
@@ -60,7 +62,10 @@ class FlattenedCnnEncoder(CnnEncoder):
         )
 
     def forward(self, obs: torch.Tensor) -> torch.Tensor:
-        return self.fc(self.cnn(super().forward(obs)))
+        x = super().forward(obs)
+        x = self.cnn(x)
+        x = self.fc(x)
+        return x
 
     @property
     def out_dim(self) -> EncoderOutDim:
