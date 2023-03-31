@@ -19,13 +19,13 @@ n_jobs="${n_jobs:-6}"
 project_name="${project_name:-rl-algo-impls-benchmarks}"
 seeds="${seeds:-1 2 3}"
 
-DISCRETE_ENVS=(
-    # Basic
+BASIC_ENVS=(
     "CartPole-v1"
     "MountainCar-v0"
     "Acrobot-v1"
     "LunarLander-v2"
-    # Atari
+)
+ATARI_ENVS=(
     "PongNoFrameskip-v4"
     "BreakoutNoFrameskip-v4"
     "SpaceInvadersNoFrameskip-v4"
@@ -75,9 +75,11 @@ for algo in $(echo $algos); do
         algo_envs=${MICRORTS_AI_ENVS[*]}
     elif [ -z "$envs" ]; then
         if [ "$algo" = "dqn" ]; then
-            BENCHMARK_ENVS="${DISCRETE_ENVS[*]}"
+            BENCHMARK_ENVS="${BASIC_ENVS[*]} ${ATARI_ENVS[*]}"
+        elif [ "$algo" = "vpg" ]; then
+            BENCHMARK_ENVS="${BASIC_ENVS[*]} ${BOX_ENVS[*]}"
         else
-            BENCHMARK_ENVS="${DISCRETE_ENVS[*]} ${BOX_ENVS[*]}"
+            BENCHMARK_ENVS="${BASIC_ENVS[*]} ${BOX_ENVS[*]} ${ATARI_ENVS[*]}"
         fi
         algo_envs=${BENCHMARK_ENVS[*]}
     else
