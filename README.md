@@ -2,7 +2,13 @@
 
 Implementations of reinforcement learning algorithms.
 
-Latest WandB report: https://api.wandb.ai/links/sgoodfriend/6p2sjqtn
+- [WandB benchmark reports](https://wandb.ai/sgoodfriend/rl-algo-impls-benchmarks/reportlist)
+  - [Basic, PyBullet, and Atari games
+    (v0.0.4)](https://api.wandb.ai/links/sgoodfriend/09frjfcs)
+  - [procgen
+    (starpilot, hard)](https://api.wandb.ai/links/sgoodfriend/v1p4976e) and [procgen (easy)](https://api.wandb.ai/links/sgoodfriend/f3w1hwyb)
+  - [Gridnet MicroRTS](https://api.wandb.ai/links/sgoodfriend/zdee7ovm)
+- [Huggingface models](https://huggingface.co/models?other=rl-algo-impls)
 
 ## Prerequisites: Weights & Biases (WandB)
 
