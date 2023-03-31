@@ -97,31 +97,35 @@ Walker2DBulletEnv-v0:
 HopperBulletEnv-v0:
   <<: *pybullet-defaults
 
+# Tuned
 CarRacing-v0:
   n_timesteps: !!float 4e6
   env_hyperparams:
-    n_envs: 8
+    n_envs: 16
     frame_stack: 4
     normalize: true
     normalize_kwargs:
       norm_obs: false
       norm_reward: true
   policy_hyperparams:
-    use_sde: true
-    log_std_init: -2
-    init_layers_orthogonal: false
-    activation_fn: relu
+    use_sde: false
+    log_std_init: -1.3502584927786276
+    init_layers_orthogonal: true
+    activation_fn: tanh
     share_features_extractor: false
     cnn_flatten_dim: 256
     hidden_sizes: [256]
   algo_hyperparams:
-    n_steps: 512
-    learning_rate: !!float 1.62e-5
-    gamma: 0.997
-    gae_lambda: 0.975
-    ent_coef: 0
-    sde_sample_freq: 128
-    vf_coef: 0.64
+    n_steps: 16
+    learning_rate: 0.000025630993245026736
+    learning_rate_decay: linear
+    gamma: 0.99957617037542
+    gae_lambda: 0.949455676599436
+    ent_coef: !!float 1.707983205298309e-7
+    vf_coef: 0.10428178193833336
+    max_grad_norm: 0.5406643389792273
+    normalize_advantage: true
+    use_rms_prop: false
 
 _atari: &atari-defaults
   n_timesteps: !!float 1e7
