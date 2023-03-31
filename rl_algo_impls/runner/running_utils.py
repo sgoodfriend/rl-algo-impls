@@ -22,7 +22,7 @@ from rl_algo_impls.ppo.ppo import PPO
 from rl_algo_impls.runner.config import Config, Hyperparams
 from rl_algo_impls.shared.algorithm import Algorithm
 from rl_algo_impls.shared.callbacks.eval_callback import EvalCallback
-from rl_algo_impls.shared.policy.on_policy import ActorCritic
+from rl_algo_impls.shared.policy.actor_critic import ActorCritic
 from rl_algo_impls.shared.policy.policy import Policy
 from rl_algo_impls.shared.vec_env.utils import import_for_env_id, is_microrts
 from rl_algo_impls.vpg.policy import VPGActorCritic

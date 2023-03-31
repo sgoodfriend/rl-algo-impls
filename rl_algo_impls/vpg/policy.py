@@ -7,7 +7,7 @@ import torch.nn as nn
 from rl_algo_impls.shared.actor import Actor, PiForward, actor_head
 from rl_algo_impls.shared.encoder import Encoder
 from rl_algo_impls.shared.policy.critic import CriticHead
-from rl_algo_impls.shared.policy.on_policy import (
+from rl_algo_impls.shared.policy.actor_critic import (
     OnPolicy,
     Step,
     clamp_actions,

@@ -12,7 +12,7 @@ from torch.utils.tensorboard.writer import SummaryWriter
 from rl_algo_impls.shared.algorithm import Algorithm
 from rl_algo_impls.shared.callbacks.callback import Callback
 from rl_algo_impls.shared.gae import compute_advantages
-from rl_algo_impls.shared.policy.on_policy import ActorCritic
+from rl_algo_impls.shared.policy.actor_critic import ActorCritic
 from rl_algo_impls.shared.schedule import schedule, update_learning_rate
 from rl_algo_impls.shared.stats import log_scalars
 from rl_algo_impls.wrappers.action_mask_wrapper import find_action_masker
