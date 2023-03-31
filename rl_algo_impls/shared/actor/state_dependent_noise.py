@@ -5,7 +5,7 @@ import torch.nn as nn
 from torch.distributions import Distribution, Normal
 
 from rl_algo_impls.shared.actor.actor import Actor, PiForward
-from rl_algo_impls.shared.module.module import mlp
+from rl_algo_impls.shared.module.utils import mlp
 
 
 class TanhBijector:

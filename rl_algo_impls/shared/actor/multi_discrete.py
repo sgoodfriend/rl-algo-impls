@@ -9,7 +9,7 @@ from torch.distributions import Distribution, constraints
 from rl_algo_impls.shared.actor.actor import Actor, PiForward
 from rl_algo_impls.shared.actor.categorical import MaskedCategorical
 from rl_algo_impls.shared.encoder import EncoderOutDim
-from rl_algo_impls.shared.module.module import mlp
+from rl_algo_impls.shared.module.utils import mlp
 
 
 class MultiCategorical(Distribution):

@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 
 from rl_algo_impls.shared.encoder.cnn import FlattenedCnnEncoder
-from rl_algo_impls.shared.module.module import layer_init
+from rl_algo_impls.shared.module.utils import layer_init
 
 
 class MicrortsCnn(FlattenedCnnEncoder):

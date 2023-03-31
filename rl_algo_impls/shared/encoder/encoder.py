@@ -12,7 +12,7 @@ from rl_algo_impls.shared.encoder.gridnet_encoder import GridnetEncoder
 from rl_algo_impls.shared.encoder.impala_cnn import ImpalaCnn
 from rl_algo_impls.shared.encoder.microrts_cnn import MicrortsCnn
 from rl_algo_impls.shared.encoder.nature_cnn import NatureCnn
-from rl_algo_impls.shared.module.module import layer_init
+from rl_algo_impls.shared.module.utils import layer_init
 
 CNN_EXTRACTORS_BY_STYLE: Dict[str, Type[CnnEncoder]] = {
     "nature": NatureCnn,

@@ -6,7 +6,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from rl_algo_impls.shared.module.module import layer_init
+from rl_algo_impls.shared.module.utils import layer_init
 
 EncoderOutDim = Union[int, Tuple[int, ...]]
 

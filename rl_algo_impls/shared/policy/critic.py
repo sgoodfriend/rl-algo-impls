@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 
 from rl_algo_impls.shared.encoder import EncoderOutDim
-from rl_algo_impls.shared.module.module import mlp
+from rl_algo_impls.shared.module.utils import mlp
 
 
 class CriticHead(nn.Module):

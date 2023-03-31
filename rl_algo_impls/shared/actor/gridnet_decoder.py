@@ -9,7 +9,7 @@ from rl_algo_impls.shared.actor import Actor, PiForward
 from rl_algo_impls.shared.actor.categorical import MaskedCategorical
 from rl_algo_impls.shared.actor.gridnet import GridnetDistribution
 from rl_algo_impls.shared.encoder import EncoderOutDim
-from rl_algo_impls.shared.module.module import layer_init
+from rl_algo_impls.shared.module.utils import layer_init
 
 
 class Transpose(nn.Module):
