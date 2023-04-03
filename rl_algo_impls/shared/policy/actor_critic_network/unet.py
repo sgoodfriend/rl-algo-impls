@@ -43,7 +43,12 @@ class UNetActorCriticNetwork(ActorCriticNetwork):
         ) -> nn.Module:
             return nn.Sequential(
                 layer_init(
-                    nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1),
+                    nn.Conv2d(
+                        in_channels,
+                        out_channels,
+                        kernel_size=kernel_size,
+                        padding=padding,
+                    ),
                     cnn_layers_init_orthogonal,
                 ),
                 activation(),
@@ -82,7 +87,7 @@ class UNetActorCriticNetwork(ActorCriticNetwork):
             conv_relu(64, 32),
             layer_init(
                 nn.Conv2d(32, self.action_vec.sum(), kernel_size=1, padding=0),
-                init_layers_orthogonal=cnn_layers_init_orthogonal,
+                cnn_layers_init_orthogonal,
                 std=0.01,
             ),
             Transpose((0, 2, 3, 1)),
