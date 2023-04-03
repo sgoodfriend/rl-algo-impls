@@ -102,7 +102,14 @@ class ActorCritic(OnPolicy):
         self.squash_output = squash_output
 
         if actor_head_style == "unet":
-            raise NotImplementedError
+            self.network = UNetActorCriticNetwork(
+                observation_space,
+                action_space,
+                v_hidden_sizes=v_hidden_sizes,
+                init_layers_orthogonal=init_layers_orthogonal,
+                activation_fn=activation_fn,
+                cnn_layers_init_orthogonal=cnn_layers_init_orthogonal,
+            )
         elif share_features_extractor:
             self.network = ConnectedTrioActorCriticNetwork(
                 observation_space,

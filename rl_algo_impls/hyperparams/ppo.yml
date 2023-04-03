@@ -305,6 +305,13 @@ enc-dec-MicrortsDefeatRandomEnemySparseReward-v3:
     actor_head_style: gridnet_decoder
     v_hidden_sizes: [128]
 
+unet-MicrortsDefeatRandomEnemySparseReward-v3:
+  <<: *microrts-random-ai-defaults
+  policy_hyperparams:
+    <<: *microrts-ai-policy-defaults
+    actor_head_style: unet
+    v_hidden_sizes: [128]
+
 MicrortsDefeatCoacAIShaped-v3: &microrts-coacai-defaults
   <<: *microrts-ai-defaults
   env_id: MicrortsDefeatCoacAIShaped-v3 # Workaround to keep model name simple
@@ -325,11 +332,23 @@ MicrortsDefeatCoacAIShaped-v3-diverseBots: &microrts-diverse-defaults
       workerRushAI: 2
 
 enc-dec-MicrortsDefeatCoacAIShaped-v3-diverseBots:
+  &microrts-env-dec-diverse-defaults
   <<: *microrts-diverse-defaults
   policy_hyperparams:
     <<: *microrts-ai-policy-defaults
     cnn_style: gridnet_encoder
     actor_head_style: gridnet_decoder
+    v_hidden_sizes: [128]
+
+debug-enc-dec-MicrortsDefeatCoacAIShaped-v3-diverseBots:
+  <<: *microrts-env-dec-diverse-defaults
+  n_timesteps: !!float 1e6
+
+unet-MicrortsDefeatCoacAIShaped-v3-diverseBots:
+  <<: *microrts-diverse-defaults
+  policy_hyperparams:
+    <<: *microrts-ai-policy-defaults
+    actor_head_style: unet
     v_hidden_sizes: [128]
 
 HalfCheetahBulletEnv-v0: &pybullet-defaults
