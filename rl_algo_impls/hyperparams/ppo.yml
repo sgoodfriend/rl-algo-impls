@@ -354,6 +354,9 @@ unet-MicrortsDefeatCoacAIShaped-v3-diverseBots:
     <<: *microrts-ai-policy-defaults
     actor_head_style: unet
     v_hidden_sizes: [128]
+  algo_hyperparams:
+    <<: *microrts-ai-algo-defaults
+    learning_rate: !!float 1e-4
 
 HalfCheetahBulletEnv-v0: &pybullet-defaults
   n_timesteps: !!float 2e6
