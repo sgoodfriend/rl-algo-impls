@@ -311,7 +311,7 @@ unet-MicrortsDefeatRandomEnemySparseReward-v3:
   policy_hyperparams:
     <<: *microrts-ai-policy-defaults
     actor_head_style: unet
-    v_hidden_sizes: [128]
+    v_hidden_sizes: [256, 128]
   algo_hyperparams:
     <<: *microrts-ai-algo-defaults
     learning_rate: !!float 1e-4
@@ -353,7 +353,7 @@ unet-MicrortsDefeatCoacAIShaped-v3-diverseBots:
   policy_hyperparams:
     <<: *microrts-ai-policy-defaults
     actor_head_style: unet
-    v_hidden_sizes: [128]
+    v_hidden_sizes: [256, 128]
   algo_hyperparams:
     <<: *microrts-ai-algo-defaults
     learning_rate: !!float 1e-4
