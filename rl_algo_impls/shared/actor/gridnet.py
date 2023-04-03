@@ -6,7 +6,7 @@ import torch.nn as nn
 from numpy.typing import NDArray
 from torch.distributions import Distribution, constraints
 
-from rl_algo_impls.shared.actor import Actor, PiForward
+from rl_algo_impls.shared.actor import Actor, PiForward, pi_forward
 from rl_algo_impls.shared.actor.categorical import MaskedCategorical
 from rl_algo_impls.shared.encoder import EncoderOutDim
 from rl_algo_impls.shared.module.utils import mlp
@@ -101,7 +101,7 @@ class GridnetActorHead(Actor):
         ), f"No mask case unhandled in {self.__class__.__name__}"
         logits = self._fc(obs)
         pi = GridnetDistribution(self.map_size, self.action_vec, logits, action_masks)
-        return self.pi_forward(pi, actions)
+        return pi_forward(pi, actions)
 
     @property
     def action_shape(self) -> Tuple[int, ...]:
