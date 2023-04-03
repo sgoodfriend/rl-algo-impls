@@ -307,10 +307,14 @@ enc-dec-MicrortsDefeatRandomEnemySparseReward-v3:
 
 unet-MicrortsDefeatRandomEnemySparseReward-v3:
   <<: *microrts-random-ai-defaults
+  # device: cpu
   policy_hyperparams:
     <<: *microrts-ai-policy-defaults
     actor_head_style: unet
     v_hidden_sizes: [128]
+  algo_hyperparams:
+    <<: *microrts-ai-algo-defaults
+    learning_rate: !!float 1e-4
 
 MicrortsDefeatCoacAIShaped-v3: &microrts-coacai-defaults
   <<: *microrts-ai-defaults
