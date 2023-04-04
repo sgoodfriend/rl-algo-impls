@@ -278,6 +278,7 @@ _microrts_ai: &microrts-ai-defaults
     max_grad_norm: 0.5
     clip_range: 0.1
     clip_range_vf: 0.1
+    gamma: 0.999
 
 MicrortsAttackPassiveEnemySparseReward-v3:
   <<: *microrts-ai-defaults
