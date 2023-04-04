@@ -326,6 +326,7 @@ MicrortsDefeatCoacAIShaped-v3: &microrts-coacai-defaults
     bots:
       coacAI: 24
   eval_hyperparams:
+    step_freq: !!float 5e5
     n_episodes: 26
     env_overrides:
       n_envs: 26
