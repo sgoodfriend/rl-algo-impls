@@ -21,6 +21,7 @@ StatisticSelf = TypeVar("StatisticSelf", bound="Statistic")
 class Statistic:
     values: np.ndarray
     round_digits: int = 2
+    score_function: str = "mean-std"
 
     @property
     def mean(self) -> float:
@@ -44,8 +45,18 @@ class Statistic:
     def __len__(self) -> int:
         return len(self.values)
 
+    def score(self) -> float:
+        if self.score_function == "mean-std":
+            return self.mean - self.std
+        elif self.score_function == "mean":
+            return self.mean
+        else:
+            raise NotImplemented(
+                f"Only mean-std and mean score_functions supported ({self.score_function})"
+            )
+
     def _diff(self: StatisticSelf, o: StatisticSelf) -> float:
-        return (self.mean - self.std) - (o.mean - o.std)
+        return self.score() - o.score()
 
     def __gt__(self: StatisticSelf, o: StatisticSelf) -> bool:
         return self._diff(o) > 0
@@ -55,9 +66,13 @@ class Statistic:
 
     def __repr__(self) -> str:
         mean = round(self.mean, self.round_digits)
-        std = round(self.std, self.round_digits)
         if self.round_digits == 0:
             mean = int(mean)
+        if self.score_function == "mean":
+            return f"{mean}"
+
+        std = round(self.std, self.round_digits)
+        if self.round_digits == 0:
             std = int(std)
         return f"{mean} +/- {std}"
 
@@ -74,16 +89,17 @@ EpisodesStatsSelf = TypeVar("EpisodesStatsSelf", bound="EpisodesStats")
 
 
 class EpisodesStats:
-    episodes: Sequence[Episode]
-    simple: bool
-    score: Statistic
-    length: Statistic
-    additional_stats: Dict[str, Statistic]
-
-    def __init__(self, episodes: Sequence[Episode], simple: bool = False) -> None:
+    def __init__(
+        self,
+        episodes: Sequence[Episode],
+        simple: bool = False,
+        score_function: str = "mean-std",
+    ) -> None:
         self.episodes = episodes
         self.simple = simple
-        self.score = Statistic(np.array([e.score for e in episodes]))
+        self.score = Statistic(
+            np.array([e.score for e in episodes]), score_function=score_function
+        )
         self.length = Statistic(np.array([e.length for e in episodes]), round_digits=0)
         additional_values = defaultdict(list)
         for e in self.episodes:
@@ -97,6 +113,7 @@ class EpisodesStats:
         self.additional_stats = {
             k: Statistic(np.array(values)) for k, values in additional_values.items()
         }
+        self.score_function = score_function
 
     def __gt__(self: EpisodesStatsSelf, o: EpisodesStatsSelf) -> bool:
         return self.score > o.score
@@ -105,10 +122,12 @@ class EpisodesStats:
         return self.score >= o.score
 
     def __repr__(self) -> str:
-        return (
-            f"Score: {self.score} ({round(self.score.mean - self.score.std, 2)}) | "
-            f"Length: {self.length}"
-        )
+        mean = self.score.mean
+        score = self.score.score()
+        if mean != score:
+            return f"Score: {self.score} ({round(score)}) | Length: {self.length}"
+        else:
+            return f"Score: {self.score} | Length: {self.length}"
 
     def __len__(self) -> int:
         return len(self.episodes)
@@ -129,7 +148,7 @@ class EpisodesStats:
                 {
                     "min": self.score.min,
                     "max": self.score.max,
-                    "result": self.score.mean - self.score.std,
+                    "result": self.score.score(),
                     "n_episodes": len(self.episodes),
                     "length": self.length.mean,
                 }

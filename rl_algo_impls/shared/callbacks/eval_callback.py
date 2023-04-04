@@ -80,6 +80,7 @@ def evaluate(
     print_returns: bool = True,
     ignore_first_episode: bool = False,
     additional_keys_to_log: Optional[List[str]] = None,
+    score_function: str = "mean-std",
 ) -> EpisodesStats:
     policy.sync_normalization(env)
     policy.eval()
@@ -104,7 +105,10 @@ def evaluate(
         episodes.step(rew, done, info)
         if render:
             env.render()
-    stats = EpisodesStats(episodes.episodes)
+    stats = EpisodesStats(
+        episodes.episodes,
+        score_function=score_function,
+    )
     if print_returns:
         print(stats)
     return stats
@@ -127,6 +131,7 @@ class EvalCallback(Callback):
         max_video_length: int = 3600,
         ignore_first_episode: bool = False,
         additional_keys_to_log: Optional[List[str]] = None,
+        score_function: str = "mean-std",
     ) -> None:
         super().__init__()
         self.policy = policy
@@ -151,6 +156,7 @@ class EvalCallback(Callback):
         self.best_video_base_path = None
         self.ignore_first_episode = ignore_first_episode
         self.additional_keys_to_log = additional_keys_to_log
+        self.score_function = score_function
 
     def on_step(self, timesteps_elapsed: int = 1) -> bool:
         super().on_step(timesteps_elapsed)
@@ -170,6 +176,7 @@ class EvalCallback(Callback):
             print_returns=print_returns or False,
             ignore_first_episode=self.ignore_first_episode,
             additional_keys_to_log=self.additional_keys_to_log,
+            score_function=self.score_function,
         )
         end_time = perf_counter()
         self.tb_writer.add_scalar(
@@ -208,6 +215,7 @@ class EvalCallback(Callback):
                     1,
                     deterministic=self.deterministic,
                     print_returns=False,
+                    score_function=self.score_function,
                 )
                 print(f"Saved best video: {video_stats}")
 
