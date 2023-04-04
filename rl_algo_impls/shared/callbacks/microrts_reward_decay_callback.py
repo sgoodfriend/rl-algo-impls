@@ -28,7 +28,7 @@ class MicrortsRewardDecayCallback(Callback):
 
         progress = self.timesteps_elapsed / self.total_train_timesteps
         # Decay all rewards except WinLoss
-        reward_weights = self.base_reward_weights @ np.array(
+        reward_weights = self.base_reward_weights * np.array(
             [1] + [1 - progress] * (len(self.base_reward_weights) - 1)
         )
         self.microrts_env.reward_weight = reward_weights
