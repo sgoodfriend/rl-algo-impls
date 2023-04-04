@@ -279,13 +279,13 @@ _microrts_ai: &microrts-ai-defaults
     clip_range: 0.1
     clip_range_vf: 0.1
     gamma: 0.999
-  eval_hyperparams: &microrts-ai-eval-defaults
-    score_function: mean
-    env_overrides: &microrts-ai-eval-env-overrides
-      make_kwargs:
-        <<: *microrts-ai-env-make-kwargs-defaults
-        max_steps: 4000
-        reward_weight: [1.0, 0, 0, 0, 0, 0]
+  # eval_hyperparams: &microrts-ai-eval-defaults
+  #   score_function: mean
+  #   env_overrides: &microrts-ai-eval-env-overrides
+  #     make_kwargs:
+  #       <<: *microrts-ai-env-make-kwargs-defaults
+  #       max_steps: 4000
+  #       reward_weight: [1.0, 0, 0, 0, 0, 0]
 
 MicrortsAttackPassiveEnemySparseReward-v3:
   <<: *microrts-ai-defaults
@@ -333,27 +333,27 @@ MicrortsDefeatCoacAIShaped-v3: &microrts-coacai-defaults
     <<: *microrts-ai-env-defaults
     bots:
       coacAI: 24
-  eval_hyperparams:
-    <<: *microrts-ai-eval-defaults
-    step_freq: !!float 5e5
-    n_episodes: 26
-    env_overrides:
-      <<: *microrts-ai-eval-env-overrides
-      n_envs: 26
-      bots:
-        coacAI: 2
-        randomBiasedAI: 2
-        randomAI: 2
-        passiveAI: 2
-        workerRushAI: 2
-        lightRushAI: 2
-        naiveMCTSAI: 2
-        mixedBot: 2
-        rojo: 2
-        izanagi: 2
-        tiamat: 2
-        droplet: 2
-        guidedRojoA3N: 2
+  # eval_hyperparams:
+  #   <<: *microrts-ai-eval-defaults
+  #   step_freq: !!float 5e5
+  #   n_episodes: 26
+  #   env_overrides:
+  #     <<: *microrts-ai-eval-env-overrides
+  #     n_envs: 26
+  #     bots:
+  #       coacAI: 2
+  #       randomBiasedAI: 2
+  #       randomAI: 2
+  #       passiveAI: 2
+  #       workerRushAI: 2
+  #       lightRushAI: 2
+  #       naiveMCTSAI: 2
+  #       mixedBot: 2
+  #       rojo: 2
+  #       izanagi: 2
+  #       tiamat: 2
+  #       droplet: 2
+  #       guidedRojoA3N: 2
 
 MicrortsDefeatCoacAIShaped-v3-diverseBots: &microrts-diverse-defaults
   <<: *microrts-coacai-defaults
