@@ -1,12 +1,14 @@
 # Support for PyTorch mps mode (https://pytorch.org/docs/stable/notes/mps.html)
 import os
 
+from rl_algo_impls.shared.callbacks.callback import Callback
+
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
 
 import dataclasses
 import shutil
 from dataclasses import asdict, dataclass
-from typing import Any, Dict, Optional, Sequence
+from typing import Any, Dict, List, Optional, Sequence
 
 import yaml
 from torch.utils.tensorboard.writer import SummaryWriter
@@ -23,6 +25,9 @@ from rl_algo_impls.runner.running_utils import (
     set_seeds,
 )
 from rl_algo_impls.shared.callbacks.eval_callback import EvalCallback
+from rl_algo_impls.shared.callbacks.microrts_reward_decay_callback import (
+    MicrortsRewardDecayCallback,
+)
 from rl_algo_impls.shared.stats import EpisodesStats
 from rl_algo_impls.shared.vec_env import make_env, make_eval_env
 
@@ -82,21 +87,25 @@ def train(args: TrainArgs):
 
     eval_env = make_eval_env(config, EnvHyperparams(**config.env_hyperparams))
     record_best_videos = config.eval_hyperparams.get("record_best_videos", True)
-    callback = EvalCallback(
-        policy,
-        eval_env,
-        tb_writer,
-        best_model_path=config.model_dir_path(best=True),
-        **config.eval_callback_params(),
-        video_env=make_eval_env(
-            config, EnvHyperparams(**config.env_hyperparams), override_n_envs=1
+    callbacks: List[Callback] = [
+        EvalCallback(
+            policy,
+            eval_env,
+            tb_writer,
+            best_model_path=config.model_dir_path(best=True),
+            **config.eval_callback_params(),
+            video_env=make_eval_env(
+                config, EnvHyperparams(**config.env_hyperparams), override_n_envs=1
+            )
+            if record_best_videos
+            else None,
+            best_video_dir=config.best_videos_dir,
+            additional_keys_to_log=config.additional_keys_to_log,
         )
-        if record_best_videos
-        else None,
-        best_video_dir=config.best_videos_dir,
-        additional_keys_to_log=config.additional_keys_to_log,
-    )
-    algo.learn(config.n_timesteps, callbacks=[callback])
+    ]
+    if config.hyperparams.microrts_reward_decay_callback:
+        callbacks.append(MicrortsRewardDecayCallback(config, env))
+    algo.learn(config.n_timesteps, callbacks=callbacks)
 
     policy.save(config.model_dir_path(best=False))
 

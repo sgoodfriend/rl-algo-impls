@@ -279,6 +279,7 @@ _microrts_ai: &microrts-ai-defaults
     clip_range: 0.1
     clip_range_vf: 0.1
     gamma: 0.999
+  microrts_reward_decay_callback: true
   eval_hyperparams: &microrts-ai-eval-defaults
     <<: *microrts-eval-defaults
     score_function: mean

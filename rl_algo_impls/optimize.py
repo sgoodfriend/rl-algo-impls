@@ -26,6 +26,10 @@ from rl_algo_impls.runner.running_utils import (
     make_policy,
     set_seeds,
 )
+from rl_algo_impls.shared.callbacks.callback import Callback
+from rl_algo_impls.shared.callbacks.microrts_reward_decay_callback import (
+    MicrortsRewardDecayCallback,
+)
 from rl_algo_impls.shared.callbacks.optimize_callback import (
     Evaluation,
     OptimizeCallback,
@@ -203,17 +207,21 @@ def simple_optimize(trial: optuna.Trial, args: RunArgs, study_args: StudyArgs) -
         EnvHyperparams(**config.env_hyperparams),
         override_n_envs=study_args.n_eval_envs,
     )
-    callback = OptimizeCallback(
-        policy,
-        eval_env,
-        trial,
-        tb_writer,
-        step_freq=config.n_timesteps // study_args.n_evaluations,
-        n_episodes=study_args.n_eval_episodes,
-        deterministic=config.eval_hyperparams.get("deterministic", True),
-    )
+    callbacks: List[Callback] = [
+        OptimizeCallback(
+            policy,
+            eval_env,
+            trial,
+            tb_writer,
+            step_freq=config.n_timesteps // study_args.n_evaluations,
+            n_episodes=study_args.n_eval_episodes,
+            deterministic=config.eval_hyperparams.get("deterministic", True),
+        )
+    ]
+    if config.hyperparams.microrts_reward_decay_callback:
+        callbacks.append(MicrortsRewardDecayCallback(config, env))
     try:
-        algo.learn(config.n_timesteps, callbacks=[callback])
+        algo.learn(config.n_timesteps, callbacks=callbacks)
 
         if not callback.is_pruned:
             callback.evaluate()
@@ -319,10 +327,17 @@ def stepwise_optimize(
                 - start_timesteps
             )
 
+            callbacks = []
+            if config.hyperparams.microrts_reward_decay_callback:
+                callbacks.append(
+                    MicrortsRewardDecayCallback(
+                        config, env, start_timesteps=start_timesteps
+                    )
+                )
             try:
                 algo.learn(
                     train_timesteps,
-                    callback=None,
+                    callbacks=callbacks,
                     total_timesteps=config.n_timesteps,
                     start_timesteps=start_timesteps,
                 )
