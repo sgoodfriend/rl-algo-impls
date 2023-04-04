@@ -344,6 +344,7 @@ MicrortsDefeatCoacAIShaped-v3: &microrts-coacai-defaults
         tiamat: 2
         droplet: 2
         guidedRojoA3N: 2
+      reward_weight: [1.0, 0, 0, 0, 0, 0]
       make_kwargs:
         <<: *microrts-ai-env-make-kwargs-defaults
         max_steps: 4000

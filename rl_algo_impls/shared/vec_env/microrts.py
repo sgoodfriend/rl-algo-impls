@@ -57,6 +57,13 @@ def make_microrts_env(
     if "num_bot_envs" not in make_kwargs:
         make_kwargs["num_bot_envs"] = n_envs - make_kwargs["num_selfplay_envs"]
     if "reward_weight" in make_kwargs:
+        # Reward Weights:
+        # WinLossRewardFunction
+        # ResourceGatherRewardFunction
+        # ProduceWorkerRewardFunction
+        # ProduceBuildingRewardFunction
+        # AttackRewardFunction
+        # ProduceCombatUnitRewardFunction
         make_kwargs["reward_weight"] = np.array(make_kwargs["reward_weight"])
     if bots:
         ai2s = []
