@@ -2,30 +2,29 @@ import dataclasses
 import gc
 import inspect
 import logging
+import os
+from dataclasses import asdict, dataclass
+from typing import Callable, List, NamedTuple, Optional, Sequence, Union
+
 import numpy as np
 import optuna
-import os
 import torch
-import wandb
-
-from dataclasses import asdict, dataclass
 from optuna.pruners import HyperbandPruner
 from optuna.samplers import TPESampler
 from optuna.visualization import plot_optimization_history, plot_param_importances
 from torch.utils.tensorboard.writer import SummaryWriter
-from typing import Callable, List, NamedTuple, Optional, Sequence, Union
 
+import wandb
 from rl_algo_impls.a2c.optimize import sample_params as a2c_sample_params
 from rl_algo_impls.runner.config import Config, EnvHyperparams, RunArgs
-from rl_algo_impls.shared.vec_env import make_env, make_eval_env
 from rl_algo_impls.runner.running_utils import (
-    base_parser,
-    load_hyperparams,
-    set_seeds,
-    get_device,
-    make_policy,
     ALGOS,
+    base_parser,
+    get_device,
     hparam_dict,
+    load_hyperparams,
+    make_policy,
+    set_seeds,
 )
 from rl_algo_impls.shared.callbacks.optimize_callback import (
     Evaluation,
@@ -33,6 +32,7 @@ from rl_algo_impls.shared.callbacks.optimize_callback import (
     evaluation,
 )
 from rl_algo_impls.shared.stats import EpisodesStats
+from rl_algo_impls.shared.vec_env import make_env, make_eval_env
 
 
 @dataclass
@@ -210,7 +210,7 @@ def simple_optimize(trial: optuna.Trial, args: RunArgs, study_args: StudyArgs) -
         tb_writer,
         step_freq=config.n_timesteps // study_args.n_evaluations,
         n_episodes=study_args.n_eval_episodes,
-        deterministic=config.eval_params.get("deterministic", True),
+        deterministic=config.eval_hyperparams.get("deterministic", True),
     )
     try:
         algo.learn(config.n_timesteps, callback=callback)
@@ -333,7 +333,7 @@ def stepwise_optimize(
                         eval_env,
                         tb_writer,
                         study_args.n_eval_episodes,
-                        config.eval_params.get("deterministic", True),
+                        config.eval_hyperparams.get("deterministic", True),
                         start_timesteps + train_timesteps,
                     )
                 )

@@ -1,20 +1,19 @@
 import os
 import shutil
-
 from dataclasses import dataclass
 from typing import NamedTuple, Optional
 
-from rl_algo_impls.shared.vec_env import make_eval_env
 from rl_algo_impls.runner.config import Config, EnvHyperparams, Hyperparams, RunArgs
 from rl_algo_impls.runner.running_utils import (
-    load_hyperparams,
-    set_seeds,
     get_device,
+    load_hyperparams,
     make_policy,
+    set_seeds,
 )
 from rl_algo_impls.shared.callbacks.eval_callback import evaluate
 from rl_algo_impls.shared.policy.policy import Policy
 from rl_algo_impls.shared.stats import EpisodesStats
+from rl_algo_impls.shared.vec_env import make_eval_env
 
 
 @dataclass
@@ -87,7 +86,7 @@ def evaluate_model(args: EvalArgs, root_dir: str) -> Evaluation:
     deterministic = (
         args.deterministic_eval
         if args.deterministic_eval is not None
-        else config.eval_params.get("deterministic", True)
+        else config.eval_hyperparams.get("deterministic", True)
     )
     return Evaluation(
         policy,

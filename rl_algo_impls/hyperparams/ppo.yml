@@ -13,7 +13,7 @@ CartPole-v1: &cartpole-defaults
     learning_rate_decay: linear
     clip_range: 0.2
     clip_range_decay: linear
-  eval_params:
+  eval_hyperparams:
     step_freq: !!float 2.5e4
 
 CartPole-v0:
@@ -52,7 +52,7 @@ MountainCarContinuous-v0:
     gae_lambda: 0.9
     max_grad_norm: 5
     vf_coef: 0.19
-  eval_params:
+  eval_hyperparams:
     step_freq: 5000
 
 Acrobot-v1:
@@ -162,7 +162,7 @@ _atari: &atari-defaults
     clip_range_decay: linear
     vf_coef: 0.5
     ent_coef: 0.01
-  eval_params:
+  eval_hyperparams:
     deterministic: false
 
 _norm-rewards-atari: &norm-rewards-atari-default
@@ -228,7 +228,7 @@ _microrts: &microrts-defaults
     clip_range_decay: none
     clip_range_vf: 0.1
     ppo2_vf_coef_halving: true
-  eval_params:
+  eval_hyperparams:
     deterministic: false # Good idea because MultiCategorical mode isn't great
 
 _no-mask-microrts: &no-mask-microrts-defaults
@@ -256,7 +256,7 @@ _microrts_ai: &microrts-ai-defaults
   env_hyperparams: &microrts-ai-env-defaults
     n_envs: 24
     env_type: microrts
-    make_kwargs:
+    make_kwargs: &microrts-ai-env-make-kwargs-defaults
       num_selfplay_envs: 0
       max_steps: 2000
       render_theme: 2
@@ -325,6 +325,27 @@ MicrortsDefeatCoacAIShaped-v3: &microrts-coacai-defaults
     <<: *microrts-ai-env-defaults
     bots:
       coacAI: 24
+  eval_hyperparams:
+    n_episodes: 26
+    env_overrides:
+      n_envs: 26
+      bots:
+        coacAI: 2
+        randomBiasedAI: 2
+        randomAI: 2
+        passiveAI: 2
+        workerRushAI: 2
+        lightRushAI: 2
+        naiveMCTSAI: 2
+        mixedBot: 2
+        rojo: 2
+        izanagi: 2
+        tiamat: 2
+        droplet: 2
+        guidedRojoA3N: 2
+      make_kwargs:
+        <<: *microrts-ai-env-make-kwargs-defaults
+        max_steps: 4000
 
 MicrortsDefeatCoacAIShaped-v3-diverseBots: &microrts-diverse-defaults
   <<: *microrts-coacai-defaults
@@ -446,7 +467,7 @@ _procgen: &procgen-defaults
     learning_rate: !!float 5e-4
     # learning_rate_decay: linear
     vf_coef: 0.5
-  eval_params: &procgen-eval-defaults
+  eval_hyperparams: &procgen-eval-defaults
     ignore_first_episode: true
     # deterministic: false
     step_freq: !!float 1e5
@@ -494,7 +515,7 @@ _procgen-hard: &procgen-hard-defaults
     batch_size: 8192
     clip_range_decay: linear
     learning_rate_decay: linear
-  eval_params:
+  eval_hyperparams:
     <<: *procgen-eval-defaults
     step_freq: !!float 5e5
 

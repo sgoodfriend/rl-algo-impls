@@ -15,7 +15,7 @@ CartPole-v1: &cartpole-defaults
     gradient_steps: 128
     exploration_fraction: 0.16
     exploration_final_eps: 0.04
-  eval_params:
+  eval_hyperparams:
     step_freq: !!float 1e4
 
 CartPole-v0:
@@ -76,7 +76,7 @@ LunarLander-v2:
     exploration_fraction: 0.12
     exploration_final_eps: 0.1
     max_grad_norm: 0.5
-  eval_params:
+  eval_hyperparams:
     step_freq: 25_000
 
 _atari: &atari-defaults
@@ -97,7 +97,7 @@ _atari: &atari-defaults
     gradient_steps: 2
     exploration_fraction: 0.1
     exploration_final_eps: 0.01
-  eval_params:
+  eval_hyperparams:
     deterministic: false
 
 PongNoFrameskip-v4:

@@ -7,7 +7,7 @@ CartPole-v1: &cartpole-defaults
     gae_lambda: 1
     val_lr: 0.01
     train_v_iters: 80
-  eval_params:
+  eval_hyperparams:
     step_freq: !!float 2.5e4
 
 CartPole-v0:
@@ -52,7 +52,7 @@ MountainCarContinuous-v0:
     val_lr: !!float 1e-3
     train_v_iters: 80
     max_grad_norm: 5
-  eval_params:
+  eval_hyperparams:
     step_freq: 5000
 
 Acrobot-v1:
@@ -78,7 +78,7 @@ LunarLander-v2:
     val_lr: 0.0001
     train_v_iters: 80
     max_grad_norm: 0.5
-  eval_params:
+  eval_hyperparams:
     deterministic: false
 
 BipedalWalker-v3:
@@ -96,7 +96,7 @@ BipedalWalker-v3:
     val_lr: !!float 1e-4
     train_v_iters: 80
     max_grad_norm: 0.5
-  eval_params:
+  eval_hyperparams:
     deterministic: false
 
 CarRacing-v0:
@@ -169,7 +169,7 @@ FrozenLake-v1:
     val_lr: 0.01
     train_v_iters: 80
     max_grad_norm: 0.5
-  eval_params:
+  eval_hyperparams:
     step_freq: !!float 5e4
     n_episodes: 10
     save_best: true
@@ -193,5 +193,5 @@ _atari: &atari-defaults
     train_v_iters: 80
     max_grad_norm: 0.5
     ent_coef: 0.01
-  eval_params:
+  eval_hyperparams:
     deterministic: false
