@@ -228,7 +228,7 @@ _microrts: &microrts-defaults
     clip_range_decay: none
     clip_range_vf: 0.1
     ppo2_vf_coef_halving: true
-  eval_hyperparams:
+  eval_hyperparams: &microrts-eval-defaults
     deterministic: false # Good idea because MultiCategorical mode isn't great
 
 _no-mask-microrts: &no-mask-microrts-defaults
@@ -280,6 +280,7 @@ _microrts_ai: &microrts-ai-defaults
     clip_range_vf: 0.1
     gamma: 0.999
   eval_hyperparams: &microrts-ai-eval-defaults
+    <<: *microrts-eval-defaults
     score_function: mean
     env_overrides: &microrts-ai-eval-env-overrides
       make_kwargs:
