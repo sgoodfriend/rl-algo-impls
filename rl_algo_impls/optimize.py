@@ -207,25 +207,24 @@ def simple_optimize(trial: optuna.Trial, args: RunArgs, study_args: StudyArgs) -
         EnvHyperparams(**config.env_hyperparams),
         override_n_envs=study_args.n_eval_envs,
     )
-    callbacks: List[Callback] = [
-        OptimizeCallback(
-            policy,
-            eval_env,
-            trial,
-            tb_writer,
-            step_freq=config.n_timesteps // study_args.n_evaluations,
-            n_episodes=study_args.n_eval_episodes,
-            deterministic=config.eval_hyperparams.get("deterministic", True),
-        )
-    ]
+    optimize_callback = OptimizeCallback(
+        policy,
+        eval_env,
+        trial,
+        tb_writer,
+        step_freq=config.n_timesteps // study_args.n_evaluations,
+        n_episodes=study_args.n_eval_episodes,
+        deterministic=config.eval_hyperparams.get("deterministic", True),
+    )
+    callbacks: List[Callback] = [optimize_callback]
     if config.hyperparams.microrts_reward_decay_callback:
         callbacks.append(MicrortsRewardDecayCallback(config, env))
     try:
         algo.learn(config.n_timesteps, callbacks=callbacks)
 
-        if not callback.is_pruned:
-            callback.evaluate()
-            if not callback.is_pruned:
+        if not optimize_callback.is_pruned:
+            optimize_callback.evaluate()
+            if not optimize_callback.is_pruned:
                 policy.save(config.model_dir_path(best=False))
 
         eval_stat: EpisodesStats = callback.last_eval_stat  # type: ignore
@@ -238,8 +237,8 @@ def simple_optimize(trial: optuna.Trial, args: RunArgs, study_args: StudyArgs) -
                 "hparam/last_result": eval_stat.score.mean - eval_stat.score.std,
                 "hparam/train_mean": train_stat.score.mean,
                 "hparam/train_result": train_stat.score.mean - train_stat.score.std,
-                "hparam/score": callback.last_score,
-                "hparam/is_pruned": callback.is_pruned,
+                "hparam/score": optimize_callback.last_score,
+                "hparam/is_pruned": optimize_callback.is_pruned,
             },
             None,
             config.run_name(),
@@ -247,13 +246,15 @@ def simple_optimize(trial: optuna.Trial, args: RunArgs, study_args: StudyArgs) -
         tb_writer.close()
 
         if wandb_enabled:
-            wandb.run.summary["state"] = "Pruned" if callback.is_pruned else "Complete"
+            wandb.run.summary["state"] = (  # type: ignore
+                "Pruned" if optimize_callback.is_pruned else "Complete"
+            )
             wandb.finish(quiet=True)
 
-        if callback.is_pruned:
+        if optimize_callback.is_pruned:
             raise optuna.exceptions.TrialPruned()
 
-        return callback.last_score
+        return optimize_callback.last_score
     except AssertionError as e:
         logging.warning(e)
         return np.nan
@@ -394,7 +395,7 @@ def stepwise_optimize(
 
 
 def wandb_finish(state: str) -> None:
-    wandb.run.summary["state"] = state
+    wandb.run.summary["state"] = state  # type: ignore
     wandb.finish(quiet=True)
 
 

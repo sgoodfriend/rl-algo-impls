@@ -77,8 +77,8 @@ def train(args: TrainArgs):
     num_parameters = policy.num_parameters()
     num_trainable_parameters = policy.num_trainable_parameters()
     if wandb_enabled:
-        wandb.run.summary["num_parameters"] = num_parameters
-        wandb.run.summary["num_trainable_parameters"] = num_trainable_parameters
+        wandb.run.summary["num_parameters"] = num_parameters  # type: ignore
+        wandb.run.summary["num_trainable_parameters"] = num_trainable_parameters  # type: ignore
     else:
         print(
             f"num_parameters = {num_parameters} ; "
@@ -87,43 +87,42 @@ def train(args: TrainArgs):
 
     eval_env = make_eval_env(config, EnvHyperparams(**config.env_hyperparams))
     record_best_videos = config.eval_hyperparams.get("record_best_videos", True)
-    callbacks: List[Callback] = [
-        EvalCallback(
-            policy,
-            eval_env,
-            tb_writer,
-            best_model_path=config.model_dir_path(best=True),
-            **config.eval_callback_params(),
-            video_env=make_eval_env(
-                config, EnvHyperparams(**config.env_hyperparams), override_n_envs=1
-            )
-            if record_best_videos
-            else None,
-            best_video_dir=config.best_videos_dir,
-            additional_keys_to_log=config.additional_keys_to_log,
+    eval_callback = EvalCallback(
+        policy,
+        eval_env,
+        tb_writer,
+        best_model_path=config.model_dir_path(best=True),
+        **config.eval_callback_params(),
+        video_env=make_eval_env(
+            config, EnvHyperparams(**config.env_hyperparams), override_n_envs=1
         )
-    ]
+        if record_best_videos
+        else None,
+        best_video_dir=config.best_videos_dir,
+        additional_keys_to_log=config.additional_keys_to_log,
+    )
+    callbacks: List[Callback] = [eval_callback]
     if config.hyperparams.microrts_reward_decay_callback:
         callbacks.append(MicrortsRewardDecayCallback(config, env))
     algo.learn(config.n_timesteps, callbacks=callbacks)
 
     policy.save(config.model_dir_path(best=False))
 
-    eval_stats = callback.evaluate(n_episodes=10, print_returns=True)
+    eval_stats = eval_callback.evaluate(n_episodes=10, print_returns=True)
 
-    plot_eval_callback(callback, tb_writer, config.run_name())
+    plot_eval_callback(eval_callback, tb_writer, config.run_name())
 
     log_dict: Dict[str, Any] = {
         "eval": eval_stats._asdict(),
     }
-    if callback.best:
-        log_dict["best_eval"] = callback.best._asdict()
+    if eval_callback.best:
+        log_dict["best_eval"] = eval_callback.best._asdict()
     log_dict.update(asdict(hyperparams))
     log_dict.update(vars(args))
     with open(config.logs_path, "a") as f:
         yaml.dump({config.run_name(): log_dict}, f)
 
-    best_eval_stats: EpisodesStats = callback.best  # type: ignore
+    best_eval_stats: EpisodesStats = eval_callback.best  # type: ignore
     tb_writer.add_hparams(
         hparam_dict(hyperparams, vars(args)),
         {
