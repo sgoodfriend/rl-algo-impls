@@ -81,13 +81,13 @@ def train(args: TrainArgs):
         )
 
     eval_env = make_eval_env(config, EnvHyperparams(**config.env_hyperparams))
-    record_best_videos = config.eval_params.get("record_best_videos", True)
+    record_best_videos = config.eval_hyperparams.get("record_best_videos", True)
     callback = EvalCallback(
         policy,
         eval_env,
         tb_writer,
         best_model_path=config.model_dir_path(best=True),
-        **config.eval_params,
+        **config.eval_callback_params(),
         video_env=make_eval_env(
             config, EnvHyperparams(**config.env_hyperparams), override_n_envs=1
         )

@@ -6,7 +6,7 @@ import torch.nn as nn
 from gym.spaces import Discrete
 
 from rl_algo_impls.shared.encoder import Encoder
-from rl_algo_impls.shared.module.module import mlp
+from rl_algo_impls.shared.module.utils import mlp
 
 
 class QNetwork(nn.Module):

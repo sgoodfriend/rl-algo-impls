@@ -63,7 +63,7 @@ class Hyperparams:
     env_hyperparams: Dict[str, Any] = dataclasses.field(default_factory=dict)
     policy_hyperparams: Dict[str, Any] = dataclasses.field(default_factory=dict)
     algo_hyperparams: Dict[str, Any] = dataclasses.field(default_factory=dict)
-    eval_params: Dict[str, Any] = dataclasses.field(default_factory=dict)
+    eval_hyperparams: Dict[str, Any] = dataclasses.field(default_factory=dict)
     env_id: Optional[str] = None
     additional_keys_to_log: List[str] = dataclasses.field(default_factory=list)
 
@@ -110,8 +110,14 @@ class Config:
         return self.hyperparams.algo_hyperparams
 
     @property
-    def eval_params(self) -> Dict[str, Any]:
-        return self.hyperparams.eval_params
+    def eval_hyperparams(self) -> Dict[str, Any]:
+        return self.hyperparams.eval_hyperparams
+
+    def eval_callback_params(self) -> Dict[str, Any]:
+        eval_hyperparams = self.eval_hyperparams.copy()
+        if "env_overrides" in eval_hyperparams:
+            del eval_hyperparams["env_overrides"]
+        return eval_hyperparams
 
     @property
     def algo(self) -> str:

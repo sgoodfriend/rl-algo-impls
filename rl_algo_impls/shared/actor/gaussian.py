@@ -4,8 +4,8 @@ import torch
 import torch.nn as nn
 from torch.distributions import Distribution, Normal
 
-from rl_algo_impls.shared.actor.actor import Actor, PiForward
-from rl_algo_impls.shared.module.module import mlp
+from rl_algo_impls.shared.actor.actor import Actor, PiForward, pi_forward
+from rl_algo_impls.shared.module.utils import mlp
 
 
 class GaussianDistribution(Normal):
@@ -54,7 +54,7 @@ class GaussianActorHead(Actor):
             not action_masks
         ), f"{self.__class__.__name__} does not support action_masks"
         pi = self._distribution(obs)
-        return self.pi_forward(pi, actions)
+        return pi_forward(pi, actions)
 
     @property
     def action_shape(self) -> Tuple[int, ...]:

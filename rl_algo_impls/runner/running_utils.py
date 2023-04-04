@@ -22,7 +22,7 @@ from rl_algo_impls.ppo.ppo import PPO
 from rl_algo_impls.runner.config import Config, Hyperparams
 from rl_algo_impls.shared.algorithm import Algorithm
 from rl_algo_impls.shared.callbacks.eval_callback import EvalCallback
-from rl_algo_impls.shared.policy.on_policy import ActorCritic
+from rl_algo_impls.shared.policy.actor_critic import ActorCritic
 from rl_algo_impls.shared.policy.policy import Policy
 from rl_algo_impls.shared.vec_env.utils import import_for_env_id, is_microrts
 from rl_algo_impls.vpg.policy import VPGActorCritic
@@ -112,15 +112,7 @@ def get_device(config: Config, env: VecEnv) -> torch.device:
         elif isinstance(obs_space, Box) and len(obs_space.shape) == 1:
             device = "cpu"
         if is_microrts(config):
-            try:
-                from gym_microrts.envs.vec_env import MicroRTSGridModeVecEnv
-
-                # Models that move more than one unit at a time should use mps
-                if not isinstance(env.unwrapped, MicroRTSGridModeVecEnv):
-                    device = "cpu"
-            except ModuleNotFoundError:
-                # Likely on gym_microrts v0.0.2 to match ppo-implementation-details
-                device = "cpu"
+            device = "cpu"
     print(f"Device: {device}")
     return torch.device(device)
 

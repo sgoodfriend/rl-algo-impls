@@ -3,24 +3,23 @@ import os
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
 
 import argparse
-import requests
 import shutil
 import subprocess
 import tempfile
-import wandb
-import wandb.apis.public
-
 from typing import List, Optional
 
+import requests
+import wandb.apis.public
 from huggingface_hub.hf_api import HfApi, upload_folder
 from huggingface_hub.repocard import metadata_save
 from pyvirtualdisplay.display import Display
 
+import wandb
 from rl_algo_impls.publish.markdown_format import EvalTableData, model_card_text
 from rl_algo_impls.runner.config import EnvHyperparams
 from rl_algo_impls.runner.evaluate import EvalArgs, evaluate_model
-from rl_algo_impls.shared.vec_env import make_eval_env
 from rl_algo_impls.shared.callbacks.eval_callback import evaluate
+from rl_algo_impls.shared.vec_env import make_eval_env
 from rl_algo_impls.wrappers.vec_episode_recorder import VecEpisodeRecorder
 
 
@@ -144,7 +143,7 @@ def publish(
             video_env,
             policy,
             1,
-            deterministic=config.eval_params.get("deterministic", True),
+            deterministic=config.eval_hyperparams.get("deterministic", True),
         )
 
         api = HfApi()

@@ -5,7 +5,7 @@ import torch.nn as nn
 from torch.distributions import Distribution, Normal
 
 from rl_algo_impls.shared.actor.actor import Actor, PiForward
-from rl_algo_impls.shared.module.module import mlp
+from rl_algo_impls.shared.module.utils import mlp
 
 
 class TanhBijector:
@@ -172,7 +172,7 @@ class StateDependentNoiseActorHead(Actor):
             not action_masks
         ), f"{self.__class__.__name__} does not support action_masks"
         pi = self._distribution(obs)
-        return self.pi_forward(pi, actions)
+        return pi_forward(pi, actions)
 
     def sample_weights(self, batch_size: int = 1) -> None:
         std = self._get_std()
@@ -185,16 +185,15 @@ class StateDependentNoiseActorHead(Actor):
     def action_shape(self) -> Tuple[int, ...]:
         return (self.act_dim,)
 
-    def pi_forward(
-        self, distribution: Distribution, actions: Optional[torch.Tensor] = None
-    ) -> PiForward:
-        logp_a = None
-        entropy = None
-        if actions is not None:
-            logp_a = distribution.log_prob(actions)
-            entropy = (
-                -logp_a
-                if self.bijector
-                else sum_independent_dims(distribution.entropy())
-            )
-        return PiForward(distribution, logp_a, entropy)
+
+def pi_forward(
+    distribution: Distribution, actions: Optional[torch.Tensor] = None
+) -> PiForward:
+    logp_a = None
+    entropy = None
+    if actions is not None:
+        logp_a = distribution.log_prob(actions)
+        entropy = (
+            -logp_a if self.bijector else sum_independent_dims(distribution.entropy())
+        )
+    return PiForward(distribution, logp_a, entropy)

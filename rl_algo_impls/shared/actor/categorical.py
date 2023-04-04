@@ -4,8 +4,8 @@ import torch
 import torch.nn as nn
 from torch.distributions import Categorical
 
-from rl_algo_impls.shared.actor import Actor, PiForward
-from rl_algo_impls.shared.module.module import mlp
+from rl_algo_impls.shared.actor import Actor, PiForward, pi_forward
+from rl_algo_impls.shared.module.utils import mlp
 
 
 class MaskedCategorical(Categorical):
@@ -57,7 +57,7 @@ class CategoricalActorHead(Actor):
     ) -> PiForward:
         logits = self._fc(obs)
         pi = MaskedCategorical(logits=logits, mask=action_masks)
-        return self.pi_forward(pi, actions)
+        return pi_forward(pi, actions)
 
     @property
     def action_shape(self) -> Tuple[int, ...]:

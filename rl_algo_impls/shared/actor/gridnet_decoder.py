@@ -5,11 +5,10 @@ import torch
 import torch.nn as nn
 from numpy.typing import NDArray
 
-from rl_algo_impls.shared.actor import Actor, PiForward
-from rl_algo_impls.shared.actor.categorical import MaskedCategorical
+from rl_algo_impls.shared.actor import Actor, PiForward, pi_forward
 from rl_algo_impls.shared.actor.gridnet import GridnetDistribution
 from rl_algo_impls.shared.encoder import EncoderOutDim
-from rl_algo_impls.shared.module.module import layer_init
+from rl_algo_impls.shared.module.utils import layer_init
 
 
 class Transpose(nn.Module):
@@ -73,7 +72,7 @@ class GridnetDecoder(Actor):
         ), f"No mask case unhandled in {self.__class__.__name__}"
         logits = self.deconv(obs)
         pi = GridnetDistribution(self.map_size, self.action_vec, logits, action_masks)
-        return self.pi_forward(pi, actions)
+        return pi_forward(pi, actions)
 
     @property
     def action_shape(self) -> Tuple[int, ...]:

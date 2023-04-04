@@ -6,13 +6,9 @@ import torch.nn as nn
 
 from rl_algo_impls.shared.actor import Actor, PiForward, actor_head
 from rl_algo_impls.shared.encoder import Encoder
+from rl_algo_impls.shared.policy.actor_critic import OnPolicy, Step, clamp_actions
+from rl_algo_impls.shared.policy.actor_critic_network import default_hidden_sizes
 from rl_algo_impls.shared.policy.critic import CriticHead
-from rl_algo_impls.shared.policy.on_policy import (
-    OnPolicy,
-    Step,
-    clamp_actions,
-    default_hidden_sizes,
-)
 from rl_algo_impls.shared.policy.policy import ACTIVATION
 from rl_algo_impls.wrappers.vectorable_wrapper import (
     VecEnv,

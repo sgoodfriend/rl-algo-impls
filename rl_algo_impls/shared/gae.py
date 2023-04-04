@@ -3,7 +3,7 @@ import torch
 
 from typing import NamedTuple, Sequence
 
-from rl_algo_impls.shared.policy.on_policy import OnPolicy
+from rl_algo_impls.shared.policy.actor_critic import OnPolicy
 from rl_algo_impls.shared.trajectory import Trajectory
 from rl_algo_impls.wrappers.vectorable_wrapper import VecEnvObs
 

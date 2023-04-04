@@ -3,7 +3,7 @@ import pytest
 import gym.spaces
 import numpy as np
 
-from rl_algo_impls.shared.policy.on_policy import clamp_actions
+from rl_algo_impls.shared.policy.actor_critic import clamp_actions
 
 
 def test_clamp_actions():
