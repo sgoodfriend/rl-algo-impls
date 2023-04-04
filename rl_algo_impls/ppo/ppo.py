@@ -138,7 +138,7 @@ class PPO(Algorithm):
     def learn(
         self: PPOSelf,
         train_timesteps: int,
-        callback: Optional[Callback] = None,
+        callbacks: Optional[List[Callback]] = None,
         total_timesteps: Optional[int] = None,
         start_timesteps: int = 0,
     ) -> PPOSelf:
@@ -364,8 +364,10 @@ class PPO(Algorithm):
                 timesteps_elapsed,
             )
 
-            if callback:
-                if not callback.on_step(timesteps_elapsed=rollout_steps):
+            if callbacks:
+                if not all(
+                    c.on_step(timesteps_elapsed=rollout_steps) for c in callbacks
+                ):
                     logging.info(
                         f"Callback terminated training at {timesteps_elapsed} timesteps"
                     )

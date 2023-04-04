@@ -96,7 +96,7 @@ def train(args: TrainArgs):
         best_video_dir=config.best_videos_dir,
         additional_keys_to_log=config.additional_keys_to_log,
     )
-    algo.learn(config.n_timesteps, callback=callback)
+    algo.learn(config.n_timesteps, callbacks=[callback])
 
     policy.save(config.model_dir_path(best=False))
 

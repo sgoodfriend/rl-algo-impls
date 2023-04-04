@@ -1,9 +1,9 @@
+from abc import ABC, abstractmethod
+from typing import List, Optional, TypeVar
+
 import gym
 import torch
-
-from abc import ABC, abstractmethod
 from torch.utils.tensorboard.writer import SummaryWriter
-from typing import Optional, TypeVar
 
 from rl_algo_impls.shared.callbacks.callback import Callback
 from rl_algo_impls.shared.policy.policy import Policy
@@ -32,7 +32,7 @@ class Algorithm(ABC):
     def learn(
         self: AlgorithmSelf,
         train_timesteps: int,
-        callback: Optional[Callback] = None,
+        callbacks: Optional[List[Callback]] = None,
         total_timesteps: Optional[int] = None,
         start_timesteps: int = 0,
     ) -> AlgorithmSelf:

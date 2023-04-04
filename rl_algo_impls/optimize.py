@@ -213,7 +213,7 @@ def simple_optimize(trial: optuna.Trial, args: RunArgs, study_args: StudyArgs) -
         deterministic=config.eval_hyperparams.get("deterministic", True),
     )
     try:
-        algo.learn(config.n_timesteps, callback=callback)
+        algo.learn(config.n_timesteps, callbacks=[callback])
 
         if not callback.is_pruned:
             callback.evaluate()
