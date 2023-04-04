@@ -115,7 +115,8 @@ class Config:
 
     def eval_callback_params(self) -> Dict[str, Any]:
         eval_hyperparams = self.eval_hyperparams.copy()
-        del eval_hyperparams["env_overrides"]
+        if "env_overrides" in eval_hyperparams:
+            del eval_hyperparams["env_overrides"]
         return eval_hyperparams
 
     @property
