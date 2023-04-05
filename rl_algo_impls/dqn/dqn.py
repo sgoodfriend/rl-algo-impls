@@ -1,14 +1,15 @@
 import copy
-import numpy as np
+import logging
 import random
+from collections import deque
+from typing import List, NamedTuple, Optional, TypeVar
+
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
-from collections import deque
 from torch.optim import Adam
 from torch.utils.tensorboard.writer import SummaryWriter
-from typing import NamedTuple, Optional, TypeVar
 
 from rl_algo_impls.dqn.policy import DQNPolicy
 from rl_algo_impls.shared.algorithm import Algorithm
@@ -118,7 +119,7 @@ class DQN(Algorithm):
         self.max_grad_norm = max_grad_norm
 
     def learn(
-        self: DQNSelf, total_timesteps: int, callback: Optional[Callback] = None
+        self: DQNSelf, total_timesteps: int, callbacks: Optional[List[Callback]] = None
     ) -> DQNSelf:
         self.policy.train(True)
         obs = self.env.reset()
@@ -140,8 +141,14 @@ class DQN(Algorithm):
             if steps_since_target_update >= self.target_update_interval:
                 self._update_target()
                 steps_since_target_update = 0
-            if callback:
-                callback.on_step(timesteps_elapsed=rollout_steps)
+            if callbacks:
+                if not all(
+                    c.on_step(timesteps_elapsed=rollout_steps) for c in callbacks
+                ):
+                    logging.info(
+                        f"Callback terminated training at {timesteps_elapsed} timesteps"
+                    )
+                    break
         return self
 
     def train(self) -> None:

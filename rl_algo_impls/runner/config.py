@@ -66,6 +66,7 @@ class Hyperparams:
     eval_hyperparams: Dict[str, Any] = dataclasses.field(default_factory=dict)
     env_id: Optional[str] = None
     additional_keys_to_log: List[str] = dataclasses.field(default_factory=list)
+    microrts_reward_decay_callback: bool = False
 
     @classmethod
     def from_dict_with_extra_fields(

@@ -1,12 +1,13 @@
+import logging
+from collections import defaultdict
+from dataclasses import asdict, dataclass
+from typing import List, Optional, Sequence, TypeVar
+
 import numpy as np
 import torch
 import torch.nn as nn
-
-from collections import defaultdict
-from dataclasses import dataclass, asdict
 from torch.optim import Adam
 from torch.utils.tensorboard.writer import SummaryWriter
-from typing import Optional, Sequence, TypeVar
 
 from rl_algo_impls.shared.algorithm import Algorithm
 from rl_algo_impls.shared.callbacks.callback import Callback
@@ -78,7 +79,7 @@ class VanillaPolicyGradient(Algorithm):
     def learn(
         self: VanillaPolicyGradientSelf,
         total_timesteps: int,
-        callback: Optional[Callback] = None,
+        callbacks: Optional[List[Callback]] = None,
     ) -> VanillaPolicyGradientSelf:
         timesteps_elapsed = 0
         epoch_cnt = 0
@@ -104,8 +105,12 @@ class VanillaPolicyGradient(Algorithm):
                     ]
                 )
             )
-            if callback:
-                callback.on_step(timesteps_elapsed=epoch_steps)
+            if callbacks:
+                if not all(c.on_step(timesteps_elapsed=epoch_steps) for c in callbacks):
+                    logging.info(
+                        f"Callback terminated training at {timesteps_elapsed} timesteps"
+                    )
+                    break
         return self
 
     def train(self, trajectories: Sequence[Trajectory]) -> TrainEpochStats:

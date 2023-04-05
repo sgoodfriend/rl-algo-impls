@@ -1,12 +1,12 @@
 import logging
+from time import perf_counter
+from typing import List, Optional, TypeVar
+
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
-from time import perf_counter
 from torch.utils.tensorboard.writer import SummaryWriter
-from typing import Optional, TypeVar
 
 from rl_algo_impls.shared.algorithm import Algorithm
 from rl_algo_impls.shared.callbacks.callback import Callback
@@ -16,8 +16,8 @@ from rl_algo_impls.shared.schedule import schedule, update_learning_rate
 from rl_algo_impls.shared.stats import log_scalars
 from rl_algo_impls.wrappers.vectorable_wrapper import (
     VecEnv,
-    single_observation_space,
     single_action_space,
+    single_observation_space,
 )
 
 A2CSelf = TypeVar("A2CSelf", bound="A2C")
@@ -70,7 +70,7 @@ class A2C(Algorithm):
     def learn(
         self: A2CSelf,
         train_timesteps: int,
-        callback: Optional[Callback] = None,
+        callbacks: Optional[List[Callback]] = None,
         total_timesteps: Optional[int] = None,
         start_timesteps: int = 0,
     ) -> A2CSelf:
@@ -193,8 +193,10 @@ class A2C(Algorithm):
                 timesteps_elapsed,
             )
 
-            if callback:
-                if not callback.on_step(timesteps_elapsed=rollout_steps):
+            if callbacks:
+                if not all(
+                    c.on_step(timesteps_elapsed=rollout_steps) for c in callbacks
+                ):
                     logging.info(
                         f"Callback terminated training at {timesteps_elapsed} timesteps"
                     )
