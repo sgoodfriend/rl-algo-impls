@@ -1,4 +1,4 @@
-from typing import Tuple, Type
+from typing import Optional, Tuple, Type
 
 import gym
 import torch.nn as nn
@@ -27,6 +27,7 @@ def actor_head(
     full_std: bool = True,
     squash_output: bool = False,
     actor_head_style: str = "single",
+    action_plane_space: Optional[bool] = None,
 ) -> Actor:
     assert not use_sde or isinstance(
         action_space, Box
@@ -73,18 +74,20 @@ def actor_head(
                 init_layers_orthogonal=init_layers_orthogonal,
             )
         elif actor_head_style == "gridnet":
+            assert isinstance(action_plane_space, MultiDiscrete)
             return GridnetActorHead(
-                action_space.nvec[0],  # type: ignore
-                action_space.nvec[1:],  # type: ignore
+                len(action_space.nvec) // len(action_plane_space.nvec),  # type: ignore
+                action_plane_space.nvec,  # type: ignore
                 in_dim=in_dim,
                 hidden_sizes=hidden_sizes,
                 activation=activation,
                 init_layers_orthogonal=init_layers_orthogonal,
             )
         elif actor_head_style == "gridnet_decoder":
+            assert isinstance(action_plane_space, MultiDiscrete)
             return GridnetDecoder(
-                action_space.nvec[0],  # type: ignore
-                action_space.nvec[1:],  # type: ignore
+                len(action_space.nvec) // len(action_plane_space.nvec),  # type: ignore
+                action_plane_space.nvec,  # type: ignore
                 in_dim=in_dim,
                 activation=activation,
                 init_layers_orthogonal=init_layers_orthogonal,

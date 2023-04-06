@@ -4,7 +4,7 @@ from typing import NamedTuple, Optional, Sequence, Tuple, TypeVar
 import gym
 import numpy as np
 import torch
-from gym.spaces import Box
+from gym.spaces import Box, Space
 
 from rl_algo_impls.shared.policy.actor_critic_network import (
     ConnectedTrioActorCriticNetwork,
@@ -93,6 +93,7 @@ class ActorCritic(OnPolicy):
 
         observation_space = single_observation_space(env)
         action_space = single_action_space(env)
+        action_plane_space = getattr(env, "action_plane_space")
 
         self.action_space = action_space
         self.squash_output = squash_output
@@ -101,6 +102,7 @@ class ActorCritic(OnPolicy):
             self.network = UNetActorCriticNetwork(
                 observation_space,
                 action_space,
+                action_plane_space,
                 v_hidden_sizes=v_hidden_sizes,
                 init_layers_orthogonal=init_layers_orthogonal,
                 activation_fn=activation_fn,
@@ -123,6 +125,7 @@ class ActorCritic(OnPolicy):
                 cnn_layers_init_orthogonal=cnn_layers_init_orthogonal,
                 impala_channels=impala_channels,
                 actor_head_style=actor_head_style,
+                action_plane_space=action_plane_space,
             )
         else:
             self.network = SeparateActorCriticNetwork(
@@ -141,6 +144,7 @@ class ActorCritic(OnPolicy):
                 cnn_layers_init_orthogonal=cnn_layers_init_orthogonal,
                 impala_channels=impala_channels,
                 actor_head_style=actor_head_style,
+                action_plane_space=action_plane_space,
             )
 
     def forward(

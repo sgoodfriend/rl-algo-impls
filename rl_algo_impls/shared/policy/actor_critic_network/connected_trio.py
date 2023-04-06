@@ -34,6 +34,7 @@ class ConnectedTrioActorCriticNetwork(ActorCriticNetwork):
         cnn_layers_init_orthogonal: Optional[bool] = None,
         impala_channels: Sequence[int] = (16, 32, 32),
         actor_head_style: str = "single",
+        action_plane_space: Optional[Space] = None,
     ) -> None:
         super().__init__()
 
@@ -69,6 +70,7 @@ class ConnectedTrioActorCriticNetwork(ActorCriticNetwork):
             full_std=full_std,
             squash_output=squash_output,
             actor_head_style=actor_head_style,
+            action_plane_space=action_plane_space,
         )
 
         self._v = CriticHead(
