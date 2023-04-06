@@ -4,18 +4,14 @@ from typing import NamedTuple, Optional, Sequence, Tuple, TypeVar
 import gym
 import numpy as np
 import torch
-from gym.spaces import Box, Discrete, Space
+from gym.spaces import Box
 
-from rl_algo_impls.shared.actor import PiForward, actor_head
-from rl_algo_impls.shared.encoder import Encoder
 from rl_algo_impls.shared.policy.actor_critic_network import (
-    ActorCriticNetwork,
     ConnectedTrioActorCriticNetwork,
     SeparateActorCriticNetwork,
     UNetActorCriticNetwork,
 )
-from rl_algo_impls.shared.policy.critic import CriticHead
-from rl_algo_impls.shared.policy.policy import ACTIVATION, Policy
+from rl_algo_impls.shared.policy.policy import Policy
 from rl_algo_impls.wrappers.vectorable_wrapper import (
     VecEnv,
     VecEnvObs,
