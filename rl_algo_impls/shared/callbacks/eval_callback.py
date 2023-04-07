@@ -94,12 +94,12 @@ def evaluate(
     )
 
     obs = env.reset()
-    action_masker = find_action_masker(env)
+    get_action_mask = getattr(env, "get_action_mask")
     while not episodes.is_done():
         act = policy.act(
             obs,
             deterministic=deterministic,
-            action_masks=action_masker.action_masks() if action_masker else None,
+            action_masks=get_action_mask() if get_action_mask else None,
         )
         obs, rew, done, info = env.step(act)
         episodes.step(rew, done, info)
