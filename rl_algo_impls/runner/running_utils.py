@@ -97,22 +97,22 @@ def get_device(config: Config, env: VecEnv) -> torch.device:
     # cuda by default
     if device == "auto":
         device = "cuda"
-    # Apple MPS is a second choice (sometimes)
-    if device == "cuda" and not torch.cuda.is_available():
-        device = "mps"
-    # If no MPS, fallback to cpu
-    if device == "mps" and not torch.backends.mps.is_available():
-        device = "cpu"
-    # Simple environments like Discreet and 1-D Boxes might also be better
-    # served with the CPU.
-    if device == "mps":
-        obs_space = single_observation_space(env)
-        if isinstance(obs_space, Discrete):
+        # Apple MPS is a second choice (sometimes)
+        if device == "cuda" and not torch.cuda.is_available():
+            device = "mps"
+        # If no MPS, fallback to cpu
+        if device == "mps" and not torch.backends.mps.is_available():
             device = "cpu"
-        elif isinstance(obs_space, Box) and len(obs_space.shape) == 1:
-            device = "cpu"
-        if is_microrts(config):
-            device = "cpu"
+        # Simple environments like Discreet and 1-D Boxes might also be better
+        # served with the CPU.
+        if device == "mps":
+            obs_space = single_observation_space(env)
+            if isinstance(obs_space, Discrete):
+                device = "cpu"
+            elif isinstance(obs_space, Box) and len(obs_space.shape) == 1:
+                device = "cpu"
+            if is_microrts(config):
+                device = "cpu"
     print(f"Device: {device}")
     return torch.device(device)
 

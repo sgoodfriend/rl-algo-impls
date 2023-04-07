@@ -411,7 +411,7 @@ Microrts-selfplay-unet: &microrts-selfplay-ai-defaults
       <<: *microrts-coacai-eval-env-overrides
       self_play_kwargs: {}
 
-Microrts-selfplay-unet-debug:
+Microrts-selfplay-unet-debug: &microrts-selfplay-debug-defaults
   <<: *microrts-selfplay-ai-defaults
   eval_hyperparams:
     <<: *microrts-selfplay-eval-defaults
@@ -423,6 +423,10 @@ Microrts-selfplay-unet-debug:
         randomBiasedAI: 4
         workerRushAI: 4
         lightRushAI: 4
+
+Microrts-selfplay-unet-debug-mps:
+  <<: *microrts-selfplay-debug-defaults
+  device: mps
 
 HalfCheetahBulletEnv-v0: &pybullet-defaults
   n_timesteps: !!float 2e6
