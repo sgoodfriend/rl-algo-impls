@@ -15,7 +15,6 @@ from rl_algo_impls.shared.gae import compute_advantages
 from rl_algo_impls.shared.policy.actor_critic import ActorCritic
 from rl_algo_impls.shared.schedule import schedule, update_learning_rate
 from rl_algo_impls.shared.stats import log_scalars
-from rl_algo_impls.wrappers.action_mask_wrapper import find_action_masker
 from rl_algo_impls.wrappers.vectorable_wrapper import (
     VecEnv,
     single_action_space,
@@ -105,7 +104,7 @@ class PPO(Algorithm):
     ) -> None:
         super().__init__(policy, env, device, tb_writer)
         self.policy = policy
-        self.action_masker = find_action_masker(env)
+        self.get_action_mask = getattr(env, "get_action_mask")
 
         self.gamma = gamma
         self.gae_lambda = gae_lambda
@@ -153,15 +152,13 @@ class PPO(Algorithm):
         act_shape = self.policy.action_shape
 
         next_obs = self.env.reset()
-        next_action_masks = (
-            self.action_masker.action_masks() if self.action_masker else None
-        )
-        next_episode_starts = np.full(step_dim, True, dtype=np.bool8)
+        next_action_masks = self.get_action_mask() if self.get_action_mask else None
+        next_episode_starts = np.full(step_dim, True, dtype=np.bool_)
 
         obs = np.zeros(epoch_dim + obs_space.shape, dtype=obs_space.dtype)  # type: ignore
         actions = np.zeros(epoch_dim + act_shape, dtype=act_space.dtype)  # type: ignore
         rewards = np.zeros(epoch_dim, dtype=np.float32)
-        episode_starts = np.zeros(epoch_dim, dtype=np.bool8)
+        episode_starts = np.zeros(epoch_dim, dtype=np.bool_)
         values = np.zeros(epoch_dim, dtype=np.float32)
         logprobs = np.zeros(epoch_dim, dtype=np.float32)
         action_masks = (
@@ -215,7 +212,7 @@ class PPO(Algorithm):
                     clamped_action
                 )
                 next_action_masks = (
-                    self.action_masker.action_masks() if self.action_masker else None
+                    self.get_action_mask() if self.get_action_mask else None
                 )
 
             self.policy.train()

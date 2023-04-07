@@ -15,7 +15,7 @@ class IncompleteArrayError(Exception):
 
 
 class SingleActionMaskWrapper(VecotarableWrapper):
-    def action_masks(self) -> Optional[np.ndarray]:
+    def get_action_mask(self) -> Optional[np.ndarray]:
         envs = getattr(self.env.unwrapped, "envs")  # type: ignore
         assert (
             envs
@@ -26,10 +26,8 @@ class SingleActionMaskWrapper(VecotarableWrapper):
 
 
 class MicrortsMaskWrapper(VecotarableWrapper):
-    def action_masks(self) -> np.ndarray:
-        microrts_env = self.env.unwrapped  # type: ignore
-        assert isinstance(microrts_env, MicroRTSGridModeVecEnv)
-        return microrts_env.get_action_mask().astype(bool)
+    def get_action_mask(self) -> np.ndarray:
+        return self.env.get_action_mask().astype(bool)  # type: ignore
 
 
 def find_action_masker(
