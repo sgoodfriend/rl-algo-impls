@@ -60,8 +60,8 @@ class SelfPlayWrapper(VecotarableWrapper):
             assignment = [None, policy]
         else:
             assignment = [policy, None]
-        self.policy_assignments[idx : idx + 1] = assignment
-        self.steps_since_swap[idx : idx + 1] = [0, 0]
+        self.policy_assignments[idx : idx + 2] = assignment
+        self.steps_since_swap[idx : idx + 2] = [0, 0]
 
     def step(self, actions: np.ndarray) -> VecEnvStepReturn:
         env = self.env  # type: ignore
