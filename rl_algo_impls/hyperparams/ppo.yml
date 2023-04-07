@@ -404,6 +404,7 @@ Microrts-selfplay-unet: &microrts-selfplay-ai-defaults
       num_old_policies: 12
       save_steps: 200000
       swap_steps: 10000
+      swap_window_size: 4
       window: 25
   eval_hyperparams: &microrts-selfplay-eval-defaults
     <<: *microrts-coacai-eval-defaults
