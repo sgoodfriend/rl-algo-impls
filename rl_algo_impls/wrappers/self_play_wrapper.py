@@ -86,7 +86,7 @@ class SelfPlayWrapper(VecotarableWrapper):
         info = [i for i, b in zip(info, orig_learner_indexes) if b]
 
         self.steps_since_swap += 1
-        for idx in range(0, env.num_envs, 2):
+        for idx in range(0, self.num_old_policies * 2, 2):
             if done[idx] and self.steps_since_swap[idx] > self.swap_steps:
                 self.swap_policy(idx)
 
