@@ -26,7 +26,7 @@ from rl_algo_impls.runner.running_utils import (
     make_policy,
     set_seeds,
 )
-from rl_algo_impls.shared.callbacks.callback import Callback
+from rl_algo_impls.shared.callbacks import Callback
 from rl_algo_impls.shared.callbacks.microrts_reward_decay_callback import (
     MicrortsRewardDecayCallback,
 )

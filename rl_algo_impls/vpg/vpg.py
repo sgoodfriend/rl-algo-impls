@@ -10,7 +10,7 @@ from torch.optim import Adam
 from torch.utils.tensorboard.writer import SummaryWriter
 
 from rl_algo_impls.shared.algorithm import Algorithm
-from rl_algo_impls.shared.callbacks.callback import Callback
+from rl_algo_impls.shared.callbacks import Callback
 from rl_algo_impls.shared.gae import compute_rtg_and_advantage_from_trajectories
 from rl_algo_impls.shared.trajectory import Trajectory, TrajectoryAccumulator
 from rl_algo_impls.vpg.policy import VPGActorCritic

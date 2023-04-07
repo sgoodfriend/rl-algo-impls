@@ -6,7 +6,7 @@ from typing import Dict, List, Optional, Union
 import numpy as np
 from torch.utils.tensorboard.writer import SummaryWriter
 
-from rl_algo_impls.shared.callbacks.callback import Callback
+from rl_algo_impls.shared.callbacks import Callback
 from rl_algo_impls.shared.policy.policy import Policy
 from rl_algo_impls.shared.stats import Episode, EpisodeAccumulator, EpisodesStats
 from rl_algo_impls.wrappers.action_mask_wrapper import find_action_masker

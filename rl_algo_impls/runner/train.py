@@ -1,7 +1,7 @@
 # Support for PyTorch mps mode (https://pytorch.org/docs/stable/notes/mps.html)
 import os
 
-from rl_algo_impls.shared.callbacks.callback import Callback
+from rl_algo_impls.shared.callbacks import Callback
 
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
 

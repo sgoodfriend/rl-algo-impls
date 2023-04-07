@@ -9,7 +9,7 @@ import torch.nn.functional as F
 from torch.utils.tensorboard.writer import SummaryWriter
 
 from rl_algo_impls.shared.algorithm import Algorithm
-from rl_algo_impls.shared.callbacks.callback import Callback
+from rl_algo_impls.shared.callbacks import Callback
 from rl_algo_impls.shared.gae import compute_advantages
 from rl_algo_impls.shared.policy.actor_critic import ActorCritic
 from rl_algo_impls.shared.schedule import schedule, update_learning_rate
