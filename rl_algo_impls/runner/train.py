@@ -2,6 +2,9 @@
 import os
 
 from rl_algo_impls.shared.callbacks import Callback
+from rl_algo_impls.shared.callbacks.self_play_callback import SelfPlayCallback
+from rl_algo_impls.wrappers.self_play_wrapper import SelfPlayWrapper
+from rl_algo_impls.wrappers.vectorable_wrapper import find_wrapper
 
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
 
@@ -104,6 +107,9 @@ def train(args: TrainArgs):
     callbacks: List[Callback] = [eval_callback]
     if config.hyperparams.microrts_reward_decay_callback:
         callbacks.append(MicrortsRewardDecayCallback(config, env))
+    selfPlayWrapper = find_wrapper(env, SelfPlayWrapper)
+    if selfPlayWrapper:
+        callbacks.append(SelfPlayCallback(policy, selfPlayWrapper))
     algo.learn(config.n_timesteps, callbacks=callbacks)
 
     policy.save(config.model_dir_path(best=False))

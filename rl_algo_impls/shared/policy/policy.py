@@ -1,13 +1,13 @@
-import numpy as np
 import os
-import torch
-import torch.nn as nn
-
 from abc import ABC, abstractmethod
 from copy import deepcopy
+from typing import Dict, Optional, Type, TypeVar, Union
+
+import numpy as np
+import torch
+import torch.nn as nn
 from stable_baselines3.common.vec_env import unwrap_vec_normalize
 from stable_baselines3.common.vec_env.vec_normalize import VecNormalize
-from typing import Dict, Optional, Type, TypeVar, Union
 
 from rl_algo_impls.wrappers.normalize import NormalizeObservation, NormalizeReward
 from rl_algo_impls.wrappers.vectorable_wrapper import VecEnv, VecEnvObs, find_wrapper

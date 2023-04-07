@@ -11,6 +11,7 @@ from rl_algo_impls.wrappers.episode_stats_writer import EpisodeStatsWriter
 from rl_algo_impls.wrappers.hwc_to_chw_observation import HwcToChwObservation
 from rl_algo_impls.wrappers.is_vector_env import IsVectorEnv
 from rl_algo_impls.wrappers.microrts_stats_recorder import MicrortsStatsRecorder
+from rl_algo_impls.wrappers.self_play_wrapper import SelfPlayWrapper
 from rl_algo_impls.wrappers.vectorable_wrapper import VecEnv
 
 
@@ -47,15 +48,26 @@ def make_microrts_env(
         _,  # normalize_type
         _,  # mask_actions
         bots,
+        self_play_kwargs,
     ) = astuple(hparams)
 
     seed = config.seed(training=training)
 
     make_kwargs = make_kwargs or {}
+    self_play_kwargs = self_play_kwargs or {}
     if "num_selfplay_envs" not in make_kwargs:
         make_kwargs["num_selfplay_envs"] = 0
     if "num_bot_envs" not in make_kwargs:
-        make_kwargs["num_bot_envs"] = n_envs - make_kwargs["num_selfplay_envs"]
+        num_selfplay_envs = make_kwargs["num_selfplay_envs"]
+        if num_selfplay_envs:
+            num_bot_envs = (
+                n_envs
+                - make_kwargs["num_selfplay_envs"]
+                + self_play_kwargs.get("num_old_policies", 0)
+            )
+        else:
+            num_bot_envs = n_envs
+        make_kwargs["num_bot_envs"] = num_bot_envs
     if "reward_weight" in make_kwargs:
         # Reward Weights:
         # WinLossRewardFunction
@@ -75,12 +87,15 @@ def make_microrts_env(
                 assert ai, f"{ai_name} not in microrts_ai"
                 ai2s.append(ai)
     else:
-        ai2s = [microrts_ai.randomAI for _ in make_kwargs["num_bot_envs"]]
+        ai2s = [microrts_ai.randomAI for _ in range(make_kwargs["num_bot_envs"])]
     make_kwargs["ai2s"] = ai2s
     envs = MicroRTSGridModeVecEnvCompat(**make_kwargs)
     envs = HwcToChwObservation(envs)
     envs = IsVectorEnv(envs)
     envs = MicrortsMaskWrapper(envs)
+
+    if self_play_kwargs:
+        envs = SelfPlayWrapper(envs, **self_play_kwargs)
 
     if seed is not None:
         envs.action_space.seed(seed)

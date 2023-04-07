@@ -35,8 +35,11 @@ from rl_algo_impls.shared.callbacks.optimize_callback import (
     OptimizeCallback,
     evaluation,
 )
+from rl_algo_impls.shared.callbacks.self_play_callback import SelfPlayCallback
 from rl_algo_impls.shared.stats import EpisodesStats
 from rl_algo_impls.shared.vec_env import make_env, make_eval_env
+from rl_algo_impls.wrappers.self_play_wrapper import SelfPlayWrapper
+from rl_algo_impls.wrappers.vectorable_wrapper import find_wrapper
 
 
 @dataclass
@@ -219,6 +222,9 @@ def simple_optimize(trial: optuna.Trial, args: RunArgs, study_args: StudyArgs) -
     callbacks: List[Callback] = [optimize_callback]
     if config.hyperparams.microrts_reward_decay_callback:
         callbacks.append(MicrortsRewardDecayCallback(config, env))
+    selfPlayWrapper = find_wrapper(env, SelfPlayWrapper)
+    if selfPlayWrapper:
+        callbacks.append(SelfPlayCallback(policy, selfPlayWrapper))
     try:
         algo.learn(config.n_timesteps, callbacks=callbacks)
 
@@ -335,6 +341,9 @@ def stepwise_optimize(
                         config, env, start_timesteps=start_timesteps
                     )
                 )
+            selfPlayWrapper = find_wrapper(env, SelfPlayWrapper)
+            if selfPlayWrapper:
+                callbacks.append(SelfPlayCallback(policy, selfPlayWrapper))
             try:
                 algo.learn(
                     train_timesteps,
