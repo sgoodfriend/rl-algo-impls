@@ -74,7 +74,10 @@ def train(args: TrainArgs):
         config, EnvHyperparams(**config.env_hyperparams), tb_writer=tb_writer
     )
     device = get_device(config, env)
-    policy = make_policy(args.algo, env, device, **config.policy_hyperparams)
+    policy_factory = lambda: make_policy(
+        args.algo, env, device, **config.policy_hyperparams
+    )
+    policy = policy_factory()
     algo = ALGOS[args.algo](policy, env, device, tb_writer, **config.algo_hyperparams)
 
     num_parameters = policy.num_parameters()
@@ -109,7 +112,7 @@ def train(args: TrainArgs):
         callbacks.append(MicrortsRewardDecayCallback(config, env))
     selfPlayWrapper = find_wrapper(env, SelfPlayWrapper)
     if selfPlayWrapper:
-        callbacks.append(SelfPlayCallback(policy, selfPlayWrapper))
+        callbacks.append(SelfPlayCallback(policy, policy_factory, selfPlayWrapper))
     algo.learn(config.n_timesteps, callbacks=callbacks)
 
     policy.save(config.model_dir_path(best=False))

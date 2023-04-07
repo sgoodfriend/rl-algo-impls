@@ -82,6 +82,16 @@ class Policy(nn.Module, ABC):
         if self.norm_reward:
             self.norm_reward.load(os.path.join(path, NORMALIZE_REWARD_FILENAME))
 
+    def load_from(self: PolicySelf, policy: PolicySelf) -> PolicySelf:
+        self.load_state_dict(policy.state_dict())
+        if self.norm_observation:
+            assert policy.norm_observation
+            self.norm_observation.load_from(policy.norm_observation)
+        if self.norm_reward:
+            assert policy.norm_reward
+            self.norm_reward.load_from(policy.norm_reward)
+        return self
+
     def reset_noise(self) -> None:
         pass
 

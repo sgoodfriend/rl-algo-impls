@@ -201,6 +201,11 @@ class ActorCritic(OnPolicy):
         super().load(path)
         self.reset_noise()
 
+    def load_from(self: ActorCriticSelf, policy: ActorCriticSelf) -> ActorCriticSelf:
+        super().load_from(policy)
+        self.reset_noise()
+        return self
+
     def reset_noise(self, batch_size: Optional[int] = None) -> None:
         self.network.reset_noise(
             batch_size=batch_size if batch_size else self.env.num_envs

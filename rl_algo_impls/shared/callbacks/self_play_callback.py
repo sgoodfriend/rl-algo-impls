@@ -1,12 +1,20 @@
+from typing import Callable
+
 from rl_algo_impls.shared.callbacks import Callback
 from rl_algo_impls.shared.policy.policy import Policy
 from rl_algo_impls.wrappers.self_play_wrapper import SelfPlayWrapper
 
 
 class SelfPlayCallback(Callback):
-    def __init__(self, policy: Policy, selfPlayWrapper: SelfPlayWrapper) -> None:
+    def __init__(
+        self,
+        policy: Policy,
+        policy_factory: Callable[[], Policy],
+        selfPlayWrapper: SelfPlayWrapper,
+    ) -> None:
         super().__init__()
         self.policy = policy
+        self.policy_factory = policy_factory
         self.selfPlayWrapper = selfPlayWrapper
         self.checkpoint_policy()
 
@@ -20,5 +28,7 @@ class SelfPlayCallback(Callback):
         return True
 
     def checkpoint_policy(self):
-        self.selfPlayWrapper.checkpoint_policy(self.policy)
+        self.selfPlayWrapper.checkpoint_policy(
+            self.policy_factory().load_from(self.policy)
+        )
         self.last_checkpoint_step = self.timesteps_elapsed

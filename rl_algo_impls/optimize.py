@@ -202,7 +202,10 @@ def simple_optimize(trial: optuna.Trial, args: RunArgs, study_args: StudyArgs) -
         config, EnvHyperparams(**config.env_hyperparams), tb_writer=tb_writer
     )
     device = get_device(config, env)
-    policy = make_policy(args.algo, env, device, **config.policy_hyperparams)
+    policy_factory = lambda: make_policy(
+        args.algo, env, device, **config.policy_hyperparams
+    )
+    policy = policy_factory()
     algo = ALGOS[args.algo](policy, env, device, tb_writer, **config.algo_hyperparams)
 
     eval_env = make_eval_env(
@@ -224,7 +227,7 @@ def simple_optimize(trial: optuna.Trial, args: RunArgs, study_args: StudyArgs) -
         callbacks.append(MicrortsRewardDecayCallback(config, env))
     selfPlayWrapper = find_wrapper(env, SelfPlayWrapper)
     if selfPlayWrapper:
-        callbacks.append(SelfPlayCallback(policy, selfPlayWrapper))
+        callbacks.append(SelfPlayCallback(policy, policy_factory, selfPlayWrapper))
     try:
         algo.learn(config.n_timesteps, callbacks=callbacks)
 
@@ -314,7 +317,10 @@ def stepwise_optimize(
                 tb_writer=tb_writer,
             )
             device = get_device(config, env)
-            policy = make_policy(arg.algo, env, device, **config.policy_hyperparams)
+            policy_factory = lambda: make_policy(
+                arg.algo, env, device, **config.policy_hyperparams
+            )
+            policy = policy_factory()
             if i > 0:
                 policy.load(config.model_dir_path())
             algo = ALGOS[arg.algo](
@@ -343,7 +349,9 @@ def stepwise_optimize(
                 )
             selfPlayWrapper = find_wrapper(env, SelfPlayWrapper)
             if selfPlayWrapper:
-                callbacks.append(SelfPlayCallback(policy, selfPlayWrapper))
+                callbacks.append(
+                    SelfPlayCallback(policy, policy_factory, selfPlayWrapper)
+                )
             try:
                 algo.learn(
                     train_timesteps,

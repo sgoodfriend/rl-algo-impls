@@ -43,15 +43,14 @@ class SelfPlayWrapper(VecotarableWrapper):
     def learner_indexes(self) -> List[int]:
         return [p is None for p in self.policy_assignments]
 
-    def checkpoint_policy(self, policy: Policy) -> None:
-        checkpoint = copy.deepcopy(policy).to(policy.device)
-        checkpoint.train(False)
-        self.policies.append(checkpoint)
+    def checkpoint_policy(self, copied_policy: Policy) -> None:
+        copied_policy.train(False)
+        self.policies.append(copied_policy)
 
         if all(p is None for p in self.policy_assignments):
             for i in range(self.num_old_policies):
                 # Switch between player 1 and 2
-                self.policy_assignments[2 * i + (i % 2)] = checkpoint
+                self.policy_assignments[2 * i + (i % 2)] = copied_policy
 
     def swap_policy(self, idx: int) -> None:
         policy = random.choice(self.policies)
