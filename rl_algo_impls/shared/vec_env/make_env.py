@@ -57,15 +57,15 @@ def make_eval_env(
 ) -> VecEnv:
     kwargs = kwargs.copy()
     kwargs["training"] = False
+    env_overrides = config.eval_hyperparams.get("env_overrides")
+    if env_overrides:
+        hparams_kwargs = asdict(hparams)
+        hparams_kwargs.update(env_overrides)
+        hparams = EnvHyperparams(**hparams_kwargs)
     if override_n_envs is not None:
         hparams_kwargs = asdict(hparams)
         hparams_kwargs["n_envs"] = override_n_envs
         if override_n_envs == 1:
             hparams_kwargs["vec_env_class"] = "sync"
-        hparams = EnvHyperparams(**hparams_kwargs)
-    env_overrides = config.eval_hyperparams.get("env_overrides")
-    if env_overrides:
-        hparams_kwargs = asdict(hparams)
-        hparams_kwargs.update(env_overrides)
         hparams = EnvHyperparams(**hparams_kwargs)
     return make_env(config, hparams, **kwargs)
