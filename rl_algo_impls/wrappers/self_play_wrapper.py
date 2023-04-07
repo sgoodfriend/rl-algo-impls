@@ -76,7 +76,7 @@ class SelfPlayWrapper(VecotarableWrapper):
                     np.expand_dims(self.next_obs[idx], axis=0),
                     deterministic=False,
                     action_masks=np.expand_dims(self.next_action_masks[idx], axis=0)
-                    if self.next_action_masks
+                    if self.next_action_masks is not None
                     else None,
                 )
         self.next_obs, rew, done, info = env.step(all_actions)
@@ -84,7 +84,7 @@ class SelfPlayWrapper(VecotarableWrapper):
 
         orig_learner_indexes = self.learner_indexes()
         rew = rew[orig_learner_indexes]
-        info = rew[orig_learner_indexes]
+        info = [i for i, b in zip(info, orig_learner_indexes) if b]
 
         self.steps_since_swap += 1
         for idx in range(0, env.num_envs, 2):
