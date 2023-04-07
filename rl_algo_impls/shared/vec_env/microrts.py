@@ -27,6 +27,7 @@ def make_microrts_env(
     from gym_microrts import microrts_ai
 
     from rl_algo_impls.shared.vec_env.microrts_compat import (
+        MicroRTSGridModeSharedMemVecEnvCompat,
         MicroRTSGridModeVecEnvCompat,
     )
 
@@ -89,7 +90,11 @@ def make_microrts_env(
     else:
         ai2s = [microrts_ai.randomAI for _ in range(make_kwargs["num_bot_envs"])]
     make_kwargs["ai2s"] = ai2s
-    envs = MicroRTSGridModeVecEnvCompat(**make_kwargs)
+    if len(make_kwargs.get("map_paths", [])) < 2:
+        EnvClass = MicroRTSGridModeSharedMemVecEnvCompat
+    else:
+        EnvClass = MicroRTSGridModeVecEnvCompat
+    envs = EnvClass(**make_kwargs)
     envs = HwcToChwObservation(envs)
     envs = IsVectorEnv(envs)
     envs = MicrortsMaskWrapper(envs)
