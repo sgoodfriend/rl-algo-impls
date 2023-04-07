@@ -32,7 +32,7 @@ class SelfPlayWrapper(VecotarableWrapper):
         self.swap_steps = swap_steps
 
         self.policies: Deque[Policy] = deque(maxlen=window)
-        self.policy_assignments = [None] * env.num_envs
+        self.policy_assignments: List[Optional[Policy]] = [None] * env.num_envs
         self.steps_since_swap = np.zeros(env.num_envs)
 
         self.num_envs = env.num_envs - num_old_policies
@@ -66,23 +66,22 @@ class SelfPlayWrapper(VecotarableWrapper):
     def step(self, actions: np.ndarray) -> VecEnvStepReturn:
         env = self.env  # type: ignore
         all_actions = np.zeros((env.num_envs,) + actions.shape[1:], dtype=actions.dtype)
-        learner_idx = 0
-        for idx, policy in enumerate(self.policy_assignments):
-            if policy is None:
-                all_actions[idx] = actions[learner_idx]
-                learner_idx += 1
-            else:
-                all_actions[idx] = policy.act(
-                    np.expand_dims(self.next_obs[idx], axis=0),
+        orig_learner_indexes = self.learner_indexes()
+
+        all_actions[orig_learner_indexes] = actions
+        for policy in self.policies:
+            policy_indexes = [policy == p for p in self.policy_assignments]
+            if any(policy_indexes):
+                all_actions[policy_indexes] = policy.act(
+                    self.next_obs[policy_indexes],
                     deterministic=False,
-                    action_masks=np.expand_dims(self.next_action_masks[idx], axis=0)
+                    action_masks=self.next_action_masks[policy_indexes]
                     if self.next_action_masks is not None
                     else None,
                 )
         self.next_obs, rew, done, info = env.step(all_actions)
         self.next_action_masks = self.env.get_action_mask()
 
-        orig_learner_indexes = self.learner_indexes()
         rew = rew[orig_learner_indexes]
         info = [i for i, b in zip(info, orig_learner_indexes) if b]
 
