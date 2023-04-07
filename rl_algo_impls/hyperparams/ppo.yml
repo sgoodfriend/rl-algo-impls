@@ -336,11 +336,11 @@ MicrortsDefeatCoacAIShaped-v3: &microrts-coacai-defaults
     <<: *microrts-ai-env-defaults
     bots:
       coacAI: 24
-  eval_hyperparams:
+  eval_hyperparams: &microrts-coacai-eval-defaults
     <<: *microrts-ai-eval-defaults
     step_freq: !!float 1e6
     n_episodes: 26
-    env_overrides:
+    env_overrides: &microrts-coacai-eval-env-overrides
       <<: *microrts-ai-eval-env-overrides
       n_envs: 26
       bots:
@@ -392,7 +392,7 @@ unet-MicrortsDefeatCoacAIShaped-v3-diverseBots:
     learning_rate: !!float 2.5e-4
     learning_rate_decay: spike
 
-Microrts-selfplay-unet:
+Microrts-selfplay-unet: &microrts-selfplay-ai-defaults
   <<: *microrts-coacai-defaults
   env_hyperparams:
     <<: *microrts-ai-env-defaults
@@ -405,6 +405,24 @@ Microrts-selfplay-unet:
       save_steps: 20000
       swap_steps: 10000
       window: 30
+  eval_hyperparams: &microrts-selfplay-eval-defaults
+    <<: *microrts-coacai-eval-defaults
+    env_overrides: &microrts-selfplay-eval-env-overrides
+      <<: *microrts-coacai-eval-env-overrides
+      self_play_kwargs: {}
+
+Microrts-selfplay-unet-debug:
+  <<: *microrts-selfplay-ai-defaults
+  eval_hyperparams:
+    <<: *microrts-selfplay-eval-defaults
+    env_overrides:
+      <<: *microrts-selfplay-eval-env-overrides
+      n_envs: 24
+      bots:
+        coacAI: 12
+        randomBiasedAI: 4
+        workerRushAI: 4
+        lightRushAI: 4
 
 HalfCheetahBulletEnv-v0: &pybullet-defaults
   n_timesteps: !!float 2e6
