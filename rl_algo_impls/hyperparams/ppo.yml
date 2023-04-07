@@ -381,7 +381,7 @@ debug-enc-dec-MicrortsDefeatCoacAIShaped-v3-diverseBots:
   <<: *microrts-env-dec-diverse-defaults
   n_timesteps: !!float 1e6
 
-unet-MicrortsDefeatCoacAIShaped-v3-diverseBots:
+unet-MicrortsDefeatCoacAIShaped-v3-diverseBots: &microrts-unet-defaults
   <<: *microrts-diverse-defaults
   policy_hyperparams:
     <<: *microrts-ai-policy-defaults
@@ -393,7 +393,7 @@ unet-MicrortsDefeatCoacAIShaped-v3-diverseBots:
     learning_rate_decay: spike
 
 Microrts-selfplay-unet: &microrts-selfplay-ai-defaults
-  <<: *microrts-coacai-defaults
+  <<: *microrts-unet-defaults
   env_hyperparams:
     <<: *microrts-ai-env-defaults
     make_kwargs:
