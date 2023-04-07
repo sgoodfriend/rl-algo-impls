@@ -402,9 +402,9 @@ Microrts-selfplay-unet: &microrts-selfplay-ai-defaults
       reward_weight: [1.0, 0, 0, 0, 0, 0]
     self_play_kwargs:
       num_old_policies: 12
-      save_steps: 20000
+      save_steps: 200000
       swap_steps: 10000
-      window: 30
+      window: 25
   eval_hyperparams: &microrts-selfplay-eval-defaults
     <<: *microrts-coacai-eval-defaults
     env_overrides: &microrts-selfplay-eval-env-overrides
