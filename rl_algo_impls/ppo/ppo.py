@@ -13,7 +13,12 @@ from rl_algo_impls.shared.algorithm import Algorithm
 from rl_algo_impls.shared.callbacks import Callback
 from rl_algo_impls.shared.gae import compute_advantages
 from rl_algo_impls.shared.policy.actor_critic import ActorCritic
-from rl_algo_impls.shared.schedule import schedule, update_learning_rate
+from rl_algo_impls.shared.schedule import (
+    constant_schedule,
+    linear_schedule,
+    schedule,
+    update_learning_rate,
+)
 from rl_algo_impls.shared.stats import log_scalars
 from rl_algo_impls.wrappers.vectorable_wrapper import (
     VecEnv,
@@ -101,12 +106,17 @@ class PPO(Algorithm):
         sde_sample_freq: int = -1,
         update_advantage_between_epochs: bool = True,
         update_returns_between_epochs: bool = False,
+        gamma_end: Optional[float] = None,
     ) -> None:
         super().__init__(policy, env, device, tb_writer)
         self.policy = policy
         self.get_action_mask = getattr(env, "get_action_mask")
 
-        self.gamma = gamma
+        self.gamma_schedule = (
+            linear_schedule(gamma, gamma_end)
+            if gamma_end is not None
+            else constant_schedule(gamma)
+        )
         self.gae_lambda = gae_lambda
         self.optimizer = Adam(self.policy.parameters(), lr=learning_rate, eps=1e-7)
         self.lr_schedule = schedule(learning_rate_decay, learning_rate)
@@ -178,10 +188,12 @@ class PPO(Algorithm):
             learning_rate = self.lr_schedule(progress)
             update_learning_rate(self.optimizer, learning_rate)
             pi_clip = self.clip_range_schedule(progress)
+            gamma = self.gamma_schedule(progress)
             chart_scalars = {
                 "learning_rate": self.optimizer.param_groups[0]["lr"],
                 "ent_coef": ent_coef,
                 "pi_clip": pi_clip,
+                "gamma": gamma,
             }
             if self.clip_range_vf_schedule:
                 v_clip = self.clip_range_vf_schedule(progress)
@@ -248,7 +260,7 @@ class PPO(Algorithm):
                         next_episode_starts,
                         next_obs,
                         self.policy,
-                        self.gamma,
+                        gamma,
                         self.gae_lambda,
                     )
                     b_advantages = torch.tensor(advantages.reshape(-1)).to(self.device)
