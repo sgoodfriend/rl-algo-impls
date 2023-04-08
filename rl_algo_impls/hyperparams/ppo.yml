@@ -420,15 +420,15 @@ Microrts-selfplay-unet-winloss: &microrts-selfplay-winloss-defaults
     <<: *microrts-unet-algo-defaults
     gamma: 0.999
 
-Microrts-selfplay-unet-decay:
-  <<: *microrts-selfplay-winloss-defaults
+Microrts-selfplay-unet-decay: &microrts-selfplay-decay-defaults
+  <<: *microrts-selfplay-defaults
   microrts_reward_decay_callback: true
   algo_hyperparams:
     <<: *microrts-selfplay-winloss-algo-defaults
     gamma_end: 0.999
 
 Microrts-selfplay-unet-debug: &microrts-selfplay-debug-defaults
-  <<: *microrts-selfplay-defaults
+  <<: *microrts-selfplay-decay-defaults
   eval_hyperparams:
     <<: *microrts-selfplay-eval-defaults
     step_freq: !!float 1e5
