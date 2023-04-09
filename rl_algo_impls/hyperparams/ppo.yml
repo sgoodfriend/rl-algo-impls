@@ -424,7 +424,7 @@ Microrts-selfplay-unet-decay: &microrts-selfplay-decay-defaults
   <<: *microrts-selfplay-defaults
   microrts_reward_decay_callback: true
   algo_hyperparams:
-    <<: *microrts-selfplay-winloss-algo-defaults
+    <<: *microrts-unet-algo-defaults
     gamma_end: 0.999
 
 Microrts-selfplay-unet-debug: &microrts-selfplay-debug-defaults
