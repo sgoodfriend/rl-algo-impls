@@ -73,6 +73,7 @@ def make_vec_env(
         normalize_type,
         mask_actions,
         _,  # bots
+        _,  # self_play_kwargs
     ) = astuple(hparams)
 
     import_for_env_id(config.env_id)

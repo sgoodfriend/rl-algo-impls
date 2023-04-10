@@ -93,7 +93,7 @@ class ActorCritic(OnPolicy):
 
         observation_space = single_observation_space(env)
         action_space = single_action_space(env)
-        action_plane_space = getattr(env, "action_plane_space")
+        action_plane_space = getattr(env, "action_plane_space", None)
 
         self.action_space = action_space
         self.squash_output = squash_output

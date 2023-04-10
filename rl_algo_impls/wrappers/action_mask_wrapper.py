@@ -16,11 +16,11 @@ class IncompleteArrayError(Exception):
 
 class SingleActionMaskWrapper(VecotarableWrapper):
     def get_action_mask(self) -> Optional[np.ndarray]:
-        envs = getattr(self.env.unwrapped, "envs")  # type: ignore
+        envs = getattr(self.env.unwrapped, "envs", None)  # type: ignore
         assert (
             envs
         ), f"{self.__class__.__name__} expects to wrap synchronous vectorized env"
-        masks = [getattr(e.unwrapped, "action_mask") for e in envs]
+        masks = [getattr(e.unwrapped, "action_mask", None) for e in envs]
         assert all(m is not None for m in masks)
         return np.array(masks, dtype=np.bool_)
 

@@ -110,7 +110,7 @@ class PPO(Algorithm):
     ) -> None:
         super().__init__(policy, env, device, tb_writer)
         self.policy = policy
-        self.get_action_mask = getattr(env, "get_action_mask")
+        self.get_action_mask = getattr(env, "get_action_mask", None)
 
         self.gamma_schedule = (
             linear_schedule(gamma, gamma_end)

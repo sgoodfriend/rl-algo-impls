@@ -94,7 +94,7 @@ def evaluate(
     )
 
     obs = env.reset()
-    get_action_mask = getattr(env, "get_action_mask")
+    get_action_mask = getattr(env, "get_action_mask", None)
     while not episodes.is_done():
         act = policy.act(
             obs,
