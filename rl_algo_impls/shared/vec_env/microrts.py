@@ -50,6 +50,7 @@ def make_microrts_env(
         _,  # mask_actions
         bots,
         self_play_kwargs,
+        selfplay_bots,
     ) = astuple(hparams)
 
     seed = config.seed(training=training)
@@ -65,6 +66,7 @@ def make_microrts_env(
                 n_envs
                 - make_kwargs["num_selfplay_envs"]
                 + self_play_kwargs.get("num_old_policies", 0)
+                + (len(selfplay_bots) if selfplay_bots else 0)
             )
         else:
             num_bot_envs = n_envs
@@ -100,7 +102,9 @@ def make_microrts_env(
     envs = MicrortsMaskWrapper(envs)
 
     if self_play_kwargs:
-        envs = SelfPlayWrapper(envs, **self_play_kwargs)
+        if selfplay_bots:
+            self_play_kwargs["selfplay_bots"] = selfplay_bots
+        envs = SelfPlayWrapper(envs, config, **self_play_kwargs)
 
     if seed is not None:
         envs.action_space.seed(seed)
