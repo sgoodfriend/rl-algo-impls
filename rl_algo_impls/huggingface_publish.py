@@ -133,7 +133,7 @@ def publish(
             make_eval_env(
                 config,
                 EnvHyperparams(**config.env_hyperparams),
-                override_n_envs=1,
+                override_hparams={"n_envs": 1},
                 normalize_load_path=model_path,
             ),
             os.path.join(repo_dir_path, "replay"),

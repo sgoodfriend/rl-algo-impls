@@ -100,7 +100,9 @@ def train(args: TrainArgs):
         best_model_path=config.model_dir_path(best=True),
         **config.eval_callback_params(),
         video_env=make_eval_env(
-            config, EnvHyperparams(**config.env_hyperparams), override_n_envs=1
+            config,
+            EnvHyperparams(**config.env_hyperparams),
+            override_hparams={"n_envs": 1},
         )
         if record_best_videos
         else None,

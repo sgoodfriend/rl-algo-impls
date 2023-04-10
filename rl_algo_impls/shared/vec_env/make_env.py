@@ -1,5 +1,5 @@
 from dataclasses import asdict
-from typing import Optional
+from typing import Any, Dict, Optional
 
 from torch.utils.tensorboard.writer import SummaryWriter
 
@@ -52,7 +52,7 @@ def make_env(
 def make_eval_env(
     config: Config,
     hparams: EnvHyperparams,
-    override_n_envs: Optional[int] = None,
+    override_hparams: Optional[Dict[str, Any]] = None,
     **kwargs,
 ) -> VecEnv:
     kwargs = kwargs.copy()
@@ -62,10 +62,11 @@ def make_eval_env(
         hparams_kwargs = asdict(hparams)
         hparams_kwargs.update(env_overrides)
         hparams = EnvHyperparams(**hparams_kwargs)
-    if override_n_envs is not None:
+    if override_hparams:
         hparams_kwargs = asdict(hparams)
-        hparams_kwargs["n_envs"] = override_n_envs
-        if override_n_envs == 1:
-            hparams_kwargs["vec_env_class"] = "sync"
+        for k, v in override_hparams.items():
+            hparams_kwargs[k] = v
+            if k == "n_envs" and v == 1:
+                hparams_kwargs["vec_env_class"] = "sync"
         hparams = EnvHyperparams(**hparams_kwargs)
     return make_env(config, hparams, **kwargs)

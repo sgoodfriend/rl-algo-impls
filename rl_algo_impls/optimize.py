@@ -211,7 +211,7 @@ def simple_optimize(trial: optuna.Trial, args: RunArgs, study_args: StudyArgs) -
     eval_env = make_eval_env(
         config,
         EnvHyperparams(**config.env_hyperparams),
-        override_n_envs=study_args.n_eval_envs,
+        override_hparams={"n_envs": study_args.n_eval_envs},
     )
     optimize_callback = OptimizeCallback(
         policy,
@@ -331,7 +331,7 @@ def stepwise_optimize(
                 config,
                 EnvHyperparams(**config.env_hyperparams),
                 normalize_load_path=config.model_dir_path() if i > 0 else None,
-                override_n_envs=study_args.n_eval_envs,
+                override_hparams={"n_envs": study_args.n_eval_envs},
             )
 
             start_timesteps = int(i * config.n_timesteps / study_args.n_evaluations)
