@@ -111,7 +111,7 @@ def make_microrts_env(
         envs.observation_space.seed(seed)
 
     envs = gym.wrappers.RecordEpisodeStatistics(envs)
-    envs = MicrortsStatsRecorder(envs, config.algo_hyperparams.get("gamma", 0.99))
+    envs = MicrortsStatsRecorder(envs, config.algo_hyperparams.get("gamma", 0.99), bots)
     if training:
         assert tb_writer
         envs = EpisodeStatsWriter(

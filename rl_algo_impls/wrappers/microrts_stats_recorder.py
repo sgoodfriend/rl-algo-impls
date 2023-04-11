@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 
@@ -10,10 +10,19 @@ from rl_algo_impls.wrappers.vectorable_wrapper import (
 
 
 class MicrortsStatsRecorder(VecotarableWrapper):
-    def __init__(self, env, gamma: float) -> None:
+    def __init__(
+        self, env, gamma: float, bots: Optional[Dict[str, int]] = None
+    ) -> None:
         super().__init__(env)
         self.gamma = gamma
         self.raw_rewards = [[] for _ in range(self.num_envs)]
+        self.bots = bots
+        if self.bots:
+            self.bot_at_index = [None] * (env.num_envs - sum(self.bots.values()))
+            for b, n in self.bots.items():
+                self.bot_at_index.extend([b] * n)
+        else:
+            self.bot_at_index = [None] * env.num_envs
 
     def reset(self) -> VecEnvObs:
         obs = super().reset()
@@ -41,5 +50,8 @@ class MicrortsStatsRecorder(VecotarableWrapper):
                     "loss": int(winloss == -1),
                 }
                 info["microrts_result"] = microrts_result
+
+                if self.bot_at_index[idx]:
+                    info[f"{self.bot_at_index[idx]}_result"] = microrts_result
 
                 self.raw_rewards[idx] = []
