@@ -1,5 +1,6 @@
 import itertools
 import os
+import shutil
 from time import perf_counter
 from typing import Dict, List, Optional, Union
 
@@ -132,6 +133,7 @@ class EvalCallback(Callback):
         ignore_first_episode: bool = False,
         additional_keys_to_log: Optional[List[str]] = None,
         score_function: str = "mean-std",
+        wandb_enabled: bool = False,
     ) -> None:
         super().__init__()
         self.policy = policy
@@ -157,6 +159,7 @@ class EvalCallback(Callback):
         self.ignore_first_episode = ignore_first_episode
         self.additional_keys_to_log = additional_keys_to_log
         self.score_function = score_function
+        self.wandb_enabled = wandb_enabled
 
     def on_step(self, timesteps_elapsed: int = 1) -> bool:
         super().on_step(timesteps_elapsed)
@@ -196,6 +199,15 @@ class EvalCallback(Callback):
                 assert self.best_model_path
                 self.policy.save(self.best_model_path)
                 print("Saved best model")
+                if self.wandb_enabled:
+                    import wandb
+
+                    best_model_name = os.path.split(self.best_model_path)[-1]
+                    shutil.make_archive(
+                        os.path.join(wandb.run.dir, best_model_name),  # type: ignore
+                        "zip",
+                        self.best_model_path,
+                    )
             self.best.write_to_tensorboard(
                 self.tb_writer, "best_eval", self.timesteps_elapsed
             )

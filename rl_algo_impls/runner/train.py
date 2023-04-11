@@ -49,7 +49,7 @@ def train(args: TrainArgs):
     print(hyperparams)
     config = Config(args, hyperparams, os.getcwd())
 
-    wandb_enabled = args.wandb_project_name
+    wandb_enabled = bool(args.wandb_project_name)
     if wandb_enabled:
         wandb.tensorboard.patch(
             root_logdir=config.tensorboard_summary_path, pytorch=True
@@ -108,6 +108,7 @@ def train(args: TrainArgs):
         else None,
         best_video_dir=config.best_videos_dir,
         additional_keys_to_log=config.additional_keys_to_log,
+        wandb_enabled=wandb_enabled,
     )
     callbacks: List[Callback] = [eval_callback]
     if config.hyperparams.microrts_reward_decay_callback:
@@ -151,13 +152,8 @@ def train(args: TrainArgs):
 
     if wandb_enabled:
         shutil.make_archive(
-            os.path.join(wandb.run.dir, config.model_dir_name()),
+            os.path.join(wandb.run.dir, config.model_dir_name()),  # type: ignore
             "zip",
             config.model_dir_path(),
-        )
-        shutil.make_archive(
-            os.path.join(wandb.run.dir, config.model_dir_name(best=True)),
-            "zip",
-            config.model_dir_path(best=True),
         )
         wandb.finish()
