@@ -8,6 +8,7 @@ Implementations of reinforcement learning algorithms.
   - [procgen
     (starpilot, hard)](https://api.wandb.ai/links/sgoodfriend/v1p4976e) and [procgen (easy)](https://api.wandb.ai/links/sgoodfriend/f3w1hwyb)
   - [Gridnet MicroRTS](https://api.wandb.ai/links/sgoodfriend/zdee7ovm)
+  - [MicroRTS Selfplay](https://api.wandb.ai/links/sgoodfriend/5qjlr8ob)
 - [Huggingface models](https://huggingface.co/models?other=rl-algo-impls)
 
 ## Prerequisites: Weights & Biases (WandB)
