@@ -101,31 +101,32 @@ HopperBulletEnv-v0:
 CarRacing-v0:
   n_timesteps: !!float 4e6
   env_hyperparams:
-    n_envs: 16
+    n_envs: 4
     frame_stack: 4
     normalize: true
     normalize_kwargs:
       norm_obs: false
       norm_reward: true
   policy_hyperparams:
-    use_sde: false
-    log_std_init: -1.3502584927786276
+    use_sde: true
+    log_std_init: -4.839609092563
     init_layers_orthogonal: true
     activation_fn: tanh
     share_features_extractor: false
     cnn_flatten_dim: 256
     hidden_sizes: [256]
   algo_hyperparams:
-    n_steps: 16
-    learning_rate: 0.000025630993245026736
-    learning_rate_decay: linear
-    gamma: 0.99957617037542
-    gae_lambda: 0.949455676599436
-    ent_coef: !!float 1.707983205298309e-7
-    vf_coef: 0.10428178193833336
-    max_grad_norm: 0.5406643389792273
-    normalize_advantage: true
+    n_steps: 64
+    learning_rate: 0.000018971962220405576
+    gamma: 0.9942776405534832
+    gae_lambda: 0.9549244758833236
+    ent_coef: 0.0000015666550584860516
+    ent_coef_decay: linear
+    vf_coef: 0.12164696385898476
+    max_grad_norm: 2.2574480552177127
+    normalize_advantage: false
     use_rms_prop: false
+    sde_sample_freq: 16
 
 _atari: &atari-defaults
   n_timesteps: !!float 1e7
