@@ -6,7 +6,7 @@ from typing import Dict, List, Optional, Union
 import numpy as np
 from torch.utils.tensorboard.writer import SummaryWriter
 
-from rl_algo_impls.shared.callbacks.callback import Callback
+from rl_algo_impls.shared.callbacks import Callback
 from rl_algo_impls.shared.policy.policy import Policy
 from rl_algo_impls.shared.stats import Episode, EpisodeAccumulator, EpisodesStats
 from rl_algo_impls.wrappers.action_mask_wrapper import find_action_masker
@@ -94,12 +94,12 @@ def evaluate(
     )
 
     obs = env.reset()
-    action_masker = find_action_masker(env)
+    get_action_mask = getattr(env, "get_action_mask", None)
     while not episodes.is_done():
         act = policy.act(
             obs,
             deterministic=deterministic,
-            action_masks=action_masker.action_masks() if action_masker else None,
+            action_masks=get_action_mask() if get_action_mask else None,
         )
         obs, rew, done, info = env.step(act)
         episodes.step(rew, done, info)

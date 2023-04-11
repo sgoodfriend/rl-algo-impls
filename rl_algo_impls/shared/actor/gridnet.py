@@ -25,7 +25,7 @@ class GridnetDistribution(Distribution):
         self.action_vec = action_vec
 
         masks = masks.view(-1, masks.shape[-1])
-        split_masks = torch.split(masks[:, 1:], action_vec.tolist(), dim=1)
+        split_masks = torch.split(masks, action_vec.tolist(), dim=1)
 
         grid_logits = logits.reshape(-1, action_vec.sum())
         split_logits = torch.split(grid_logits, action_vec.tolist(), dim=1)

@@ -1,13 +1,13 @@
-import numpy as np
 import os
-import torch
-import torch.nn as nn
-
 from abc import ABC, abstractmethod
 from copy import deepcopy
+from typing import Dict, Optional, Type, TypeVar, Union
+
+import numpy as np
+import torch
+import torch.nn as nn
 from stable_baselines3.common.vec_env import unwrap_vec_normalize
 from stable_baselines3.common.vec_env.vec_normalize import VecNormalize
-from typing import Dict, Optional, Type, TypeVar, Union
 
 from rl_algo_impls.wrappers.normalize import NormalizeObservation, NormalizeReward
 from rl_algo_impls.wrappers.vectorable_wrapper import VecEnv, VecEnvObs, find_wrapper
@@ -81,6 +81,16 @@ class Policy(nn.Module, ABC):
             )
         if self.norm_reward:
             self.norm_reward.load(os.path.join(path, NORMALIZE_REWARD_FILENAME))
+
+    def load_from(self: PolicySelf, policy: PolicySelf) -> PolicySelf:
+        self.load_state_dict(policy.state_dict())
+        if self.norm_observation:
+            assert policy.norm_observation
+            self.norm_observation.load_from(policy.norm_observation)
+        if self.norm_reward:
+            assert policy.norm_reward
+            self.norm_reward.load_from(policy.norm_reward)
+        return self
 
     def reset_noise(self) -> None:
         pass

@@ -13,7 +13,7 @@ from torch.utils.tensorboard.writer import SummaryWriter
 
 from rl_algo_impls.dqn.policy import DQNPolicy
 from rl_algo_impls.shared.algorithm import Algorithm
-from rl_algo_impls.shared.callbacks.callback import Callback
+from rl_algo_impls.shared.callbacks import Callback
 from rl_algo_impls.shared.schedule import linear_schedule
 from rl_algo_impls.wrappers.vectorable_wrapper import VecEnv, VecEnvObs
 

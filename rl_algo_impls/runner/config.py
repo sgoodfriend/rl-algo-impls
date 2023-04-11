@@ -51,6 +51,8 @@ class EnvHyperparams:
     normalize_type: Optional[str] = None
     mask_actions: bool = False
     bots: Optional[Dict[str, int]] = None
+    self_play_kwargs: Optional[Dict[str, Any]] = None
+    selfplay_bots: Optional[Dict[str, int]] = None
 
 
 HyperparamsSelf = TypeVar("HyperparamsSelf", bound="Hyperparams")

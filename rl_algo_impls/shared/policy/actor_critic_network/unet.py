@@ -23,6 +23,7 @@ class UNetActorCriticNetwork(ActorCriticNetwork):
         self,
         observation_space: Space,
         action_space: Space,
+        action_plane_space: Space,
         v_hidden_sizes: Optional[Sequence[int]] = None,
         init_layers_orthogonal: bool = True,
         activation_fn: str = "tanh",
@@ -32,9 +33,10 @@ class UNetActorCriticNetwork(ActorCriticNetwork):
             cnn_layers_init_orthogonal = True
         super().__init__()
         assert isinstance(action_space, MultiDiscrete)
+        assert isinstance(action_plane_space, MultiDiscrete)
         self.range_size = np.max(observation_space.high) - np.min(observation_space.low)  # type: ignore
-        self.map_size = action_space.nvec[0]  # type: ignore
-        self.action_vec = action_space.nvec[1:]  # type: ignore
+        self.map_size = len(action_space.nvec) // len(action_plane_space.nvec)  # type: ignore
+        self.action_vec = action_plane_space.nvec  # type: ignore
 
         activation = ACTIVATION[activation_fn]
 

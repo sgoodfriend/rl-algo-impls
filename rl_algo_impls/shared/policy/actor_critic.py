@@ -4,18 +4,14 @@ from typing import NamedTuple, Optional, Sequence, Tuple, TypeVar
 import gym
 import numpy as np
 import torch
-from gym.spaces import Box, Discrete, Space
+from gym.spaces import Box, Space
 
-from rl_algo_impls.shared.actor import PiForward, actor_head
-from rl_algo_impls.shared.encoder import Encoder
 from rl_algo_impls.shared.policy.actor_critic_network import (
-    ActorCriticNetwork,
     ConnectedTrioActorCriticNetwork,
     SeparateActorCriticNetwork,
     UNetActorCriticNetwork,
 )
-from rl_algo_impls.shared.policy.critic import CriticHead
-from rl_algo_impls.shared.policy.policy import ACTIVATION, Policy
+from rl_algo_impls.shared.policy.policy import Policy
 from rl_algo_impls.wrappers.vectorable_wrapper import (
     VecEnv,
     VecEnvObs,
@@ -97,6 +93,7 @@ class ActorCritic(OnPolicy):
 
         observation_space = single_observation_space(env)
         action_space = single_action_space(env)
+        action_plane_space = getattr(env, "action_plane_space", None)
 
         self.action_space = action_space
         self.squash_output = squash_output
@@ -105,6 +102,7 @@ class ActorCritic(OnPolicy):
             self.network = UNetActorCriticNetwork(
                 observation_space,
                 action_space,
+                action_plane_space,
                 v_hidden_sizes=v_hidden_sizes,
                 init_layers_orthogonal=init_layers_orthogonal,
                 activation_fn=activation_fn,
@@ -127,6 +125,7 @@ class ActorCritic(OnPolicy):
                 cnn_layers_init_orthogonal=cnn_layers_init_orthogonal,
                 impala_channels=impala_channels,
                 actor_head_style=actor_head_style,
+                action_plane_space=action_plane_space,
             )
         else:
             self.network = SeparateActorCriticNetwork(
@@ -145,6 +144,7 @@ class ActorCritic(OnPolicy):
                 cnn_layers_init_orthogonal=cnn_layers_init_orthogonal,
                 impala_channels=impala_channels,
                 actor_head_style=actor_head_style,
+                action_plane_space=action_plane_space,
             )
 
     def forward(
@@ -200,6 +200,11 @@ class ActorCritic(OnPolicy):
     def load(self, path: str) -> None:
         super().load(path)
         self.reset_noise()
+
+    def load_from(self: ActorCriticSelf, policy: ActorCriticSelf) -> ActorCriticSelf:
+        super().load_from(policy)
+        self.reset_noise()
+        return self
 
     def reset_noise(self, batch_size: Optional[int] = None) -> None:
         self.network.reset_noise(

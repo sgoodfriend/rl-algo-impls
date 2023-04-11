@@ -5,7 +5,7 @@ from time import perf_counter
 from torch.utils.tensorboard.writer import SummaryWriter
 from typing import NamedTuple, Union
 
-from rl_algo_impls.shared.callbacks.callback import Callback
+from rl_algo_impls.shared.callbacks import Callback
 from rl_algo_impls.shared.callbacks.eval_callback import evaluate
 from rl_algo_impls.shared.policy.policy import Policy
 from rl_algo_impls.shared.stats import EpisodesStats

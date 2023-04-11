@@ -26,7 +26,7 @@ from rl_algo_impls.runner.running_utils import (
     make_policy,
     set_seeds,
 )
-from rl_algo_impls.shared.callbacks.callback import Callback
+from rl_algo_impls.shared.callbacks import Callback
 from rl_algo_impls.shared.callbacks.microrts_reward_decay_callback import (
     MicrortsRewardDecayCallback,
 )
@@ -35,8 +35,11 @@ from rl_algo_impls.shared.callbacks.optimize_callback import (
     OptimizeCallback,
     evaluation,
 )
+from rl_algo_impls.shared.callbacks.self_play_callback import SelfPlayCallback
 from rl_algo_impls.shared.stats import EpisodesStats
 from rl_algo_impls.shared.vec_env import make_env, make_eval_env
+from rl_algo_impls.wrappers.self_play_wrapper import SelfPlayWrapper
+from rl_algo_impls.wrappers.vectorable_wrapper import find_wrapper
 
 
 @dataclass
@@ -199,13 +202,16 @@ def simple_optimize(trial: optuna.Trial, args: RunArgs, study_args: StudyArgs) -
         config, EnvHyperparams(**config.env_hyperparams), tb_writer=tb_writer
     )
     device = get_device(config, env)
-    policy = make_policy(args.algo, env, device, **config.policy_hyperparams)
+    policy_factory = lambda: make_policy(
+        args.algo, env, device, **config.policy_hyperparams
+    )
+    policy = policy_factory()
     algo = ALGOS[args.algo](policy, env, device, tb_writer, **config.algo_hyperparams)
 
     eval_env = make_eval_env(
         config,
         EnvHyperparams(**config.env_hyperparams),
-        override_n_envs=study_args.n_eval_envs,
+        override_hparams={"n_envs": study_args.n_eval_envs},
     )
     optimize_callback = OptimizeCallback(
         policy,
@@ -219,6 +225,9 @@ def simple_optimize(trial: optuna.Trial, args: RunArgs, study_args: StudyArgs) -
     callbacks: List[Callback] = [optimize_callback]
     if config.hyperparams.microrts_reward_decay_callback:
         callbacks.append(MicrortsRewardDecayCallback(config, env))
+    selfPlayWrapper = find_wrapper(env, SelfPlayWrapper)
+    if selfPlayWrapper:
+        callbacks.append(SelfPlayCallback(policy, policy_factory, selfPlayWrapper))
     try:
         algo.learn(config.n_timesteps, callbacks=callbacks)
 
@@ -308,7 +317,10 @@ def stepwise_optimize(
                 tb_writer=tb_writer,
             )
             device = get_device(config, env)
-            policy = make_policy(arg.algo, env, device, **config.policy_hyperparams)
+            policy_factory = lambda: make_policy(
+                arg.algo, env, device, **config.policy_hyperparams
+            )
+            policy = policy_factory()
             if i > 0:
                 policy.load(config.model_dir_path())
             algo = ALGOS[arg.algo](
@@ -319,7 +331,7 @@ def stepwise_optimize(
                 config,
                 EnvHyperparams(**config.env_hyperparams),
                 normalize_load_path=config.model_dir_path() if i > 0 else None,
-                override_n_envs=study_args.n_eval_envs,
+                override_hparams={"n_envs": study_args.n_eval_envs},
             )
 
             start_timesteps = int(i * config.n_timesteps / study_args.n_evaluations)
@@ -334,6 +346,11 @@ def stepwise_optimize(
                     MicrortsRewardDecayCallback(
                         config, env, start_timesteps=start_timesteps
                     )
+                )
+            selfPlayWrapper = find_wrapper(env, SelfPlayWrapper)
+            if selfPlayWrapper:
+                callbacks.append(
+                    SelfPlayCallback(policy, policy_factory, selfPlayWrapper)
                 )
             try:
                 algo.learn(

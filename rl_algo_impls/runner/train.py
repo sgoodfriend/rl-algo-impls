@@ -1,7 +1,10 @@
 # Support for PyTorch mps mode (https://pytorch.org/docs/stable/notes/mps.html)
 import os
 
-from rl_algo_impls.shared.callbacks.callback import Callback
+from rl_algo_impls.shared.callbacks import Callback
+from rl_algo_impls.shared.callbacks.self_play_callback import SelfPlayCallback
+from rl_algo_impls.wrappers.self_play_wrapper import SelfPlayWrapper
+from rl_algo_impls.wrappers.vectorable_wrapper import find_wrapper
 
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
 
@@ -71,7 +74,10 @@ def train(args: TrainArgs):
         config, EnvHyperparams(**config.env_hyperparams), tb_writer=tb_writer
     )
     device = get_device(config, env)
-    policy = make_policy(args.algo, env, device, **config.policy_hyperparams)
+    policy_factory = lambda: make_policy(
+        args.algo, env, device, **config.policy_hyperparams
+    )
+    policy = policy_factory()
     algo = ALGOS[args.algo](policy, env, device, tb_writer, **config.algo_hyperparams)
 
     num_parameters = policy.num_parameters()
@@ -94,7 +100,9 @@ def train(args: TrainArgs):
         best_model_path=config.model_dir_path(best=True),
         **config.eval_callback_params(),
         video_env=make_eval_env(
-            config, EnvHyperparams(**config.env_hyperparams), override_n_envs=1
+            config,
+            EnvHyperparams(**config.env_hyperparams),
+            override_hparams={"n_envs": 1},
         )
         if record_best_videos
         else None,
@@ -104,6 +112,9 @@ def train(args: TrainArgs):
     callbacks: List[Callback] = [eval_callback]
     if config.hyperparams.microrts_reward_decay_callback:
         callbacks.append(MicrortsRewardDecayCallback(config, env))
+    selfPlayWrapper = find_wrapper(env, SelfPlayWrapper)
+    if selfPlayWrapper:
+        callbacks.append(SelfPlayCallback(policy, policy_factory, selfPlayWrapper))
     algo.learn(config.n_timesteps, callbacks=callbacks)
 
     policy.save(config.model_dir_path(best=False))
