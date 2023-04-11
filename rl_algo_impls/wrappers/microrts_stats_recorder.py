@@ -44,14 +44,17 @@ class MicrortsStatsRecorder(VecotarableWrapper):
                 info["microrts_stats"] = dict(zip(raw_names, raw_rewards))
 
                 winloss = raw_rewards[raw_names.index("WinLossRewardFunction")]
-                microrts_result = {
+                microrts_results = {
                     "win": int(winloss == 1),
                     "draw": int(winloss == 0),
                     "loss": int(winloss == -1),
                 }
-                info["microrts_result"] = microrts_result
+                bot = self.bot_at_index[idx]
+                if bot:
+                    microrts_results.update(
+                        {f"{k}_{bot}": v for k, v in microrts_results.items()}
+                    )
 
-                if self.bot_at_index[idx]:
-                    info[f"{self.bot_at_index[idx]}_result"] = microrts_result
+                info["microrts_results"] = microrts_results
 
                 self.raw_rewards[idx] = []
