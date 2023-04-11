@@ -258,7 +258,7 @@ _microrts_ai: &microrts-ai-defaults
     env_type: microrts
     make_kwargs: &microrts-ai-env-make-kwargs-defaults
       num_selfplay_envs: 0
-      max_steps: 2000
+      max_steps: 4000
       render_theme: 2
       map_paths: [maps/16x16/basesWorkers16x16.xml]
       reward_weight: [10.0, 1.0, 1.0, 0.2, 1.0, 4.0]
