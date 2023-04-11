@@ -4,7 +4,9 @@ Implementations of reinforcement learning algorithms.
 
 - [WandB benchmark reports](https://wandb.ai/sgoodfriend/rl-algo-impls-benchmarks/reportlist)
   - [Basic, PyBullet, and Atari games
-    (v0.0.4)](https://api.wandb.ai/links/sgoodfriend/09frjfcs)
+    (v0.0.9)](https://api.wandb.ai/links/sgoodfriend/fdp5mg6h)
+    - [v0.0.8](https://api.wandb.ai/links/sgoodfriend/jh3cqbon)
+    - [v0.0.4](https://api.wandb.ai/links/sgoodfriend/09frjfcs)
   - [procgen
     (starpilot, hard)](https://api.wandb.ai/links/sgoodfriend/v1p4976e) and [procgen (easy)](https://api.wandb.ai/links/sgoodfriend/f3w1hwyb)
   - [Gridnet MicroRTS](https://api.wandb.ai/links/sgoodfriend/zdee7ovm)
