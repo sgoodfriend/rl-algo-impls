@@ -8,11 +8,11 @@ from rl_algo_impls.shared.stats import Episode, EpisodesStats
 from rl_algo_impls.wrappers.vectorable_wrapper import (
     VecEnvObs,
     VecEnvStepReturn,
-    VecotarableWrapper,
+    VectorableWrapper,
 )
 
 
-class EpisodeStatsWriter(VecotarableWrapper):
+class EpisodeStatsWriter(VectorableWrapper):
     def __init__(
         self,
         env,

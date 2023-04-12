@@ -5,7 +5,7 @@ from gym_microrts.envs.vec_env import MicroRTSGridModeVecEnv
 
 from rl_algo_impls.wrappers.vectorable_wrapper import (
     VecEnv,
-    VecotarableWrapper,
+    VectorableWrapper,
     find_wrapper,
 )
 
@@ -14,7 +14,7 @@ class IncompleteArrayError(Exception):
     pass
 
 
-class SingleActionMaskWrapper(VecotarableWrapper):
+class SingleActionMaskWrapper(VectorableWrapper):
     def get_action_mask(self) -> Optional[np.ndarray]:
         envs = getattr(self.env.unwrapped, "envs", None)  # type: ignore
         assert (
@@ -25,7 +25,7 @@ class SingleActionMaskWrapper(VecotarableWrapper):
         return np.array(masks, dtype=np.bool_)
 
 
-class MicrortsMaskWrapper(VecotarableWrapper):
+class MicrortsMaskWrapper(VectorableWrapper):
     def get_action_mask(self) -> np.ndarray:
         return self.env.get_action_mask().astype(bool)  # type: ignore
 

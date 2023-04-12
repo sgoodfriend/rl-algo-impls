@@ -5,11 +5,11 @@ import numpy as np
 from rl_algo_impls.wrappers.vectorable_wrapper import (
     VecEnvObs,
     VecEnvStepReturn,
-    VecotarableWrapper,
+    VectorableWrapper,
 )
 
 
-class MicrortsStatsRecorder(VecotarableWrapper):
+class MicrortsStatsRecorder(VectorableWrapper):
     def __init__(
         self, env, gamma: float, bots: Optional[Dict[str, int]] = None
     ) -> None:

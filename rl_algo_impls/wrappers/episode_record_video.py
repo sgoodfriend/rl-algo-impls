@@ -1,16 +1,16 @@
-import gym
-import numpy as np
-
-from gym.wrappers.monitoring.video_recorder import VideoRecorder
 from typing import Tuple, Union
 
-from rl_algo_impls.wrappers.vectorable_wrapper import VecotarableWrapper
+import gym
+import numpy as np
+from gym.wrappers.monitoring.video_recorder import VideoRecorder
+
+from rl_algo_impls.wrappers.vectorable_wrapper import VectorableWrapper
 
 ObsType = Union[np.ndarray, dict]
 ActType = Union[int, float, np.ndarray, dict]
 
 
-class EpisodeRecordVideo(VecotarableWrapper):
+class EpisodeRecordVideo(VectorableWrapper):
     def __init__(
         self,
         env: gym.Env,

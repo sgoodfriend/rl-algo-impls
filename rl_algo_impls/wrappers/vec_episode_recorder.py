@@ -4,11 +4,11 @@ from gym.wrappers.monitoring.video_recorder import VideoRecorder
 from rl_algo_impls.wrappers.vectorable_wrapper import (
     VecEnvObs,
     VecEnvStepReturn,
-    VecotarableWrapper,
+    VectorableWrapper,
 )
 
 
-class VecEpisodeRecorder(VecotarableWrapper):
+class VecEpisodeRecorder(VectorableWrapper):
     def __init__(
         self, env, base_path: str, max_video_length: int = 3600, num_episodes: int = 1
     ):

@@ -8,7 +8,7 @@ VecEnvObs = Union[np.ndarray, Dict[str, np.ndarray], Tuple[np.ndarray, ...]]
 VecEnvStepReturn = Tuple[VecEnvObs, np.ndarray, np.ndarray, List[Dict]]
 
 
-class VecotarableWrapper(Wrapper):
+class VectorableWrapper(Wrapper):
     def __init__(self, env: Env) -> None:
         super().__init__(env)
         self.num_envs = getattr(env, "num_envs", 1)
@@ -23,7 +23,7 @@ class VecotarableWrapper(Wrapper):
         return self.env.reset()
 
 
-VecEnv = Union[VecotarableWrapper, SB3VecEnv]
+VecEnv = Union[VectorableWrapper, SB3VecEnv]
 
 
 def single_observation_space(env: Union[VecEnv, Env]) -> Space:

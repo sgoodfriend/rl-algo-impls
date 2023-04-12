@@ -1,9 +1,9 @@
 from typing import Any
 
-from rl_algo_impls.wrappers.vectorable_wrapper import VecotarableWrapper
+from rl_algo_impls.wrappers.vectorable_wrapper import VectorableWrapper
 
 
-class IsVectorEnv(VecotarableWrapper):
+class IsVectorEnv(VectorableWrapper):
     """
     Override to set properties to match gym.vector.VectorEnv
     """

@@ -11,11 +11,11 @@ from rl_algo_impls.wrappers.action_mask_wrapper import find_action_masker
 from rl_algo_impls.wrappers.vectorable_wrapper import (
     VecEnvObs,
     VecEnvStepReturn,
-    VecotarableWrapper,
+    VectorableWrapper,
 )
 
 
-class SelfPlayWrapper(VecotarableWrapper):
+class SelfPlayWrapper(VectorableWrapper):
     next_obs: VecEnvObs
     next_action_masks: Optional[np.ndarray]
 
