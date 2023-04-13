@@ -22,6 +22,7 @@ from rl_algo_impls.shared.vec_env.utils import (
     is_bullet_env,
     is_car_racing,
     is_gym_procgen,
+    is_lux,
     is_microrts,
 )
 from rl_algo_impls.wrappers.action_mask_wrapper import SingleActionMaskWrapper
@@ -37,9 +38,11 @@ from rl_algo_impls.wrappers.initial_step_truncate_wrapper import (
     InitialStepTruncateWrapper,
 )
 from rl_algo_impls.wrappers.is_vector_env import IsVectorEnv
+from rl_algo_impls.wrappers.lux_env_gridnet import LuxEnvGridnet
 from rl_algo_impls.wrappers.no_reward_timeout import NoRewardTimeout
 from rl_algo_impls.wrappers.noop_env_seed import NoopEnvSeed
 from rl_algo_impls.wrappers.normalize import NormalizeObservation, NormalizeReward
+from rl_algo_impls.wrappers.self_play_wrapper import SelfPlayWrapper
 from rl_algo_impls.wrappers.sync_vector_env_render_compat import (
     SyncVectorEnvRenderCompat,
 )
@@ -73,8 +76,9 @@ def make_vec_env(
         normalize_type,
         mask_actions,
         _,  # bots
-        _,  # self_play_kwargs
-        _,  # selfplay_bots
+        self_play_kwargs,
+        selfplay_bots,
+        lux_env_kwargs,
     ) = astuple(hparams)
 
     import_for_env_id(config.env_id)
@@ -129,6 +133,9 @@ def make_vec_env(
                     env = FrameStack(env, frame_stack)
             elif is_microrts(config):
                 env = HwcToChwObservation(env)
+            elif is_lux(config):
+                assert seed is None, "Lux S2 doesn't support seeding in the normal way"
+                env = LuxEnvGridnet(env, **(lux_env_kwargs or {}))
 
             if no_reward_timeout_steps:
                 env = NoRewardTimeout(
@@ -157,6 +164,12 @@ def make_vec_env(
         envs = IsVectorEnv(envs)
     if mask_actions:
         envs = SingleActionMaskWrapper(envs)
+
+    if self_play_kwargs:
+        if selfplay_bots:
+            self_play_kwargs["selfplay_bots"] = selfplay_bots
+        envs = SelfPlayWrapper(envs, config, **self_play_kwargs)
+
     if training:
         assert tb_writer
         envs = EpisodeStatsWriter(

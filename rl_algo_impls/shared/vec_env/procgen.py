@@ -43,6 +43,7 @@ def make_procgen_env(
         _,  # bots
         _,  # self_play_kwargs
         _,  # selfplay_bots
+        _,  # lux_env_kwargs
     ) = astuple(hparams)
 
     seed = config.seed(training=training)
