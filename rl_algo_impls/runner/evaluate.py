@@ -70,7 +70,7 @@ def evaluate_model(args: EvalArgs, root_dir: str) -> Evaluation:
     env = make_eval_env(
         config,
         EnvHyperparams(**config.env_hyperparams),
-        override_hparams={"n_envs": args.n_envs},
+        override_hparams={"n_envs": args.n_envs} if args.n_envs else None,
         render=args.render,
         normalize_load_path=model_path,
     )
