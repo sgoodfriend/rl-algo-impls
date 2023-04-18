@@ -1,24 +1,31 @@
-from typing import List, TypeVar
+from typing import List, Sequence, TypeVar
 
 import gym
 import numpy as np
 from gym.vector.utils import batch_space
 from stable_baselines3.common.vec_env.base_vec_env import tile_images
 
-from rl_algo_impls.wrappers.lux_env_gridnet import LuxEnvGridnet
+from rl_algo_impls.wrappers.lux_env_gridnet import DEFAULT_REWARD_WEIGHTS, LuxEnvGridnet
 from rl_algo_impls.wrappers.vectorable_wrapper import VecEnvObs, VecEnvStepReturn
 
 VecLuxEnvSelf = TypeVar("VecLuxEnvSelf", bound="VecLuxEnv")
 
 
 class VecLuxEnv:
-    def __init__(self, num_envs: int, bid_std_dev: float = 5, **kwargs) -> None:
+    def __init__(
+        self,
+        num_envs: int,
+        bid_std_dev: float = 5,
+        reward_weight: Sequence[float] = DEFAULT_REWARD_WEIGHTS,
+        **kwargs,
+    ) -> None:
         assert num_envs % 2 == 0, f"{num_envs} must be even"
         self.num_envs = num_envs
         self.envs = [
             LuxEnvGridnet(
                 gym.make("LuxAI_S2-v0", collect_stats=True, verbose=1, **kwargs),
-                bid_std_dev,
+                bid_std_dev=bid_std_dev,
+                reward_weight=reward_weight,
             )
             for _ in range(num_envs // 2)
         ]

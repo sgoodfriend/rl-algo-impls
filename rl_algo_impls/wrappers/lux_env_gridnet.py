@@ -1,5 +1,5 @@
 from dataclasses import astuple
-from typing import Any, Dict, List, Tuple, Type, TypeVar
+from typing import Any, Dict, List, Sequence, Tuple, Type, TypeVar
 
 import numpy as np
 from gym import Wrapper
@@ -20,25 +20,29 @@ POWER_FACTORY_MAX = 50_000
 LICHEN_TILES_FACTORY_MAX = 128
 LICHEN_FACTORY_MAX = 128_000
 
-MAX_LICHEN_DELTA = 1000
-REWARD_WEIGHTS = np.array(
-    [
-        10,  # WIN_LOSS
-        1 / MAX_LICHEN_DELTA,  # LICHEN_DELTA (clip to +/- 1)
-        1e-5,  # ICE_GENERATION (max 0.01 for heavy)
-        1e-6,  # ORE_GENERATION (max 0.001 for heavy)
-        4e-4,  # WATER_GENERATION (max 0.1 for heavy)
-        5e-5,  # METAL_GENERATION (max 0.01 for heavy)
-        0.01,  # BUILD_LIGHT
-        0.1,  # BUILD_HEAVY
-    ]
+DEFAULT_REWARD_WEIGHTS = (
+    10,  # WIN_LOSS
+    0.001,  # LICHEN_DELTA (clip to +/- 1)
+    1e-5,  # ICE_GENERATION (max 0.01 for heavy)
+    1e-6,  # ORE_GENERATION (max 0.001 for heavy)
+    4e-4,  # WATER_GENERATION (max 0.1 for heavy)
+    5e-5,  # METAL_GENERATION (max 0.01 for heavy)
+    0.01,  # BUILD_LIGHT
+    0.1,  # BUILD_HEAVY
 )
 
 
 class LuxEnvGridnet(Wrapper):
-    def __init__(self, env, bid_std_dev: float = 5) -> None:
+    def __init__(
+        self,
+        env,
+        bid_std_dev: float = 5,
+        reward_weight: Sequence[float] = DEFAULT_REWARD_WEIGHTS,
+    ) -> None:
         super().__init__(env)
         self.bid_std_dev = bid_std_dev
+        self.reward_weight = np.array(reward_weight)
+        self.max_lichen_delta = 1 / reward_weight[1]
         self.map_size = self.unwrapped.env_cfg.map_size
 
         self.unit_prior_actions: Dict[str, np.ndarray] = {}
@@ -431,8 +435,8 @@ class LuxEnvGridnet(Wrapper):
             np.array(
                 [delta_reward[p] - delta_reward[opp] for p, opp in player_opponent]
             ),
-            -MAX_LICHEN_DELTA,
-            MAX_LICHEN_DELTA,
+            -self.max_lichen_delta,
+            self.max_lichen_delta,
         )
         raw_rewards = np.concatenate(
             [
@@ -442,7 +446,7 @@ class LuxEnvGridnet(Wrapper):
             ],
             axis=-1,
         )
-        return np.sum(raw_rewards * REWARD_WEIGHTS, axis=-1)
+        return np.sum(raw_rewards * self.reward_weight, axis=-1)
 
 
 AgentRunningStatsSelf = TypeVar("AgentRunningStatsSelf", bound="AgentRunningStats")
