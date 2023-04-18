@@ -620,9 +620,9 @@ LuxAI_S2-v0: &lux-defaults
   env_id: LuxAI_S2-v0
   env_hyperparams:
     env_type: lux
-    n_envs: 18
+    n_envs: 12
     self_play_kwargs:
-      num_old_policies: 12
+      num_old_policies: 4
       save_steps: 300000
       swap_steps: 6000
       swap_window_size: 4
