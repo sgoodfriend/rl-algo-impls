@@ -17,7 +17,8 @@ class VecLuxEnv:
         self.num_envs = num_envs
         self.envs = [
             LuxEnvGridnet(
-                gym.make("LuxAI_S2-v0", collect_stats=True, **kwargs), bid_std_dev
+                gym.make("LuxAI_S2-v0", collect_stats=True, verbose=1, **kwargs),
+                bid_std_dev,
             )
             for _ in range(num_envs // 2)
         ]
