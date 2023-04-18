@@ -618,7 +618,7 @@ procgen-starpilot-hard-4xIMPALA:
 LuxAI_S2-v0: &lux-defaults
   n_timesteps: !!float 100e6
   env_id: LuxAI_S2-v0
-  env_hyperparams:
+  env_hyperparams: &lux-env-defaults
     env_type: lux
     n_envs: 24
     self_play_kwargs:
@@ -644,9 +644,9 @@ LuxAI_S2-v0: &lux-defaults
     activation_fn: relu
     actor_head_style: unet
     v_hidden_sizes: [256, 128]
-  algo_hyperparams:
-    n_steps: 192
-    batch_size: 1152
+  algo_hyperparams: &lux-algo-defaults
+    n_steps: 384
+    batch_size: 2304
     n_epochs: 4
     learning_rate: !!float 4e-4
     learning_rate_decay: spike
@@ -657,6 +657,13 @@ LuxAI_S2-v0: &lux-defaults
     clip_range_decay: none
     clip_range_vf: 0.1
     ppo2_vf_coef_halving: true
+
+LuxAI_S2-v0-A10:
+  <<: *lux-defaults
+  algo_hyperparams:
+    <<: *lux-algo-defaults
+    n_steps: 192
+    batch_size: 1152
 
 LuxAI_S2-v0-debug:
   <<: *lux-defaults
