@@ -645,8 +645,8 @@ LuxAI_S2-v0: &lux-defaults
     actor_head_style: unet
     v_hidden_sizes: [256, 128]
   algo_hyperparams:
-    n_steps: 512
-    batch_size: 3072
+    n_steps: 128
+    batch_size: 768
     n_epochs: 4
     learning_rate: !!float 2.5e-4
     learning_rate_decay: spike
