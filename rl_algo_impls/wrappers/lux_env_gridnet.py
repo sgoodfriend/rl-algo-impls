@@ -11,6 +11,12 @@ from luxai_s2.state import ObservationStateDict
 from luxai_s2.unit import Unit
 from luxai_s2.utils import my_turn_to_place_factory
 
+from rl_algo_impls.shared.lux.utils import (
+    is_build_heavy_valid,
+    is_build_light_valid,
+    is_water_action_valid,
+)
+
 ICE_FACTORY_MAX = 100_000
 WATER_FACTORY_MAX = 25_000
 ORE_FACTORY_MAX = 50_000
@@ -106,11 +112,19 @@ class LuxEnvGridnet(Wrapper):
             dtype=np.bool_,
         )
         env = self.unwrapped
+        config = env.env_cfg
         for idx, p in enumerate(self.agents):
             for f in env.state.factories[p].values():
                 action_mask[
                     idx, self._pos_to_idx(f.pos), :FACTORY_ACTION_ENCODED_SIZE
-                ] = True
+                ] = np.array(
+                    [
+                        is_build_light_valid(f, config),
+                        is_build_heavy_valid(f, config),
+                        is_water_action_valid(f, config),
+                        True,  # Do nothing is always valid
+                    ]
+                )
             for u in env.state.units[p].values():
                 action_mask[
                     idx, self._pos_to_idx(u.pos), FACTORY_ACTION_ENCODED_SIZE:
@@ -196,14 +210,8 @@ class LuxEnvGridnet(Wrapper):
                 metal_factory[x, y] = _metal / METAL_FACTORY_MAX
                 power_factory[x, y] = _power / POWER_FACTORY_MAX
 
-                can_build_light_robot[x, y] = (
-                    _metal >= LIGHT_ROBOT.METAL_COST
-                    and _power >= LIGHT_ROBOT.POWER_COST
-                )
-                can_build_heavy_robot[x, y] = (
-                    _metal >= HEAVY_ROBOT.METAL_COST
-                    and _power >= HEAVY_ROBOT.POWER_COST
-                )
+                can_build_light_robot[x, y] = is_build_light_valid(f_state, cfg)
+                can_build_heavy_robot[x, y] = is_build_heavy_valid(f_state, cfg)
                 _water_lichen_cost = f_state.water_cost(cfg)
                 can_water_lichen[x, y] = _water > _water_lichen_cost
                 _water_supply = _water + _ice / cfg.ICE_WATER_RATIO
