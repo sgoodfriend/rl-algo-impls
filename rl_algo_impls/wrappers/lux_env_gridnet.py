@@ -6,6 +6,7 @@ from gym import Wrapper
 from gym.spaces import Box, MultiDiscrete
 from gym.vector.utils import batch_space
 from luxai_s2.env import LuxAI_S2
+from luxai_s2.map.position import Position
 from luxai_s2.state import ObservationStateDict
 from luxai_s2.unit import Unit
 from luxai_s2.utils import my_turn_to_place_factory
@@ -77,11 +78,25 @@ class LuxEnvGridnet(Wrapper):
         return self._from_lux_observation(lux_obs)
 
     def get_action_mask(self) -> np.ndarray:
-        return np.full(
+        action_mask = np.full(
             (2, self.num_map_tiles, self.action_plane_space.nvec.sum()),
-            True,
+            False,
             dtype=np.bool_,
         )
+        env = self.unwrapped
+        for idx, p in enumerate(self.agents):
+            for f in env.state.factories[p].values():
+                action_mask[
+                    idx, self._pos_to_idx(f.pos), :FACTORY_ACTION_ENCODED_SIZE
+                ] = True
+            for u in env.state.units[p].values():
+                action_mask[
+                    idx, self._pos_to_idx(u.pos), FACTORY_ACTION_ENCODED_SIZE:
+                ] = True
+        return action_mask
+
+    def _pos_to_idx(self, pos: Position) -> int:
+        return pos.x * self.map_size + pos.y
 
     def _from_lux_observation(
         self, lux_obs: Dict[str, ObservationStateDict]
@@ -330,11 +345,11 @@ class LuxEnvGridnet(Wrapper):
         for p_idx in range(len(actions)):
             p = self.agents[p_idx]
             for f in env.state.factories[p].values():
-                a = actions[p_idx, f.pos.x * self.map_size + f.pos.y, 0]
+                a = actions[p_idx, self._pos_to_idx(f.pos), 0]
                 if a != FACTORY_DO_NOTHING_ACTION:
                     lux_actions[p][f.unit_id] = a
             for u in env.state.units[p].values():
-                a = actions[p_idx, u.pos.x * self.map_size + u.pos.y, 1:]
+                a = actions[p_idx, self._pos_to_idx(u.pos), 1:]
                 next_prior_actions[u.unit_id] = a
                 if np.array_equal(self.unit_prior_actions.get(u.unit_id), a):
                     continue
@@ -398,6 +413,7 @@ class LuxEnvGridnet(Wrapper):
 FACTORY_ACTION_SIZES = (
     4,  # build light robot, build heavy robot, water lichen, do nothing
 )
+FACTORY_ACTION_ENCODED_SIZE = sum(FACTORY_ACTION_SIZES)
 
 FACTORY_DO_NOTHING_ACTION = 3
 
