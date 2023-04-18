@@ -51,7 +51,6 @@ def make_microrts_env(
         bots,
         self_play_kwargs,
         selfplay_bots,
-        _,  # lux_env_kwargs
     ) = astuple(hparams)
 
     seed = config.seed(training=training)

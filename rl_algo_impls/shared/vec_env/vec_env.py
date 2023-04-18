@@ -78,7 +78,6 @@ def make_vec_env(
         _,  # bots
         self_play_kwargs,
         selfplay_bots,
-        lux_env_kwargs,
     ) = astuple(hparams)
 
     import_for_env_id(config.env_id)
@@ -133,9 +132,6 @@ def make_vec_env(
                     env = FrameStack(env, frame_stack)
             elif is_microrts(config):
                 env = HwcToChwObservation(env)
-            elif is_lux(config):
-                assert seed is None, "Lux S2 doesn't support seeding in the normal way"
-                env = LuxEnvGridnet(env, **(lux_env_kwargs or {}))
 
             if no_reward_timeout_steps:
                 env = NoRewardTimeout(

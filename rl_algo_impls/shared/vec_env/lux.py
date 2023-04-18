@@ -6,13 +6,17 @@ import numpy as np
 from torch.utils.tensorboard.writer import SummaryWriter
 
 from rl_algo_impls.runner.config import Config, EnvHyperparams
+from rl_algo_impls.shared.vec_env.vec_lux_env import VecLuxEnv
+from rl_algo_impls.wrappers.action_mask_wrapper import MicrortsMaskWrapper
 from rl_algo_impls.wrappers.episode_stats_writer import EpisodeStatsWriter
 from rl_algo_impls.wrappers.hwc_to_chw_observation import HwcToChwObservation
 from rl_algo_impls.wrappers.is_vector_env import IsVectorEnv
+from rl_algo_impls.wrappers.microrts_stats_recorder import MicrortsStatsRecorder
+from rl_algo_impls.wrappers.self_play_wrapper import SelfPlayWrapper
 from rl_algo_impls.wrappers.vectorable_wrapper import VecEnv
 
 
-def make_procgen_env(
+def make_lux_env(
     config: Config,
     hparams: EnvHyperparams,
     training: bool = True,
@@ -20,9 +24,6 @@ def make_procgen_env(
     normalize_load_path: Optional[str] = None,
     tb_writer: Optional[SummaryWriter] = None,
 ) -> VecEnv:
-    from gym3 import ExtractDictObWrapper, ViewerWrapper
-    from procgen.env import ProcgenGym3Env, ToBaselinesVecEnv
-
     (
         _,  # env_type
         n_envs,
@@ -31,8 +32,8 @@ def make_procgen_env(
         _,  # no_reward_timeout_steps
         _,  # no_reward_fire_steps
         _,  # vec_env_class
-        normalize,
-        normalize_kwargs,
+        _,  # normalize
+        _,  # normalize_kwargs,
         rolling_length,
         _,  # train_record_video
         _,  # video_step_interval
@@ -41,43 +42,39 @@ def make_procgen_env(
         _,  # normalize_type
         _,  # mask_actions
         _,  # bots
-        _,  # self_play_kwargs
-        _,  # selfplay_bots
+        self_play_kwargs,
+        selfplay_bots,
     ) = astuple(hparams)
 
     seed = config.seed(training=training)
-
     make_kwargs = make_kwargs or {}
-    make_kwargs["render_mode"] = "rgb_array"
-    if seed is not None:
-        make_kwargs["rand_seed"] = seed
-
-    envs = ProcgenGym3Env(n_envs, config.env_id, **make_kwargs)
-    envs = ExtractDictObWrapper(envs, key="rgb")
-    if render:
-        envs = ViewerWrapper(envs, info_key="rgb")
-    envs = ToBaselinesVecEnv(envs)
-    envs = IsVectorEnv(envs)
-    # TODO: Handle Grayscale and/or FrameStack
+    self_play_kwargs = self_play_kwargs or {}
+    num_envs = (
+        n_envs + self_play_kwargs.get("num_old_policies", 0) + len(selfplay_bots or [])
+    )
+    if num_envs == 1 and not training:
+        # Workaround for supporting the video env
+        num_envs = 2
+    envs = VecLuxEnv(num_envs, **make_kwargs)
     envs = HwcToChwObservation(envs)
-
-    envs = gym.wrappers.RecordEpisodeStatistics(envs)
+    if self_play_kwargs:
+        if selfplay_bots:
+            self_play_kwargs["selfplay_bots"] = selfplay_bots
+        envs = SelfPlayWrapper(envs, config, **self_play_kwargs)
 
     if seed is not None:
         envs.action_space.seed(seed)
         envs.observation_space.seed(seed)
 
+    envs = gym.wrappers.RecordEpisodeStatistics(envs)
     if training:
         assert tb_writer
         envs = EpisodeStatsWriter(
-            envs, tb_writer, training=training, rolling_length=rolling_length
-        )
-    if normalize and training:
-        normalize_kwargs = normalize_kwargs or {}
-        envs = gym.wrappers.NormalizeReward(envs)
-        clip_obs = normalize_kwargs.get("clip_reward", 10.0)
-        envs = gym.wrappers.TransformReward(
-            envs, lambda r: np.clip(r, -clip_obs, clip_obs)
+            envs,
+            tb_writer,
+            training=training,
+            rolling_length=rolling_length,
+            additional_keys_to_log=config.additional_keys_to_log,
         )
 
-    return envs  # type: ignore
+    return envs
