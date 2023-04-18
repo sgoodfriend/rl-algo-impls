@@ -79,6 +79,7 @@ all = [
     "rl-algo-impls[test]",
     "rl-algo-impls[procgen]",
     "rl-algo-impls[microrts]",
+    "rl-algo-impls[lux]",
 ]
 
 [project.urls]
