@@ -1,5 +1,5 @@
 from dataclasses import astuple
-from typing import Any, Dict, List, Tuple, Type
+from typing import Any, Dict, List, Tuple, Type, TypeVar
 
 import numpy as np
 from gym import Wrapper
@@ -20,14 +20,19 @@ POWER_FACTORY_MAX = 50_000
 LICHEN_TILES_FACTORY_MAX = 128
 LICHEN_FACTORY_MAX = 128_000
 
-REWARD_WIN_LOSS = 10
-REWARD_LICHEN_DELTA = 0.001
-REWARD_COLLECT_ICE = 1e-5  # 0.01 reward for heavy
-REWARD_DROPOFF_ICE = 1e-4  # 0.1 reward for heavy
-REWARD_COLLECT_ORE = 1e-6  # 0.001 reward for heavy
-REWARD_DROPOFF_ORE = 1e-5  # 0.01 reward for heavy
-REWARD_BUILD_HEAVY = 0.1
-REWARD_BUILD_LIGHT = 0.01
+MAX_LICHEN_DELTA = 1000
+REWARD_WEIGHTS = np.array(
+    [
+        10,  # WIN_LOSS
+        1 / MAX_LICHEN_DELTA,  # LICHEN_DELTA (clip to +/- 1)
+        1e-5,  # ICE_GENERATION (max 0.01 for heavy)
+        1e-6,  # ORE_GENERATION (max 0.001 for heavy)
+        4e-4,  # WATER_GENERATION (max 0.1 for heavy)
+        5e-5,  # METAL_GENERATION (max 0.01 for heavy)
+        0.01,  # BUILD_LIGHT
+        0.1,  # BUILD_HEAVY
+    ]
+)
 
 
 class LuxEnvGridnet(Wrapper):
@@ -38,6 +43,7 @@ class LuxEnvGridnet(Wrapper):
 
         self.unit_prior_actions: Dict[str, np.ndarray] = {}
         self.prior_lux_reward: Dict[str, int] = {}
+        self.stats = StatsTracking()
 
         self.num_map_tiles = self.map_size * self.map_size
         observation_sample = self.reset()
@@ -69,12 +75,13 @@ class LuxEnvGridnet(Wrapper):
         lux_obs, lux_rewards, done, info = env.step(lux_actions)
 
         all_done = all(done.values())
+        rewards = self._from_lux_rewards(lux_rewards, all_done)
+
         if all_done:
             obs = self.reset()
         else:
             assert not any(done.values()), "All or none should be done"
             obs = self._from_lux_observation(lux_obs)
-        rewards = self._from_lux_rewards(lux_rewards, all_done)
 
         return (
             obs,
@@ -85,6 +92,7 @@ class LuxEnvGridnet(Wrapper):
 
     def reset(self) -> np.ndarray:
         lux_obs, self.agents = reset_and_early_phase(self.unwrapped, self.bid_std_dev)
+        self.stats.reset(self.unwrapped)
         return self._from_lux_observation(lux_obs)
 
     def get_action_mask(self) -> np.ndarray:
@@ -413,23 +421,82 @@ class LuxEnvGridnet(Wrapper):
         self.prior_lux_reward = lux_rewards
         agents = self.agents
         player_opponent = tuple((p, opp) for p, opp in zip(agents, reversed(agents)))
-        reward_win_loss = np.array(
+        _win_loss = np.array(
             [
-                (lux_rewards[p] > lux_rewards[opp]) if done else 0
+                (1 if lux_rewards[p] > lux_rewards[opp] else -1) if done else 0
                 for p, opp in player_opponent
             ]
         )
-        reward_lichen_delta = np.clip(
+        _lichen_delta = np.clip(
             np.array(
                 [delta_reward[p] - delta_reward[opp] for p, opp in player_opponent]
             ),
-            -1,
-            1,
+            -MAX_LICHEN_DELTA,
+            MAX_LICHEN_DELTA,
         )
-        return (
-            reward_win_loss * REWARD_WIN_LOSS
-            + reward_lichen_delta * REWARD_LICHEN_DELTA
+        raw_rewards = np.concatenate(
+            [
+                np.expand_dims(_win_loss, axis=-1),
+                np.expand_dims(_lichen_delta, axis=-1),
+                self.stats.update(),
+            ],
+            axis=-1,
         )
+        return np.sum(raw_rewards * REWARD_WEIGHTS, axis=-1)
+
+
+AgentRunningStatsSelf = TypeVar("AgentRunningStatsSelf", bound="AgentRunningStats")
+
+
+class AgentRunningStats:
+    stats: np.ndarray
+
+    # ice_generation: int
+    # ore_generation: int
+    # water_generation: int
+    # metal_generation: int
+    # built_light: int
+    # built_heavy: int
+    def __init__(self) -> None:
+        self.stats = np.zeros(6, dtype=np.int32)
+
+    def update(self: AgentRunningStatsSelf, env: LuxAI_S2, agent: str) -> np.ndarray:
+        generation = env.state.stats[agent]["generation"]
+
+        new_stats = np.array(
+            [
+                sum(generation["ice"].values()),
+                sum(generation["ore"].values()),
+                generation["water"],
+                generation["metal"],
+                generation["built"]["LIGHT"],
+                generation["built"]["HEAVY"],
+            ]
+        )
+
+        delta = new_stats - self.stats
+        self.stats = new_stats
+        return delta
+
+
+class StatsTracking:
+    env: LuxAI_S2
+    agents: List[str]
+    stats: Tuple[AgentRunningStats, AgentRunningStats]
+
+    def update(self) -> np.ndarray:
+        return np.stack(
+            [
+                self.stats[idx].update(self.env, agent)
+                for idx, agent in enumerate(self.agents)
+            ]
+        )
+
+    def reset(self, env: LuxAI_S2) -> None:
+        self.env = env
+        self.agents = env.agents
+        self.stats = (AgentRunningStats(), AgentRunningStats())
+        self.update()
 
 
 FACTORY_ACTION_SIZES = (
