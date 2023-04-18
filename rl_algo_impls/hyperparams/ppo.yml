@@ -617,6 +617,7 @@ procgen-starpilot-hard-4xIMPALA:
 
 LuxAI_S2-v0: &lux-defaults
   n_timesteps: !!float 100e6
+  env_id: LuxAI_S2-v0
   env_hyperparams:
     env_type: lux
     n_envs: 24
