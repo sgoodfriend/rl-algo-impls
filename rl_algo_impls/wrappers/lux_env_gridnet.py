@@ -20,6 +20,15 @@ POWER_FACTORY_MAX = 50_000
 LICHEN_TILES_FACTORY_MAX = 128
 LICHEN_FACTORY_MAX = 128_000
 
+REWARD_WIN_LOSS = 10
+REWARD_LICHEN_DELTA = 0.001
+REWARD_COLLECT_ICE = 1e-5  # 0.01 reward for heavy
+REWARD_DROPOFF_ICE = 1e-4  # 0.1 reward for heavy
+REWARD_COLLECT_ORE = 1e-6  # 0.001 reward for heavy
+REWARD_DROPOFF_ORE = 1e-5  # 0.01 reward for heavy
+REWARD_BUILD_HEAVY = 0.1
+REWARD_BUILD_LIGHT = 0.01
+
 
 class LuxEnvGridnet(Wrapper):
     def __init__(self, env, bid_std_dev: float = 5) -> None:
@@ -59,12 +68,13 @@ class LuxEnvGridnet(Wrapper):
         lux_actions = self._to_lux_actions(action)
         lux_obs, lux_rewards, done, info = env.step(lux_actions)
 
-        if all(done.values()):
+        all_done = all(done.values())
+        if all_done:
             obs = self.reset()
         else:
             assert not any(done.values()), "All or none should be done"
             obs = self._from_lux_observation(lux_obs)
-        rewards = self._from_lux_rewards(lux_rewards)
+        rewards = self._from_lux_rewards(lux_rewards, all_done)
 
         return (
             obs,
@@ -396,17 +406,29 @@ class LuxEnvGridnet(Wrapper):
         self.unit_prior_actions = next_prior_actions
         return lux_actions
 
-    def _from_lux_rewards(self, lux_rewards: Dict[str, int]) -> np.ndarray:
+    def _from_lux_rewards(self, lux_rewards: Dict[str, int], done: bool) -> np.ndarray:
         delta_reward = {
             p: r - self.prior_lux_reward.get(p, 0) for p, r in lux_rewards.items()
         }
         self.prior_lux_reward = lux_rewards
         agents = self.agents
-        return np.array(
+        player_opponent = tuple((p, opp) for p, opp in zip(agents, reversed(agents)))
+        reward_win_loss = np.array(
             [
-                delta_reward[p] - delta_reward[opp]
-                for p, opp in zip(agents, reversed(agents))
+                (lux_rewards[p] > lux_rewards[opp]) if done else 0
+                for p, opp in player_opponent
             ]
+        )
+        reward_lichen_delta = np.clip(
+            np.array(
+                [delta_reward[p] - delta_reward[opp] for p, opp in player_opponent]
+            ),
+            -1,
+            1,
+        )
+        return (
+            reward_win_loss * REWARD_WIN_LOSS
+            + reward_lichen_delta * REWARD_LICHEN_DELTA
         )
 
 

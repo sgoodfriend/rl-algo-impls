@@ -629,10 +629,6 @@ LuxAI_S2-v0: &lux-defaults
       window: 33
     make_kwargs:
       bid_std_dev: 5
-    normalize: true
-    normalize_kwargs:
-      norm_obs: false
-      norm_reward: true
   eval_hyperparams:
     deterministic: false
     env_overrides:
