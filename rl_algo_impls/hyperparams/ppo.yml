@@ -422,7 +422,7 @@ Microrts-selfplay-unet-winloss: &microrts-selfplay-winloss-defaults
 
 Microrts-selfplay-unet-decay: &microrts-selfplay-decay-defaults
   <<: *microrts-selfplay-defaults
-  microrts_reward_decay_callback: true
+  reward_decay_callback: true
   algo_hyperparams:
     <<: *microrts-unet-algo-defaults
     gamma_end: 0.999
@@ -640,6 +640,7 @@ LuxAI_S2-v0: &lux-defaults
     activation_fn: relu
     actor_head_style: unet
     v_hidden_sizes: [256, 128]
+  reward_decay_callback: true
   algo_hyperparams: &lux-algo-defaults
     n_steps: 384
     batch_size: 2304

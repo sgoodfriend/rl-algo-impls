@@ -82,3 +82,12 @@ class VecLuxEnv:
 
     def get_action_mask(self) -> np.ndarray:
         return np.concatenate([env.get_action_mask() for env in self.envs])
+
+    @property
+    def reward_weight(self) -> np.ndarray:
+        return self.envs[0].reward_weight
+
+    @reward_weight.setter
+    def reward_weight(self, reward_weight: np.ndarray) -> None:
+        for env in self.envs:
+            env.reward_weight = reward_weight

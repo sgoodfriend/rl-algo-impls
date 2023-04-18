@@ -27,14 +27,12 @@ from rl_algo_impls.runner.running_utils import (
     set_seeds,
 )
 from rl_algo_impls.shared.callbacks import Callback
-from rl_algo_impls.shared.callbacks.microrts_reward_decay_callback import (
-    MicrortsRewardDecayCallback,
-)
 from rl_algo_impls.shared.callbacks.optimize_callback import (
     Evaluation,
     OptimizeCallback,
     evaluation,
 )
+from rl_algo_impls.shared.callbacks.reward_decay_callback import RewardDecayCallback
 from rl_algo_impls.shared.callbacks.self_play_callback import SelfPlayCallback
 from rl_algo_impls.shared.stats import EpisodesStats
 from rl_algo_impls.shared.vec_env import make_env, make_eval_env
@@ -223,8 +221,8 @@ def simple_optimize(trial: optuna.Trial, args: RunArgs, study_args: StudyArgs) -
         deterministic=config.eval_hyperparams.get("deterministic", True),
     )
     callbacks: List[Callback] = [optimize_callback]
-    if config.hyperparams.microrts_reward_decay_callback:
-        callbacks.append(MicrortsRewardDecayCallback(config, env))
+    if config.hyperparams.reward_decay_callback:
+        callbacks.append(RewardDecayCallback(config, env))
     selfPlayWrapper = find_wrapper(env, SelfPlayWrapper)
     if selfPlayWrapper:
         callbacks.append(SelfPlayCallback(policy, policy_factory, selfPlayWrapper))
@@ -341,11 +339,9 @@ def stepwise_optimize(
             )
 
             callbacks = []
-            if config.hyperparams.microrts_reward_decay_callback:
+            if config.hyperparams.reward_decay_callback:
                 callbacks.append(
-                    MicrortsRewardDecayCallback(
-                        config, env, start_timesteps=start_timesteps
-                    )
+                    RewardDecayCallback(config, env, start_timesteps=start_timesteps)
                 )
             selfPlayWrapper = find_wrapper(env, SelfPlayWrapper)
             if selfPlayWrapper:

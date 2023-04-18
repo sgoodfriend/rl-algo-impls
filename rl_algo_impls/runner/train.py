@@ -28,9 +28,7 @@ from rl_algo_impls.runner.running_utils import (
     set_seeds,
 )
 from rl_algo_impls.shared.callbacks.eval_callback import EvalCallback
-from rl_algo_impls.shared.callbacks.microrts_reward_decay_callback import (
-    MicrortsRewardDecayCallback,
-)
+from rl_algo_impls.shared.callbacks.reward_decay_callback import RewardDecayCallback
 from rl_algo_impls.shared.stats import EpisodesStats
 from rl_algo_impls.shared.vec_env import make_env, make_eval_env
 
@@ -111,8 +109,8 @@ def train(args: TrainArgs):
         wandb_enabled=wandb_enabled,
     )
     callbacks: List[Callback] = [eval_callback]
-    if config.hyperparams.microrts_reward_decay_callback:
-        callbacks.append(MicrortsRewardDecayCallback(config, env))
+    if config.hyperparams.reward_decay_callback:
+        callbacks.append(RewardDecayCallback(config, env))
     selfPlayWrapper = find_wrapper(env, SelfPlayWrapper)
     if selfPlayWrapper:
         callbacks.append(SelfPlayCallback(policy, policy_factory, selfPlayWrapper))
