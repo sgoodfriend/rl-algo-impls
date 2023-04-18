@@ -631,6 +631,7 @@ LuxAI_S2-v0: &lux-defaults
       bid_std_dev: 5
   eval_hyperparams:
     deterministic: false
+    step_freq: !!float 1e6
     env_overrides:
       self_play_kwargs:
         num_old_policies: 0
