@@ -47,8 +47,9 @@ DEFAULT_REWARD_WEIGHTS = (
     1e-5,  # ORE_GENERATION (max 0.01 for heavy)
     4e-3,  # WATER_GENERATION (max 1 for heavy)
     5e-4,  # METAL_GENERATION (max 0.1 for heavy)
-    0.05,  # BUILD_LIGHT
-    0.5,  # BUILD_HEAVY
+    0,  # LICHEN_GENERATION (0)
+    0.04,  # BUILT_LIGHT
+    0.6,  # BUILT_HEAVY
 )
 
 
@@ -518,15 +519,18 @@ class LuxEnvGridnet(Wrapper):
 
 class AgentRunningStats:
     stats: np.ndarray
+    NAMES = [
+        "ice_generaiton",
+        "ore_generaiton",
+        "water_generation",
+        "metal_generation",
+        "lichen_generaiton",
+        "built_light",
+        "built_heavy",
+    ]
 
-    # ice_generation: int
-    # ore_generation: int
-    # water_generation: int
-    # metal_generation: int
-    # built_light: int
-    # built_heavy: int
     def __init__(self) -> None:
-        self.stats = np.zeros(6, dtype=np.int32)
+        self.stats = np.zeros(len(self.NAMES), dtype=np.int32)
 
     def update(self, env: LuxAI_S2, agent: str) -> np.ndarray:
         generation = env.state.stats[agent]["generation"]
@@ -537,6 +541,7 @@ class AgentRunningStats:
                 sum(generation["ore"].values()),
                 generation["water"],
                 generation["metal"],
+                generation["lichen"],
                 generation["built"]["LIGHT"],
                 generation["built"]["HEAVY"],
             ]
