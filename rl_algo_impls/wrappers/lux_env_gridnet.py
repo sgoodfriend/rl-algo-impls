@@ -32,8 +32,8 @@ from rl_algo_impls.shared.lux.actions import (
 )
 
 ICE_FACTORY_MAX = 100_000
-WATER_FACTORY_MAX = 25_000
 ORE_FACTORY_MAX = 50_000
+WATER_FACTORY_MAX = 25_000
 METAL_FACTORY_MAX = 10_000
 POWER_FACTORY_MAX = 50_000
 
@@ -43,12 +43,12 @@ LICHEN_FACTORY_MAX = 128_000
 DEFAULT_REWARD_WEIGHTS = (
     10,  # WIN_LOSS
     0.001,  # LICHEN_DELTA (clip to +/- 1)
-    1e-5,  # ICE_GENERATION (max 0.01 for heavy)
-    1e-6,  # ORE_GENERATION (max 0.001 for heavy)
-    4e-4,  # WATER_GENERATION (max 0.1 for heavy)
-    5e-5,  # METAL_GENERATION (max 0.01 for heavy)
-    0.01,  # BUILD_LIGHT
-    0.1,  # BUILD_HEAVY
+    1e-4,  # ICE_GENERATION (max 0.1 for heavy)
+    1e-5,  # ORE_GENERATION (max 0.01 for heavy)
+    4e-3,  # WATER_GENERATION (max 1 for heavy)
+    5e-4,  # METAL_GENERATION (max 0.1 for heavy)
+    0.05,  # BUILD_LIGHT
+    0.5,  # BUILD_HEAVY
 )
 
 
