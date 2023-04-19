@@ -100,7 +100,7 @@ class LuxEnvGridnet(Wrapper):
         lux_obs, lux_rewards, done, info = env.step(lux_actions)
 
         all_done = all(done.values())
-        rewards = self._from_lux_rewards(lux_rewards, all_done)
+        rewards = self._from_lux_rewards(lux_rewards, all_done, info)
 
         if all_done:
             obs = self.reset()
@@ -486,7 +486,9 @@ class LuxEnvGridnet(Wrapper):
         self.unit_prior_actions = next_prior_actions
         return lux_actions
 
-    def _from_lux_rewards(self, lux_rewards: Dict[str, int], done: bool) -> np.ndarray:
+    def _from_lux_rewards(
+        self, lux_rewards: Dict[str, float], done: bool, info: Dict[str, Any]
+    ) -> np.ndarray:
         delta_reward = {
             p: r - self.prior_lux_reward.get(p, 0) for p, r in lux_rewards.items()
         }
@@ -514,6 +516,20 @@ class LuxEnvGridnet(Wrapper):
             ],
             axis=-1,
         )
+        if done:
+            for idx, agent in enumerate(self.agents):
+                agent_stats = self.stats.agent_stats[idx]
+                info[agent]["stats"] = dict(
+                    zip(agent_stats.NAMES, agent_stats.stats.tolist())
+                )
+                info[agent]["results"] = {
+                    "WinLoss": _win_loss[idx],
+                    "win": int(_win_loss[idx] == 1),
+                    "loss": int(_win_loss[idx] == -1),
+                    "score": lux_rewards[agent],
+                    "score_delta": lux_rewards[agent]
+                    - lux_rewards[player_opponent[idx][1]],
+                }
         return np.sum(raw_rewards * self.reward_weight, axis=-1)
 
 
@@ -555,12 +571,12 @@ class AgentRunningStats:
 class StatsTracking:
     env: LuxAI_S2
     agents: List[str]
-    stats: Tuple[AgentRunningStats, AgentRunningStats]
+    agent_stats: Tuple[AgentRunningStats, AgentRunningStats]
 
     def update(self) -> np.ndarray:
         return np.stack(
             [
-                self.stats[idx].update(self.env, agent)
+                self.agent_stats[idx].update(self.env, agent)
                 for idx, agent in enumerate(self.agents)
             ]
         )
@@ -568,7 +584,7 @@ class StatsTracking:
     def reset(self, env: LuxAI_S2) -> None:
         self.env = env
         self.agents = env.agents
-        self.stats = (AgentRunningStats(), AgentRunningStats())
+        self.agent_stats = (AgentRunningStats(), AgentRunningStats())
         self.update()
 
 
