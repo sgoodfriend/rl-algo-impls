@@ -23,7 +23,7 @@ class VecLuxEnv:
         self.num_envs = num_envs
         self.envs = [
             LuxEnvGridnet(
-                gym.make("LuxAI_S2-v0", collect_stats=True, verbose=1, **kwargs),
+                gym.make("LuxAI_S2-v0", collect_stats=True, verbose=2, **kwargs),
                 bid_std_dev=bid_std_dev,
                 reward_weight=reward_weight,
             )
