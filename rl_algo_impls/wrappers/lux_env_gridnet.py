@@ -567,11 +567,11 @@ class LuxEnvGridnet(Wrapper):
 class AgentRunningStats:
     stats: np.ndarray
     NAMES = (
-        "ice_generaiton",
-        "ore_generaiton",
+        "ice_generation",
+        "ore_generation",
         "water_generation",
         "metal_generation",
-        "lichen_generaiton",
+        "lichen_generation",
         "built_light",
         "built_heavy",
     )
