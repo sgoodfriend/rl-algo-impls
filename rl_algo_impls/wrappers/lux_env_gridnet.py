@@ -522,6 +522,11 @@ class LuxEnvGridnet(Wrapper):
                 info[agent]["stats"] = dict(
                     zip(agent_stats.NAMES, agent_stats.stats.tolist())
                 )
+                state_agent_stats = self.unwrapped.state.stats[agent]
+                actions_success = state_agent_stats["action_queue_updates_success"]
+                actions_total = state_agent_stats["action_queue_updates_total"]
+                info[agent]["stats"]["actions_success"] = actions_success
+                info[agent]["stats"]["actions_failed"] = actions_total - actions_success
                 info[agent]["results"] = {
                     "WinLoss": _win_loss[idx],
                     "win": int(_win_loss[idx] == 1),
