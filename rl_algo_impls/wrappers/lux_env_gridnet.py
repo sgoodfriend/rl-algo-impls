@@ -1,4 +1,5 @@
-from dataclasses import astuple
+import dataclasses
+from dataclasses import astuple, dataclass
 from typing import Any, DefaultDict, Dict, List, Sequence, Tuple, Type, TypeVar
 
 import numpy as np
@@ -86,6 +87,8 @@ class LuxEnvGridnet(Wrapper):
         )
         self.action_space = batch_space(self.single_action_space, n=2)
 
+        self._action_mask: Optional[np.ndarray] = None
+
     @property
     def unwrapped(self) -> LuxAI_S2:
         unwrapped = super().unwrapped
@@ -108,6 +111,7 @@ class LuxEnvGridnet(Wrapper):
             assert not any(done.values()), "All or none should be done"
             obs = self._from_lux_observation(lux_obs)
 
+        self._action_mask = None
         return (
             obs,
             rewards,
@@ -118,9 +122,12 @@ class LuxEnvGridnet(Wrapper):
     def reset(self) -> np.ndarray:
         lux_obs, self.agents = reset_and_early_phase(self.unwrapped, self.bid_std_dev)
         self.stats.reset(self.unwrapped)
+        self._action_mask = None
         return self._from_lux_observation(lux_obs)
 
     def get_action_mask(self) -> np.ndarray:
+        if self._action_mask is not None:
+            return self._action_mask
         action_mask = np.full(
             (2, self.num_map_tiles, self.action_plane_space.nvec.sum()),
             False,
@@ -168,31 +175,42 @@ class LuxEnvGridnet(Wrapper):
                 pickup_resource_mask = valid_pickup_resource_mask(
                     u, env.state, prior_action
                 )
+                valid_action_types = np.array(
+                    [
+                        np.any(move_mask),
+                        np.any(transfer_direction_mask),
+                        np.any(pickup_resource_mask),
+                        is_dig_valid(u, env.state, prior_action),
+                        if_self_destruct_valid(u, env.state, prior_action),
+                        is_recharge_valid(u, prior_action),
+                    ]
+                )
                 action_mask[
                     idx, self._pos_to_idx(u.pos), FACTORY_ACTION_ENCODED_SIZE:
                 ] = np.concatenate(
                     [
-                        np.array(
-                            [
-                                np.any(move_mask),
-                                np.any(transfer_direction_mask),
-                                np.any(pickup_resource_mask),
-                                is_dig_valid(u, env.state, prior_action),
-                                if_self_destruct_valid(u, env.state, prior_action),
-                                is_recharge_valid(u, prior_action),
-                            ]
-                        ),
+                        valid_action_types,
                         move_mask,
                         transfer_direction_mask,
                         transfer_resource_mask,
                         pickup_resource_mask,
                     ]
                 )
-
+        self._action_mask = action_mask
         return action_mask
 
     def _pos_to_idx(self, pos: Position) -> int:
         return pos.x * self.map_size + pos.y
+
+    def _no_valid_unit_actions(self, unit: Unit) -> bool:
+        assert self._action_mask is not None
+        return not np.any(
+            self._action_mask[
+                unit.team.team_id,
+                self._pos_to_idx(unit.pos),
+                FACTORY_ACTION_ENCODED_SIZE : FACTORY_ACTION_ENCODED_SIZE + 6,
+            ]
+        )
 
     def _from_lux_observation(
         self, lux_obs: Dict[str, ObservationStateDict]
@@ -441,7 +459,12 @@ class LuxEnvGridnet(Wrapper):
             for u in env.state.units[p].values():
                 a = actions[p_idx, self._pos_to_idx(u.pos), 1:]
                 next_prior_actions[u.unit_id] = a
+                if self._no_valid_unit_actions(u):
+                    self.stats.action_stats[p_idx].no_valid_action += 1
+                    continue
+                self.stats.action_stats[p_idx].action_type[a[0]] += 1
                 if np.array_equal(self.unit_prior_actions.get(u.unit_id), a):
+                    self.stats.action_stats[p_idx].repeat_action += 1
                     continue
 
                 def resource_amount(unit: Unit, idx: int) -> int:
@@ -527,6 +550,9 @@ class LuxEnvGridnet(Wrapper):
                 actions_total = state_agent_stats["action_queue_updates_total"]
                 info[agent]["stats"]["actions_success"] = actions_success
                 info[agent]["stats"]["actions_failed"] = actions_total - actions_success
+                info[agent]["stats"].update(
+                    self.stats.action_stats[idx].stats_dict(prefix="actions_")
+                )
                 info[agent]["results"] = {
                     "WinLoss": _win_loss[idx],
                     "win": int(_win_loss[idx] == 1),
@@ -540,7 +566,7 @@ class LuxEnvGridnet(Wrapper):
 
 class AgentRunningStats:
     stats: np.ndarray
-    NAMES = [
+    NAMES = (
         "ice_generaiton",
         "ore_generaiton",
         "water_generation",
@@ -548,7 +574,7 @@ class AgentRunningStats:
         "lichen_generaiton",
         "built_light",
         "built_heavy",
-    ]
+    )
 
     def __init__(self) -> None:
         self.stats = np.zeros(len(self.NAMES), dtype=np.int32)
@@ -573,10 +599,30 @@ class AgentRunningStats:
         return delta
 
 
+@dataclass
+class ActionStats:
+    ACTION_NAMES = ("move", "transfer", "pickup", "dig", "self_destruct", "recharge")
+    action_type: np.ndarray = dataclasses.field(
+        default_factory=lambda: np.zeros(6, dtype=np.int32)
+    )
+    no_valid_action = 0
+    repeat_action = 0
+
+    def stats_dict(self, prefix: str) -> Dict[str, int]:
+        _dict = {
+            f"{prefix}{name}": cnt
+            for name, cnt in zip(self.ACTION_NAMES, self.action_type.tolist())
+        }
+        _dict[f"{prefix}no_valid"] = self.no_valid_action
+        _dict[f"{prefix}repeat"] = self.repeat_action
+        return _dict
+
+
 class StatsTracking:
     env: LuxAI_S2
     agents: List[str]
     agent_stats: Tuple[AgentRunningStats, AgentRunningStats]
+    action_stats: Tuple[ActionStats, ActionStats]
 
     def update(self) -> np.ndarray:
         return np.stack(
@@ -590,6 +636,7 @@ class StatsTracking:
         self.env = env
         self.agents = env.agents
         self.agent_stats = (AgentRunningStats(), AgentRunningStats())
+        self.action_stats = (ActionStats(), ActionStats())
         self.update()
 
 
