@@ -1,20 +1,34 @@
 from dataclasses import astuple
-from typing import Any, Dict, List, Sequence, Tuple, Type, TypeVar
+from typing import Any, DefaultDict, Dict, List, Sequence, Tuple, Type, TypeVar
 
 import numpy as np
 from gym import Wrapper
 from gym.spaces import Box, MultiDiscrete
 from gym.vector.utils import batch_space
+from luxai_s2.actions import move_deltas
 from luxai_s2.env import LuxAI_S2
 from luxai_s2.map.position import Position
 from luxai_s2.state import ObservationStateDict
 from luxai_s2.unit import Unit
 from luxai_s2.utils import my_turn_to_place_factory
 
-from rl_algo_impls.shared.lux.utils import (
+from rl_algo_impls.shared.lux.actions import (
+    ACTION_SIZES,
+    FACTORY_ACTION_ENCODED_SIZE,
+    FACTORY_DO_NOTHING_ACTION,
+    UNIT_ACTION_ENCODED_SIZE,
+    if_self_destruct_valid,
     is_build_heavy_valid,
     is_build_light_valid,
+    is_dig_valid,
+    is_recharge_valid,
     is_water_action_valid,
+    max_move_repeats,
+    unit_action_to_obs,
+    valid_move_mask,
+    valid_pickup_resource_mask,
+    valid_transfer_direction_mask,
+    valid_transfer_resource_mask,
 )
 
 ICE_FACTORY_MAX = 100_000
@@ -125,10 +139,55 @@ class LuxEnvGridnet(Wrapper):
                         True,  # Do nothing is always valid
                     ]
                 )
-            for u in env.state.units[p].values():
+            move_masks = {
+                u_id: valid_move_mask(
+                    u, env.state, config, self.unit_prior_actions.get(u_id)
+                )
+                for u_id, u in env.state.units[p].items()
+            }
+            move_validity_map = DefaultDict(set)
+            for u_id, valid_moves_mask in move_masks.items():
+                u = env.state.units[p][u_id]
+                for direction_idx, move_delta in enumerate(move_deltas):
+                    if valid_moves_mask[direction_idx]:
+                        move_validity_map[self._pos_to_idx(u.pos + move_delta)].add(
+                            u_id
+                        )
+            for u_id, u in env.state.units[p].items():
+                prior_action = self.unit_prior_actions.get(u.unit_id, None)
+                move_mask = move_masks[u_id]
+                transfer_direction_mask = valid_transfer_direction_mask(
+                    u, env.state, config, move_validity_map, prior_action
+                )
+                transfer_resource_mask = (
+                    valid_transfer_resource_mask(u)
+                    if np.any(transfer_direction_mask)
+                    else np.zeros(5)
+                )
+                pickup_resource_mask = valid_pickup_resource_mask(
+                    u, env.state, prior_action
+                )
                 action_mask[
                     idx, self._pos_to_idx(u.pos), FACTORY_ACTION_ENCODED_SIZE:
-                ] = True
+                ] = np.concatenate(
+                    [
+                        np.array(
+                            [
+                                np.any(move_mask),
+                                np.any(transfer_direction_mask),
+                                np.any(pickup_resource_mask),
+                                is_dig_valid(u, env.state, prior_action),
+                                if_self_destruct_valid(u, env.state, prior_action),
+                                is_recharge_valid(u, prior_action),
+                            ]
+                        ),
+                        move_mask,
+                        transfer_direction_mask,
+                        transfer_resource_mask,
+                        pickup_resource_mask,
+                    ]
+                )
+
         return action_mask
 
     def _pos_to_idx(self, pos: Position) -> int:
@@ -389,10 +448,12 @@ class LuxEnvGridnet(Wrapper):
                         return unit.power
                     return astuple(unit.cargo)[idx]
 
+                repeat = cfg.max_episode_length
                 if a[0] == 0:  # move
                     direction = a[1]
                     resource = 0
                     amount = 0
+                    repeat = max_move_repeats(u, direction, cfg)
                 elif a[0] == 1:  # transfer
                     direction = a[2]
                     resource = a[3]
@@ -419,9 +480,7 @@ class LuxEnvGridnet(Wrapper):
                 else:
                     raise ValueError(f"Unrecognized action f{a[0]}")
                 lux_actions[p][u.unit_id] = [
-                    np.array(
-                        [a[0], direction, resource, amount, 0, cfg.max_episode_length]
-                    )
+                    np.array([a[0], direction, resource, amount, 0, repeat])
                 ]
         self.unit_prior_actions = next_prior_actions
         return lux_actions
@@ -457,9 +516,6 @@ class LuxEnvGridnet(Wrapper):
         return np.sum(raw_rewards * self.reward_weight, axis=-1)
 
 
-AgentRunningStatsSelf = TypeVar("AgentRunningStatsSelf", bound="AgentRunningStats")
-
-
 class AgentRunningStats:
     stats: np.ndarray
 
@@ -472,7 +528,7 @@ class AgentRunningStats:
     def __init__(self) -> None:
         self.stats = np.zeros(6, dtype=np.int32)
 
-    def update(self: AgentRunningStatsSelf, env: LuxAI_S2, agent: str) -> np.ndarray:
+    def update(self, env: LuxAI_S2, agent: str) -> np.ndarray:
         generation = env.state.stats[agent]["generation"]
 
         new_stats = np.array(
@@ -509,34 +565,6 @@ class StatsTracking:
         self.agents = env.agents
         self.stats = (AgentRunningStats(), AgentRunningStats())
         self.update()
-
-
-FACTORY_ACTION_SIZES = (
-    4,  # build light robot, build heavy robot, water lichen, do nothing
-)
-FACTORY_ACTION_ENCODED_SIZE = sum(FACTORY_ACTION_SIZES)
-
-FACTORY_DO_NOTHING_ACTION = 3
-
-
-UNIT_ACTION_SIZES = (
-    6,  # action type
-    5,  # move direction
-    5,  # transfer direction
-    5,  # transfer resource
-    5,  # pickup resource
-)
-UNIT_ACTION_ENCODED_SIZE = sum(UNIT_ACTION_SIZES)
-
-
-ACTION_SIZES = FACTORY_ACTION_SIZES + UNIT_ACTION_SIZES
-
-
-def unit_action_to_obs(action: np.ndarray) -> np.ndarray:
-    encoded = [np.zeros(sz, dtype=np.bool_) for sz in UNIT_ACTION_SIZES]
-    for e, a in zip(encoded, action):
-        e[a] = 1
-    return np.concatenate(encoded)
 
 
 def reset_and_early_phase(
