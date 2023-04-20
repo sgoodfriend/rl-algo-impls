@@ -1,6 +1,6 @@
 import dataclasses
 from dataclasses import astuple, dataclass
-from typing import Any, DefaultDict, Dict, List, Sequence, Tuple, Type, TypeVar
+from typing import Any, DefaultDict, Dict, List, Sequence, Tuple, Type
 
 import numpy as np
 from gym import Wrapper
