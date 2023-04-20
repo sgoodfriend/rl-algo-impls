@@ -1,10 +1,11 @@
 import dataclasses
 from dataclasses import astuple, dataclass
-from typing import Any, DefaultDict, Dict, List, Sequence, Tuple, Type
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Type
 
 import numpy as np
 from gym import Wrapper
 from gym.spaces import Box, MultiDiscrete
+from gym.spaces import Tuple as TupleSpace
 from gym.vector.utils import batch_space
 from luxai_s2.actions import move_deltas
 from luxai_s2.env import LuxAI_S2
@@ -85,7 +86,7 @@ class LuxEnvGridnet(Wrapper):
         self.single_action_space = MultiDiscrete(
             np.array(ACTION_SIZES * self.num_map_tiles).flatten().tolist()
         )
-        self.action_space = batch_space(self.single_action_space, n=2)
+        self.action_space = TupleSpace((self.single_action_space,) * 2)
 
         self._action_mask: Optional[np.ndarray] = None
 

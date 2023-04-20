@@ -19,7 +19,8 @@ class RewardDecayCallback(Callback):
         assert hasattr(
             self.unwrapped, "reward_weight"
         ), "Env must have settable property reward_weight"
-        self.base_reward_weights = self.unwrapped.reward_weight
+        base_reward_weights = self.unwrapped.reward_weight
+        self.base_reward_weights = base_reward_weights
 
         self.total_train_timesteps = config.n_timesteps
         self.timesteps_elapsed = start_timesteps

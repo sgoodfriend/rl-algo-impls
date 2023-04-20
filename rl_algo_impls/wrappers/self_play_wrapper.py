@@ -57,7 +57,8 @@ class SelfPlayWrapper(VectorableWrapper):
             self.initialize_selfplay_bots()
 
     def get_action_mask(self) -> Optional[np.ndarray]:
-        return self.env.get_action_mask()[self.learner_indexes()]
+        assert self.next_action_masks is not None
+        return self.next_action_masks[self.learner_indexes()]
 
     def learner_indexes(self) -> List[int]:
         return [p is None for p in self.policy_assignments]

@@ -1,16 +1,21 @@
 from dataclasses import astuple
-from typing import Optional
+from typing import Callable, Optional, Sequence
 
 import gym
-import numpy as np
 from torch.utils.tensorboard.writer import SummaryWriter
 
 from rl_algo_impls.runner.config import Config, EnvHyperparams
+from rl_algo_impls.shared.vec_env.lux_async_vector_env import LuxAsyncVectorEnv
 from rl_algo_impls.shared.vec_env.vec_lux_env import VecLuxEnv
 from rl_algo_impls.wrappers.episode_stats_writer import EpisodeStatsWriter
 from rl_algo_impls.wrappers.hwc_to_chw_observation import HwcToChwObservation
+from rl_algo_impls.wrappers.lux_env_gridnet import DEFAULT_REWARD_WEIGHTS, LuxEnvGridnet
 from rl_algo_impls.wrappers.self_play_eval_wrapper import SelfPlayEvalWrapper
 from rl_algo_impls.wrappers.self_play_wrapper import SelfPlayWrapper
+from rl_algo_impls.wrappers.sync_vector_env_render_compat import (
+    SyncVectorEnvRenderCompat,
+)
+from rl_algo_impls.wrappers.vec_lux_env_wrapper import VecLuxEnvGridnetWrapper
 from rl_algo_impls.wrappers.vectorable_wrapper import VecEnv
 
 
@@ -23,13 +28,13 @@ def make_lux_env(
     tb_writer: Optional[SummaryWriter] = None,
 ) -> VecEnv:
     (
-        _,  # env_type
+        _,  # env_type,
         n_envs,
         _,  # frame_stack
         make_kwargs,
         _,  # no_reward_timeout_steps
         _,  # no_reward_fire_steps
-        _,  # vec_env_class
+        vec_env_class,
         _,  # normalize
         _,  # normalize_kwargs,
         rolling_length,
@@ -53,7 +58,32 @@ def make_lux_env(
     if num_envs == 1 and not training:
         # Workaround for supporting the video env
         num_envs = 2
-    envs = VecLuxEnv(num_envs, **make_kwargs)
+
+    def make(idx: int) -> Callable[[], gym.Env]:
+        def _make() -> gym.Env:
+            def _gridnet(
+                bid_std_dev=5,
+                reward_weight: Sequence[float] = DEFAULT_REWARD_WEIGHTS,
+                **kwargs,
+            ) -> LuxEnvGridnet:
+                return LuxEnvGridnet(
+                    gym.make("LuxAI_S2-v0", collect_stats=True, verbose=2, **kwargs),
+                    bid_std_dev=bid_std_dev,
+                    reward_weight=reward_weight,
+                )
+
+            return _gridnet(**make_kwargs)
+
+        return _make
+
+    if vec_env_class == "sync":
+        envs = VecLuxEnv(num_envs, **make_kwargs)
+    else:
+        envs = LuxAsyncVectorEnv([make(i) for i in range(n_envs)], copy=False)
+        if vec_env_class == "sync":
+            envs = SyncVectorEnvRenderCompat(envs)
+        envs = VecLuxEnvGridnetWrapper(envs)
+
     envs = HwcToChwObservation(envs)
     if self_play_kwargs:
         if not training and self_play_kwargs.get("eval_use_training_cache", False):
