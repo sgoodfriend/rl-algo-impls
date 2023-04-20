@@ -1,4 +1,3 @@
-import copy
 import random
 from collections import deque
 from typing import Any, Deque, Dict, List, Optional
@@ -125,7 +124,7 @@ class SelfPlayWrapper(VectorableWrapper):
                     else None,
                 )
         self.next_obs, rew, done, info = env.step(all_actions)
-        self.next_action_masks = self.env.get_action_mask()
+        self.next_action_masks = env.get_action_mask()
 
         rew = rew[orig_learner_indexes]
         info = [i for i, b in zip(info, orig_learner_indexes) if b]

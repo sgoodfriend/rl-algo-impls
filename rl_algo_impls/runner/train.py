@@ -89,21 +89,30 @@ def train(args: TrainArgs):
             f"num_trainable_parameters = {num_trainable_parameters}"
         )
 
-    eval_env = make_eval_env(config, EnvHyperparams(**config.env_hyperparams))
+    self_play_wrapper = find_wrapper(env, SelfPlayWrapper)
+    eval_env = make_eval_env(
+        config,
+        EnvHyperparams(**config.env_hyperparams),
+        self_play_wrapper=self_play_wrapper,
+    )
     record_best_videos = config.eval_hyperparams.get("record_best_videos", True)
+    video_env = (
+        make_eval_env(
+            config,
+            EnvHyperparams(**config.env_hyperparams),
+            override_hparams={"n_envs": 1},
+            self_play_wrapper=self_play_wrapper,
+        )
+        if record_best_videos
+        else None
+    )
     eval_callback = EvalCallback(
         policy,
         eval_env,
         tb_writer,
         best_model_path=config.model_dir_path(best=True),
         **config.eval_callback_params(),
-        video_env=make_eval_env(
-            config,
-            EnvHyperparams(**config.env_hyperparams),
-            override_hparams={"n_envs": 1},
-        )
-        if record_best_videos
-        else None,
+        video_env=video_env,
         best_video_dir=config.best_videos_dir,
         additional_keys_to_log=config.additional_keys_to_log,
         wandb_enabled=wandb_enabled,
@@ -111,9 +120,8 @@ def train(args: TrainArgs):
     callbacks: List[Callback] = [eval_callback]
     if config.hyperparams.reward_decay_callback:
         callbacks.append(RewardDecayCallback(config, env))
-    selfPlayWrapper = find_wrapper(env, SelfPlayWrapper)
-    if selfPlayWrapper:
-        callbacks.append(SelfPlayCallback(policy, policy_factory, selfPlayWrapper))
+    if self_play_wrapper:
+        callbacks.append(SelfPlayCallback(policy, policy_factory, self_play_wrapper))
     algo.learn(config.n_timesteps, callbacks=callbacks)
 
     policy.save(config.model_dir_path(best=False))

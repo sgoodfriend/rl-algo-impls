@@ -206,10 +206,12 @@ def simple_optimize(trial: optuna.Trial, args: RunArgs, study_args: StudyArgs) -
     policy = policy_factory()
     algo = ALGOS[args.algo](policy, env, device, tb_writer, **config.algo_hyperparams)
 
+    self_play_wrapper = find_wrapper(env, SelfPlayWrapper)
     eval_env = make_eval_env(
         config,
         EnvHyperparams(**config.env_hyperparams),
         override_hparams={"n_envs": study_args.n_eval_envs},
+        self_play_wrapper=self_play_wrapper,
     )
     optimize_callback = OptimizeCallback(
         policy,
@@ -223,9 +225,8 @@ def simple_optimize(trial: optuna.Trial, args: RunArgs, study_args: StudyArgs) -
     callbacks: List[Callback] = [optimize_callback]
     if config.hyperparams.reward_decay_callback:
         callbacks.append(RewardDecayCallback(config, env))
-    selfPlayWrapper = find_wrapper(env, SelfPlayWrapper)
-    if selfPlayWrapper:
-        callbacks.append(SelfPlayCallback(policy, policy_factory, selfPlayWrapper))
+    if self_play_wrapper:
+        callbacks.append(SelfPlayCallback(policy, policy_factory, self_play_wrapper))
     try:
         algo.learn(config.n_timesteps, callbacks=callbacks)
 
@@ -325,11 +326,13 @@ def stepwise_optimize(
                 policy, env, device, tb_writer, **config.algo_hyperparams
             )
 
+            self_play_wrapper = find_wrapper(env, SelfPlayWrapper)
             eval_env = make_eval_env(
                 config,
                 EnvHyperparams(**config.env_hyperparams),
                 normalize_load_path=config.model_dir_path() if i > 0 else None,
                 override_hparams={"n_envs": study_args.n_eval_envs},
+                self_play_wrapper=self_play_wrapper,
             )
 
             start_timesteps = int(i * config.n_timesteps / study_args.n_evaluations)
@@ -343,10 +346,9 @@ def stepwise_optimize(
                 callbacks.append(
                     RewardDecayCallback(config, env, start_timesteps=start_timesteps)
                 )
-            selfPlayWrapper = find_wrapper(env, SelfPlayWrapper)
-            if selfPlayWrapper:
+            if self_play_wrapper:
                 callbacks.append(
-                    SelfPlayCallback(policy, policy_factory, selfPlayWrapper)
+                    SelfPlayCallback(policy, policy_factory, self_play_wrapper)
                 )
             try:
                 algo.learn(

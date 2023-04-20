@@ -630,14 +630,13 @@ LuxAI_S2-v0: &lux-defaults
       window: 33
     make_kwargs:
       bid_std_dev: 5
-  eval_hyperparams:
+  eval_hyperparams: &lux-eval-defaults
     deterministic: false
     step_freq: !!float 1e6
     env_overrides:
+      n_envs: 66
       self_play_kwargs:
-        num_old_policies: 0
-        save_steps: .inf
-        swap_steps: .inf
+        eval_use_training_cache: true
   policy_hyperparams:
     activation_fn: relu
     actor_head_style: unet
@@ -668,3 +667,6 @@ LuxAI_S2-v0-debug:
   <<: *lux-defaults
   n_timesteps: !!float 1e6
   device: cpu
+  eval_hyperparams:
+    <<: *lux-eval-defaults
+    step_freq: !!float 1e5
