@@ -26,7 +26,7 @@ dependencies = [
     "stable-baselines3[extra] >= 1.7.0, < 1.8",
     "gym[box2d] >= 0.21.0, < 0.22",
     "pyglet == 1.5.27",
-    "wandb",
+    "wandb == 0.13.10",
     "pyvirtualdisplay",
     "pybullet",
     "tabulate",
