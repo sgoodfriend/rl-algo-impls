@@ -1,5 +1,5 @@
 from dataclasses import astuple
-from typing import Dict, Optional, Set
+from typing import Optional
 
 import numpy as np
 from luxai_s2.actions import move_deltas
@@ -112,7 +112,8 @@ def valid_transfer_direction_mask(
     unit: Unit,
     state: State,
     config: EnvConfig,
-    move_validity_map: Dict[int, Set[str]],
+    move_mask: np.ndarray,
+    move_validity_map: np.ndarray,
     prior_action: Optional[np.ndarray],
 ) -> np.ndarray:
     if (
@@ -133,12 +134,13 @@ def valid_transfer_direction_mask(
             and f"factory_{factory_at_target}" in state.factories[unit.team.agent]
         ):
             return True
-        if np.all(pos == unit.pos.pos):
+        if move_direction == 0:
+            # Center drop-off is just for factory
             return False
-        pos_idx = pos[0] * config.map_size + pos[1]
-        if move_validity_map.get(pos_idx, set()) - {unit.unit_id}:
-            return True
-        return False
+        return bool(
+            move_validity_map[pos[0], pos[1]] - (1 if move_mask[move_direction] else 0)
+            > 0
+        )
 
     return np.array(
         [

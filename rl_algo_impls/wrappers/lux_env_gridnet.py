@@ -153,19 +153,19 @@ class LuxEnvGridnet(Wrapper):
                 )
                 for u_id, u in env.state.units[p].items()
             }
-            move_validity_map = DefaultDict(set)
+            move_validity_map = np.zeros((self.map_size, self.map_size), dtype=np.int16)
             for u_id, valid_moves_mask in move_masks.items():
                 u = env.state.units[p][u_id]
                 for direction_idx, move_delta in enumerate(move_deltas):
                     if valid_moves_mask[direction_idx]:
-                        move_validity_map[self._pos_to_idx(u.pos + move_delta)].add(
-                            u_id
-                        )
+                        move_validity_map[
+                            u.pos.x + move_delta[0], u.pos.y + move_delta[1]
+                        ] += 1
             for u_id, u in env.state.units[p].items():
                 prior_action = self.unit_prior_actions.get(u.unit_id, None)
                 move_mask = move_masks[u_id]
                 transfer_direction_mask = valid_transfer_direction_mask(
-                    u, env.state, config, move_validity_map, prior_action
+                    u, env.state, config, move_mask, move_validity_map, prior_action
                 )
                 transfer_resource_mask = (
                     valid_transfer_resource_mask(u)
