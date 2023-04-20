@@ -43,7 +43,7 @@ LICHEN_FACTORY_MAX = 128_000
 
 DEFAULT_REWARD_WEIGHTS = (
     10,  # WIN_LOSS
-    0.001,  # LICHEN_DELTA (clip to +/- 1)
+    0.0001,  # LICHEN_DELTA (clip to +/- 1)
     0.01,  # ICE_GENERATION (2 for a day of water for factory, 0.2 for a heavy dig action)
     2e-3,  # ORE_GENERATION (1 for building a heavy robot, 0.04 for a heavy dig action)
     0.04,  # WATER_GENERATION (2 for a day of water for factory)
