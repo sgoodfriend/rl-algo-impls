@@ -80,8 +80,6 @@ def make_lux_env(
         envs = VecLuxEnv(num_envs, **make_kwargs)
     else:
         envs = LuxAsyncVectorEnv([make(i) for i in range(n_envs)], copy=False)
-        if vec_env_class == "sync":
-            envs = SyncVectorEnvRenderCompat(envs)
         envs = VecLuxEnvGridnetWrapper(envs)
 
     envs = HwcToChwObservation(envs)
