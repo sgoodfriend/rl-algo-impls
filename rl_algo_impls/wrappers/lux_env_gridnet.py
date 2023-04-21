@@ -52,6 +52,7 @@ DEFAULT_REWARD_WEIGHTS = (
     0,  # LICHEN_GENERATION (0)
     0,  # BUILT_LIGHT
     0,  # BUILT_HEAVY
+    -1,  # FACTORIES_LOST
 )
 
 
@@ -576,6 +577,7 @@ class AgentRunningStats:
         "lichen_generation",
         "built_light",
         "built_heavy",
+        "factories_lost",
     )
 
     def __init__(self) -> None:
@@ -593,6 +595,7 @@ class AgentRunningStats:
                 generation["lichen"],
                 generation["built"]["LIGHT"],
                 generation["built"]["HEAVY"],
+                env.state.stats[agent]["destroyed"]["FACTORY"],
             ]
         )
 
