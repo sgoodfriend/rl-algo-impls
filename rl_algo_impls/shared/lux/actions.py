@@ -1,8 +1,8 @@
 from dataclasses import astuple
-from typing import Optional
+from typing import List, Optional
 
 import numpy as np
-from luxai_s2.actions import move_deltas
+from luxai_s2.actions import Action, move_deltas
 from luxai_s2.config import EnvConfig
 from luxai_s2.factory import Factory
 from luxai_s2.state import State
@@ -76,7 +76,7 @@ def is_position_in_map(pos: np.ndarray, config: EnvConfig) -> bool:
 
 
 def valid_move_mask(
-    unit: Unit, state: State, config: EnvConfig, prior_action: Optional[np.ndarray]
+    unit: Unit, state: State, config: EnvConfig, enqueued_action: Optional[np.ndarray]
 ) -> np.ndarray:
     def is_valid_target(pos: np.ndarray, move_direction: int) -> bool:
         if not is_position_in_map(pos, config):
@@ -90,9 +90,9 @@ def valid_move_mask(
         rubble = state.board.rubble[pos[0], pos[1]]
         power_cost = unit.move_power_cost(rubble)
         if (
-            prior_action is None
-            or prior_action[0] != 0
-            or prior_action[1] != move_direction
+            enqueued_action is None
+            or enqueued_action[0] != 0
+            or enqueued_action[1] != move_direction
         ):
             power_cost += unit.unit_cfg.ACTION_QUEUE_POWER_COST
         if unit.power < power_cost:
@@ -114,16 +114,16 @@ def valid_transfer_direction_mask(
     config: EnvConfig,
     move_mask: np.ndarray,
     move_validity_map: np.ndarray,
-    prior_action: Optional[np.ndarray],
+    enqueued_action: Optional[np.ndarray],
 ) -> np.ndarray:
     if (
-        prior_action is None or prior_action[0] != 1
+        enqueued_action is None or enqueued_action[0] != 1
     ) and unit.power < unit.unit_cfg.ACTION_QUEUE_POWER_COST:
         return np.full(5, False)
 
     def is_valid_target(pos: np.ndarray, move_direction: int) -> bool:
         if (
-            prior_action is None or prior_action[2] != move_direction
+            enqueued_action is None or enqueued_action[2] != move_direction
         ) and unit.power < unit.unit_cfg.ACTION_QUEUE_POWER_COST:
             return False
         if not is_position_in_map(pos, config):
@@ -155,10 +155,10 @@ def valid_transfer_resource_mask(unit: Unit) -> np.ndarray:
 
 
 def valid_pickup_resource_mask(
-    unit: Unit, state: State, prior_action: Optional[np.ndarray]
+    unit: Unit, state: State, enqueued_action: Optional[np.ndarray]
 ) -> np.ndarray:
     has_power_to_change = unit.power >= unit.unit_cfg.ACTION_QUEUE_POWER_COST
-    if (prior_action is None or prior_action[0] != 2) and not has_power_to_change:
+    if (enqueued_action is None or enqueued_action[0] != 2) and not has_power_to_change:
         return np.zeros(5)
     factory_id = state.board.factory_occupancy_map[unit.pos.x, unit.pos.y]
     if factory_id == -1:
@@ -173,16 +173,16 @@ def valid_pickup_resource_mask(
     )
     has_power = np.array(
         [
-            has_power_to_change or (prior_action is not None and prior_action[4] == idx)
+            has_power_to_change or (enqueued_action is not None and enqueued_action[4] == idx)
             for idx in range(5)
         ]
     )
     return has_resource * has_capacity * has_power
 
 
-def is_dig_valid(unit: Unit, state: State, prior_action: Optional[np.ndarray]) -> bool:
+def is_dig_valid(unit: Unit, state: State, enqueued_action: Optional[np.ndarray]) -> bool:
     power_cost = unit.unit_cfg.DIG_COST
-    if prior_action is None or prior_action[0] != 3:
+    if enqueued_action is None or enqueued_action[0] != 3:
         power_cost += unit.unit_cfg.ACTION_QUEUE_POWER_COST
     if unit.power < power_cost:
         return False
@@ -202,22 +202,32 @@ def is_dig_valid(unit: Unit, state: State, prior_action: Optional[np.ndarray]) -
 
 
 def if_self_destruct_valid(
-    unit: Unit, state: State, prior_action: Optional[np.ndarray]
+    unit: Unit, state: State, enqueued_action: Optional[np.ndarray]
 ) -> bool:
     factory_id = state.board.factory_occupancy_map[unit.pos.x, unit.pos.y]
     if factory_id != -1:
         return False
     power_cost = unit.unit_cfg.SELF_DESTRUCT_COST
-    if prior_action is None or prior_action[0] != 4:
+    if enqueued_action is None or enqueued_action[0] != 4:
         power_cost += unit.unit_cfg.ACTION_QUEUE_POWER_COST
     if unit.power < power_cost:
         return False
     return True
 
 
-def is_recharge_valid(unit: Unit, prior_action: Optional[np.ndarray]) -> bool:
+def is_recharge_valid(unit: Unit, enqueued_action: Optional[np.ndarray]) -> bool:
     if (
-        prior_action is None or prior_action[0] != 5
+        enqueued_action is None or enqueued_action[0] != 5
     ) and unit.power < unit.unit_cfg.ACTION_QUEUE_POWER_COST:
         return False
     return True
+
+
+def action_array_from_queue(action_queue: List[Action]) -> Optional[np.ndarray]:
+    if len(action_queue) == 0:
+        return None
+    return action_queue[0].state_dict()
+
+
+def actions_equal(lhs: Optional[np.ndarray], rhs: Optional[np.ndarray]) -> bool:
+    return lhs is not None and rhs is not None and np.all(np.equal(lhs[:-2], rhs[:-2]))

@@ -19,6 +19,8 @@ from rl_algo_impls.shared.lux.actions import (
     FACTORY_ACTION_ENCODED_SIZE,
     FACTORY_DO_NOTHING_ACTION,
     UNIT_ACTION_ENCODED_SIZE,
+    action_array_from_queue,
+    actions_equal,
     if_self_destruct_valid,
     is_build_heavy_valid,
     is_build_light_valid,
@@ -69,7 +71,6 @@ class LuxEnvGridnet(Wrapper):
         self.max_lichen_delta = 1 / reward_weight[1]
         self.map_size = self.unwrapped.env_cfg.map_size
 
-        self.unit_prior_actions: Dict[str, np.ndarray] = {}
         self.prior_lux_reward: Dict[str, int] = {}
         self.stats = StatsTracking()
 
@@ -149,10 +150,12 @@ class LuxEnvGridnet(Wrapper):
                         True,  # Do nothing is always valid
                     ]
                 )
+            enqueued_actions = {
+                u_id: action_array_from_queue(u.action_queue)
+                for u_id, u in env.state.units[p].items()
+            }
             move_masks = {
-                u_id: valid_move_mask(
-                    u, env.state, config, self.unit_prior_actions.get(u_id)
-                )
+                u_id: valid_move_mask(u, env.state, config, enqueued_actions.get(u_id))
                 for u_id, u in env.state.units[p].items()
             }
             move_validity_map = np.zeros((self.map_size, self.map_size), dtype=np.int16)
@@ -164,10 +167,10 @@ class LuxEnvGridnet(Wrapper):
                             u.pos.x + move_delta[0], u.pos.y + move_delta[1]
                         ] += 1
             for u_id, u in env.state.units[p].items():
-                prior_action = self.unit_prior_actions.get(u.unit_id, None)
+                enqueued_action = enqueued_actions.get(u_id)
                 move_mask = move_masks[u_id]
                 transfer_direction_mask = valid_transfer_direction_mask(
-                    u, env.state, config, move_mask, move_validity_map, prior_action
+                    u, env.state, config, move_mask, move_validity_map, enqueued_action
                 )
                 transfer_resource_mask = (
                     valid_transfer_resource_mask(u)
@@ -175,16 +178,16 @@ class LuxEnvGridnet(Wrapper):
                     else np.zeros(5)
                 )
                 pickup_resource_mask = valid_pickup_resource_mask(
-                    u, env.state, prior_action
+                    u, env.state, enqueued_action
                 )
                 valid_action_types = np.array(
                     [
                         np.any(move_mask),
                         np.any(transfer_direction_mask),
                         np.any(pickup_resource_mask),
-                        is_dig_valid(u, env.state, prior_action),
-                        if_self_destruct_valid(u, env.state, prior_action),
-                        is_recharge_valid(u, prior_action),
+                        is_dig_valid(u, env.state, enqueued_action),
+                        if_self_destruct_valid(u, env.state, enqueued_action),
+                        is_recharge_valid(u, enqueued_action),
                     ]
                 )
                 action_mask[
@@ -332,12 +335,13 @@ class LuxEnvGridnet(Wrapper):
             water_unit = unit_cargo_init()
             metal_unit = unit_cargo_init()
             power_unit = unit_cargo_init()
-            prior_action = np.zeros(
+            enqueued_action = np.zeros(
                 (map_size, map_size, UNIT_ACTION_ENCODED_SIZE), dtype=np.bool_
             )
 
-            def add_unit(u: Dict[str, Any], is_own: bool) -> None:
+            def add_unit(u: Dict[str, Any], p_id: str, is_own: bool) -> None:
                 _u_id = u["unit_id"]
+                _u_state = env.state.units[p_id][_u_id]
                 x, y = u["pos"]
                 unit[x, y] = True
                 if is_own:
@@ -378,15 +382,14 @@ class LuxEnvGridnet(Wrapper):
                         _power == _bat_cap,
                     )
                 )
-                if _u_id in self.unit_prior_actions:
-                    prior_action[x, y] = unit_action_to_obs(
-                        self.unit_prior_actions[_u_id]
-                    )
+                _enqueued_action = action_array_from_queue(_u_state.action_queue)
+                if _enqueued_action is not None:
+                    enqueued_action[x, y] = unit_action_to_obs(_enqueued_action)
 
             for u in p1_obs["units"][p1].values():
-                add_unit(u, True)
+                add_unit(u, p1, True)
             for u in p1_obs["units"][p2].values():
-                add_unit(u, False)
+                add_unit(u, p2, False)
 
             turn = (
                 np.ones((map_size, map_size), dtype=np.float32)
@@ -436,7 +439,7 @@ class LuxEnvGridnet(Wrapper):
                     water_unit,
                     metal_unit,
                     power_unit,
-                    prior_action,
+                    enqueued_action,
                     np.expand_dims(turn, axis=-1),
                     np.expand_dims(day_cycle, axis=-1),
                 ),
@@ -450,7 +453,6 @@ class LuxEnvGridnet(Wrapper):
         env = self.unwrapped
         cfg = env.env_cfg
 
-        next_prior_actions = {}
         lux_actions = {p: {} for p in self.agents}
         for p_idx in range(len(actions)):
             p = self.agents[p_idx]
@@ -460,12 +462,12 @@ class LuxEnvGridnet(Wrapper):
                     lux_actions[p][f.unit_id] = a
             for u in env.state.units[p].values():
                 a = actions[p_idx, self._pos_to_idx(u.pos), 1:]
-                next_prior_actions[u.unit_id] = a
                 if self._no_valid_unit_actions(u):
                     self.stats.action_stats[p_idx].no_valid_action += 1
                     continue
                 self.stats.action_stats[p_idx].action_type[a[0]] += 1
-                if np.array_equal(self.unit_prior_actions.get(u.unit_id), a):
+                enqueued_action = action_array_from_queue(u.action_queue)
+                if actions_equal(enqueued_action, a):
                     self.stats.action_stats[p_idx].repeat_action += 1
                     continue
 
@@ -508,7 +510,6 @@ class LuxEnvGridnet(Wrapper):
                 lux_actions[p][u.unit_id] = [
                     np.array([a[0], direction, resource, amount, 0, repeat])
                 ]
-        self.unit_prior_actions = next_prior_actions
         return lux_actions
 
     def _from_lux_rewards(
