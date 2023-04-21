@@ -2,7 +2,16 @@ from dataclasses import astuple
 from typing import List, Optional
 
 import numpy as np
-from luxai_s2.actions import Action, move_deltas
+from luxai_s2.actions import (
+    Action,
+    DigAction,
+    MoveAction,
+    PickupAction,
+    RechargeAction,
+    SelfDestructAction,
+    TransferAction,
+    move_deltas,
+)
 from luxai_s2.config import EnvConfig
 from luxai_s2.factory import Factory
 from luxai_s2.state import State
@@ -173,14 +182,17 @@ def valid_pickup_resource_mask(
     )
     has_power = np.array(
         [
-            has_power_to_change or (enqueued_action is not None and enqueued_action[4] == idx)
+            has_power_to_change
+            or (enqueued_action is not None and enqueued_action[4] == idx)
             for idx in range(5)
         ]
     )
     return has_resource * has_capacity * has_power
 
 
-def is_dig_valid(unit: Unit, state: State, enqueued_action: Optional[np.ndarray]) -> bool:
+def is_dig_valid(
+    unit: Unit, state: State, enqueued_action: Optional[np.ndarray]
+) -> bool:
     power_cost = unit.unit_cfg.DIG_COST
     if enqueued_action is None or enqueued_action[0] != 3:
         power_cost += unit.unit_cfg.ACTION_QUEUE_POWER_COST
@@ -226,8 +238,24 @@ def is_recharge_valid(unit: Unit, enqueued_action: Optional[np.ndarray]) -> bool
 def action_array_from_queue(action_queue: List[Action]) -> Optional[np.ndarray]:
     if len(action_queue) == 0:
         return None
-    return action_queue[0].state_dict()
+    action = action_queue[0]
+    if isinstance(action, MoveAction):
+        return np.array((0, action.move_dir, -1, -1, -1))
+    elif isinstance(action, TransferAction):
+        return np.array((1, -1, action.transfer_dir, action.resource, -1))
+    elif isinstance(action, PickupAction):
+        return np.array((2, -1, -1, -1, action.resource))
+    elif isinstance(action, DigAction):
+        return np.array((3, -1, -1, -1, -1))
+    elif isinstance(action, SelfDestructAction):
+        return np.array((4, -1, -1, -1, -1))
+    elif isinstance(action, RechargeAction):
+        return np.array((5, -1, -1, -1, -1))
+    else:
+        raise ValueError(f"{action.__class__.__name__} not supported")
 
 
-def actions_equal(lhs: Optional[np.ndarray], rhs: Optional[np.ndarray]) -> bool:
-    return lhs is not None and rhs is not None and np.all(np.equal(lhs[:-2], rhs[:-2]))
+def actions_equal(action: np.ndarray, enqueued: Optional[np.ndarray]) -> bool:
+    if enqueued is None:
+        return False
+    return bool(np.all(np.where(enqueued == -1, True, action == enqueued)))

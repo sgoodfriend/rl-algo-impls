@@ -90,6 +90,7 @@ class LuxEnvGridnet(Wrapper):
         )
         self.action_space = TupleSpace((self.single_action_space,) * 2)
 
+        self._enqueued_actions: Dict[str, Optional[np.ndarray]] = {}
         self._action_mask: Optional[np.ndarray] = None
 
     @property
@@ -114,6 +115,7 @@ class LuxEnvGridnet(Wrapper):
             assert not any(done.values()), "All or none should be done"
             obs = self._from_lux_observation(lux_obs)
 
+        self._enqueued_actions = {}
         self._action_mask = None
         return (
             obs,
@@ -125,6 +127,7 @@ class LuxEnvGridnet(Wrapper):
     def reset(self) -> np.ndarray:
         lux_obs, self.agents = reset_and_early_phase(self.unwrapped, self.bid_std_dev)
         self.stats.reset(self.unwrapped)
+        self._enqueued_actions = {}
         self._action_mask = None
         return self._from_lux_observation(lux_obs)
 
@@ -138,6 +141,11 @@ class LuxEnvGridnet(Wrapper):
         )
         env = self.unwrapped
         config = env.env_cfg
+        self._enqueued_actions = {
+            u_id: action_array_from_queue(u.action_queue)
+            for p in self.agents
+            for u_id, u in env.state.units[p].items()
+        }
         for idx, p in enumerate(self.agents):
             for f in env.state.factories[p].values():
                 action_mask[
@@ -150,12 +158,10 @@ class LuxEnvGridnet(Wrapper):
                         True,  # Do nothing is always valid
                     ]
                 )
-            enqueued_actions = {
-                u_id: action_array_from_queue(u.action_queue)
-                for u_id, u in env.state.units[p].items()
-            }
             move_masks = {
-                u_id: valid_move_mask(u, env.state, config, enqueued_actions.get(u_id))
+                u_id: valid_move_mask(
+                    u, env.state, config, self._enqueued_actions.get(u_id)
+                )
                 for u_id, u in env.state.units[p].items()
             }
             move_validity_map = np.zeros((self.map_size, self.map_size), dtype=np.int16)
@@ -167,7 +173,7 @@ class LuxEnvGridnet(Wrapper):
                             u.pos.x + move_delta[0], u.pos.y + move_delta[1]
                         ] += 1
             for u_id, u in env.state.units[p].items():
-                enqueued_action = enqueued_actions.get(u_id)
+                enqueued_action = self._enqueued_actions.get(u_id)
                 move_mask = move_masks[u_id]
                 transfer_direction_mask = valid_transfer_direction_mask(
                     u, env.state, config, move_mask, move_validity_map, enqueued_action
@@ -382,7 +388,7 @@ class LuxEnvGridnet(Wrapper):
                         _power == _bat_cap,
                     )
                 )
-                _enqueued_action = action_array_from_queue(_u_state.action_queue)
+                _enqueued_action = self._enqueued_actions.get(_u_id)
                 if _enqueued_action is not None:
                     enqueued_action[x, y] = unit_action_to_obs(_enqueued_action)
 
@@ -466,8 +472,7 @@ class LuxEnvGridnet(Wrapper):
                     self.stats.action_stats[p_idx].no_valid_action += 1
                     continue
                 self.stats.action_stats[p_idx].action_type[a[0]] += 1
-                enqueued_action = action_array_from_queue(u.action_queue)
-                if actions_equal(enqueued_action, a):
+                if actions_equal(a, self._enqueued_actions.get(u.unit_id)):
                     self.stats.action_stats[p_idx].repeat_action += 1
                     continue
 
