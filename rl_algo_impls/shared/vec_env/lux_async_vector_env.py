@@ -141,7 +141,7 @@ class LuxAsyncVectorEnv(VectorEnv):
         else:
             _obs_buffer = None
             self.observations = create_empty_array(
-                self.single_observation_space, n=self.num_envs, fn=np.zeros
+                self.single_observation_space, n=2 * self.num_envs, fn=np.zeros
             )
             _action_masks_buffer = None
             self.action_masks = np.full(
@@ -250,9 +250,7 @@ class LuxAsyncVectorEnv(VectorEnv):
 
         if not self.shared_memory:
             obs, action_masks = zip(*results)
-            self.observations = concatenate(
-                obs, self.observations, self.single_observation_space
-            )
+            self.observations = np.concatenate(obs)
             self.action_masks = np.concatenate(action_masks)
 
         return deepcopy(self.observations) if self.copy else self.observations
@@ -318,9 +316,7 @@ class LuxAsyncVectorEnv(VectorEnv):
         observations_list, rewards, dones, infos, action_masks = zip(*results)
 
         if not self.shared_memory:
-            self.observations = concatenate(
-                observations_list, self.observations, self.single_observation_space
-            )
+            self.observations = np.concatenate(observations_list)
             self.action_masks = np.concatenate(action_masks)
 
         return (

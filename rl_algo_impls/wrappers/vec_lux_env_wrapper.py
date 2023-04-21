@@ -47,8 +47,3 @@ class VecLuxEnvGridnetWrapper(gym.Wrapper):
             np.reshape(p_done, self.num_envs),
             [info for pair in p_info for info in pair],
         )
-
-    def reset(self) -> VecEnvObs:
-        return np.reshape(
-            self.env.reset(), (self.num_envs,) + self.single_observation_space.shape
-        )
