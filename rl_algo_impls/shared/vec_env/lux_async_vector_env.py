@@ -100,6 +100,7 @@ class LuxAsyncVectorEnv(VectorEnv):
         if (observation_space is None) or (action_space is None):
             observation_space = observation_space or dummy_env.observation_space
             action_space = action_space or dummy_env.action_space
+        self._reward_weight = dummy_env.reward_weight
         dummy_env.close()
         del dummy_env
         super(LuxAsyncVectorEnv, self).__init__(
@@ -222,12 +223,14 @@ class LuxAsyncVectorEnv(VectorEnv):
             )
 
         results, successes = zip(*[pipe.recv() for pipe in self.parent_pipes])
+        obs, action_masks = zip(*results)
+        self._action_masks = np.concatenate(action_masks)
         self._raise_if_errors(successes)
         self._state = AsyncState.DEFAULT
 
         if not self.shared_memory:
             self.observations = concatenate(
-                results, self.observations, self.single_observation_space
+                obs, self.observations, self.single_observation_space
             )
 
         return deepcopy(self.observations) if self.copy else self.observations
@@ -290,12 +293,13 @@ class LuxAsyncVectorEnv(VectorEnv):
         results, successes = zip(*[pipe.recv() for pipe in self.parent_pipes])
         self._raise_if_errors(successes)
         self._state = AsyncState.DEFAULT
-        observations_list, rewards, dones, infos = zip(*results)
+        observations_list, rewards, dones, infos, action_masks = zip(*results)
 
         if not self.shared_memory:
             self.observations = concatenate(
                 observations_list, self.observations, self.single_observation_space
             )
+        self._action_masks = np.concatenate(action_masks)
 
         return (
             deepcopy(self.observations) if self.copy else self.observations,
@@ -405,15 +409,17 @@ class LuxAsyncVectorEnv(VectorEnv):
 
     @property
     def reward_weight(self) -> np.ndarray:
-        return self.get_attr("reward_weight")[0]
+        assert self._reward_weight is not None
+        return self._reward_weight
 
     @reward_weight.setter
     def reward_weight(self, reward_weight: np.ndarray) -> None:
+        self._reward_weight = reward_weight
         self.set_attr("reward_weight", reward_weight)
 
     def get_action_mask(self) -> np.ndarray:
-        action_masks = self.call("get_action_mask")
-        return np.concatenate(action_masks)
+        assert self._action_masks is not None
+        return self._action_masks
 
     def close_extras(self, timeout=None, terminate=False):
         """
@@ -522,12 +528,14 @@ def _worker(index, env_fn, pipe, parent_pipe, shared_memory, error_queue):
             command, data = pipe.recv()
             if command == "reset":
                 observation = env.reset()
-                pipe.send((observation, True))
+                action_mask = env.get_action_mask()
+                pipe.send(((observation, action_mask), True))
             elif command == "step":
                 observation, reward, done, info = env.step(data)
                 if all(done):
                     observation = env.reset()
-                pipe.send(((observation, reward, done, info), True))
+                action_mask = env.get_action_mask()
+                pipe.send(((observation, reward, done, info, action_mask), True))
             elif command == "seed":
                 env.seed(data)
                 pipe.send((None, True))
@@ -578,7 +586,8 @@ def _worker_shared_memory(index, env_fn, pipe, parent_pipe, shared_memory, error
                 write_to_shared_memory(
                     index, observation, shared_memory, observation_space
                 )
-                pipe.send((None, True))
+                action_mask = env.get_action_mask()
+                pipe.send(((None, action_mask), True))
             elif command == "step":
                 observation, reward, done, info = env.step(data)
                 if all(done):
@@ -586,7 +595,8 @@ def _worker_shared_memory(index, env_fn, pipe, parent_pipe, shared_memory, error
                 write_to_shared_memory(
                     index, observation, shared_memory, observation_space
                 )
-                pipe.send(((None, reward, done, info), True))
+                action_mask = env.get_action_mask()
+                pipe.send(((None, reward, done, info, action_mask), True))
             elif command == "seed":
                 env.seed(data)
                 pipe.send((None, True))

@@ -114,7 +114,6 @@ class LuxEnvGridnet(Wrapper):
             obs = self._from_lux_observation(lux_obs)
 
         self._action_mask = None
-        self.get_action_mask()
         return (
             obs,
             rewards,
