@@ -469,6 +469,8 @@ class LuxEnvGridnet(Wrapper):
             for u in env.state.units[p].values():
                 a = actions[p_idx, self._pos_to_idx(u.pos), 1:]
                 if self._no_valid_unit_actions(u):
+                    if cfg.verbose > 1:
+                        print(f"No valid action for unit {u}")
                     self.stats.action_stats[p_idx].no_valid_action += 1
                     continue
                 self.stats.action_stats[p_idx].action_type[a[0]] += 1
