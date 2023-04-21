@@ -89,6 +89,10 @@ class LuxEnvGridnet(Wrapper):
             np.array(ACTION_SIZES * self.num_map_tiles).flatten().tolist()
         )
         self.action_space = TupleSpace((self.single_action_space,) * 2)
+        self.action_mask_shape = (
+            self.num_map_tiles,
+            self.action_plane_space.nvec.sum(),
+        )
 
         self._enqueued_actions: Dict[str, Optional[np.ndarray]] = {}
         self._action_mask: Optional[np.ndarray] = None
@@ -135,7 +139,7 @@ class LuxEnvGridnet(Wrapper):
         if self._action_mask is not None:
             return self._action_mask
         action_mask = np.full(
-            (2, self.num_map_tiles, self.action_plane_space.nvec.sum()),
+            (2,) + self.action_mask_shape,
             False,
             dtype=np.bool_,
         )

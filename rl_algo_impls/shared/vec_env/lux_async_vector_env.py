@@ -2,6 +2,7 @@ import multiprocessing as mp
 import sys
 import time
 from copy import deepcopy
+from ctypes import c_bool
 from enum import Enum
 from typing import Any, List, Optional, Union
 
@@ -23,6 +24,8 @@ from gym.vector.utils import (
     write_to_shared_memory,
 )
 from gym.vector.vector_env import VectorEnv
+
+from rl_algo_impls.wrappers.lux_env_gridnet import LuxEnvGridnet
 
 __all__ = ["LuxAsyncVectorEnv"]
 
@@ -95,14 +98,13 @@ class LuxAsyncVectorEnv(VectorEnv):
         self.shared_memory = shared_memory
         self.copy = copy
         dummy_env = env_fns[0]()
+        assert isinstance(dummy_env, LuxEnvGridnet)
         self.metadata = dummy_env.metadata
 
         if (observation_space is None) or (action_space is None):
             observation_space = observation_space or dummy_env.observation_space
             action_space = action_space or dummy_env.action_space
         self._reward_weight = dummy_env.reward_weight
-        dummy_env.close()
-        del dummy_env
         super(LuxAsyncVectorEnv, self).__init__(
             num_envs=len(env_fns),
             observation_space=observation_space,
@@ -111,12 +113,22 @@ class LuxAsyncVectorEnv(VectorEnv):
 
         if self.shared_memory:
             try:
-                _obs_buffer = create_shared_memory(
-                    self.single_observation_space, n=self.num_envs, ctx=ctx
+                _obs_buffer = ctx.Array(
+                    self.single_observation_space.dtype.char,
+                    2
+                    * self.num_envs
+                    * int(np.prod(self.single_observation_space.shape)),
                 )
-                self.observations = read_from_shared_memory(
-                    _obs_buffer, self.single_observation_space, n=self.num_envs
+                self.observations = np.frombuffer(
+                    _obs_buffer.get_obj(), dtype=self.single_observation_space.dtype
+                ).reshape((2 * self.num_envs,) + self.single_observation_space.shape)
+                _action_masks_buffer = ctx.Array(
+                    c_bool,
+                    2 * self.num_envs * int(np.prod(dummy_env.action_mask_shape)),
                 )
+                self.action_masks = np.frombuffer(
+                    _action_masks_buffer.get_obj(), dtype=np.bool_
+                ).reshape((2 * self.num_envs,) + dummy_env.action_mask_shape)
             except CustomSpaceError:
                 raise ValueError(
                     "Using `shared_memory=True` in `AsyncVectorEnv` "
@@ -131,6 +143,15 @@ class LuxAsyncVectorEnv(VectorEnv):
             self.observations = create_empty_array(
                 self.single_observation_space, n=self.num_envs, fn=np.zeros
             )
+            _action_masks_buffer = None
+            self.action_masks = np.full(
+                (2 * self.num_envs,) + dummy_env.action_mask_shape,
+                False,
+                dtype=np.bool_,
+            )
+
+        dummy_env.close()
+        del dummy_env
 
         self.parent_pipes, self.processes = [], []
         self.error_queue = ctx.Queue()
@@ -149,6 +170,7 @@ class LuxAsyncVectorEnv(VectorEnv):
                         parent_pipe,
                         _obs_buffer,
                         self.error_queue,
+                        _action_masks_buffer,
                     ),
                 )
 
@@ -223,15 +245,15 @@ class LuxAsyncVectorEnv(VectorEnv):
             )
 
         results, successes = zip(*[pipe.recv() for pipe in self.parent_pipes])
-        obs, action_masks = zip(*results)
-        self._action_masks = np.concatenate(action_masks)
         self._raise_if_errors(successes)
         self._state = AsyncState.DEFAULT
 
         if not self.shared_memory:
+            obs, action_masks = zip(*results)
             self.observations = concatenate(
                 obs, self.observations, self.single_observation_space
             )
+            self.action_masks = np.concatenate(action_masks)
 
         return deepcopy(self.observations) if self.copy else self.observations
 
@@ -299,7 +321,7 @@ class LuxAsyncVectorEnv(VectorEnv):
             self.observations = concatenate(
                 observations_list, self.observations, self.single_observation_space
             )
-        self._action_masks = np.concatenate(action_masks)
+            self.action_masks = np.concatenate(action_masks)
 
         return (
             deepcopy(self.observations) if self.copy else self.observations,
@@ -418,8 +440,7 @@ class LuxAsyncVectorEnv(VectorEnv):
         self.set_attr("reward_weight", reward_weight)
 
     def get_action_mask(self) -> np.ndarray:
-        assert self._action_masks is not None
-        return self._action_masks
+        return self.action_masks
 
     def close_extras(self, timeout=None, terminate=False):
         """
@@ -519,8 +540,11 @@ class LuxAsyncVectorEnv(VectorEnv):
         raise exctype(value)
 
 
-def _worker(index, env_fn, pipe, parent_pipe, shared_memory, error_queue):
+def _worker(
+    index, env_fn, pipe, parent_pipe, shared_memory, error_queue, action_masks_buffer
+):
     assert shared_memory is None
+    assert action_masks_buffer is None
     env = env_fn()
     parent_pipe.close()
     try:
@@ -573,8 +597,20 @@ def _worker(index, env_fn, pipe, parent_pipe, shared_memory, error_queue):
         env.close()
 
 
-def _worker_shared_memory(index, env_fn, pipe, parent_pipe, shared_memory, error_queue):
+def np_array_to_shared_memory(index: int, shared_memory, np_array: np.ndarray) -> None:
+    size = int(np.prod(np_array.shape))
+    destination = np.frombuffer(shared_memory.get_obj(), dtype=np_array.dtype)
+    np.copyto(
+        destination[index * size : (index + 1) * size],
+        np.asarray(np_array, dtype=np_array.dtype).flatten(),
+    )
+
+
+def _worker_shared_memory(
+    index, env_fn, pipe, parent_pipe, shared_memory, error_queue, action_masks_buffer
+):
     assert shared_memory is not None
+    assert action_masks_buffer is not None
     env = env_fn()
     observation_space = env.observation_space
     parent_pipe.close()
@@ -587,16 +623,16 @@ def _worker_shared_memory(index, env_fn, pipe, parent_pipe, shared_memory, error
                     index, observation, shared_memory, observation_space
                 )
                 action_mask = env.get_action_mask()
-                pipe.send(((None, action_mask), True))
+                np_array_to_shared_memory(index, action_masks_buffer, action_mask)
+                pipe.send(((None, None), True))
             elif command == "step":
                 observation, reward, done, info = env.step(data)
                 if all(done):
                     observation = env.reset()
-                write_to_shared_memory(
-                    index, observation, shared_memory, observation_space
-                )
+                np_array_to_shared_memory(index, shared_memory, observation)
                 action_mask = env.get_action_mask()
-                pipe.send(((None, reward, done, info, action_mask), True))
+                np_array_to_shared_memory(index, action_masks_buffer, action_mask)
+                pipe.send(((None, reward, done, info, None), True))
             elif command == "seed":
                 env.seed(data)
                 pipe.send((None, True))

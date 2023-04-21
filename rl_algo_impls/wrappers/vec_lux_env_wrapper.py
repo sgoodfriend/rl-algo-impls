@@ -40,9 +40,9 @@ class VecLuxEnvGridnetWrapper(gym.Wrapper):
 
     def step(self, action: np.ndarray) -> VecEnvStepReturn:
         paired_actions = np.array(np.split(action, len(action) // 2, axis=0))
-        p_obs, p_rew, p_done, p_info = self.env.step(paired_actions)
+        obs, p_rew, p_done, p_info = self.env.step(paired_actions)
         return (
-            np.reshape(p_obs, (self.num_envs,) + self.single_observation_space.shape),
+            obs,
             np.reshape(p_rew, self.num_envs),
             np.reshape(p_done, self.num_envs),
             [info for pair in p_info for info in pair],
