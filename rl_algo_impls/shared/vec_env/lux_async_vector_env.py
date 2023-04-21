@@ -102,8 +102,8 @@ class LuxAsyncVectorEnv(VectorEnv):
         self.metadata = dummy_env.metadata
 
         if (observation_space is None) or (action_space is None):
-            observation_space = observation_space or dummy_env.observation_space
-            action_space = action_space or dummy_env.action_space
+            observation_space = observation_space or dummy_env.single_observation_space
+            action_space = action_space or dummy_env.single_action_space
         self._reward_weight = dummy_env.reward_weight
         super(LuxAsyncVectorEnv, self).__init__(
             num_envs=len(env_fns),
@@ -563,7 +563,7 @@ def _worker(
                 pipe.send((None, True))
                 break
             elif command == "_check_observation_space":
-                pipe.send((data == env.observation_space, True))
+                pipe.send((data == env.single_observation_space, True))
             elif command == "_call":
                 name, args, kwargs = data
                 if name in ["reset", "step", "seed", "close"]:
@@ -608,16 +608,13 @@ def _worker_shared_memory(
     assert shared_memory is not None
     assert action_masks_buffer is not None
     env = env_fn()
-    observation_space = env.observation_space
     parent_pipe.close()
     try:
         while True:
             command, data = pipe.recv()
             if command == "reset":
                 observation = env.reset()
-                write_to_shared_memory(
-                    index, observation, shared_memory, observation_space
-                )
+                np_array_to_shared_memory(index, shared_memory, observation)
                 action_mask = env.get_action_mask()
                 np_array_to_shared_memory(index, action_masks_buffer, action_mask)
                 pipe.send(((None, None), True))
@@ -652,7 +649,7 @@ def _worker_shared_memory(
                 setattr(env, name, value)
                 pipe.send((None, True))
             elif command == "_check_observation_space":
-                pipe.send((data == observation_space, True))
+                pipe.send((data == env.single_observation_space, True))
             else:
                 raise RuntimeError(
                     "Received unknown command `{0}`. Must "
