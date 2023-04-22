@@ -71,7 +71,7 @@ class LuxEnvGridnet(Wrapper):
         self.max_lichen_delta = 1 / reward_weight[1]
         self.map_size = self.unwrapped.env_cfg.map_size
 
-        self.prior_lux_reward: Dict[str, int] = {}
+        self.prior_lux_reward: Dict[str, float] = {}
         self.stats = StatsTracking()
 
         self.num_map_tiles = self.map_size * self.map_size
@@ -525,21 +525,27 @@ class LuxEnvGridnet(Wrapper):
     def _from_lux_rewards(
         self, lux_rewards: Dict[str, float], done: bool, info: Dict[str, Any]
     ) -> np.ndarray:
-        delta_reward = {
-            p: r - self.prior_lux_reward.get(p, 0) for p, r in lux_rewards.items()
-        }
-        self.prior_lux_reward = lux_rewards
         agents = self.agents
         player_opponent = tuple((p, opp) for p, opp in zip(agents, reversed(agents)))
         _win_loss = np.array(
             [
-                (1 if lux_rewards[p] > lux_rewards[opp] else -1) if done else 0
+                (
+                    1
+                    if lux_rewards[p] > lux_rewards[opp]
+                    else (-1 if lux_rewards[p] < lux_rewards[opp] else 0)
+                )
+                if done
+                else 0
                 for p, opp in player_opponent
             ]
         )
+        _stats_delta = self.stats.update()
         _lichen_delta = np.clip(
             np.array(
-                [delta_reward[p] - delta_reward[opp] for p, opp in player_opponent]
+                [
+                    _stats_delta[p_idx][4] - _stats_delta[o_idx][4]
+                    for p_idx, o_idx in zip(range(2), reversed(range(2)))
+                ]
             ),
             -self.max_lichen_delta,
             self.max_lichen_delta,
@@ -548,7 +554,7 @@ class LuxEnvGridnet(Wrapper):
             [
                 np.expand_dims(_win_loss, axis=-1),
                 np.expand_dims(_lichen_delta, axis=-1),
-                self.stats.update(),
+                _stats_delta,
             ],
             axis=-1,
         )
@@ -574,6 +580,7 @@ class LuxEnvGridnet(Wrapper):
                     "score_delta": lux_rewards[agent]
                     - lux_rewards[player_opponent[idx][1]],
                 }
+        self.prior_lux_reward = lux_rewards
         return np.sum(raw_rewards * self.reward_weight, axis=-1)
 
 
