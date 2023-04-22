@@ -41,7 +41,7 @@ ACTION_SIZES = FACTORY_ACTION_SIZES + UNIT_ACTION_SIZES
 def unit_action_to_obs(action: np.ndarray) -> np.ndarray:
     encoded = [np.zeros(sz, dtype=np.bool_) for sz in UNIT_ACTION_SIZES]
     for e, a in zip(encoded, action):
-        e[a] = 1
+        e[a] = True
     return np.concatenate(encoded)
 
 
