@@ -34,6 +34,7 @@ class RewardDecayCallback(Callback):
             increase_indexes = tuple()
         self.constant_indexes = set(constant_indexes or tuple())
         self.increase_indexes = set(increase_indexes or tuple())
+        self.on_step(timesteps_elapsed=0)
 
     def on_step(self, timesteps_elapsed: int = 1) -> bool:
         super().on_step(timesteps_elapsed)

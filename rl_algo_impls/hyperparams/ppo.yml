@@ -670,6 +670,9 @@ LuxAI_S2-v0-debug:
   <<: *lux-defaults
   n_timesteps: !!float 1e6
   device: cpu
+  env_hyperparams:
+    <<: *lux-env-defaults
+    vec_env_class: sync
   eval_hyperparams:
     <<: *lux-eval-defaults
     step_freq: !!float 1e5
