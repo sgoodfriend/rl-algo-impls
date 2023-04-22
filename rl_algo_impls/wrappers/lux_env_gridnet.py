@@ -240,8 +240,8 @@ class LuxEnvGridnet(Wrapper):
             p2 = self.agents[(player_idx + 1) % 2]
             p1_obs = lux_obs[p1]
 
-            x = np.tile(np.linspace(-1, 1, num=map_size), (map_size, 1))
-            y = np.transpose(np.tile(np.linspace(-1, 1, num=map_size), (map_size, 1)))
+            x = np.transpose(np.tile(np.linspace(-1, 1, num=map_size), (map_size, 1)))
+            y = np.tile(np.linspace(-1, 1, num=map_size), (map_size, 1))
 
             ore = p1_obs["board"]["ore"]
             ice = p1_obs["board"]["ice"]
@@ -344,8 +344,8 @@ class LuxEnvGridnet(Wrapper):
             water_unit = unit_cargo_init()
             metal_unit = unit_cargo_init()
             power_unit = unit_cargo_init()
-            enqueued_action = np.zeros(
-                (map_size, map_size, UNIT_ACTION_ENCODED_SIZE), dtype=np.bool_
+            enqueued_action = np.full(
+                (map_size, map_size, UNIT_ACTION_ENCODED_SIZE), False, dtype=np.bool_
             )
 
             def add_unit(u: Dict[str, Any], p_id: str, is_own: bool) -> None:
