@@ -117,9 +117,13 @@ class LuxEnvGridnet(Wrapper):
             obs = self.reset()
         else:
             assert not any(done.values()), "All or none should be done"
+            self._enqueued_actions = {
+                u_id: action_array_from_queue(u.action_queue)
+                for p in self.agents
+                for u_id, u in env.state.units[p].items()
+            }
             obs = self._from_lux_observation(lux_obs)
 
-        self._enqueued_actions = {}
         self._action_mask = None
         return (
             obs,
@@ -130,8 +134,8 @@ class LuxEnvGridnet(Wrapper):
 
     def reset(self) -> np.ndarray:
         lux_obs, self.agents = reset_and_early_phase(self.unwrapped, self.bid_std_dev)
-        self.stats.reset(self.unwrapped)
         self._enqueued_actions = {}
+        self.stats.reset(self.unwrapped)
         self._action_mask = None
         return self._from_lux_observation(lux_obs)
 
@@ -145,11 +149,6 @@ class LuxEnvGridnet(Wrapper):
         )
         env = self.unwrapped
         config = env.env_cfg
-        self._enqueued_actions = {
-            u_id: action_array_from_queue(u.action_queue)
-            for p in self.agents
-            for u_id, u in env.state.units[p].items()
-        }
         for idx, p in enumerate(self.agents):
             for f in env.state.factories[p].values():
                 action_mask[
