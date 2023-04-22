@@ -51,7 +51,7 @@ DEFAULT_REWARD_WEIGHTS = (
     2e-3,  # ORE_GENERATION (1 for building a heavy robot, 0.04 for a heavy dig action)
     0.04,  # WATER_GENERATION (2 for a day of water for factory)
     0.01,  # METAL_GENERATION (1 for building a heavy robot
-    0,  # LICHEN_GENERATION (0)
+    0.0001,  # LICHEN_GENERATION
     0,  # BUILT_LIGHT
     0,  # BUILT_HEAVY
     -1,  # FACTORIES_LOST

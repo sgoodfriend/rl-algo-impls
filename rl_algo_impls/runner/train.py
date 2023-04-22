@@ -119,7 +119,11 @@ def train(args: TrainArgs):
     )
     callbacks: List[Callback] = [eval_callback]
     if config.hyperparams.reward_decay_callback:
-        callbacks.append(RewardDecayCallback(config, env))
+        callbacks.append(
+            RewardDecayCallback(
+                config, env, **(config.hyperparams.reward_decay_callback_kwargs or {})
+            )
+        )
     if self_play_wrapper:
         callbacks.append(SelfPlayCallback(policy, policy_factory, self_play_wrapper))
     algo.learn(config.n_timesteps, callbacks=callbacks)

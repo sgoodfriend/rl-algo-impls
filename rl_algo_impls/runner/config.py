@@ -69,6 +69,9 @@ class Hyperparams:
     env_id: Optional[str] = None
     additional_keys_to_log: List[str] = dataclasses.field(default_factory=list)
     reward_decay_callback: bool = False
+    reward_decay_callback_kwargs: Dict[str, Any] = dataclasses.field(
+        default_factory=dict
+    )
 
     @classmethod
     def from_dict_with_extra_fields(

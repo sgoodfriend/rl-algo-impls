@@ -224,7 +224,13 @@ def simple_optimize(trial: optuna.Trial, args: RunArgs, study_args: StudyArgs) -
     )
     callbacks: List[Callback] = [optimize_callback]
     if config.hyperparams.reward_decay_callback:
-        callbacks.append(RewardDecayCallback(config, env))
+        callbacks.append(
+            RewardDecayCallback(
+                config,
+                env,
+                **(config.hyperparams.reward_decay_callback_kwargs or {}),
+            )
+        )
     if self_play_wrapper:
         callbacks.append(SelfPlayCallback(policy, policy_factory, self_play_wrapper))
     try:
@@ -344,7 +350,12 @@ def stepwise_optimize(
             callbacks = []
             if config.hyperparams.reward_decay_callback:
                 callbacks.append(
-                    RewardDecayCallback(config, env, start_timesteps=start_timesteps)
+                    RewardDecayCallback(
+                        config,
+                        env,
+                        start_timesteps=start_timesteps,
+                        **(config.hyperparams.reward_decay_callback_kwargs or {}),
+                    )
                 )
             if self_play_wrapper:
                 callbacks.append(

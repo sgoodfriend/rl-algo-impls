@@ -1,3 +1,5 @@
+from typing import Iterable, Optional
+
 import numpy as np
 
 from rl_algo_impls.runner.config import Config
@@ -11,6 +13,8 @@ class RewardDecayCallback(Callback):
         config: Config,
         env: VecEnv,
         start_timesteps: int = 0,
+        constant_indexes: Optional[Iterable[int]] = None,
+        increase_indexes: Optional[Iterable[int]] = None,
     ) -> None:
         super().__init__()
         from gym_microrts.envs.vec_env import MicroRTSGridModeVecEnv
@@ -25,14 +29,25 @@ class RewardDecayCallback(Callback):
         self.total_train_timesteps = config.n_timesteps
         self.timesteps_elapsed = start_timesteps
 
+        if not constant_indexes and not increase_indexes:
+            constant_indexes = (0,)
+            increase_indexes = tuple()
+        self.constant_indexes = set(constant_indexes or tuple())
+        self.increase_indexes = set(increase_indexes or tuple())
+
     def on_step(self, timesteps_elapsed: int = 1) -> bool:
         super().on_step(timesteps_elapsed)
 
         progress = self.timesteps_elapsed / self.total_train_timesteps
-        # Decay all rewards except WinLoss
-        reward_weights = self.base_reward_weights * np.array(
-            [1] + [1 - progress] * (len(self.base_reward_weights) - 1)
-        )
-        self.unwrapped.reward_weight = reward_weights
+        reward_weights = []
+        for i in range(len(self.base_reward_weights)):
+            base_weight = self.base_reward_weights[i]
+            if i in self.constant_indexes:
+                reward_weights.append(base_weight)
+            elif i in self.increase_indexes:
+                reward_weights.append(base_weight * progress)
+            else:
+                reward_weights.append(base_weight * (1 - progress))
+        self.unwrapped.reward_weight = np.array(reward_weights)
 
         return True
