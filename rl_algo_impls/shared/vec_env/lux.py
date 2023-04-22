@@ -12,10 +12,6 @@ from rl_algo_impls.wrappers.hwc_to_chw_observation import HwcToChwObservation
 from rl_algo_impls.wrappers.lux_env_gridnet import DEFAULT_REWARD_WEIGHTS, LuxEnvGridnet
 from rl_algo_impls.wrappers.self_play_eval_wrapper import SelfPlayEvalWrapper
 from rl_algo_impls.wrappers.self_play_wrapper import SelfPlayWrapper
-from rl_algo_impls.wrappers.sync_vector_env_render_compat import (
-    SyncVectorEnvRenderCompat,
-)
-from rl_algo_impls.wrappers.vec_lux_env_wrapper import VecLuxEnvGridnetWrapper
 from rl_algo_impls.wrappers.vectorable_wrapper import VecEnv
 
 
@@ -80,7 +76,6 @@ def make_lux_env(
         envs = VecLuxEnv(num_envs, **make_kwargs)
     else:
         envs = LuxAsyncVectorEnv([make(i) for i in range(n_envs)], copy=False)
-        envs = VecLuxEnvGridnetWrapper(envs)
 
     envs = HwcToChwObservation(envs)
     if self_play_kwargs:

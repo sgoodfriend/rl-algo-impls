@@ -106,29 +106,28 @@ class LuxAsyncVectorEnv(VectorEnv):
             action_space = action_space or dummy_env.single_action_space
         self._reward_weight = dummy_env.reward_weight
         super(LuxAsyncVectorEnv, self).__init__(
-            num_envs=len(env_fns),
+            num_envs=len(env_fns) * 2,
             observation_space=observation_space,
             action_space=action_space,
         )
+        self.action_plane_space = dummy_env.action_plane_space
 
         if self.shared_memory:
             try:
                 _obs_buffer = ctx.Array(
                     self.single_observation_space.dtype.char,
-                    2
-                    * self.num_envs
-                    * int(np.prod(self.single_observation_space.shape)),
+                    self.num_envs * int(np.prod(self.single_observation_space.shape)),
                 )
                 self.observations = np.frombuffer(
                     _obs_buffer.get_obj(), dtype=self.single_observation_space.dtype
-                ).reshape((2 * self.num_envs,) + self.single_observation_space.shape)
+                ).reshape((self.num_envs,) + self.single_observation_space.shape)
                 _action_masks_buffer = ctx.Array(
                     c_bool,
-                    2 * self.num_envs * int(np.prod(dummy_env.action_mask_shape)),
+                    self.num_envs * int(np.prod(dummy_env.action_mask_shape)),
                 )
                 self.action_masks = np.frombuffer(
                     _action_masks_buffer.get_obj(), dtype=np.bool_
-                ).reshape((2 * self.num_envs,) + dummy_env.action_mask_shape)
+                ).reshape((self.num_envs,) + dummy_env.action_mask_shape)
             except CustomSpaceError:
                 raise ValueError(
                     "Using `shared_memory=True` in `AsyncVectorEnv` "
@@ -141,11 +140,15 @@ class LuxAsyncVectorEnv(VectorEnv):
         else:
             _obs_buffer = None
             self.observations = create_empty_array(
-                self.single_observation_space, n=2 * self.num_envs, fn=np.zeros
+                self.single_observation_space, n=self.num_envs, fn=np.zeros
+            )
+            self.observations = np.zeros(
+                (self.num_envs,) + self.single_observation_space.shape,
+                dtype=self.single_observation_space.dtype,
             )
             _action_masks_buffer = None
             self.action_masks = np.full(
-                (2 * self.num_envs,) + dummy_env.action_mask_shape,
+                (self.num_envs,) + dummy_env.action_mask_shape,
                 False,
                 dtype=np.bool_,
             )
@@ -270,7 +273,8 @@ class LuxAsyncVectorEnv(VectorEnv):
                 self._state.value,
             )
 
-        for pipe, action in zip(self.parent_pipes, actions):
+        paired_actions = np.array(np.split(actions, len(actions) // 2, axis=0))
+        for pipe, action in zip(self.parent_pipes, paired_actions):
             pipe.send(("step", action))
         self._state = AsyncState.WAITING_STEP
 
@@ -321,9 +325,9 @@ class LuxAsyncVectorEnv(VectorEnv):
 
         return (
             deepcopy(self.observations) if self.copy else self.observations,
-            np.array(rewards),
-            np.array(dones, dtype=np.bool_),
-            infos,
+            np.concatenate(rewards),
+            np.concatenate(dones, dtype=np.bool_),
+            [info for pair in infos for info in pair],
         )
 
     def call_async(self, name: str, *args, **kwargs):
