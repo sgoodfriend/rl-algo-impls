@@ -668,7 +668,7 @@ LuxAI_S2-v0-A10:
 
 LuxAI_S2-v0-small: &small-lux-defaults
   <<: *lux-defaults
-  env_hyperparams:
+  env_hyperparams: &small-lux-env-defaults
     <<: *lux-env-defaults
     make_kwargs:
       <<: *lux-env-make-defaults
@@ -679,6 +679,19 @@ LuxAI_S2-v0-small: &small-lux-defaults
 LuxAI_S2-v0-small-debug:
   <<: *small-lux-defaults
   device: cpu
+  env_hyperparams:
+    <<: *small-lux-env-defaults
+    vec_env_class: sync
+
+LuxAI_S2-v0-medium: &medium-lux-defaults
+  <<: *lux-defaults
+  env_hyperparams: &medium-lux-env-defaults
+    <<: *lux-env-defaults
+    make_kwargs:
+      <<: *lux-env-make-defaults
+      map_size: 32
+      MIN_FACTORIES: 1
+      MAX_FACTORIES: 1
 
 LuxAI_S2-v0-debug:
   <<: *lux-defaults
