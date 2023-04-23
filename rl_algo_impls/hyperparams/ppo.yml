@@ -694,6 +694,13 @@ LuxAI_S2-v0-medium: &medium-lux-defaults
       MIN_FACTORIES: 1
       MAX_FACTORIES: 1
 
+LuxAI_S2-v0-medium-debug:
+  <<: *medium-lux-defaults
+  device: cpu
+  env_hyperparams:
+    <<: *medium-lux-env-defaults
+    vec_env_class: sync
+
 LuxAI_S2-v0-debug:
   <<: *lux-defaults
   n_timesteps: !!float 1e6
