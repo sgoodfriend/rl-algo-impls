@@ -258,7 +258,11 @@ class LuxEnvGridnet(Wrapper):
             _own_lichen_strains = [
                 v["strain_id"] for v in p1_obs["factories"][p1].values()
             ]
-            own_lichen = np.isin(_lichen, _own_lichen_strains)
+            _opponent_lichen_strains = [
+                v["strain_id"] for v in p1_obs["factories"][p2].values()
+            ]
+            own_lichen = np.isin(_lichen_strains, _own_lichen_strains)
+            opponent_lichen = np.isin(_lichen_strains, _opponent_lichen_strains)
             _lichen_counts = {
                 k: v for k, v in zip(*np.unique(_lichen_strains, return_counts=True))
             }
@@ -423,6 +427,7 @@ class LuxEnvGridnet(Wrapper):
                     np.expand_dims(lichen, axis=-1),
                     np.expand_dims(spreadable_lichen, axis=-1),
                     np.expand_dims(own_lichen, axis=-1),
+                    np.expand_dims(opponent_lichen, axis=-1),
                     np.expand_dims(factory, axis=-1),
                     np.expand_dims(own_factory, axis=-1),
                     np.expand_dims(opponent_factory, axis=-1),
