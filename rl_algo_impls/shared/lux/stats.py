@@ -1,6 +1,6 @@
 import dataclasses
-from dataclasses import astuple, dataclass
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Type
+from dataclasses import dataclass
+from typing import Dict, List, Tuple
 
 import numpy as np
 from luxai_s2.env import LuxAI_S2

@@ -1,3 +1,4 @@
+from dataclasses import astuple
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Type
 
 import numpy as np
