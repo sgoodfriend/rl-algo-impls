@@ -47,6 +47,7 @@ LICHEN_FACTORY_MAX = 128_000
 DEFAULT_REWARD_WEIGHTS = (
     10,  # WIN_LOSS
     0.0001,  # LICHEN_DELTA (clip to +/- 1)
+    # Change in value stats
     0.01,  # ICE_GENERATION (2 for a day of water for factory, 0.2 for a heavy dig action)
     2e-3,  # ORE_GENERATION (1 for building a heavy robot, 0.04 for a heavy dig action)
     0.04,  # WATER_GENERATION (2 for a day of water for factory)
@@ -54,7 +55,9 @@ DEFAULT_REWARD_WEIGHTS = (
     0.0001,  # LICHEN_GENERATION
     0,  # BUILT_LIGHT
     0,  # BUILT_HEAVY
-    -1,  # FACTORIES_LOST
+    -1,  # LOST_FACTORY
+    # Current value stats
+    0.02,  # FACTORIES_ALIVE
 )
 
 
@@ -68,7 +71,7 @@ class LuxEnvGridnet(Wrapper):
         super().__init__(env)
         self.bid_std_dev = bid_std_dev
         self.reward_weight = np.array(reward_weight)
-        self.max_lichen_delta = 1 / reward_weight[1]
+        self.max_lichen_delta = 1 / reward_weight[1] if reward_weight[1] else np.inf
         self.map_size = self.unwrapped.env_cfg.map_size
 
         self.stats = StatsTracking()
@@ -590,6 +593,7 @@ class LuxEnvGridnet(Wrapper):
 class AgentRunningStats:
     stats: np.ndarray
     NAMES = (
+        # Change in value stats
         "ice_generation",
         "ore_generation",
         "water_generation",
@@ -597,7 +601,9 @@ class AgentRunningStats:
         "lichen_generation",
         "built_light",
         "built_heavy",
-        "factories_lost",
+        "lost_factory",
+        # Current value stats
+        "factories_alive",
     )
 
     def __init__(self) -> None:
@@ -606,7 +612,7 @@ class AgentRunningStats:
     def update(self, env: LuxAI_S2, agent: str) -> np.ndarray:
         generation = env.state.stats[agent]["generation"]
 
-        new_stats = np.array(
+        new_delta_stats = np.array(
             [
                 sum(generation["ice"].values()),
                 sum(generation["ore"].values()),
@@ -618,10 +624,12 @@ class AgentRunningStats:
                 env.state.stats[agent]["destroyed"]["FACTORY"],
             ]
         )
+        delta = new_delta_stats - self.stats[: len(new_delta_stats)]
 
-        delta = new_stats - self.stats
-        self.stats = new_stats
-        return delta
+        new_current_stats = np.array([len(env.state.factories[agent])])
+
+        self.stats = np.concatenate((new_delta_stats, new_current_stats))
+        return np.concatenate((delta, new_current_stats))
 
 
 @dataclass
