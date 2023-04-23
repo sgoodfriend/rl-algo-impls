@@ -71,7 +71,6 @@ class LuxEnvGridnet(Wrapper):
         self.max_lichen_delta = 1 / reward_weight[1]
         self.map_size = self.unwrapped.env_cfg.map_size
 
-        self.prior_lux_reward: Dict[str, float] = {}
         self.stats = StatsTracking()
 
         self.num_map_tiles = self.map_size * self.map_size
@@ -585,7 +584,6 @@ class LuxEnvGridnet(Wrapper):
                     "score_delta": lux_rewards[agent]
                     - lux_rewards[player_opponent[idx][1]],
                 }
-        self.prior_lux_reward = lux_rewards
         return np.sum(raw_rewards * self.reward_weight, axis=-1)
 
 
