@@ -706,7 +706,7 @@ def place_factory_action(env: LuxAI_S2) -> Dict[str, Any]:
 
     ice_tile_locations = np.argwhere(env.state.board.ice)
     ore_tile_locations = np.argwhere(env.state.board.ore)
-    if env.env_cfg.verbose > 1 and (
+    if env.env_cfg.verbose > 2 and (
         len(ice_tile_locations) == 0 or len(ore_tile_locations) == 0
     ):
         print(

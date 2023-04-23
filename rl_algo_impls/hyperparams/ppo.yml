@@ -666,7 +666,7 @@ LuxAI_S2-v0-A10:
     n_steps: 192
     batch_size: 1152
 
-LuxAI_S2-v0-small:
+LuxAI_S2-v0-small: &small-lux-defaults
   <<: *lux-defaults
   env_hyperparams:
     <<: *lux-env-defaults
@@ -675,6 +675,10 @@ LuxAI_S2-v0-small:
       map_size: 16
       MIN_FACTORIES: 1
       MAX_FACTORIES: 1
+
+LuxAI_S2-v0-small-debug:
+  <<: *small-lux-defaults
+  device: cpu
 
 LuxAI_S2-v0-debug:
   <<: *lux-defaults
