@@ -3,6 +3,7 @@ from typing import Optional, Sequence, Tuple, Type
 import numpy as np
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from gym.spaces import MultiDiscrete, Space
 
 from rl_algo_impls.shared.actor import pi_forward
@@ -97,18 +98,21 @@ class UNetActorCriticNetwork(ActorCriticNetwork):
 
         with torch.no_grad():
             cnn_out = torch.flatten(
-                self.enc5(
-                    self.enc4(
-                        self.enc3(
-                            self.enc2(
-                                self.enc1(
-                                    self._preprocess(
-                                        torch.as_tensor(observation_space.sample())
+                F.adaptive_avg_pool2d(
+                    self.enc5(
+                        self.enc4(
+                            self.enc3(
+                                self.enc2(
+                                    self.enc1(
+                                        self._preprocess(
+                                            torch.as_tensor(observation_space.sample())
+                                        )
                                     )
                                 )
                             )
                         )
-                    )
+                    ),
+                    output_size=1,
                 ),
                 start_dim=1,
             )
@@ -162,7 +166,7 @@ class UNetActorCriticNetwork(ActorCriticNetwork):
         e4 = self.enc4(e3)
         e5 = self.enc5(e4)
 
-        v = self.critic_head(e5)
+        v = self.critic_head(F.adaptive_avg_pool2d(e5, output_size=1))
 
         d4 = self.dec4(e5)
         d3 = self.dec3(torch.cat((d4, e4), dim=1))
@@ -182,7 +186,7 @@ class UNetActorCriticNetwork(ActorCriticNetwork):
         e4 = self.enc4(e3)
         e5 = self.enc5(e4)
 
-        return self.critic_head(e5)
+        return self.critic_head(F.adaptive_avg_pool2d(e5, output_size=1))
 
     def reset_noise(self, batch_size: Optional[int] = None) -> None:
         pass
