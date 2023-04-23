@@ -685,6 +685,7 @@ LuxAI_S2-v0-small-debug:
 
 LuxAI_S2-v0-medium: &medium-lux-defaults
   <<: *lux-defaults
+  n_timesteps: !!float 30e6
   env_hyperparams: &medium-lux-env-defaults
     <<: *lux-env-defaults
     make_kwargs:
