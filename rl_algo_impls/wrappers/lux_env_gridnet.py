@@ -706,6 +706,12 @@ def place_factory_action(env: LuxAI_S2) -> Dict[str, Any]:
 
     ice_tile_locations = np.argwhere(env.state.board.ice)
     ore_tile_locations = np.argwhere(env.state.board.ore)
+    if env.env_cfg.verbose > 1 and (
+        len(ice_tile_locations) == 0 or len(ore_tile_locations) == 0
+    ):
+        print(
+            f"Map missing ice ({len(ice_tile_locations)}) or ore ({len(ore_tile_locations)})"
+        )
 
     best_score = -1e6
     best_loc = potential_spawns[0]
@@ -716,8 +722,8 @@ def place_factory_action(env: LuxAI_S2) -> Dict[str, Any]:
     for loc in potential_spawns:
         ice_distances = np.linalg.norm(ice_tile_locations - loc, ord=1, axis=1)
         ore_distances = np.linalg.norm(ore_tile_locations - loc, ord=1, axis=1)
-        closest_ice = np.min(ice_distances)
-        closest_ore = np.min(ore_distances)
+        closest_ice = np.min(ice_distances) if len(ice_distances) else 0
+        closest_ore = np.min(ore_distances) if len(ore_distances) else 0
 
         min_loc = np.clip(loc - d_rubble, 0, env.env_cfg.map_size - 1)
         max_loc = np.clip(loc + d_rubble, 0, env.env_cfg.map_size - 1)

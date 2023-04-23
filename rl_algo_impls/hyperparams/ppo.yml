@@ -629,7 +629,7 @@ LuxAI_S2-v0: &lux-defaults
       swap_steps: 6000
       swap_window_size: 4
       window: 33
-    make_kwargs:
+    make_kwargs: &lux-env-make-defaults
       bid_std_dev: 5
   eval_hyperparams: &lux-eval-defaults
     deterministic: false
@@ -665,6 +665,16 @@ LuxAI_S2-v0-A10:
     <<: *lux-algo-defaults
     n_steps: 192
     batch_size: 1152
+
+LuxAI_S2-v0-small:
+  <<: *lux-defaults
+  env_hyperparams:
+    <<: *lux-env-defaults
+    make_kwargs:
+      <<: *lux-env-make-defaults
+      map_size: 16
+      MIN_FACTORIES: 1
+      MAX_FACTORIES: 1
 
 LuxAI_S2-v0-debug:
   <<: *lux-defaults
