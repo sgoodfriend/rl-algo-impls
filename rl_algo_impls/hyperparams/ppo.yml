@@ -634,6 +634,7 @@ LuxAI_S2-v0: &lux-defaults
   eval_hyperparams: &lux-eval-defaults
     deterministic: false
     step_freq: !!float 1e6
+    score_function: mean
     env_overrides:
       n_envs: 66
       self_play_kwargs:
