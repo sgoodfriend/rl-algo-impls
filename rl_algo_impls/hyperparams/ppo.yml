@@ -638,6 +638,9 @@ LuxAI_S2-v0: &lux-defaults
       n_envs: 66
       self_play_kwargs:
         eval_use_training_cache: true
+      make_kwargs:
+        <<: *lux-env-make-defaults
+        reward_weight: [1.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
   policy_hyperparams:
     activation_fn: relu
     actor_head_style: unet
