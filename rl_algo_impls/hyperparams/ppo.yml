@@ -642,7 +642,7 @@ LuxAI_S2-v0: &lux-defaults
       make_kwargs: &lux-eval-env-override-make-kwargs
         <<: *lux-env-make-defaults
         reward_weight: [1.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-  policy_hyperparams:
+  policy_hyperparams: &lux-policy-defaults
     activation_fn: relu
     actor_head_style: unet
     v_hidden_sizes: [256, 128]
@@ -663,12 +663,25 @@ LuxAI_S2-v0: &lux-defaults
     clip_range_vf: 0.1
     ppo2_vf_coef_halving: true
 
-LuxAI_S2-v0-A10:
+LuxAI_S2-v0-A10: &lux-a10-defaults
   <<: *lux-defaults
   algo_hyperparams:
     <<: *lux-algo-defaults
     n_steps: 192
     batch_size: 1152
+
+LuxAI_S2-v0-medium-transfer: &lux-medium-transfer-defaults
+  <<: *lux-a10-defaults
+  policy_hyperparams:
+    <<: *lux-policy-defaults
+    load_path: saved_models/ppo-LuxAI_S2-v0-medium-S1
+
+LuxAI_S2-v0-medium-transfer-debug:
+  <<: *lux-medium-transfer-defaults
+  device: cpu
+  env_hyperparams:
+    <<: *lux-env-defaults
+    vec_env_class: sync
 
 LuxAI_S2-v0-small: &small-lux-defaults
   <<: *lux-defaults
