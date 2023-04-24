@@ -22,7 +22,7 @@ class VecLuxEnv(VectorEnv):
         assert num_envs % 2 == 0, f"{num_envs} must be even"
         self.envs = [
             LuxEnvGridnet(
-                gym.make("LuxAI_S2-v0", collect_stats=True, verbose=2, **kwargs),
+                gym.make("LuxAI_S2-v0", collect_stats=True, **kwargs),
                 bid_std_dev=bid_std_dev,
                 reward_weight=reward_weight,
             )
