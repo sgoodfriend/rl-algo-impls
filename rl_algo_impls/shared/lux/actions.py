@@ -128,24 +128,21 @@ def max_move_repeats(unit: Unit, direction_idx: int, config: LuxEnvConfig) -> in
         return steps_til_edge(pos[1], move_delta[1])
 
 
-def action_array_from_queue(action_queue: List[Action]) -> Optional[np.ndarray]:
+def enqueued_action_from_obs(action_queue: List[np.ndarray]) -> Optional[np.ndarray]:
     if len(action_queue) == 0:
         return None
     action = action_queue[0]
-    if isinstance(action, MoveAction):
-        return np.array((0, action.move_dir, -1, -1, -1))
-    elif isinstance(action, TransferAction):
-        return np.array((1, -1, action.transfer_dir, action.resource, -1))
-    elif isinstance(action, PickupAction):
-        return np.array((2, -1, -1, -1, action.resource))
-    elif isinstance(action, DigAction):
-        return np.array((3, -1, -1, -1, -1))
-    elif isinstance(action, SelfDestructAction):
-        return np.array((4, -1, -1, -1, -1))
-    elif isinstance(action, RechargeAction):
-        return np.array((5, -1, -1, -1, -1))
+    action_type = action[0]
+    if action_type == 0:
+        return np.array((action_type, action[1], -1, -1, -1))
+    elif action_type == 1:
+        return np.array((action_type, -1, action[1], action[2], -1))
+    elif action_type == 2:
+        return np.array((action_type, -1, -1, -1, action[2]))
+    elif 3 <= action_type <= 5:
+        return np.array((action_type, -1, -1, -1, -1))
     else:
-        raise ValueError(f"{action.__class__.__name__} not supported")
+        raise ValueError(f"action_type {action_type} not supported: {action}")
 
 
 def actions_equal(action: np.ndarray, enqueued: Optional[np.ndarray]) -> bool:

@@ -14,7 +14,7 @@ from luxai_s2.utils import my_turn_to_place_factory
 from rl_algo_impls.shared.lux.action_mask import get_action_mask
 from rl_algo_impls.shared.lux.actions import (
     ACTION_SIZES,
-    action_array_from_queue,
+    enqueued_action_from_obs,
     to_lux_actions,
 )
 from rl_algo_impls.shared.lux.observation import from_lux_observation
@@ -96,9 +96,9 @@ class LuxEnvGridnet(Wrapper):
         else:
             assert not any(done.values()), "All or none should be done"
             self._enqueued_actions = {
-                u_id: action_array_from_queue(u.action_queue)
+                u_id: enqueued_action_from_obs(u["action_queue"])
                 for p in self.agents
-                for u_id, u in env.state.units[p].items()
+                for u_id, u in lux_obs[p]["units"][p].items()
             }
             obs = self._from_lux_observation(lux_obs)
 
