@@ -14,12 +14,8 @@ from luxai_s2.utils import my_turn_to_place_factory
 from rl_algo_impls.shared.lux.action_mask import get_action_mask
 from rl_algo_impls.shared.lux.actions import (
     ACTION_SIZES,
-    FACTORY_ACTION_ENCODED_SIZE,
-    FACTORY_DO_NOTHING_ACTION,
     action_array_from_queue,
-    actions_equal,
-    max_move_repeats,
-    pos_to_idx,
+    to_lux_actions,
 )
 from rl_algo_impls.shared.lux.observation import from_lux_observation
 from rl_algo_impls.shared.lux.stats import StatsTracking
@@ -153,79 +149,20 @@ class LuxEnvGridnet(Wrapper):
         )
         return self._action_mask
 
-    def _no_valid_unit_actions(self, unit: Unit) -> bool:
-        assert self._action_mask is not None
-        return not np.any(
-            self._action_mask[
-                unit.team.team_id,
-                pos_to_idx(unit.pos, self.map_size),
-                FACTORY_ACTION_ENCODED_SIZE : FACTORY_ACTION_ENCODED_SIZE + 6,
-            ]
-        )
-
     def _to_lux_actions(self, actions: np.ndarray) -> Dict[str, Any]:
-        env = self.unwrapped
-        cfg = env.env_cfg
-
-        lux_actions = {p: {} for p in self.agents}
-        for p_idx in range(len(actions)):
-            p = self.agents[p_idx]
-            for f in env.state.factories[p].values():
-                a = actions[p_idx, pos_to_idx(f.pos, self.map_size), 0]
-                if a != FACTORY_DO_NOTHING_ACTION:
-                    lux_actions[p][f.unit_id] = a
-            for u in env.state.units[p].values():
-                a = actions[p_idx, pos_to_idx(u.pos, self.map_size), 1:]
-                if self._no_valid_unit_actions(u):
-                    if cfg.verbose > 1:
-                        print(f"No valid action for unit {u}")
-                    self.stats.action_stats[p_idx].no_valid_action += 1
-                    continue
-                self.stats.action_stats[p_idx].action_type[a[0]] += 1
-                if actions_equal(a, self._enqueued_actions.get(u.unit_id)):
-                    self.stats.action_stats[p_idx].repeat_action += 1
-                    continue
-
-                def resource_amount(unit: Unit, idx: int) -> int:
-                    if idx == 4:
-                        return unit.power
-                    return astuple(unit.cargo)[idx]
-
-                repeat = cfg.max_episode_length
-                if a[0] == 0:  # move
-                    direction = a[1]
-                    resource = 0
-                    amount = 0
-                    repeat = max_move_repeats(u, direction, cfg)
-                elif a[0] == 1:  # transfer
-                    direction = a[2]
-                    resource = a[3]
-                    amount = resource_amount(
-                        u, resource
-                    )  # TODO: This can lead to waste (especially for light robots)
-                elif a[0] == 2:  # pickup
-                    direction = 0
-                    resource = a[4]
-                    capacity = u.cargo_space if resource < 4 else u.battery_capacity
-                    amount = capacity - resource_amount(u, resource)
-                elif a[0] == 3:  # dig
-                    direction = 0
-                    resource = 0
-                    amount = 0
-                elif a[0] == 4:  # self-destruct
-                    direction = 0
-                    resource = 0
-                    amount = 0
-                elif a[0] == 5:  # recharge
-                    direction = 0
-                    resource = 0
-                    amount = u.battery_capacity
-                else:
-                    raise ValueError(f"Unrecognized action f{a[0]}")
-                lux_actions[p][u.unit_id] = [
-                    np.array([a[0], direction, resource, amount, 0, repeat])
-                ]
-        return lux_actions
+        action_mask = self._action_mask
+        assert action_mask is not None
+        return {
+            p: to_lux_actions(
+                p,
+                self.env.state,
+                actions[p_idx],
+                action_mask,
+                self._enqueued_actions,
+                self.stats.action_stats[p_idx],
+            )
+            for p_idx, p in enumerate(self.agents)
+        }
 
     def _from_lux_rewards(
         self, lux_rewards: Dict[str, float], done: bool, info: Dict[str, Any]
