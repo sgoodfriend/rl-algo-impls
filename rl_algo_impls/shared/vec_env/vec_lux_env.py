@@ -55,7 +55,7 @@ class VecLuxEnv(VectorEnv):
         # TODO: Seeds aren't supported in LuxAI_S2
         pass
 
-    def close_extras(self):
+    def close_extras(self, **kwargs):
         for env in self.envs:
             env.close()
 
