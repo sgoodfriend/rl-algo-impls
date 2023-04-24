@@ -665,6 +665,7 @@ LuxAI_S2-v0: &lux-defaults
 
 LuxAI_S2-v0-eval:
   <<: *lux-defaults
+  device: cpu
   eval_hyperparams:
     <<: *lux-eval-defaults
     env_overrides:

@@ -27,7 +27,7 @@ MODEL_LOAD_PATH = "saved_models/ppo-LuxAI_S2-v0-A10-S1"
 
 
 class Agent:
-    def __init__(self, player: str, env_cfg: EnvConfig) -> None:
+    def __init__(self, player: str, env_cfg: EnvConfig, root_dir: str) -> None:
         self.player = player
         self.agents = ["player_0", "player_1"]
         self.player_idx = self.agents.index(player)
@@ -40,7 +40,7 @@ class Agent:
         config = Config(
             run_args,
             hyperparams,
-            os.getcwd(),
+            root_dir,
         )
 
         env = make_eval_env(
@@ -50,7 +50,11 @@ class Agent:
         )
         device = get_device(config, env)
         self.policy = make_policy(
-            config, env, device, load_path=MODEL_LOAD_PATH, **config.policy_hyperparams
+            config,
+            env,
+            device,
+            load_path=os.path.join(root_dir, MODEL_LOAD_PATH),
+            **config.policy_hyperparams,
         ).eval()
 
         transpose_wrapper = find_wrapper(env, HwcToChwObservation)

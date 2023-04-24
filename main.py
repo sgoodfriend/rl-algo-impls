@@ -1,4 +1,5 @@
 import json
+import os.path
 from argparse import Namespace
 
 from rl_algo_impls.lux.agent import Agent
@@ -23,7 +24,7 @@ def agent_fn(observation, configurations):
     remainingOverageTime = observation.remainingOverageTime
     if step == 0:
         env_cfg = EnvConfig.from_dict(configurations["env_cfg"])
-        agent_dict[player] = Agent(player, env_cfg)
+        agent_dict[player] = Agent(player, env_cfg, os.path.dirname(__file__))
         agent_prev_obs[player] = dict()
         agent = agent_dict[player]
 
