@@ -18,7 +18,7 @@ class MaskedCategorical(Categorical):
     ):
         if mask is not None:
             assert logits is not None, "mask requires logits and not probs"
-            logits = torch.where(mask, logits, -1e8)
+            logits = torch.where(mask, logits, torch.tensor(-1e8))
         self.mask = mask
         super().__init__(probs, logits, validate_args)
 
@@ -27,7 +27,7 @@ class MaskedCategorical(Categorical):
             return super().entropy()
         # If mask set, then use approximation for entropy
         p_log_p = self.logits * self.probs  # type: ignore
-        masked = torch.where(self.mask, p_log_p, 0)
+        masked = torch.where(self.mask, p_log_p, torch.tensor(0).float())
         return -masked.sum(-1)
 
 
