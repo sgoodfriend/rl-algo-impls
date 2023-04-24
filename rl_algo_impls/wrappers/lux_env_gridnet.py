@@ -8,8 +8,6 @@ from gym.spaces import Tuple as TupleSpace
 from gym.vector.utils import batch_space
 from luxai_s2.env import LuxAI_S2
 from luxai_s2.state import ObservationStateDict
-from luxai_s2.unit import Unit
-from luxai_s2.utils import my_turn_to_place_factory
 
 from rl_algo_impls.shared.lux.action_mask import get_action_mask
 from rl_algo_impls.shared.lux.actions import (
@@ -17,6 +15,7 @@ from rl_algo_impls.shared.lux.actions import (
     enqueued_action_from_obs,
     to_lux_actions,
 )
+from rl_algo_impls.shared.lux.early import bid_action, place_factory_action
 from rl_algo_impls.shared.lux.observation import from_lux_observation
 from rl_algo_impls.shared.lux.stats import StatsTracking
 
@@ -225,101 +224,32 @@ class LuxEnvGridnet(Wrapper):
         return np.sum(raw_rewards * self.reward_weight, axis=-1)
 
 
+def bid_actions(agents: List[str], bid_std_dev: float) -> Dict[str, Any]:
+    return {
+        p: bid_action(bid_std_dev, f)
+        for p, f in zip(agents, ["AlphaStrike", "MotherMars"])
+    }
+
+
+def place_factory_actions(env: LuxAI_S2) -> Dict[str, Any]:
+    actions = {
+        p: place_factory_action(env.state, env.agents, p_idx)
+        for p_idx, p in enumerate(env.agents)
+    }
+    actions = {k: v for k, v in actions.items() if k}
+    return actions
+
+
 def reset_and_early_phase(
     env: LuxAI_S2, bid_std_dev: float
 ) -> Tuple[Dict[str, ObservationStateDict], List[str]]:
     env.reset()
     agents = env.agents
-    env.step(bid_action(env, bid_std_dev))
+    env.step(bid_actions(env.agents, bid_std_dev))
     while env.state.real_env_steps < 0:
-        env.step(place_factory_action(env))
+        env.step(place_factory_actions(env))
     lux_obs, _, _, _ = env.step(place_initial_robot_action(env))
     return lux_obs, agents
-
-
-def bid_action(env: LuxAI_S2, bid_std_dev: float) -> Dict[str, Any]:
-    return {
-        p: {"bid": b, "faction": f}
-        for p, b, f in zip(
-            env.agents,
-            np.round(np.random.normal(scale=bid_std_dev, size=2)).astype(int).tolist(),
-            ["AlphaStrike", "MotherMars"],
-        )
-    }
-
-
-def place_factory_action(env: LuxAI_S2) -> Dict[str, Any]:
-    player_idx_to_place = int(
-        my_turn_to_place_factory(
-            env.state.teams[env.agents[0]].place_first, env.state.real_env_steps
-        )
-    )
-    p1 = env.agents[player_idx_to_place]
-    p2 = env.agents[(player_idx_to_place + 1) % 2]
-    own_factories = np.array([f.pos.pos for f in env.state.factories[p1].values()])
-    opp_factories = np.array([f.pos.pos for f in env.state.factories[p2].values()])
-
-    water_left = env.state.teams[p1].init_water
-    metal_left = env.state.teams[p1].init_metal
-
-    potential_spawns = np.argwhere(env.state.board.valid_spawns_mask)
-
-    ice_tile_locations = np.argwhere(env.state.board.ice)
-    ore_tile_locations = np.argwhere(env.state.board.ore)
-    if env.env_cfg.verbose > 2 and (
-        len(ice_tile_locations) == 0 or len(ore_tile_locations) == 0
-    ):
-        print(
-            f"Map missing ice ({len(ice_tile_locations)}) or ore ({len(ore_tile_locations)})"
-        )
-
-    best_score = -1e6
-    best_loc = potential_spawns[0]
-
-    _rubble = env.state.board.rubble
-    d_rubble = 10
-
-    for loc in potential_spawns:
-        ice_distances = np.linalg.norm(ice_tile_locations - loc, ord=1, axis=1)
-        ore_distances = np.linalg.norm(ore_tile_locations - loc, ord=1, axis=1)
-        closest_ice = np.min(ice_distances) if len(ice_distances) else 0
-        closest_ore = np.min(ore_distances) if len(ore_distances) else 0
-
-        min_loc = np.clip(loc - d_rubble, 0, env.env_cfg.map_size - 1)
-        max_loc = np.clip(loc + d_rubble, 0, env.env_cfg.map_size - 1)
-        _rubble_neighbors = _rubble[min_loc[0] : max_loc[0], min_loc[1] : max_loc[1]]
-        density_rubble = np.mean(_rubble_neighbors)
-
-        if len(own_factories):
-            own_factory_distances = np.linalg.norm(own_factories - loc, ord=1, axis=1)
-            closest_own_factory = np.min(own_factory_distances)
-        else:
-            closest_own_factory = 0
-        if len(opp_factories):
-            opp_factory_distances = np.linalg.norm(opp_factories - loc, ord=1, axis=1)
-            closest_opp_factory = np.min(opp_factory_distances)
-        else:
-            closest_opp_factory = 0
-
-        score = (
-            -10 * closest_ice
-            - 0.01 * closest_ore
-            - 10 * density_rubble / d_rubble
-            + 0.01 * closest_opp_factory
-            - 0.01 * closest_own_factory
-        )
-
-        if score > best_score:
-            best_score = score
-            best_loc = loc
-
-    return {
-        p1: {
-            "metal": min(env.env_cfg.INIT_WATER_METAL_PER_FACTORY, metal_left),
-            "water": min(env.env_cfg.INIT_WATER_METAL_PER_FACTORY, water_left),
-            "spawn": best_loc.tolist(),
-        }
-    }
 
 
 def place_initial_robot_action(env: LuxAI_S2) -> Dict[str, Any]:

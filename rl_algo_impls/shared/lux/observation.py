@@ -1,7 +1,6 @@
 from typing import Any, Dict, List, Optional, Type
 
 import numpy as np
-from luxai_s2.config import EnvConfig
 from luxai_s2.state import ObservationStateDict
 
 from rl_algo_impls.shared.lux.action_mask import (

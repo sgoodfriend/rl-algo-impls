@@ -53,6 +53,14 @@ class Team:
         # If tied, player_0's team has this True
         self.place_first = place_first
 
+    @property
+    def init_water(self) -> int:
+        return self.water
+
+    @property
+    def init_metal(self) -> int:
+        return self.metal
+
     def state_dict(self):
         return dict(
             team_id=self.team_id,
