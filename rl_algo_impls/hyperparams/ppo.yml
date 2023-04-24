@@ -683,6 +683,9 @@ LuxAI_S2-v0-medium-transfer-debug:
   env_hyperparams:
     <<: *lux-env-defaults
     vec_env_class: sync
+    make_kwargs:
+      <<: *lux-env-make-defaults
+      verbose: 2
 
 LuxAI_S2-v0-medium-transfer-A100:
   <<: *lux-medium-transfer-defaults
