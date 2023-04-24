@@ -635,11 +635,11 @@ LuxAI_S2-v0: &lux-defaults
     deterministic: false
     step_freq: !!float 1e6
     score_function: mean
-    env_overrides:
+    env_overrides: &lux-eval-env-overrides
       n_envs: 66
       self_play_kwargs:
         eval_use_training_cache: true
-      make_kwargs:
+      make_kwargs: &lux-eval-env-override-make-kwargs
         <<: *lux-env-make-defaults
         reward_weight: [1.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
   policy_hyperparams:
@@ -679,6 +679,15 @@ LuxAI_S2-v0-small: &small-lux-defaults
       map_size: 16
       MIN_FACTORIES: 1
       MAX_FACTORIES: 1
+  eval_hyperparams:
+    <<: *lux-eval-defaults
+    env_overrides:
+      <<: *lux-eval-env-overrides
+      make_kwargs:
+        <<: *lux-eval-env-override-make-kwargs
+        map_size: 16
+        MIN_FACTORIES: 1
+        MAX_FACTORIES: 1
 
 LuxAI_S2-v0-small-debug:
   <<: *small-lux-defaults
@@ -697,6 +706,15 @@ LuxAI_S2-v0-medium: &medium-lux-defaults
       map_size: 32
       MIN_FACTORIES: 1
       MAX_FACTORIES: 1
+  eval_hyperparams:
+    <<: *lux-eval-defaults
+    env_overrides:
+      <<: *lux-eval-env-overrides
+      make_kwargs:
+        <<: *lux-eval-env-override-make-kwargs
+        map_size: 32
+        MIN_FACTORIES: 1
+        MAX_FACTORIES: 1
 
 LuxAI_S2-v0-medium-debug:
   <<: *medium-lux-defaults
