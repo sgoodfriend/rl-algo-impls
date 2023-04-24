@@ -174,7 +174,9 @@ class UNetActorCriticNetwork(ActorCriticNetwork):
         d1 = self.dec1(torch.cat((d2, e2), dim=1))
         logits = self.out(torch.cat((d1, e1), dim=1))
 
-        pi = GridnetDistribution(self.map_size, self.action_vec, logits, action_masks)
+        pi = GridnetDistribution(
+            int(np.prod(obs.shape[-2:])), self.action_vec, logits, action_masks
+        )
 
         return ACNForward(pi_forward(pi, action), v)
 
