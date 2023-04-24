@@ -73,7 +73,7 @@ def train(args: TrainArgs):
     )
     device = get_device(config, env)
     policy_factory = lambda: make_policy(
-        args.algo, env, device, **config.policy_hyperparams
+        config, env, device, **config.policy_hyperparams
     )
     policy = policy_factory()
     algo = ALGOS[args.algo](policy, env, device, tb_writer, **config.algo_hyperparams)

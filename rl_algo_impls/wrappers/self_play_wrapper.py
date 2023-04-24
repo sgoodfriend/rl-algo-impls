@@ -94,7 +94,7 @@ class SelfPlayWrapper(VectorableWrapper):
         start_idx = 2 * self.num_old_policies
         for model_path, n in self.selfplay_bots.items():
             policy = make_policy(
-                self.config.algo,
+                self.config,
                 env,
                 device,
                 load_path=model_path,

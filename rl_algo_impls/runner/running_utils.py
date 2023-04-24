@@ -20,6 +20,7 @@ from rl_algo_impls.dqn.dqn import DQN
 from rl_algo_impls.dqn.policy import DQNPolicy
 from rl_algo_impls.ppo.ppo import PPO
 from rl_algo_impls.runner.config import Config, Hyperparams
+from rl_algo_impls.runner.wandb_load import load_player
 from rl_algo_impls.shared.algorithm import Algorithm
 from rl_algo_impls.shared.callbacks.eval_callback import EvalCallback
 from rl_algo_impls.shared.policy.actor_critic import ActorCritic
@@ -131,13 +132,23 @@ def set_seeds(seed: Optional[int], use_deterministic_algorithms: bool) -> None:
 
 
 def make_policy(
-    algo: str,
+    config: Config,
     env: VecEnv,
     device: torch.device,
     load_path: Optional[str] = None,
+    load_run_path: Optional[str] = None,
+    load_run_path_best: bool = True,
     **kwargs,
 ) -> Policy:
-    policy = POLICIES[algo](env, **kwargs).to(device)
+    policy = POLICIES[config.algo](env, **kwargs).to(device)
+    if load_run_path:
+        import wandb
+
+        api = wandb.Api()
+        _, _, load_path = load_player(
+            api, load_run_path, config.args, config.root_dir, load_run_path_best
+        )
+        assert load_path
     if load_path:
         policy.load(load_path)
     return policy

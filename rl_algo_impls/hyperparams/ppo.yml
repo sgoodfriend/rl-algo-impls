@@ -674,7 +674,8 @@ LuxAI_S2-v0-medium-transfer: &lux-medium-transfer-defaults
   <<: *lux-a10-defaults
   policy_hyperparams:
     <<: *lux-policy-defaults
-    load_path: saved_models/ppo-LuxAI_S2-v0-medium-S1
+    load_run_path: sgoodfriend/rl-algo-impls-benchmarks/qpm5k6n1
+    load_run_path_best: false
 
 LuxAI_S2-v0-medium-transfer-debug:
   <<: *lux-medium-transfer-defaults

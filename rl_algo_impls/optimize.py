@@ -201,7 +201,7 @@ def simple_optimize(trial: optuna.Trial, args: RunArgs, study_args: StudyArgs) -
     )
     device = get_device(config, env)
     policy_factory = lambda: make_policy(
-        args.algo, env, device, **config.policy_hyperparams
+        config, env, device, **config.policy_hyperparams
     )
     policy = policy_factory()
     algo = ALGOS[args.algo](policy, env, device, tb_writer, **config.algo_hyperparams)
@@ -323,7 +323,7 @@ def stepwise_optimize(
             )
             device = get_device(config, env)
             policy_factory = lambda: make_policy(
-                arg.algo, env, device, **config.policy_hyperparams
+                config, env, device, **config.policy_hyperparams
             )
             policy = policy_factory()
             if i > 0:
