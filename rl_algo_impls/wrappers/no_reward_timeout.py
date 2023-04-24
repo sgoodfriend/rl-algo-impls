@@ -1,15 +1,15 @@
+from typing import Optional, Tuple, Union
+
 import gym
 import numpy as np
 
-from typing import Optional, Tuple, Union
-
-from rl_algo_impls.wrappers.vectorable_wrapper import VecotarableWrapper
+from rl_algo_impls.wrappers.vectorable_wrapper import VectorableWrapper
 
 ObsType = Union[np.ndarray, dict]
 ActType = Union[int, float, np.ndarray, dict]
 
 
-class NoRewardTimeout(VecotarableWrapper):
+class NoRewardTimeout(VectorableWrapper):
     def __init__(
         self, env: gym.Env, n_timeout_steps: int, n_fire_steps: Optional[int] = None
     ) -> None:

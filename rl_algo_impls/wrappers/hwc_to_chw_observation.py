@@ -1,6 +1,7 @@
+from typing import Tuple
+
 import gym
 import numpy as np
-
 from gym import ObservationWrapper
 from gym.spaces import Box
 
@@ -10,17 +11,13 @@ class HwcToChwObservation(ObservationWrapper):
         super().__init__(env)
 
         assert isinstance(env.observation_space, Box)
-
-        obs_space = env.observation_space
-        axes = tuple(i for i in range(len(obs_space.shape)))
-        self._transpose_axes = axes[:-3] + (axes[-1],) + axes[-3:-1]
-
-        self.observation_space = Box(
-            low=np.transpose(obs_space.low, axes=self._transpose_axes),
-            high=np.transpose(obs_space.high, axes=self._transpose_axes),
-            shape=[obs_space.shape[idx] for idx in self._transpose_axes],
-            dtype=obs_space.dtype,
+        self.observation_space, self._transpose_axes = transpose_space(
+            env.observation_space
         )
+        if hasattr(env, "single_observation_space"):
+            self.single_observation_space, _ = transpose_space(
+                getattr(env, "single_observation_space")
+            )
 
     def observation(self, obs: np.ndarray) -> np.ndarray:
         full_shape = obs.shape
@@ -32,3 +29,17 @@ class HwcToChwObservation(ObservationWrapper):
         else:
             transpose_axes = self._transpose_axes
         return np.transpose(obs, axes=transpose_axes)
+
+
+def transpose_space(space: Box) -> Tuple[Box, Tuple[int, ...]]:
+    axes = tuple(i for i in range(len(space.shape)))
+    transpose_axes = axes[:-3] + (axes[-1],) + axes[-3:-1]
+
+    transposed_space = Box(
+        low=np.transpose(space.low, axes=transpose_axes),
+        high=np.transpose(space.high, axes=transpose_axes),
+        shape=[space.shape[idx] for idx in transpose_axes],
+        dtype=space.dtype,
+    )
+
+    return transposed_space, transpose_axes

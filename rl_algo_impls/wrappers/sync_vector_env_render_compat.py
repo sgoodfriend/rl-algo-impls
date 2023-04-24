@@ -1,15 +1,13 @@
-import numpy as np
-
-from gym.vector.sync_vector_env import SyncVectorEnv
-from stable_baselines3.common.vec_env.base_vec_env import tile_images
 from typing import Optional
 
-from rl_algo_impls.wrappers.vectorable_wrapper import (
-    VecotarableWrapper,
-)
+import numpy as np
+from gym.vector.sync_vector_env import SyncVectorEnv
+from stable_baselines3.common.vec_env.base_vec_env import tile_images
+
+from rl_algo_impls.wrappers.vectorable_wrapper import VectorableWrapper
 
 
-class SyncVectorEnvRenderCompat(VecotarableWrapper):
+class SyncVectorEnvRenderCompat(VectorableWrapper):
     def __init__(self, env) -> None:
         super().__init__(env)
 

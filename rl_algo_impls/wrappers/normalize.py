@@ -5,7 +5,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from rl_algo_impls.wrappers.vectorable_wrapper import (
-    VecotarableWrapper,
+    VectorableWrapper,
     single_observation_space,
 )
 
@@ -59,7 +59,7 @@ NormalizeObservationSelf = TypeVar(
 )
 
 
-class NormalizeObservation(VecotarableWrapper):
+class NormalizeObservation(VectorableWrapper):
     def __init__(
         self,
         env: gym.Env,
@@ -107,7 +107,7 @@ class NormalizeObservation(VecotarableWrapper):
 NormalizeRewardSelf = TypeVar("NormalizeRewardSelf", bound="NormalizeReward")
 
 
-class NormalizeReward(VecotarableWrapper):
+class NormalizeReward(VectorableWrapper):
     def __init__(
         self,
         env: gym.Env,

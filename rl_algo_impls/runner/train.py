@@ -28,9 +28,7 @@ from rl_algo_impls.runner.running_utils import (
     set_seeds,
 )
 from rl_algo_impls.shared.callbacks.eval_callback import EvalCallback
-from rl_algo_impls.shared.callbacks.microrts_reward_decay_callback import (
-    MicrortsRewardDecayCallback,
-)
+from rl_algo_impls.shared.callbacks.reward_decay_callback import RewardDecayCallback
 from rl_algo_impls.shared.stats import EpisodesStats
 from rl_algo_impls.shared.vec_env import make_env, make_eval_env
 
@@ -75,7 +73,7 @@ def train(args: TrainArgs):
     )
     device = get_device(config, env)
     policy_factory = lambda: make_policy(
-        args.algo, env, device, **config.policy_hyperparams
+        config, env, device, **config.policy_hyperparams
     )
     policy = policy_factory()
     algo = ALGOS[args.algo](policy, env, device, tb_writer, **config.algo_hyperparams)
@@ -91,31 +89,43 @@ def train(args: TrainArgs):
             f"num_trainable_parameters = {num_trainable_parameters}"
         )
 
-    eval_env = make_eval_env(config, EnvHyperparams(**config.env_hyperparams))
+    self_play_wrapper = find_wrapper(env, SelfPlayWrapper)
+    eval_env = make_eval_env(
+        config,
+        EnvHyperparams(**config.env_hyperparams),
+        self_play_wrapper=self_play_wrapper,
+    )
     record_best_videos = config.eval_hyperparams.get("record_best_videos", True)
+    video_env = (
+        make_eval_env(
+            config,
+            EnvHyperparams(**config.env_hyperparams),
+            override_hparams={"n_envs": 1},
+            self_play_wrapper=self_play_wrapper,
+        )
+        if record_best_videos
+        else None
+    )
     eval_callback = EvalCallback(
         policy,
         eval_env,
         tb_writer,
         best_model_path=config.model_dir_path(best=True),
         **config.eval_callback_params(),
-        video_env=make_eval_env(
-            config,
-            EnvHyperparams(**config.env_hyperparams),
-            override_hparams={"n_envs": 1},
-        )
-        if record_best_videos
-        else None,
+        video_env=video_env,
         best_video_dir=config.best_videos_dir,
         additional_keys_to_log=config.additional_keys_to_log,
         wandb_enabled=wandb_enabled,
     )
     callbacks: List[Callback] = [eval_callback]
-    if config.hyperparams.microrts_reward_decay_callback:
-        callbacks.append(MicrortsRewardDecayCallback(config, env))
-    selfPlayWrapper = find_wrapper(env, SelfPlayWrapper)
-    if selfPlayWrapper:
-        callbacks.append(SelfPlayCallback(policy, policy_factory, selfPlayWrapper))
+    if config.hyperparams.reward_decay_callback:
+        callbacks.append(
+            RewardDecayCallback(
+                config, env, **(config.hyperparams.reward_decay_callback_kwargs or {})
+            )
+        )
+    if self_play_wrapper:
+        callbacks.append(SelfPlayCallback(policy, policy_factory, self_play_wrapper))
     algo.learn(config.n_timesteps, callbacks=callbacks)
 
     policy.save(config.model_dir_path(best=False))

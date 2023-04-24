@@ -1,9 +1,9 @@
 from typing import List, Optional
 
-from rl_algo_impls.wrappers.vectorable_wrapper import VecotarableWrapper
+from rl_algo_impls.wrappers.vectorable_wrapper import VectorableWrapper
 
 
-class NoopEnvSeed(VecotarableWrapper):
+class NoopEnvSeed(VectorableWrapper):
     """
     Wrapper to stop a seed call going to the underlying environment.
     """

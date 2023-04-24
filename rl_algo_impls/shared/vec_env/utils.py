@@ -8,6 +8,8 @@ def import_for_env_id(env_id: str) -> None:
         import pybullet_envs
     if "Microrts" in env_id:
         import gym_microrts
+    if "LuxAI_S2" in env_id:
+        import luxai_s2
 
 
 def is_atari(config: Config) -> bool:
@@ -29,3 +31,7 @@ def is_gym_procgen(config: Config) -> bool:
 
 def is_microrts(config: Config) -> bool:
     return "Microrts" in config.env_id
+
+
+def is_lux(config: Config) -> bool:
+    return "LuxAI_S2" in config.env_id

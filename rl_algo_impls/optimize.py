@@ -27,14 +27,12 @@ from rl_algo_impls.runner.running_utils import (
     set_seeds,
 )
 from rl_algo_impls.shared.callbacks import Callback
-from rl_algo_impls.shared.callbacks.microrts_reward_decay_callback import (
-    MicrortsRewardDecayCallback,
-)
 from rl_algo_impls.shared.callbacks.optimize_callback import (
     Evaluation,
     OptimizeCallback,
     evaluation,
 )
+from rl_algo_impls.shared.callbacks.reward_decay_callback import RewardDecayCallback
 from rl_algo_impls.shared.callbacks.self_play_callback import SelfPlayCallback
 from rl_algo_impls.shared.stats import EpisodesStats
 from rl_algo_impls.shared.vec_env import make_env, make_eval_env
@@ -203,15 +201,17 @@ def simple_optimize(trial: optuna.Trial, args: RunArgs, study_args: StudyArgs) -
     )
     device = get_device(config, env)
     policy_factory = lambda: make_policy(
-        args.algo, env, device, **config.policy_hyperparams
+        config, env, device, **config.policy_hyperparams
     )
     policy = policy_factory()
     algo = ALGOS[args.algo](policy, env, device, tb_writer, **config.algo_hyperparams)
 
+    self_play_wrapper = find_wrapper(env, SelfPlayWrapper)
     eval_env = make_eval_env(
         config,
         EnvHyperparams(**config.env_hyperparams),
         override_hparams={"n_envs": study_args.n_eval_envs},
+        self_play_wrapper=self_play_wrapper,
     )
     optimize_callback = OptimizeCallback(
         policy,
@@ -223,11 +223,16 @@ def simple_optimize(trial: optuna.Trial, args: RunArgs, study_args: StudyArgs) -
         deterministic=config.eval_hyperparams.get("deterministic", True),
     )
     callbacks: List[Callback] = [optimize_callback]
-    if config.hyperparams.microrts_reward_decay_callback:
-        callbacks.append(MicrortsRewardDecayCallback(config, env))
-    selfPlayWrapper = find_wrapper(env, SelfPlayWrapper)
-    if selfPlayWrapper:
-        callbacks.append(SelfPlayCallback(policy, policy_factory, selfPlayWrapper))
+    if config.hyperparams.reward_decay_callback:
+        callbacks.append(
+            RewardDecayCallback(
+                config,
+                env,
+                **(config.hyperparams.reward_decay_callback_kwargs or {}),
+            )
+        )
+    if self_play_wrapper:
+        callbacks.append(SelfPlayCallback(policy, policy_factory, self_play_wrapper))
     try:
         algo.learn(config.n_timesteps, callbacks=callbacks)
 
@@ -318,7 +323,7 @@ def stepwise_optimize(
             )
             device = get_device(config, env)
             policy_factory = lambda: make_policy(
-                arg.algo, env, device, **config.policy_hyperparams
+                config, env, device, **config.policy_hyperparams
             )
             policy = policy_factory()
             if i > 0:
@@ -327,11 +332,13 @@ def stepwise_optimize(
                 policy, env, device, tb_writer, **config.algo_hyperparams
             )
 
+            self_play_wrapper = find_wrapper(env, SelfPlayWrapper)
             eval_env = make_eval_env(
                 config,
                 EnvHyperparams(**config.env_hyperparams),
                 normalize_load_path=config.model_dir_path() if i > 0 else None,
                 override_hparams={"n_envs": study_args.n_eval_envs},
+                self_play_wrapper=self_play_wrapper,
             )
 
             start_timesteps = int(i * config.n_timesteps / study_args.n_evaluations)
@@ -341,16 +348,18 @@ def stepwise_optimize(
             )
 
             callbacks = []
-            if config.hyperparams.microrts_reward_decay_callback:
+            if config.hyperparams.reward_decay_callback:
                 callbacks.append(
-                    MicrortsRewardDecayCallback(
-                        config, env, start_timesteps=start_timesteps
+                    RewardDecayCallback(
+                        config,
+                        env,
+                        start_timesteps=start_timesteps,
+                        **(config.hyperparams.reward_decay_callback_kwargs or {}),
                     )
                 )
-            selfPlayWrapper = find_wrapper(env, SelfPlayWrapper)
-            if selfPlayWrapper:
+            if self_play_wrapper:
                 callbacks.append(
-                    SelfPlayCallback(policy, policy_factory, selfPlayWrapper)
+                    SelfPlayCallback(policy, policy_factory, self_play_wrapper)
                 )
             try:
                 algo.learn(

@@ -422,7 +422,7 @@ Microrts-selfplay-unet-winloss: &microrts-selfplay-winloss-defaults
 
 Microrts-selfplay-unet-decay: &microrts-selfplay-decay-defaults
   <<: *microrts-selfplay-defaults
-  microrts_reward_decay_callback: true
+  reward_decay_callback: true
   algo_hyperparams:
     <<: *microrts-unet-algo-defaults
     gamma_end: 0.999
@@ -614,3 +614,157 @@ procgen-starpilot-hard-4xIMPALA:
   algo_hyperparams:
     <<: *procgen-hard-algo-defaults
     learning_rate: !!float 2.1e-4
+
+LuxAI_S2-v0: &lux-defaults
+  n_timesteps: !!float 20e6
+  additional_keys_to_log: ["stats", "results"]
+  env_id: LuxAI_S2-v0
+  env_hyperparams: &lux-env-defaults
+    env_type: lux
+    vec_env_class: async
+    n_envs: 24
+    self_play_kwargs:
+      num_old_policies: 12
+      save_steps: 300000
+      swap_steps: 6000
+      swap_window_size: 4
+      window: 33
+    make_kwargs: &lux-env-make-defaults
+      bid_std_dev: 5
+  eval_hyperparams: &lux-eval-defaults
+    deterministic: false
+    step_freq: !!float 1e6
+    score_function: mean
+    env_overrides: &lux-eval-env-overrides
+      n_envs: 66
+      self_play_kwargs:
+        eval_use_training_cache: true
+      make_kwargs: &lux-eval-env-override-make-kwargs
+        <<: *lux-env-make-defaults
+        reward_weight: [1.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  policy_hyperparams: &lux-policy-defaults
+    activation_fn: relu
+    actor_head_style: unet
+    v_hidden_sizes: [256, 128]
+  reward_decay_callback: true
+  reward_decay_callback_kwargs:
+    increase_indexes: [0, 1, 6]
+  algo_hyperparams: &lux-algo-defaults
+    n_steps: 384
+    batch_size: 2304
+    n_epochs: 4
+    learning_rate: !!float 4e-4
+    learning_rate_decay: spike
+    ent_coef: 0.01
+    vf_coef: 0.5
+    max_grad_norm: 0.5
+    clip_range: 0.1
+    clip_range_decay: none
+    clip_range_vf: 0.1
+    ppo2_vf_coef_halving: true
+
+LuxAI_S2-v0-eval:
+  <<: *lux-defaults
+  eval_hyperparams:
+    <<: *lux-eval-defaults
+    env_overrides:
+      n_envs: 1
+      self_play_kwargs:
+        save_steps: .inf
+        swap_steps: .inf
+      make_kwargs:
+        <<: *lux-env-make-defaults
+        reward_weight: [1.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+LuxAI_S2-v0-A10: &lux-a10-defaults
+  <<: *lux-defaults
+  algo_hyperparams:
+    <<: *lux-algo-defaults
+    n_steps: 192
+    batch_size: 1152
+
+LuxAI_S2-v0-medium-transfer: &lux-medium-transfer-defaults
+  <<: *lux-a10-defaults
+  policy_hyperparams:
+    <<: *lux-policy-defaults
+    load_run_path: sgoodfriend/rl-algo-impls-benchmarks/qpm5k6n1
+    load_run_path_best: false
+
+LuxAI_S2-v0-medium-transfer-debug:
+  <<: *lux-medium-transfer-defaults
+  device: cpu
+  env_hyperparams:
+    <<: *lux-env-defaults
+    vec_env_class: sync
+    make_kwargs:
+      <<: *lux-env-make-defaults
+      verbose: 2
+
+LuxAI_S2-v0-medium-transfer-A100:
+  <<: *lux-medium-transfer-defaults
+  algo_hyperparams:
+    <<: *lux-algo-defaults
+
+LuxAI_S2-v0-small: &small-lux-defaults
+  <<: *lux-defaults
+  env_hyperparams: &small-lux-env-defaults
+    <<: *lux-env-defaults
+    make_kwargs:
+      <<: *lux-env-make-defaults
+      map_size: 16
+      MIN_FACTORIES: 1
+      MAX_FACTORIES: 1
+  eval_hyperparams:
+    <<: *lux-eval-defaults
+    env_overrides:
+      <<: *lux-eval-env-overrides
+      make_kwargs:
+        <<: *lux-eval-env-override-make-kwargs
+        map_size: 16
+        MIN_FACTORIES: 1
+        MAX_FACTORIES: 1
+
+LuxAI_S2-v0-small-debug:
+  <<: *small-lux-defaults
+  device: cpu
+  env_hyperparams:
+    <<: *small-lux-env-defaults
+    vec_env_class: sync
+
+LuxAI_S2-v0-medium: &medium-lux-defaults
+  <<: *lux-defaults
+  n_timesteps: !!float 30e6
+  env_hyperparams: &medium-lux-env-defaults
+    <<: *lux-env-defaults
+    make_kwargs:
+      <<: *lux-env-make-defaults
+      map_size: 32
+      MIN_FACTORIES: 1
+      MAX_FACTORIES: 1
+  eval_hyperparams:
+    <<: *lux-eval-defaults
+    env_overrides:
+      <<: *lux-eval-env-overrides
+      make_kwargs:
+        <<: *lux-eval-env-override-make-kwargs
+        map_size: 32
+        MIN_FACTORIES: 1
+        MAX_FACTORIES: 1
+
+LuxAI_S2-v0-medium-debug:
+  <<: *medium-lux-defaults
+  device: cpu
+  env_hyperparams:
+    <<: *medium-lux-env-defaults
+    vec_env_class: sync
+
+LuxAI_S2-v0-debug:
+  <<: *lux-defaults
+  n_timesteps: !!float 1e6
+  device: cpu
+  env_hyperparams:
+    <<: *lux-env-defaults
+    vec_env_class: sync
+  eval_hyperparams:
+    <<: *lux-eval-defaults
+    step_freq: !!float 1e5

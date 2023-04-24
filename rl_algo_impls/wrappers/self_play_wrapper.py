@@ -1,4 +1,3 @@
-import copy
 import random
 from collections import deque
 from typing import Any, Deque, Dict, List, Optional
@@ -11,11 +10,11 @@ from rl_algo_impls.wrappers.action_mask_wrapper import find_action_masker
 from rl_algo_impls.wrappers.vectorable_wrapper import (
     VecEnvObs,
     VecEnvStepReturn,
-    VecotarableWrapper,
+    VectorableWrapper,
 )
 
 
-class SelfPlayWrapper(VecotarableWrapper):
+class SelfPlayWrapper(VectorableWrapper):
     next_obs: VecEnvObs
     next_action_masks: Optional[np.ndarray]
 
@@ -58,7 +57,8 @@ class SelfPlayWrapper(VecotarableWrapper):
             self.initialize_selfplay_bots()
 
     def get_action_mask(self) -> Optional[np.ndarray]:
-        return self.env.get_action_mask()[self.learner_indexes()]
+        assert self.next_action_masks is not None
+        return self.next_action_masks[self.learner_indexes()]
 
     def learner_indexes(self) -> List[int]:
         return [p is None for p in self.policy_assignments]
@@ -94,7 +94,7 @@ class SelfPlayWrapper(VecotarableWrapper):
         start_idx = 2 * self.num_old_policies
         for model_path, n in self.selfplay_bots.items():
             policy = make_policy(
-                self.config.algo,
+                self.config,
                 env,
                 device,
                 load_path=model_path,
@@ -125,7 +125,7 @@ class SelfPlayWrapper(VecotarableWrapper):
                     else None,
                 )
         self.next_obs, rew, done, info = env.step(all_actions)
-        self.next_action_masks = self.env.get_action_mask()
+        self.next_action_masks = env.get_action_mask()
 
         rew = rew[orig_learner_indexes]
         info = [i for i, b in zip(info, orig_learner_indexes) if b]

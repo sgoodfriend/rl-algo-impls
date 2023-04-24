@@ -1,15 +1,15 @@
+from typing import Any, Dict, Tuple, Union
+
 import gym
 import numpy as np
 
-from typing import Any, Dict, Tuple, Union
-
-from rl_algo_impls.wrappers.vectorable_wrapper import VecotarableWrapper
+from rl_algo_impls.wrappers.vectorable_wrapper import VectorableWrapper
 
 ObsType = Union[np.ndarray, dict]
 ActType = Union[int, float, np.ndarray, dict]
 
 
-class InitialStepTruncateWrapper(VecotarableWrapper):
+class InitialStepTruncateWrapper(VectorableWrapper):
     def __init__(self, env: gym.Env, initial_steps_to_truncate: int) -> None:
         super().__init__(env)
         self.initial_steps_to_truncate = initial_steps_to_truncate

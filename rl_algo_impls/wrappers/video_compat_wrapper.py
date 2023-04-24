@@ -1,10 +1,10 @@
 import gym
 import numpy as np
 
-from rl_algo_impls.wrappers.vectorable_wrapper import VecotarableWrapper
+from rl_algo_impls.wrappers.vectorable_wrapper import VectorableWrapper
 
 
-class VideoCompatWrapper(VecotarableWrapper):
+class VideoCompatWrapper(VectorableWrapper):
     def __init__(self, env: gym.Env) -> None:
         super().__init__(env)
 
