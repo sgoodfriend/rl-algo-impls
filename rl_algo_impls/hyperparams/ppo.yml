@@ -684,6 +684,11 @@ LuxAI_S2-v0-medium-transfer-debug:
     <<: *lux-env-defaults
     vec_env_class: sync
 
+LuxAI_S2-v0-medium-transfer-A100:
+  <<: *lux-medium-transfer-defaults
+  algo_hyperparams:
+    <<: *lux-algo-defaults
+
 LuxAI_S2-v0-small: &small-lux-defaults
   <<: *lux-defaults
   env_hyperparams: &small-lux-env-defaults
