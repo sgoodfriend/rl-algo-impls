@@ -672,6 +672,7 @@ LuxAI_S2-v0-A10: &lux-a10-defaults
 
 LuxAI_S2-v0-medium-transfer: &lux-medium-transfer-defaults
   <<: *lux-a10-defaults
+  n_timesteps: !!float 5e6
   policy_hyperparams:
     <<: *lux-policy-defaults
     load_run_path: sgoodfriend/rl-algo-impls-benchmarks/qpm5k6n1
@@ -717,7 +718,7 @@ LuxAI_S2-v0-small-debug:
 
 LuxAI_S2-v0-medium: &medium-lux-defaults
   <<: *lux-defaults
-  n_timesteps: !!float 30e6
+  n_timesteps: !!float 15e6
   env_hyperparams: &medium-lux-env-defaults
     <<: *lux-env-defaults
     make_kwargs:
