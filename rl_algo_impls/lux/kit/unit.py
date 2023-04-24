@@ -5,7 +5,7 @@ from typing import List
 import numpy as np
 
 from rl_algo_impls.lux.kit.cargo import UnitCargo
-from rl_algo_impls.lux.kit.config import EnvConfig
+from rl_algo_impls.lux.kit.config import EnvConfig, UnitConfig
 
 # a[1] = direction (0 = center, 1 = up, 2 = right, 3 = down, 4 = left)
 move_deltas = np.array([[0, 0], [0, -1], [1, 0], [0, 1], [-1, 0]])
@@ -20,7 +20,7 @@ class Unit:
     power: int
     cargo: UnitCargo
     env_cfg: EnvConfig
-    unit_cfg: dict
+    unit_cfg: UnitConfig
     action_queue: List
 
     @property
@@ -28,6 +28,14 @@ class Unit:
         if self.team_id == 0:
             return "player_0"
         return "player_1"
+
+    @property
+    def cargo_space(self):
+        return self.unit_cfg.CARGO_SPACE
+
+    @property
+    def battery_capacity(self):
+        return self.unit_cfg.BATTERY_CAPACITY
 
     def action_queue_cost(self, game_state):
         cost = self.env_cfg.ROBOTS[self.unit_type].ACTION_QUEUE_POWER_COST

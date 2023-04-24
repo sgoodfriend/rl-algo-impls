@@ -6,30 +6,20 @@ from gym import Wrapper
 from gym.spaces import Box, MultiDiscrete
 from gym.spaces import Tuple as TupleSpace
 from gym.vector.utils import batch_space
-from luxai_s2.actions import move_deltas
 from luxai_s2.env import LuxAI_S2
-from luxai_s2.map.position import Position
 from luxai_s2.state import ObservationStateDict
 from luxai_s2.unit import Unit
 from luxai_s2.utils import my_turn_to_place_factory
 
+from rl_algo_impls.shared.lux.action_mask import get_action_mask
 from rl_algo_impls.shared.lux.actions import (
     ACTION_SIZES,
     FACTORY_ACTION_ENCODED_SIZE,
     FACTORY_DO_NOTHING_ACTION,
     action_array_from_queue,
     actions_equal,
-    if_self_destruct_valid,
-    is_build_heavy_valid,
-    is_build_light_valid,
-    is_dig_valid,
-    is_recharge_valid,
-    is_water_action_valid,
     max_move_repeats,
-    valid_move_mask,
-    valid_pickup_resource_mask,
-    valid_transfer_direction_mask,
-    valid_transfer_resource_mask,
+    pos_to_idx,
 )
 from rl_algo_impls.shared.lux.observation import from_lux_observation
 from rl_algo_impls.shared.lux.stats import StatsTracking
@@ -150,86 +140,25 @@ class LuxEnvGridnet(Wrapper):
     def get_action_mask(self) -> np.ndarray:
         if self._action_mask is not None:
             return self._action_mask
-        action_mask = np.full(
-            (2,) + self.action_mask_shape,
-            False,
-            dtype=np.bool_,
+        self._action_mask = np.stack(
+            [
+                get_action_mask(
+                    player,
+                    self.env.state,
+                    self.action_mask_shape,
+                    self._enqueued_actions,
+                )
+                for player in self.agents
+            ]
         )
-        env = self.unwrapped
-        config = env.env_cfg
-        for idx, p in enumerate(self.agents):
-            for f in env.state.factories[p].values():
-                action_mask[
-                    idx, self._pos_to_idx(f.pos), :FACTORY_ACTION_ENCODED_SIZE
-                ] = np.array(
-                    [
-                        is_build_light_valid(f, config),
-                        is_build_heavy_valid(f, config),
-                        is_water_action_valid(f, config),
-                        True,  # Do nothing is always valid
-                    ]
-                )
-            move_masks = {
-                u_id: valid_move_mask(
-                    u, env.state, config, self._enqueued_actions.get(u_id)
-                )
-                for u_id, u in env.state.units[p].items()
-            }
-            move_validity_map = np.zeros((self.map_size, self.map_size), dtype=np.int16)
-            for u_id, valid_moves_mask in move_masks.items():
-                u = env.state.units[p][u_id]
-                for direction_idx, move_delta in enumerate(move_deltas):
-                    if valid_moves_mask[direction_idx]:
-                        move_validity_map[
-                            u.pos.x + move_delta[0], u.pos.y + move_delta[1]
-                        ] += 1
-            for u_id, u in env.state.units[p].items():
-                enqueued_action = self._enqueued_actions.get(u_id)
-                move_mask = move_masks[u_id]
-                transfer_direction_mask = valid_transfer_direction_mask(
-                    u, env.state, config, move_mask, move_validity_map, enqueued_action
-                )
-                transfer_resource_mask = (
-                    valid_transfer_resource_mask(u)
-                    if np.any(transfer_direction_mask)
-                    else np.zeros(5)
-                )
-                pickup_resource_mask = valid_pickup_resource_mask(
-                    u, env.state, enqueued_action
-                )
-                valid_action_types = np.array(
-                    [
-                        np.any(move_mask),
-                        np.any(transfer_direction_mask),
-                        np.any(pickup_resource_mask),
-                        is_dig_valid(u, env.state, enqueued_action),
-                        if_self_destruct_valid(u, env.state, enqueued_action),
-                        is_recharge_valid(u, enqueued_action),
-                    ]
-                )
-                action_mask[
-                    idx, self._pos_to_idx(u.pos), FACTORY_ACTION_ENCODED_SIZE:
-                ] = np.concatenate(
-                    [
-                        valid_action_types,
-                        move_mask,
-                        transfer_direction_mask,
-                        transfer_resource_mask,
-                        pickup_resource_mask,
-                    ]
-                )
-        self._action_mask = action_mask
-        return action_mask
-
-    def _pos_to_idx(self, pos: Position) -> int:
-        return pos.x * self.map_size + pos.y
+        return self._action_mask
 
     def _no_valid_unit_actions(self, unit: Unit) -> bool:
         assert self._action_mask is not None
         return not np.any(
             self._action_mask[
                 unit.team.team_id,
-                self._pos_to_idx(unit.pos),
+                pos_to_idx(unit.pos, self.map_size),
                 FACTORY_ACTION_ENCODED_SIZE : FACTORY_ACTION_ENCODED_SIZE + 6,
             ]
         )
@@ -242,11 +171,11 @@ class LuxEnvGridnet(Wrapper):
         for p_idx in range(len(actions)):
             p = self.agents[p_idx]
             for f in env.state.factories[p].values():
-                a = actions[p_idx, self._pos_to_idx(f.pos), 0]
+                a = actions[p_idx, pos_to_idx(f.pos, self.map_size), 0]
                 if a != FACTORY_DO_NOTHING_ACTION:
                     lux_actions[p][f.unit_id] = a
             for u in env.state.units[p].values():
-                a = actions[p_idx, self._pos_to_idx(u.pos), 1:]
+                a = actions[p_idx, pos_to_idx(u.pos, self.map_size), 1:]
                 if self._no_valid_unit_actions(u):
                     if cfg.verbose > 1:
                         print(f"No valid action for unit {u}")

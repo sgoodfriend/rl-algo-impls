@@ -4,12 +4,11 @@ import numpy as np
 from luxai_s2.config import EnvConfig
 from luxai_s2.state import ObservationStateDict
 
-from rl_algo_impls.shared.lux.actions import (
-    UNIT_ACTION_ENCODED_SIZE,
-    UNIT_ACTION_SIZES,
+from rl_algo_impls.shared.lux.action_mask import (
     is_build_heavy_valid,
     is_build_light_valid,
 )
+from rl_algo_impls.shared.lux.actions import UNIT_ACTION_ENCODED_SIZE, UNIT_ACTION_SIZES
 from rl_algo_impls.shared.lux.shared import LuxGameState
 
 ICE_FACTORY_MAX = 100_000
