@@ -1,7 +1,6 @@
 from typing import Optional, Union
 
 import numpy as np
-from gym_microrts.envs.vec_env import MicroRTSGridModeVecEnv
 
 from rl_algo_impls.wrappers.vectorable_wrapper import (
     VecEnv,
