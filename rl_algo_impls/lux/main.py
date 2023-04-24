@@ -1,9 +1,8 @@
 import json
 from argparse import Namespace
 
-from luxai_s2.config import EnvConfig
-
 from rl_algo_impls.lux.agent import Agent
+from rl_algo_impls.lux.kit.config import EnvConfig
 
 ### DO NOT REMOVE THE FOLLOWING CODE ###
 agent_dict = (
