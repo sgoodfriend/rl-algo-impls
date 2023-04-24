@@ -4,7 +4,7 @@ from typing import NamedTuple, Optional, Sequence, Tuple, TypeVar
 import gym
 import numpy as np
 import torch
-from gym.spaces import Box, Space
+from gym.spaces import Box
 
 from rl_algo_impls.shared.policy.actor_critic_network import (
     ConnectedTrioActorCriticNetwork,

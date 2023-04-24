@@ -1,5 +1,6 @@
 import argparse
 import json
+import logging
 import os
 import random
 from dataclasses import asdict
@@ -114,7 +115,7 @@ def get_device(config: Config, env: VecEnv) -> torch.device:
                 device = "cpu"
             if is_microrts(config):
                 device = "cpu"
-    print(f"Device: {device}")
+    logging.info(f"Device: {device}")
     return torch.device(device)
 
 

@@ -1,3 +1,4 @@
+import logging
 from dataclasses import astuple
 from typing import Dict, Optional, Tuple
 
@@ -108,7 +109,7 @@ def is_water_action_valid(
     factory: LuxFactory, state: LuxGameState, config: LuxEnvConfig
 ) -> bool:
     water_cost = factory_water_cost(factory, state, config)
-    return water_cost > 0 and factory.cargo.water >= water_cost
+    return factory.cargo.water >= water_cost
 
 
 # Unit validity checks

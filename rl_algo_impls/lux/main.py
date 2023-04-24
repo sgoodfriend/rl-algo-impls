@@ -1,6 +1,8 @@
 import json
 from argparse import Namespace
 
+import numpy as np
+
 from rl_algo_impls.lux.agent import Agent
 from rl_algo_impls.lux.kit.config import EnvConfig
 
@@ -34,6 +36,8 @@ def agent_fn(observation, configurations):
         actions = agent.bid_policy(step, obs, remainingOverageTime)
     elif obs["real_env_steps"] < 0:
         actions = agent.factory_placement_policy(step, obs, remainingOverageTime)
+    elif obs["real_env_steps"] == 0:
+        actions = agent.place_initial_robot_action(step, obs, remainingOverageTime)
     else:
         actions = agent.act(step, obs, remainingOverageTime)
 
@@ -97,8 +101,7 @@ def process_obs(player, game_state, step, obs):
     return game_state
 
 
-if __name__ == "__main__":
-
+def run_loop():
     def read_input():
         """
         Reads input from stdin
@@ -131,3 +134,7 @@ if __name__ == "__main__":
         actions = agent_fn(observation, dict(env_cfg=configurations))
         # send actions to engine
         print(json.dumps(actions))
+
+
+if __name__ == "__main__":
+    run_loop()

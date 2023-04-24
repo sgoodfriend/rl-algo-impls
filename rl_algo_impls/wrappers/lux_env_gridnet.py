@@ -156,7 +156,7 @@ class LuxEnvGridnet(Wrapper):
                 p,
                 self.env.state,
                 actions[p_idx],
-                action_mask,
+                action_mask[p_idx],
                 self._enqueued_actions,
                 self.stats.action_stats[p_idx],
             )

@@ -1,21 +1,17 @@
+import logging
 from dataclasses import astuple
 from typing import Any, Dict, List, Optional, Union
 
 import numpy as np
-from luxai_s2.actions import (
-    Action,
-    DigAction,
-    MoveAction,
-    PickupAction,
-    RechargeAction,
-    SelfDestructAction,
-    TransferAction,
-    move_deltas,
-)
+from luxai_s2.actions import move_deltas
 from luxai_s2.map.position import Position
-from luxai_s2.unit import Unit
 
-from rl_algo_impls.shared.lux.shared import LuxEnvConfig, LuxGameState, pos_to_numpy
+from rl_algo_impls.shared.lux.shared import (
+    LuxEnvConfig,
+    LuxGameState,
+    LuxUnit,
+    pos_to_numpy,
+)
 from rl_algo_impls.shared.lux.stats import ActionStats
 
 FACTORY_ACTION_SIZES = (
@@ -63,7 +59,7 @@ def to_lux_actions(
         a = actions[pos_to_idx(u.pos, cfg.map_size), 1:]
         if no_valid_unit_actions(u, action_mask, cfg.map_size):
             if cfg.verbose > 1:
-                print(f"No valid action for unit {u}")
+                logging.warn(f"No valid action for unit {u}")
             action_stats.no_valid_action += 1
             continue
         action_stats.action_type[a[0]] += 1
@@ -71,7 +67,7 @@ def to_lux_actions(
             action_stats.repeat_action += 1
             continue
 
-        def resource_amount(unit: Unit, idx: int) -> int:
+        def resource_amount(unit: LuxUnit, idx: int) -> int:
             if idx == 4:
                 return unit.power
             return astuple(unit.cargo)[idx]
@@ -113,7 +109,7 @@ def to_lux_actions(
     return lux_actions
 
 
-def max_move_repeats(unit: Unit, direction_idx: int, config: LuxEnvConfig) -> int:
+def max_move_repeats(unit: LuxUnit, direction_idx: int, config: LuxEnvConfig) -> int:
     def steps_til_edge(p: int, delta: int) -> int:
         if delta < 0:
             return p
@@ -151,10 +147,11 @@ def actions_equal(action: np.ndarray, enqueued: Optional[np.ndarray]) -> bool:
     return bool(np.all(np.where(enqueued == -1, True, action == enqueued)))
 
 
-def no_valid_unit_actions(unit: Unit, action_mask: np.ndarray, map_size: int) -> bool:
+def no_valid_unit_actions(
+    unit: LuxUnit, action_mask: np.ndarray, map_size: int
+) -> bool:
     return not np.any(
         action_mask[
-            unit.team_id,
             pos_to_idx(unit.pos, map_size),
             FACTORY_ACTION_ENCODED_SIZE : FACTORY_ACTION_ENCODED_SIZE + 6,
         ]

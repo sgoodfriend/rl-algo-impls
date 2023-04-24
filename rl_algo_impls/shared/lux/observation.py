@@ -8,7 +8,7 @@ from rl_algo_impls.shared.lux.action_mask import (
     is_build_light_valid,
 )
 from rl_algo_impls.shared.lux.actions import UNIT_ACTION_ENCODED_SIZE, UNIT_ACTION_SIZES
-from rl_algo_impls.shared.lux.shared import LuxGameState
+from rl_algo_impls.shared.lux.shared import LuxGameState, factory_water_cost
 
 ICE_FACTORY_MAX = 100_000
 ORE_FACTORY_MAX = 50_000
@@ -101,7 +101,7 @@ def from_lux_observation(
 
         can_build_light_robot[x, y] = is_build_light_valid(f_state, env_cfg)
         can_build_heavy_robot[x, y] = is_build_heavy_valid(f_state, env_cfg)
-        _water_lichen_cost = f_state.water_cost(env_cfg)
+        _water_lichen_cost = factory_water_cost(f_state, state, env_cfg)
         can_water_lichen[x, y] = _water > _water_lichen_cost
         _water_supply = _water + _ice / env_cfg.ICE_WATER_RATIO
         _day_water_consumption = (
