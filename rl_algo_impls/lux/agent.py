@@ -1,6 +1,7 @@
 import logging
 import os
 import os.path
+from pathlib import Path
 from typing import Any, Dict
 
 import numpy as np
@@ -29,7 +30,7 @@ MODEL_LOAD_PATH = "saved_models/ppo-LuxAI_S2-v0-A10-S1"
 
 class Agent:
     def __init__(self, player: str, env_cfg: EnvConfig) -> None:
-        root_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        root_dir = Path(__file__).parent.parent.parent.absolute()
         self.player = player
         self.agents = ["player_0", "player_1"]
         self.player_idx = self.agents.index(player)
