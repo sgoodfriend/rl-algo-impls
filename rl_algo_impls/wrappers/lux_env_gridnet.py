@@ -32,7 +32,7 @@ DEFAULT_REWARD_WEIGHTS = (
     0,  # BUILT_HEAVY
     -1,  # LOST_FACTORY
     # Current value stats
-    0.02,  # FACTORIES_ALIVE
+    0,  # FACTORIES_ALIVE
 )
 
 
