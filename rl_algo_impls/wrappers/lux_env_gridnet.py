@@ -29,7 +29,7 @@ DEFAULT_REWARD_WEIGHTS = (
     0.04,  # 4: WATER_GENERATION (2 for a day of water for factory)
     0.01,  # 5: METAL_GENERATION (1 for building a heavy robot)
     0.0004,  # 6: POWER_GENERATION (factory 1/day, heavy 0.12/day, light 0.012/day, lichen 0.02/day)
-    0.0001,  # 7: LICHEN_DELTA
+    0,  # 7: LICHEN_DELTA
     0,  # 8: BUILT_LIGHT
     0,  # 9: BUILT_HEAVY
     -1,  # 10: LOST_FACTORY
@@ -38,7 +38,7 @@ DEFAULT_REWARD_WEIGHTS = (
     0,  # 12: HEAVIES_ALIVE
     0,  # 13: LIGHTS_ALIVE
     # Change in value stats vs opponent
-    0.0001,  # 14: LICHEN_DELTA_VS_OPPONENT
+    0,  # 14: LICHEN_DELTA_VS_OPPONENT
 )
 
 

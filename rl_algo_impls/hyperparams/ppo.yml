@@ -648,7 +648,7 @@ LuxAI_S2-v0: &lux-defaults
     v_hidden_sizes: [256, 128]
   reward_decay_callback: true
   reward_decay_callback_kwargs:
-    increase_indexes: [0, 1, 7, 14]
+    increase_indexes: [0, 1]
   algo_hyperparams: &lux-algo-defaults
     n_steps: 384
     batch_size: 2304
