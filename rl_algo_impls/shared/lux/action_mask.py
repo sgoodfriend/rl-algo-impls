@@ -1,6 +1,5 @@
-import logging
 from dataclasses import astuple
-from typing import Dict, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 import numpy as np
 from luxai_s2.actions import move_deltas
@@ -19,10 +18,12 @@ from rl_algo_impls.shared.lux.shared import (
 
 
 def get_action_mask(
-    p: str,
+    player: str,
     state: LuxGameState,
     action_mask_shape: Tuple[int, int],
     enqueued_actions: Dict[str, Optional[np.ndarray]],
+    move_masks: Dict[str, Any],
+    move_validity_map: np.ndarray,
 ) -> np.ndarray:
     action_mask = np.full(
         action_mask_shape,
@@ -30,7 +31,7 @@ def get_action_mask(
         dtype=np.bool_,
     )
     config = state.env_cfg
-    for f in state.factories[p].values():
+    for f in state.factories[player].values():
         action_mask[
             pos_to_idx(f.pos, config.map_size), :FACTORY_ACTION_ENCODED_SIZE
         ] = np.array(
@@ -41,18 +42,7 @@ def get_action_mask(
                 True,  # Do nothing is always valid
             ]
         )
-    move_masks = {
-        u_id: valid_move_mask(u, state, config, enqueued_actions.get(u_id))
-        for u_id, u in state.units[p].items()
-    }
-    move_validity_map = np.zeros((config.map_size, config.map_size), dtype=np.int8)
-    for u_id, valid_moves_mask in move_masks.items():
-        u = state.units[p][u_id]
-        pos = pos_to_numpy(u.pos)
-        for direction_idx, move_delta in enumerate(move_deltas):
-            if valid_moves_mask[direction_idx] or direction_idx == 0:
-                move_validity_map[pos[0] + move_delta[0], pos[1] + move_delta[1]] += 1
-    for u_id, u in state.units[p].items():
+    for u_id, u in state.units[player].items():
         enqueued_action = enqueued_actions.get(u_id)
         move_mask = move_masks[u_id]
         transfer_direction_mask = valid_transfer_direction_mask(
@@ -113,26 +103,52 @@ def is_water_action_valid(
 
 
 # Unit validity checks
+
+
+def agent_move_masks(
+    state: LuxGameState, player: str, enqueued_actions: Dict[str, Optional[np.ndarray]]
+) -> Dict[str, np.ndarray]:
+    return {
+        u_id: valid_move_mask(u, state, enqueued_actions.get(u_id))
+        for u_id, u in state.units[player].items()
+    }
+
+
+def valid_destination_map(
+    state: LuxGameState, player: str, agent_move_masks: Dict[str, np.ndarray]
+) -> np.ndarray:
+    map_size = state.env_cfg.map_size
+    move_validity_map = np.zeros((map_size, map_size), dtype=np.int8)
+    for u_id, valid_moves_mask in agent_move_masks.items():
+        u = state.units[player][u_id]
+        pos = pos_to_numpy(u.pos)
+        for direction_idx, move_delta in enumerate(move_deltas):
+            if valid_moves_mask[direction_idx] or direction_idx == 0:
+                move_validity_map[pos[0] + move_delta[0], pos[1] + move_delta[1]] += 1
+    return move_validity_map
+
+
 def is_position_in_map(pos: np.ndarray, config: LuxEnvConfig) -> bool:
-    return np.all(pos >= 0) and np.all(pos < config.map_size)
+    return bool(np.all(pos >= 0) and np.all(pos < config.map_size))
 
 
 def valid_move_mask(
     unit: LuxUnit,
     state: LuxGameState,
-    config: LuxEnvConfig,
     enqueued_action: Optional[np.ndarray],
 ) -> np.ndarray:
+    config = state.env_cfg
+
     def is_valid_target(pos: np.ndarray, move_direction: int) -> bool:
         if not is_position_in_map(pos, config):
             return False
-        factory_at_target = state.board.factory_occupancy_map[pos[0], pos[1]]
+        factory_num_id = state.board.factory_occupancy_map[pos[0], pos[1]]
         if (
-            factory_at_target != -1
-            and f"factory_{factory_at_target}" not in state.factories[agent_id(unit)]
+            factory_num_id != -1
+            and f"factory_{factory_num_id}" not in state.factories[agent_id(unit)]
         ):
             return False
-        rubble = state.board.rubble[pos[0], pos[1]]
+        rubble = int(state.board.rubble[pos[0], pos[1]])
         power_cost = move_power_cost(unit, rubble)
         if (
             enqueued_action is None

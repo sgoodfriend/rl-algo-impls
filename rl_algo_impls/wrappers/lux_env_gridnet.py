@@ -9,14 +9,13 @@ from gym.vector.utils import batch_space
 from luxai_s2.env import LuxAI_S2
 from luxai_s2.state import ObservationStateDict
 
-from rl_algo_impls.shared.lux.action_mask import get_action_mask
 from rl_algo_impls.shared.lux.actions import (
     ACTION_SIZES,
     enqueued_action_from_obs,
     to_lux_actions,
 )
 from rl_algo_impls.shared.lux.early import bid_action, place_factory_action
-from rl_algo_impls.shared.lux.observation import from_lux_observation
+from rl_algo_impls.shared.lux.observation import observation_and_action_mask
 from rl_algo_impls.shared.lux.stats import StatsTracking
 
 DEFAULT_REWARD_WEIGHTS = (
@@ -58,15 +57,6 @@ class LuxEnvGridnet(Wrapper):
         self.stats = StatsTracking()
 
         self.num_map_tiles = self.map_size * self.map_size
-        observation_sample = self.reset()
-        single_obs_shape = observation_sample.shape[1:]
-        self.single_observation_space = Box(
-            low=0,
-            high=1,
-            shape=single_obs_shape,
-            dtype=np.float32,
-        )
-        self.observation_space = batch_space(self.single_observation_space, n=2)
         self.action_plane_space = MultiDiscrete(ACTION_SIZES)
         self.single_action_space = MultiDiscrete(
             np.array(ACTION_SIZES * self.num_map_tiles).flatten().tolist()
@@ -76,6 +66,16 @@ class LuxEnvGridnet(Wrapper):
             self.num_map_tiles,
             self.action_plane_space.nvec.sum(),
         )
+
+        observation_sample = self.reset()
+        single_obs_shape = observation_sample.shape[1:]
+        self.single_observation_space = Box(
+            low=0,
+            high=1,
+            shape=single_obs_shape,
+            dtype=np.float32,
+        )
+        self.observation_space = batch_space(self.single_observation_space, n=2)
 
         self._enqueued_actions: Dict[str, Optional[np.ndarray]] = {}
         self._action_mask: Optional[np.ndarray] = None
@@ -107,7 +107,6 @@ class LuxEnvGridnet(Wrapper):
             }
             obs = self._from_lux_observation(lux_obs)
 
-        self._action_mask = None
         return (
             obs,
             rewards,
@@ -119,39 +118,28 @@ class LuxEnvGridnet(Wrapper):
         lux_obs, self.agents = reset_and_early_phase(self.unwrapped, self.bid_std_dev)
         self._enqueued_actions = {}
         self.stats.reset(self.unwrapped)
-        self._action_mask = None
         return self._from_lux_observation(lux_obs)
 
     def _from_lux_observation(
         self, lux_obs: Dict[str, ObservationStateDict]
     ) -> np.ndarray:
-        return np.stack(
-            [
-                from_lux_observation(
-                    self.agents,
-                    idx,
-                    lux_obs[player_id],
-                    self.env.state,
-                    self._enqueued_actions,
-                )
-                for idx, player_id in enumerate(self.agents)
-            ]
-        )
+        observations = []
+        action_masks = []
+        for player in self.agents:
+            obs, action_mask = observation_and_action_mask(
+                player,
+                lux_obs[player],
+                self.env.state,
+                self.action_mask_shape,
+                self._enqueued_actions,
+            )
+            observations.append(obs)
+            action_masks.append(action_mask)
+        self._action_mask = np.stack(action_masks)
+        return np.stack(observations)
 
     def get_action_mask(self) -> np.ndarray:
-        if self._action_mask is not None:
-            return self._action_mask
-        self._action_mask = np.stack(
-            [
-                get_action_mask(
-                    player,
-                    self.env.state,
-                    self.action_mask_shape,
-                    self._enqueued_actions,
-                )
-                for player in self.agents
-            ]
-        )
+        assert self._action_mask is not None
         return self._action_mask
 
     def _to_lux_actions(self, actions: np.ndarray) -> Dict[str, Any]:

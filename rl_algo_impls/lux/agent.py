@@ -12,14 +12,13 @@ from rl_algo_impls.lux.kit.config import EnvConfig
 from rl_algo_impls.lux.kit.kit import obs_to_game_state
 from rl_algo_impls.runner.config import Config, EnvHyperparams, RunArgs
 from rl_algo_impls.runner.running_utils import get_device, load_hyperparams, make_policy
-from rl_algo_impls.shared.lux.action_mask import get_action_mask
 from rl_algo_impls.shared.lux.actions import (
     ACTION_SIZES,
     enqueued_action_from_obs,
     to_lux_actions,
 )
 from rl_algo_impls.shared.lux.early import bid_action, place_factory_action
-from rl_algo_impls.shared.lux.observation import from_lux_observation
+from rl_algo_impls.shared.lux.observation import observation_and_action_mask
 from rl_algo_impls.shared.lux.stats import ActionStats
 from rl_algo_impls.shared.vec_env.make_env import make_eval_env
 from rl_algo_impls.wrappers.hwc_to_chw_observation import HwcToChwObservation
@@ -43,7 +42,7 @@ class Agent:
         config = Config(
             run_args,
             hyperparams,
-            root_dir,
+            str(root_dir),
         )
 
         env = make_eval_env(
@@ -81,19 +80,13 @@ class Agent:
             for p in self.agents
             for u_id, u in lux_obs["units"][p].items()
         }
-        obs = np.expand_dims(
-            from_lux_observation(
-                self.agents, self.player_idx, lux_obs, state, enqueued_actions
-            ),
-            axis=0,
+        obs, action_mask = observation_and_action_mask(
+            self.player, lux_obs, state, self.action_mask_shape, enqueued_actions
         )
+        obs = np.expand_dims(obs, axis=0)
         obs = self.transpose_wrapper.observation(obs)
-        action_mask = np.expand_dims(
-            get_action_mask(
-                self.player, state, self.action_mask_shape, enqueued_actions
-            ),
-            axis=0,
-        )
+        action_mask = np.expand_dims(action_mask, axis=0)
+
         actions = self.policy.act(obs, deterministic=False, action_masks=action_mask)
         action_stats = ActionStats()
         lux_action = to_lux_actions(
