@@ -50,7 +50,7 @@ def get_action_mask(
         u = state.units[p][u_id]
         pos = pos_to_numpy(u.pos)
         for direction_idx, move_delta in enumerate(move_deltas):
-            if valid_moves_mask[direction_idx]:
+            if valid_moves_mask[direction_idx] or direction_idx == 0:
                 move_validity_map[pos[0] + move_delta[0], pos[1] + move_delta[1]] += 1
     for u_id, u in state.units[p].items():
         enqueued_action = enqueued_actions.get(u_id)
