@@ -20,19 +20,25 @@ from rl_algo_impls.shared.lux.observation import from_lux_observation
 from rl_algo_impls.shared.lux.stats import StatsTracking
 
 DEFAULT_REWARD_WEIGHTS = (
-    10,  # WIN_LOSS
-    0.0001,  # LICHEN_DELTA (clip to +/- 1)
+    # End-game rewards
+    10,  # 0: WIN_LOSS
+    0.001,  # 1: SCORE_VS_OPPONENT (clip to +/- 1)
     # Change in value stats
-    0.01,  # ICE_GENERATION (2 for a day of water for factory, 0.2 for a heavy dig action)
-    2e-3,  # ORE_GENERATION (1 for building a heavy robot, 0.04 for a heavy dig action)
-    0.04,  # WATER_GENERATION (2 for a day of water for factory)
-    0.01,  # METAL_GENERATION (1 for building a heavy robot
-    0.0001,  # LICHEN_GENERATION
-    0,  # BUILT_LIGHT
-    0,  # BUILT_HEAVY
-    -1,  # LOST_FACTORY
+    0.01,  # 2: ICE_GENERATION (2 for a day of water for factory, 0.2 for a heavy dig action)
+    2e-3,  # 3: ORE_GENERATION (1 for building a heavy robot, 0.04 for a heavy dig action)
+    0.04,  # 4: WATER_GENERATION (2 for a day of water for factory)
+    0.01,  # 5: METAL_GENERATION (1 for building a heavy robot)
+    0.0004,  # 6: POWER_GENERATION (factory 1/day, heavy 0.12/day, light 0.012/day, lichen 0.02/day)
+    0.0001,  # 7: LICHEN_DELTA
+    0,  # 8: BUILT_LIGHT
+    0,  # 9: BUILT_HEAVY
+    -1,  # 10: LOST_FACTORY
     # Current value stats
-    0,  # FACTORIES_ALIVE
+    0,  # 11: FACTORIES_ALIVE
+    0,  # 12: HEAVIES_ALIVE
+    0,  # 13: LIGHTS_ALIVE
+    # Change in value stats vs opponent
+    0.0001,  # 14: LICHEN_DELTA_VS_OPPONENT
 )
 
 
@@ -46,7 +52,7 @@ class LuxEnvGridnet(Wrapper):
         super().__init__(env)
         self.bid_std_dev = bid_std_dev
         self.reward_weight = np.array(reward_weight)
-        self.max_lichen_delta = 1 / reward_weight[1] if reward_weight[1] else np.inf
+        self.max_score_delta = 1 / reward_weight[1] if reward_weight[1] else np.inf
         self.map_size = self.unwrapped.env_cfg.map_size
 
         self.stats = StatsTracking()
@@ -168,33 +174,35 @@ class LuxEnvGridnet(Wrapper):
     ) -> np.ndarray:
         agents = self.agents
         player_opponent = tuple((p, opp) for p, opp in zip(agents, reversed(agents)))
-        _win_loss = np.array(
-            [
-                (
+        if done:
+            _win_loss = np.array(
+                [
                     1
                     if lux_rewards[p] > lux_rewards[opp]
                     else (-1 if lux_rewards[p] < lux_rewards[opp] else 0)
-                )
-                if done
-                else 0
-                for p, opp in player_opponent
-            ]
-        )
-        _stats_delta = self.stats.update()
-        _lichen_delta = np.clip(
-            np.array(
-                [
-                    _stats_delta[p_idx][4] - _stats_delta[o_idx][4]
-                    for p_idx, o_idx in zip(range(2), reversed(range(2)))
+                    for p, opp in player_opponent
                 ]
-            ),
-            -self.max_lichen_delta,
-            self.max_lichen_delta,
-        )
+            )
+            _score_delta = np.clip(
+                np.array(
+                    [lux_rewards[p] - lux_rewards[opp] for p, opp in player_opponent]
+                ),
+                -self.max_score_delta,
+                self.max_score_delta,
+            )
+            _done_rewards = np.concatenate(
+                [
+                    np.expand_dims(_win_loss, axis=-1),
+                    np.expand_dims(_score_delta, axis=-1),
+                ],
+                axis=-1,
+            )
+        else:
+            _done_rewards = np.zeros((2, 2))
+        _stats_delta = self.stats.update()
         raw_rewards = np.concatenate(
             [
-                np.expand_dims(_win_loss, axis=-1),
-                np.expand_dims(_lichen_delta, axis=-1),
+                _done_rewards,
                 _stats_delta,
             ],
             axis=-1,
