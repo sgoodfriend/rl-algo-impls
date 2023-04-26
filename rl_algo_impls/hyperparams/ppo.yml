@@ -675,7 +675,7 @@ LuxAI_S2-v0-eval:
         swap_steps: .inf
       make_kwargs:
         <<: *lux-env-make-defaults
-        reward_weight: [1.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        reward_weight: [1.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
 LuxAI_S2-v0-A10: &lux-a10-defaults
   <<: *lux-defaults
