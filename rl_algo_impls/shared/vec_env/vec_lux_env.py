@@ -1,11 +1,11 @@
-from typing import List, Sequence, TypeVar
+from typing import Dict, List, Optional, TypeVar
 
 import gym
 import numpy as np
 from gym.vector.vector_env import VectorEnv
 from stable_baselines3.common.vec_env.base_vec_env import tile_images
 
-from rl_algo_impls.wrappers.lux_env_gridnet import DEFAULT_REWARD_WEIGHTS, LuxEnvGridnet
+from rl_algo_impls.wrappers.lux_env_gridnet import LuxEnvGridnet, LuxRewardWeights
 from rl_algo_impls.wrappers.vectorable_wrapper import VecEnvObs, VecEnvStepReturn
 
 VecLuxEnvSelf = TypeVar("VecLuxEnvSelf", bound="VecLuxEnv")
@@ -16,7 +16,7 @@ class VecLuxEnv(VectorEnv):
         self,
         num_envs: int,
         bid_std_dev: float = 5,
-        reward_weight: Sequence[float] = DEFAULT_REWARD_WEIGHTS,
+        reward_weights: Optional[Dict[str, float]] = None,
         **kwargs,
     ) -> None:
         assert num_envs % 2 == 0, f"{num_envs} must be even"
@@ -24,7 +24,7 @@ class VecLuxEnv(VectorEnv):
             LuxEnvGridnet(
                 gym.make("LuxAI_S2-v0", collect_stats=True, **kwargs),
                 bid_std_dev=bid_std_dev,
-                reward_weight=reward_weight,
+                reward_weights=reward_weights,
             )
             for _ in range(num_envs // 2)
         ]
@@ -81,10 +81,10 @@ class VecLuxEnv(VectorEnv):
         return np.concatenate([env.get_action_mask() for env in self.envs])
 
     @property
-    def reward_weight(self) -> np.ndarray:
-        return self.envs[0].reward_weight
+    def reward_weights(self) -> LuxRewardWeights:
+        return self.envs[0].reward_weights
 
-    @reward_weight.setter
-    def reward_weight(self, reward_weight: np.ndarray) -> None:
+    @reward_weights.setter
+    def reward_weights(self, reward_weights: LuxRewardWeights) -> None:
         for env in self.envs:
-            env.reward_weight = reward_weight
+            env.reward_weights = reward_weights

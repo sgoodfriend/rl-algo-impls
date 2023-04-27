@@ -641,14 +641,32 @@ LuxAI_S2-v0: &lux-defaults
         eval_use_training_cache: true
       make_kwargs: &lux-eval-env-override-make-kwargs
         <<: *lux-env-make-defaults
-        reward_weight: [1.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        reward_weights:
+          win_loss: 1
   policy_hyperparams: &lux-policy-defaults
     activation_fn: relu
     actor_head_style: unet
     v_hidden_sizes: [256, 128]
-  reward_decay_callback: true
-  reward_decay_callback_kwargs:
-    increase_indexes: [0, 1]
+  lux_hyperparam_transitions_kwargs: &lux-transitions-defaults
+    phases:
+      - reward_weights:
+          ice_generation: 0.01 # 2/day of water for factory, 0.2/heavy dig
+          ore_generation: 0.002 # 1/heavy robot build, 0.04/heavy dig
+          water_generation: 0.04 # 2/day of water for factory
+          metal_generation: 0.01 # 1/heavy robot build
+          power_generation: 0.0004 # factory 1/day, heavy 0.12/day, light 0.012/day, lichen 0.2/day
+          lost_factory: -1
+        gamma: 0.99
+        gae_lambda: 0.95
+      - reward_weights:
+          win_loss: 9
+          score_vs_opponent: 0.001 # Clipped between +/- 1
+        gamma: 0.999
+        gae_lambda: 0.99
+    durations:
+      - 0.5
+      - 0.3
+      - 0.2
   algo_hyperparams: &lux-algo-defaults
     n_steps: 384
     batch_size: 2304
@@ -675,7 +693,8 @@ LuxAI_S2-v0-eval:
         swap_steps: .inf
       make_kwargs:
         <<: *lux-env-make-defaults
-        reward_weight: [1.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        reward_weights:
+          win_loss: 1
 
 LuxAI_S2-v0-A10: &lux-a10-defaults
   <<: *lux-defaults
@@ -683,6 +702,16 @@ LuxAI_S2-v0-A10: &lux-a10-defaults
     <<: *lux-algo-defaults
     n_steps: 192
     batch_size: 1152
+
+LuxAI_S2-v0-A10-100M:
+  <<: *lux-a10-defaults
+  n_timesteps: !!float 100e6
+  lux_hyperparam_transitions_kwargs:
+    <<: *lux-transitions-defaults
+    durations:
+      - 0.3
+      - 0.3
+      - 0.4
 
 LuxAI_S2-v0-medium-transfer: &lux-medium-transfer-defaults
   <<: *lux-a10-defaults
@@ -700,6 +729,12 @@ LuxAI_S2-v0-medium-transfer-debug:
     make_kwargs:
       <<: *lux-env-make-defaults
       verbose: 2
+  lux_hyperparam_transitions_kwargs:
+    <<: *lux-transitions-defaults
+    durations:
+      - 0 # Should already know water generation, so transition to sparse rewards
+      - 0.4
+      - 0.6
 
 LuxAI_S2-v0-medium-transfer-A100:
   <<: *lux-medium-transfer-defaults

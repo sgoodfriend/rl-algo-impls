@@ -1,5 +1,4 @@
-from dataclasses import astuple
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from typing import Any, Dict, List, NamedTuple, Optional, Tuple, Type, TypeVar
 
 import numpy as np
 from gym import Wrapper
@@ -17,28 +16,55 @@ from rl_algo_impls.shared.lux.actions import (
 from rl_algo_impls.shared.lux.early import bid_action, place_factory_action
 from rl_algo_impls.shared.lux.observation import observation_and_action_mask
 from rl_algo_impls.shared.lux.stats import StatsTracking
+from rl_algo_impls.shared.schedule import lerp
 
-DEFAULT_REWARD_WEIGHTS = (
+LuxRewardWeightsSelf = TypeVar("LuxRewardWeightsSelf", bound="LuxRewardWeights")
+
+
+class LuxRewardWeights(NamedTuple):
     # End-game rewards
-    10,  # 0: WIN_LOSS
-    0.001,  # 1: SCORE_VS_OPPONENT (clip to +/- 1)
+    win_loss: float = 0
+    score_vs_opponent: float = 0  # clipped between +/- 1
     # Change in value stats
-    0.01,  # 2: ICE_GENERATION (2 for a day of water for factory, 0.2 for a heavy dig action)
-    2e-3,  # 3: ORE_GENERATION (1 for building a heavy robot, 0.04 for a heavy dig action)
-    0.04,  # 4: WATER_GENERATION (2 for a day of water for factory)
-    0.01,  # 5: METAL_GENERATION (1 for building a heavy robot)
-    0.0004,  # 6: POWER_GENERATION (factory 1/day, heavy 0.12/day, light 0.012/day, lichen 0.02/day)
-    0,  # 7: LICHEN_DELTA
-    0,  # 8: BUILT_LIGHT
-    0,  # 9: BUILT_HEAVY
-    -1,  # 10: LOST_FACTORY
+    ice_generation: float = 0
+    ore_generation: float = 0
+    water_generation: float = 0
+    metal_generation: float = 0
+    power_generation: float = 0
+    lichen_delta: float = 0
+    built_light: float = 0
+    built_heavy: float = 0
+    lost_factory: float = 0
     # Current value stats
-    0,  # 11: FACTORIES_ALIVE
-    0,  # 12: HEAVIES_ALIVE
-    0,  # 13: LIGHTS_ALIVE
+    factories_alive: float = 0
+    heavies_alive: float = 0
+    lights_alive: float = 0
     # Change in value stats vs opponent
-    0,  # 14: LICHEN_DELTA_VS_OPPONENT
-)
+    lichen_delta_vs_opponent: float = 0
+
+    @classmethod
+    def sparse(cls: Type[LuxRewardWeightsSelf]) -> LuxRewardWeightsSelf:
+        return cls(win_loss=1)
+
+    @classmethod
+    def default_start(cls: Type[LuxRewardWeightsSelf]) -> LuxRewardWeightsSelf:
+        return cls(
+            ice_generation=0.01,  # 2 for a day of water for factory, 0.2 for a heavy dig action
+            ore_generation=2e-3,  # 1 for building a heavy robot, 0.04 for a heavy dig action
+            water_generation=0.04,  # 2 for a day of water for factory
+            metal_generation=0.01,  # 1 for building a heavy robot, 0.04 for a heavy dig action
+            power_generation=0.0004,  # factory 1/day, heavy 0.12/day, light 0.012/day, lichen 0.02/day
+            lost_factory=-1,
+        )
+
+    @classmethod
+    def lerp(
+        cls: Type[LuxRewardWeightsSelf],
+        start: Dict[str, float],
+        end: Dict[str, float],
+        progress: float,
+    ) -> LuxRewardWeightsSelf:
+        return cls(*lerp(np.array(cls(**start)), np.array(cls(**end)), progress))
 
 
 class LuxEnvGridnet(Wrapper):
@@ -46,12 +72,14 @@ class LuxEnvGridnet(Wrapper):
         self,
         env,
         bid_std_dev: float = 5,
-        reward_weight: Sequence[float] = DEFAULT_REWARD_WEIGHTS,
+        reward_weights: Optional[Dict[str, float]] = None,
     ) -> None:
         super().__init__(env)
         self.bid_std_dev = bid_std_dev
-        self.reward_weight = np.array(reward_weight)
-        self.max_score_delta = 1 / reward_weight[1] if reward_weight[1] else np.inf
+        if reward_weights is None:
+            self.reward_weights = LuxRewardWeights.default_start()
+        else:
+            self.reward_weights = LuxRewardWeights(**reward_weights)
         self.map_size = self.unwrapped.env_cfg.map_size
 
         self.stats = StatsTracking()
@@ -171,12 +199,18 @@ class LuxEnvGridnet(Wrapper):
                     for p, opp in player_opponent
                 ]
             )
+
+            _max_score_delta = (
+                1 / self.reward_weights.score_vs_opponent
+                if not np.isclose(self.reward_weights.score_vs_opponent, 0)
+                else np.inf
+            )
             _score_delta = np.clip(
                 np.array(
                     [lux_rewards[p] - lux_rewards[opp] for p, opp in player_opponent]
                 ),
-                -self.max_score_delta,
-                self.max_score_delta,
+                -_max_score_delta,
+                _max_score_delta,
             )
             _done_rewards = np.concatenate(
                 [
@@ -185,17 +219,6 @@ class LuxEnvGridnet(Wrapper):
                 ],
                 axis=-1,
             )
-        else:
-            _done_rewards = np.zeros((2, 2))
-        _stats_delta = self.stats.update()
-        raw_rewards = np.concatenate(
-            [
-                _done_rewards,
-                _stats_delta,
-            ],
-            axis=-1,
-        )
-        if done:
             for idx, agent in enumerate(self.agents):
                 agent_stats = self.stats.agent_stats[idx]
                 info[agent]["stats"] = dict(
@@ -217,7 +240,18 @@ class LuxEnvGridnet(Wrapper):
                     "score_delta": lux_rewards[agent]
                     - lux_rewards[player_opponent[idx][1]],
                 }
-        return np.sum(raw_rewards * self.reward_weight, axis=-1)
+        else:
+            _done_rewards = np.zeros((2, 2))
+        _stats_delta = self.stats.update()
+        raw_rewards = np.concatenate(
+            [
+                _done_rewards,
+                _stats_delta,
+            ],
+            axis=-1,
+        )
+        reward_weights = np.array(self.reward_weights)
+        return np.sum(raw_rewards * reward_weights, axis=-1)
 
 
 def bid_actions(agents: List[str], bid_std_dev: float) -> Dict[str, Any]:

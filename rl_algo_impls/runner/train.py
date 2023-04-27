@@ -1,10 +1,7 @@
 # Support for PyTorch mps mode (https://pytorch.org/docs/stable/notes/mps.html)
 import os
 
-from rl_algo_impls.shared.callbacks import Callback
 from rl_algo_impls.shared.callbacks.self_play_callback import SelfPlayCallback
-from rl_algo_impls.wrappers.self_play_wrapper import SelfPlayWrapper
-from rl_algo_impls.wrappers.vectorable_wrapper import find_wrapper
 
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
 
@@ -27,10 +24,16 @@ from rl_algo_impls.runner.running_utils import (
     plot_eval_callback,
     set_seeds,
 )
+from rl_algo_impls.shared.callbacks.callback import Callback
 from rl_algo_impls.shared.callbacks.eval_callback import EvalCallback
+from rl_algo_impls.shared.callbacks.lux_hyperparam_transitions import (
+    LuxHyperparamTransitions,
+)
 from rl_algo_impls.shared.callbacks.reward_decay_callback import RewardDecayCallback
 from rl_algo_impls.shared.stats import EpisodesStats
 from rl_algo_impls.shared.vec_env import make_env, make_eval_env
+from rl_algo_impls.wrappers.self_play_wrapper import SelfPlayWrapper
+from rl_algo_impls.wrappers.vectorable_wrapper import find_wrapper
 
 
 @dataclass
@@ -122,6 +125,15 @@ def train(args: TrainArgs):
         callbacks.append(
             RewardDecayCallback(
                 config, env, **(config.hyperparams.reward_decay_callback_kwargs or {})
+            )
+        )
+    if config.hyperparams.lux_hyperparam_transitions_kwargs:
+        callbacks.append(
+            LuxHyperparamTransitions(
+                config,
+                env,
+                algo,
+                **config.hyperparams.lux_hyperparam_transitions_kwargs,
             )
         )
     if self_play_wrapper:

@@ -1,7 +1,12 @@
-from torch.optim import Optimizer
 from typing import Callable
 
+from torch.optim import Optimizer
+
 Schedule = Callable[[float], float]
+
+
+def lerp(start, end, progress):
+    return start + (end - start) * progress
 
 
 def linear_schedule(
@@ -11,7 +16,7 @@ def linear_schedule(
         if progress_fraction >= end_fraction:
             return end_val
         else:
-            return start_val + (end_val - start_val) * progress_fraction / end_fraction
+            return lerp(start_val, end_val, progress_fraction / end_fraction)
 
     return func
 
