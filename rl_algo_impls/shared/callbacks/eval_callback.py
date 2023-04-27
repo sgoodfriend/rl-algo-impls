@@ -126,9 +126,9 @@ class EvalCallback(Callback):
         n_episodes: int = 10,
         save_best: bool = True,
         deterministic: bool = True,
-        record_best_videos: bool = True,
+        only_record_video_on_best: bool = True,
         video_env: Optional[VecEnv] = None,
-        best_video_dir: Optional[str] = None,
+        video_dir: Optional[str] = None,
         max_video_length: int = 3600,
         ignore_first_episode: bool = False,
         additional_keys_to_log: Optional[List[str]] = None,
@@ -147,15 +147,13 @@ class EvalCallback(Callback):
         self.stats: List[EpisodesStats] = []
         self.best = None
 
-        self.record_best_videos = record_best_videos
-        assert video_env or not record_best_videos
+        self.only_record_video_on_best = only_record_video_on_best
+        assert (video_env is not None) == (video_dir is not None)
         self.video_env = video_env
-        assert best_video_dir or not record_best_videos
-        self.best_video_dir = best_video_dir
-        if best_video_dir:
-            os.makedirs(best_video_dir, exist_ok=True)
+        self.video_dir = video_dir
+        if video_dir:
+            os.makedirs(video_dir, exist_ok=True)
         self.max_video_length = max_video_length
-        self.best_video_base_path = None
         self.ignore_first_episode = ignore_first_episode
         self.additional_keys_to_log = additional_keys_to_log
         self.score_function = score_function
@@ -211,25 +209,27 @@ class EvalCallback(Callback):
             self.best.write_to_tensorboard(
                 self.tb_writer, "best_eval", self.timesteps_elapsed
             )
-            if strictly_better and self.record_best_videos:
-                assert self.video_env and self.best_video_dir
-                self.best_video_base_path = os.path.join(
-                    self.best_video_dir, str(self.timesteps_elapsed)
-                )
-                video_wrapped = VecEpisodeRecorder(
-                    self.video_env,
-                    self.best_video_base_path,
-                    max_video_length=self.max_video_length,
-                )
-                video_stats = evaluate(
-                    video_wrapped,
-                    self.policy,
-                    1,
-                    deterministic=self.deterministic,
-                    print_returns=False,
-                    score_function=self.score_function,
-                )
-                print(f"Saved best video: {video_stats}")
+        else:
+            strictly_better = False
+        if self.video_env and (not self.only_record_video_on_best or strictly_better):
+            assert self.video_env and self.video_dir
+            best_video_base_path = os.path.join(
+                self.video_dir, str(self.timesteps_elapsed)
+            )
+            video_wrapped = VecEpisodeRecorder(
+                self.video_env,
+                best_video_base_path,
+                max_video_length=self.max_video_length,
+            )
+            video_stats = evaluate(
+                video_wrapped,
+                self.policy,
+                1,
+                deterministic=self.deterministic,
+                print_returns=False,
+                score_function=self.score_function,
+            )
+            print(f"Saved video: {video_stats}")
 
         eval_stat.write_to_tensorboard(self.tb_writer, "eval", self.timesteps_elapsed)
 

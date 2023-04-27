@@ -206,5 +206,5 @@ class Config:
         return os.path.join(self.videos_dir, self.model_name())
 
     @property
-    def best_videos_dir(self) -> str:
-        return os.path.join(self.videos_dir, f"{self.model_name()}-best")
+    def videos_path(self) -> str:
+        return os.path.join(self.videos_dir, self.model_name())

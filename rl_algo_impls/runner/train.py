@@ -98,16 +98,11 @@ def train(args: TrainArgs):
         EnvHyperparams(**config.env_hyperparams),
         self_play_wrapper=self_play_wrapper,
     )
-    record_best_videos = config.eval_hyperparams.get("record_best_videos", True)
-    video_env = (
-        make_eval_env(
-            config,
-            EnvHyperparams(**config.env_hyperparams),
-            override_hparams={"n_envs": 1},
-            self_play_wrapper=self_play_wrapper,
-        )
-        if record_best_videos
-        else None
+    video_env = make_eval_env(
+        config,
+        EnvHyperparams(**config.env_hyperparams),
+        override_hparams={"n_envs": 1},
+        self_play_wrapper=self_play_wrapper,
     )
     eval_callback = EvalCallback(
         policy,
@@ -116,7 +111,7 @@ def train(args: TrainArgs):
         best_model_path=config.model_dir_path(best=True),
         **config.eval_callback_params(),
         video_env=video_env,
-        best_video_dir=config.best_videos_dir,
+        video_dir=config.videos_path,
         additional_keys_to_log=config.additional_keys_to_log,
         wandb_enabled=wandb_enabled,
     )
