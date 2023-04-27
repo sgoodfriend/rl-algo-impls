@@ -17,13 +17,12 @@ class RewardDecayCallback(Callback):
         increase_indexes: Optional[Iterable[int]] = None,
     ) -> None:
         super().__init__()
-        from gym_microrts.envs.vec_env import MicroRTSGridModeVecEnv
 
         self.unwrapped = env.unwrapped
         assert hasattr(
             self.unwrapped, "reward_weight"
         ), "Env must have settable property reward_weight"
-        base_reward_weights = self.unwrapped.reward_weight
+        base_reward_weights = getattr(self.unwrapped, "reward_weight")
         self.base_reward_weights = base_reward_weights
 
         self.total_train_timesteps = config.n_timesteps
@@ -49,6 +48,6 @@ class RewardDecayCallback(Callback):
                 reward_weights.append(base_weight * progress)
             else:
                 reward_weights.append(base_weight * (1 - progress))
-        self.unwrapped.reward_weight = np.array(reward_weights)
+        setattr(self.unwrapped, "reward_weight", np.array(reward_weights))
 
         return True
