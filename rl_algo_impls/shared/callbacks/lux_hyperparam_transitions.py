@@ -55,8 +55,7 @@ class LuxHyperparamTransitions(Callback):
                 else:
                     self.update_phase_transition(
                         current_or_prior_phase,
-                        (current_duration_accumulation - prior_duration_accumulation)
-                        / d,
+                        (progress - prior_duration_accumulation) / d,
                     )
                 break
             prior_duration_accumulation = current_duration_accumulation
