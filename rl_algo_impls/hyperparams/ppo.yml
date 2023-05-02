@@ -797,7 +797,7 @@ LuxAI_S2-v0-medium-debug:
 
 LuxAI_S2-v0-debug:
   <<: *lux-defaults
-  n_timesteps: !!float 1e6
+  n_timesteps: !!float 1e5
   device: cpu
   env_hyperparams:
     <<: *lux-env-defaults
@@ -805,3 +805,9 @@ LuxAI_S2-v0-debug:
   eval_hyperparams:
     <<: *lux-eval-defaults
     step_freq: !!float 1e5
+  lux_hyperparam_transitions_kwargs:
+    <<: *lux-transitions-defaults
+    durations:
+      - 0.3
+      - 0.3
+      - 0.4
