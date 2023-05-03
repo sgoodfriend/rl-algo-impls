@@ -82,7 +82,7 @@ class LuxHyperparamTransitions(Callback):
                 assert hasattr(self.algo, k)
                 setattr(self.algo, k, v)
             elif k == REWARD_WEIGHTS_NAME:
-                assert hasattr(self.env, k)
+                assert hasattr(self.env.unwrapped, k)
                 setattr(self.env, k, LuxRewardWeights(**v))
             else:
                 raise ValueError(f"{k} not supported in {self.__class__.__name__}")
