@@ -194,12 +194,17 @@ class PPO(Algorithm):
                 "ent_coef": ent_coef,
                 "pi_clip": pi_clip,
                 "gamma": gamma,
+                "gae_lambda": self.gae_lambda,
             }
             if self.clip_range_vf_schedule:
                 v_clip = self.clip_range_vf_schedule(progress)
                 chart_scalars["v_clip"] = v_clip
             else:
                 v_clip = None
+            if hasattr(self.env, "reward_weights"):
+                chart_scalars["first_reward_weight"] = getattr(
+                    self.env, "reward_weights"
+                )[0]
             log_scalars(self.tb_writer, "charts", chart_scalars, timesteps_elapsed)
 
             self.policy.eval()
