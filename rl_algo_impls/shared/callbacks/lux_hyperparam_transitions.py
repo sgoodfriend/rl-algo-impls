@@ -9,6 +9,10 @@ from rl_algo_impls.shared.schedule import constant_schedule, lerp
 from rl_algo_impls.wrappers.lux_env_gridnet import LuxRewardWeights
 from rl_algo_impls.wrappers.vectorable_wrapper import VecEnv
 
+GAMMA_NAME = "gamma"
+GAE_LAMBDA_NAME = "gae_lambda"
+REWARD_WEIGHTS_NAME = "reward_weights"
+
 
 class LuxHyperparamTransitions(Callback):
     def __init__(
@@ -70,19 +74,19 @@ class LuxHyperparamTransitions(Callback):
         phase = self.phases[phase_idx]
         print(f"{self.timesteps_elapsed}: Entering phase {phase_idx}: {phase}")
         for k, v in phase.items():
-            if k == "gamma":
+            if k == GAMMA_NAME:
                 name = f"{k}_schedule"
                 assert hasattr(self.algo, name)
                 setattr(self.algo, name, constant_schedule(v))
-            elif k == "gae_lambda":
+            elif k == GAE_LAMBDA_NAME:
                 assert hasattr(self.algo, k)
                 setattr(self.algo, k, v)
-            elif k == "reward_weights":
+            elif k == REWARD_WEIGHTS_NAME:
                 assert hasattr(self.env, k)
                 setattr(self.env, k, LuxRewardWeights(**v))
             else:
                 raise ValueError(f"{k} not supported in {self.__class__.__name__}")
-        if "reward_weights" in phase and hasattr(self.env, "reward_weights"):
+        if REWARD_WEIGHTS_NAME in phase and hasattr(self.env, REWARD_WEIGHTS_NAME):
             print(f"Current reward weights: {getattr(self.env, 'reward_weights')}")
 
     def update_phase_transition(
@@ -98,7 +102,7 @@ class LuxHyperparamTransitions(Callback):
         ), f"An override has to be specified in every phase"
         for k, next_v in next_phase.items():
             old_v = prior_phase[k]
-            if k == "gamma":
+            if k == GAMMA_NAME:
                 name = f"{k}_schedule"
                 assert hasattr(self.algo, name)
                 setattr(
@@ -106,10 +110,10 @@ class LuxHyperparamTransitions(Callback):
                     name,
                     constant_schedule(lerp(old_v, next_v, transition_progress)),
                 )
-            elif k == "gae_lambda":
+            elif k == GAE_LAMBDA_NAME:
                 assert hasattr(self.algo, k)
                 setattr(self.algo, k, lerp(old_v, next_v, transition_progress))
-            elif k == "reward_weights":
+            elif k == REWARD_WEIGHTS_NAME:
                 assert hasattr(self.env, k)
                 setattr(
                     self.env.unwrapped,
