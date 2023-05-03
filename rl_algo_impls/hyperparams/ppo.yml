@@ -675,6 +675,7 @@ LuxAI_S2-v0: &lux-defaults
     learning_rate: !!float 2e-4
     learning_rate_decay: spike
     ent_coef: 0.01
+    ent_coef_decay: linear
     vf_coef: 0.5
     max_grad_norm: 0.5
     clip_range: 0.1
