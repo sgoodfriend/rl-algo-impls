@@ -55,8 +55,7 @@ class LuxHyperparamTransitions(Callback):
                 else:
                     self.update_phase_transition(
                         current_or_prior_phase,
-                        (progress - prior_duration_accumulation)
-                        / d,
+                        (progress - prior_duration_accumulation) / d,
                     )
                 break
             prior_duration_accumulation = current_duration_accumulation
@@ -69,6 +68,7 @@ class LuxHyperparamTransitions(Callback):
         self.current_phase_idx = phase_idx
 
         phase = self.phases[phase_idx]
+        print(f"{self.timesteps_elapsed}: Entering phase {phase_idx}: {phase}")
         for k, v in phase.items():
             if k == "gamma":
                 name = f"{k}_schedule"
@@ -82,10 +82,14 @@ class LuxHyperparamTransitions(Callback):
                 setattr(self.env, k, LuxRewardWeights(**v))
             else:
                 raise ValueError(f"{k} not supported in {self.__class__.__name__}")
+        if "reward_weights" in phase and hasattr(self.env, "reward_weights"):
+            print(f"Current reward weights: {getattr(self.env, 'reward_weights')}")
 
     def update_phase_transition(
         self, prior_phase_idx: int, transition_progress: float
     ) -> None:
+        if self.current_phase_idx is not None:
+            print(f"{self.timesteps_elapsed}: Exiting phase {self.current_phase_idx}")
         self.current_phase_idx = None
         prior_phase = self.phases[prior_phase_idx]
         next_phase = self.phases[prior_phase_idx + 1]
