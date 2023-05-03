@@ -71,6 +71,9 @@ class ActionStats:
     )
     no_valid_action = 0
     repeat_action = 0
+    move_cancelled = 0
+    transfer_cancelled = 0
+    build_cancelled = 0
 
     def stats_dict(self, prefix: str) -> Dict[str, int]:
         _dict = {
@@ -79,6 +82,9 @@ class ActionStats:
         }
         _dict[f"{prefix}no_valid"] = self.no_valid_action
         _dict[f"{prefix}repeat"] = self.repeat_action
+        _dict[f"{prefix}move_cancelled"] = self.move_cancelled
+        _dict[f"{prefix}transfer_cancelled"] = self.transfer_cancelled
+        _dict[f"{prefix}build_cancelled"] = self.build_cancelled
         return _dict
 
 

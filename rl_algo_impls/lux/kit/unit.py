@@ -104,3 +104,6 @@ class Unit:
     def __str__(self) -> str:
         out = f"[{self.team_id}] {self.unit_id} {self.unit_type} at {self.pos}"
         return out
+
+    def is_heavy(self) -> bool:
+        return self.unit_type == "HEAVY"
