@@ -112,7 +112,7 @@ class LuxHyperparamTransitions(Callback):
             elif k == "reward_weights":
                 assert hasattr(self.env, k)
                 setattr(
-                    self.env,
+                    self.env.unwrapped,
                     k,
                     LuxRewardWeights.lerp(old_v, next_v, transition_progress),
                 )
