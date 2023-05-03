@@ -41,7 +41,7 @@ def pos_to_idx(pos: Union[Position, np.ndarray], map_size: int) -> int:
 
 
 def to_lux_actions(
-    p: str,
+    player: str,
     state: LuxGameState,
     actions: np.ndarray,
     action_mask: np.ndarray,
@@ -51,11 +51,11 @@ def to_lux_actions(
     cfg = state.env_cfg
 
     lux_actions = {}
-    for f in state.factories[p].values():
+    for f in state.factories[player].values():
         a = actions[pos_to_idx(f.pos, cfg.map_size), 0]
         if a != FACTORY_DO_NOTHING_ACTION:
             lux_actions[f.unit_id] = a
-    for u in state.units[p].values():
+    for u in state.units[player].values():
         a = actions[pos_to_idx(u.pos, cfg.map_size), 1:]
         if no_valid_unit_actions(u, action_mask, cfg.map_size):
             if cfg.verbose > 1:
