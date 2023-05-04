@@ -27,7 +27,7 @@ from rl_algo_impls.runner.running_utils import (
     set_seeds,
 )
 from rl_algo_impls.shared.callbacks import Callback
-from rl_algo_impls.shared.callbacks.lux_hyperparam_transitions import (
+from rl_algo_impls.lux.callbacks.lux_hyperparam_transitions import (
     LuxHyperparamTransitions,
 )
 from rl_algo_impls.shared.callbacks.optimize_callback import (

@@ -38,7 +38,7 @@ from rl_algo_impls.wrappers.initial_step_truncate_wrapper import (
     InitialStepTruncateWrapper,
 )
 from rl_algo_impls.wrappers.is_vector_env import IsVectorEnv
-from rl_algo_impls.wrappers.lux_env_gridnet import LuxEnvGridnet
+from rl_algo_impls.lux.wrappers.lux_env_gridnet import LuxEnvGridnet
 from rl_algo_impls.wrappers.no_reward_timeout import NoRewardTimeout
 from rl_algo_impls.wrappers.noop_env_seed import NoopEnvSeed
 from rl_algo_impls.wrappers.normalize import NormalizeObservation, NormalizeReward

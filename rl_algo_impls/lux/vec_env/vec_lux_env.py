@@ -5,7 +5,7 @@ import numpy as np
 from gym.vector.vector_env import VectorEnv
 from stable_baselines3.common.vec_env.base_vec_env import tile_images
 
-from rl_algo_impls.wrappers.lux_env_gridnet import LuxEnvGridnet, LuxRewardWeights
+from rl_algo_impls.lux.wrappers.lux_env_gridnet import LuxEnvGridnet, LuxRewardWeights
 from rl_algo_impls.wrappers.vectorable_wrapper import VecEnvObs, VecEnvStepReturn
 
 VecLuxEnvSelf = TypeVar("VecLuxEnvSelf", bound="VecLuxEnv")

@@ -4,8 +4,8 @@ from typing import Any, Dict, Optional, Tuple
 import numpy as np
 from luxai_s2.actions import move_deltas
 
-from rl_algo_impls.shared.lux.actions import FACTORY_ACTION_ENCODED_SIZE, pos_to_idx
-from rl_algo_impls.shared.lux.shared import (
+from rl_algo_impls.lux.actions import FACTORY_ACTION_ENCODED_SIZE, pos_to_idx
+from rl_algo_impls.lux.shared import (
     LuxEnvConfig,
     LuxFactory,
     LuxGameState,

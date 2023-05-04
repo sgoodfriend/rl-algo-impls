@@ -26,7 +26,7 @@ from rl_algo_impls.runner.running_utils import (
 )
 from rl_algo_impls.shared.callbacks.callback import Callback
 from rl_algo_impls.shared.callbacks.eval_callback import EvalCallback
-from rl_algo_impls.shared.callbacks.lux_hyperparam_transitions import (
+from rl_algo_impls.lux.callbacks.lux_hyperparam_transitions import (
     LuxHyperparamTransitions,
 )
 from rl_algo_impls.shared.callbacks.reward_decay_callback import RewardDecayCallback

@@ -7,13 +7,13 @@ import numpy as np
 from luxai_s2.actions import move_deltas
 from luxai_s2.map.position import Position
 
-from rl_algo_impls.shared.lux.shared import (
+from rl_algo_impls.lux.shared import (
     LuxEnvConfig,
     LuxGameState,
     LuxUnit,
     pos_to_numpy,
 )
-from rl_algo_impls.shared.lux.stats import ActionStats
+from rl_algo_impls.lux.stats import ActionStats
 
 FACTORY_ACTION_SIZES = (
     4,  # build light robot, build heavy robot, water lichen, do nothing

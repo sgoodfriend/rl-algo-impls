@@ -12,14 +12,14 @@ from rl_algo_impls.lux.kit.config import EnvConfig
 from rl_algo_impls.lux.kit.kit import obs_to_game_state
 from rl_algo_impls.runner.config import Config, EnvHyperparams, RunArgs
 from rl_algo_impls.runner.running_utils import get_device, load_hyperparams, make_policy
-from rl_algo_impls.shared.lux.actions import (
+from rl_algo_impls.lux.actions import (
     ACTION_SIZES,
     enqueued_action_from_obs,
     to_lux_actions,
 )
-from rl_algo_impls.shared.lux.early import bid_action, place_factory_action
-from rl_algo_impls.shared.lux.observation import observation_and_action_mask
-from rl_algo_impls.shared.lux.stats import ActionStats
+from rl_algo_impls.lux.early import bid_action, place_factory_action
+from rl_algo_impls.lux.observation import observation_and_action_mask
+from rl_algo_impls.lux.stats import ActionStats
 from rl_algo_impls.shared.vec_env.make_env import make_eval_env
 from rl_algo_impls.wrappers.hwc_to_chw_observation import HwcToChwObservation
 from rl_algo_impls.wrappers.vectorable_wrapper import find_wrapper

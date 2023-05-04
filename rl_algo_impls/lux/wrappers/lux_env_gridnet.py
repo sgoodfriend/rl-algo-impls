@@ -8,14 +8,14 @@ from gym.vector.utils import batch_space
 from luxai_s2.env import LuxAI_S2
 from luxai_s2.state import ObservationStateDict
 
-from rl_algo_impls.shared.lux.actions import (
+from rl_algo_impls.lux.actions import (
     ACTION_SIZES,
     enqueued_action_from_obs,
     to_lux_actions,
 )
-from rl_algo_impls.shared.lux.early import bid_action, place_factory_action
-from rl_algo_impls.shared.lux.observation import observation_and_action_mask
-from rl_algo_impls.shared.lux.stats import StatsTracking
+from rl_algo_impls.lux.early import bid_action, place_factory_action
+from rl_algo_impls.lux.observation import observation_and_action_mask
+from rl_algo_impls.lux.stats import StatsTracking
 from rl_algo_impls.shared.schedule import lerp
 
 LuxRewardWeightsSelf = TypeVar("LuxRewardWeightsSelf", bound="LuxRewardWeights")

@@ -6,7 +6,7 @@ from rl_algo_impls.runner.config import Config
 from rl_algo_impls.shared.algorithm import Algorithm
 from rl_algo_impls.shared.callbacks.callback import Callback
 from rl_algo_impls.shared.schedule import constant_schedule, lerp
-from rl_algo_impls.wrappers.lux_env_gridnet import LuxRewardWeights
+from rl_algo_impls.lux.wrappers.lux_env_gridnet import LuxRewardWeights
 from rl_algo_impls.wrappers.vectorable_wrapper import VecEnv
 
 GAMMA_NAME = "gamma"

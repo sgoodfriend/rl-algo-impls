@@ -5,15 +5,15 @@ from luxai_s2.factory import FactoryStateDict
 from luxai_s2.state import ObservationStateDict
 from luxai_s2.unit import UnitStateDict
 
-from rl_algo_impls.shared.lux.action_mask import (
+from rl_algo_impls.lux.action_mask import (
     agent_move_masks,
     get_action_mask,
     is_build_heavy_valid,
     is_build_light_valid,
     valid_destination_map,
 )
-from rl_algo_impls.shared.lux.actions import UNIT_ACTION_ENCODED_SIZE, UNIT_ACTION_SIZES
-from rl_algo_impls.shared.lux.shared import LuxGameState, factory_water_cost
+from rl_algo_impls.lux.actions import UNIT_ACTION_ENCODED_SIZE, UNIT_ACTION_SIZES
+from rl_algo_impls.lux.shared import LuxGameState, factory_water_cost
 
 ICE_FACTORY_MAX = 100_000
 ORE_FACTORY_MAX = 50_000

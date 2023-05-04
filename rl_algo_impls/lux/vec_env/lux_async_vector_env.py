@@ -25,7 +25,7 @@ from gym.vector.utils import (
 )
 from gym.vector.vector_env import VectorEnv
 
-from rl_algo_impls.wrappers.lux_env_gridnet import LuxEnvGridnet, LuxRewardWeights
+from rl_algo_impls.lux.wrappers.lux_env_gridnet import LuxEnvGridnet, LuxRewardWeights
 
 __all__ = ["LuxAsyncVectorEnv"]
 

@@ -4,10 +4,10 @@ from typing import Any, Dict, Optional
 from torch.utils.tensorboard.writer import SummaryWriter
 
 from rl_algo_impls.runner.config import Config, EnvHyperparams
-from rl_algo_impls.shared.vec_env.lux import make_lux_env
+from rl_algo_impls.lux.vec_env.lux import make_lux_env
 from rl_algo_impls.shared.vec_env.microrts import make_microrts_env
 from rl_algo_impls.shared.vec_env.procgen import make_procgen_env
-from rl_algo_impls.shared.vec_env.vec_env import make_vec_env
+from rl_algo_impls.lux.vec_env.vec_env import make_vec_env
 from rl_algo_impls.wrappers.self_play_eval_wrapper import SelfPlayEvalWrapper
 from rl_algo_impls.wrappers.self_play_wrapper import SelfPlayWrapper
 from rl_algo_impls.wrappers.vectorable_wrapper import VecEnv, find_wrapper
