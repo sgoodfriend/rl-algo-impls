@@ -9,6 +9,7 @@ import torch.nn as nn
 from torch.optim import Adam
 from torch.utils.tensorboard.writer import SummaryWriter
 
+from rl_algo_impls.ppo.sync_step_rollout import SyncStepRolloutGenerator
 from rl_algo_impls.shared.algorithm import Algorithm
 from rl_algo_impls.shared.callbacks import Callback
 from rl_algo_impls.shared.gae import compute_advantages
@@ -25,11 +26,7 @@ from rl_algo_impls.shared.tensor_utils import (
     num_or_array,
     unqueeze_dims_to_match,
 )
-from rl_algo_impls.wrappers.vectorable_wrapper import (
-    VecEnv,
-    single_action_space,
-    single_observation_space,
-)
+from rl_algo_impls.wrappers.vectorable_wrapper import VecEnv
 
 
 class TrainStepStats(NamedTuple):
@@ -117,7 +114,6 @@ class PPO(Algorithm):
     ) -> None:
         super().__init__(policy, env, device, tb_writer)
         self.policy = policy
-        self.get_action_mask = getattr(env, "get_action_mask", None)
 
         self.gamma_schedule = (
             linear_schedule(num_or_array(gamma), num_or_array(gamma_end))
@@ -166,33 +162,8 @@ class PPO(Algorithm):
             total_timesteps = train_timesteps
         assert start_timesteps + train_timesteps <= total_timesteps
 
-        epoch_dim = (self.n_steps, self.env.num_envs)
-        step_dim = (self.env.num_envs,)
-        obs_space = single_observation_space(self.env)
-        act_space = single_action_space(self.env)
-        act_shape = self.policy.action_shape
-        value_shape = self.policy.value_shape
-        assert (
-            self.multi_reward_weights is None
-            or self.multi_reward_weights.shape == value_shape
-        )
-
-        next_obs = self.env.reset()
-        next_action_masks = self.get_action_mask() if self.get_action_mask else None
-        next_episode_starts = np.full(step_dim, True, dtype=np.bool_)
-
-        obs = np.zeros(epoch_dim + obs_space.shape, dtype=obs_space.dtype)  # type: ignore
-        actions = np.zeros(epoch_dim + act_shape, dtype=act_space.dtype)  # type: ignore
-        rewards = np.zeros(epoch_dim + value_shape, dtype=np.float32)
-        episode_starts = np.zeros(epoch_dim, dtype=np.bool_)
-        values = np.zeros(epoch_dim + value_shape, dtype=np.float32)
-        logprobs = np.zeros(epoch_dim, dtype=np.float32)
-        action_masks = (
-            np.zeros(
-                (self.n_steps,) + next_action_masks.shape, dtype=next_action_masks.dtype
-            )
-            if next_action_masks is not None
-            else None
+        rollout_generator = SyncStepRolloutGenerator(
+            self.n_steps, self.sde_sample_freq, self.policy, self.env
         )
 
         timesteps_elapsed = start_timesteps
@@ -222,47 +193,35 @@ class PPO(Algorithm):
                 chart_scalars["reward_weights"] = self.multi_reward_weights
             log_scalars(self.tb_writer, "charts", chart_scalars, timesteps_elapsed)
 
-            self.policy.eval()
-            self.policy.reset_noise()
-            for s in range(self.n_steps):
-                timesteps_elapsed += self.env.num_envs
-                if self.sde_sample_freq > 0 and s > 0 and s % self.sde_sample_freq == 0:
-                    self.policy.reset_noise()
+            (
+                next_obs,
+                next_action_masks,
+                next_episode_starts,
+                obs,
+                actions,
+                rewards,
+                episode_starts,
+                values,
+                logprobs,
+                action_masks,
+                total_steps,
+            ) = rollout_generator.rollout()
+            timesteps_elapsed += total_steps
 
-                obs[s] = next_obs
-                episode_starts[s] = next_episode_starts
-                if action_masks is not None:
-                    action_masks[s] = next_action_masks
-
-                (
-                    actions[s],
-                    values[s],
-                    logprobs[s],
-                    clamped_action,
-                ) = self.policy.step(next_obs, action_masks=next_action_masks)
-                next_obs, rewards[s], next_episode_starts, _ = self.env.step(
-                    clamped_action
-                )
-                next_action_masks = (
-                    self.get_action_mask() if self.get_action_mask else None
-                )
-
-            self.policy.train()
-
-            b_obs = torch.tensor(obs.reshape((-1,) + obs_space.shape)).to(self.device)  # type: ignore
-            b_actions = torch.tensor(actions.reshape((-1,) + act_shape)).to(  # type: ignore
+            b_obs = torch.tensor(obs.reshape((-1,) + obs.shape[2:])).to(self.device)
+            b_actions = torch.tensor(actions.reshape((-1,) + actions.shape[2:])).to(
                 self.device
             )
             b_logprobs = torch.tensor(logprobs.reshape(-1)).to(self.device)
             b_action_masks = (
-                torch.tensor(action_masks.reshape((-1,) + next_action_masks.shape[1:])).to(  # type: ignore
-                    self.device
-                )
+                torch.tensor(
+                    action_masks.reshape((-1,) + next_action_masks.shape[1:])
+                ).to(self.device)
                 if action_masks is not None
                 else None
             )
 
-            y_pred = values.reshape((-1,) + value_shape)
+            y_pred = values.reshape(-1, values.shape[-1])
             b_values = torch.tensor(y_pred).to(self.device)
 
             step_stats = []
@@ -290,11 +249,11 @@ class PPO(Algorithm):
                         self.gae_lambda,
                     )
                     b_advantages = torch.tensor(
-                        advantages.reshape((-1,) + value_shape)
+                        advantages.reshape((-1, advantages.shape[-1]))
                     ).to(self.device)
                 if e == 0 or self.update_returns_between_epochs:
                     returns = advantages + values
-                    y_true = returns.reshape((-1,) + value_shape)
+                    y_true = returns.reshape((-1, returns.shape[-1]))
                     b_returns = torch.tensor(y_true).to(self.device)
 
                 b_idxs = torch.randperm(len(b_obs))
