@@ -29,6 +29,7 @@ class UNetActorCriticNetwork(ActorCriticNetwork):
         init_layers_orthogonal: bool = True,
         activation_fn: str = "tanh",
         cnn_layers_init_orthogonal: Optional[bool] = None,
+        embed_layer: bool = False,
     ) -> None:
         if cnn_layers_init_orthogonal is None:
             cnn_layers_init_orthogonal = True
@@ -74,7 +75,12 @@ class UNetActorCriticNetwork(ActorCriticNetwork):
             )
 
         in_channels = observation_space.shape[0]  # type: ignore
-        self.enc1 = conv_relu(in_channels, 32)
+        self.embed = (
+            conv_relu(in_channels, 32, kernel_size=1, padding=0)
+            if embed_layer
+            else nn.Identity()
+        )
+        self.enc1 = conv_relu(32 if embed_layer else in_channels, 32)
         self.enc2 = nn.Sequential(max_pool(), conv_relu(32, 64))
         self.enc3 = nn.Sequential(max_pool(), conv_relu(64, 128))
         self.enc4 = nn.Sequential(max_pool(), conv_relu(128, 256))
@@ -104,8 +110,12 @@ class UNetActorCriticNetwork(ActorCriticNetwork):
                             self.enc3(
                                 self.enc2(
                                     self.enc1(
-                                        self._preprocess(
-                                            torch.as_tensor(observation_space.sample())
+                                        self.embed(
+                                            self._preprocess(
+                                                torch.as_tensor(
+                                                    observation_space.sample()
+                                                )
+                                            )
                                         )
                                     )
                                 )
@@ -160,7 +170,7 @@ class UNetActorCriticNetwork(ActorCriticNetwork):
         ), f"No mask case unhandled in {self.__class__.__name__}"
 
         obs = self._preprocess(obs)
-        e1 = self.enc1(obs)
+        e1 = self.enc1(self.embed(obs))
         e2 = self.enc2(e1)
         e3 = self.enc3(e2)
         e4 = self.enc4(e3)
@@ -182,7 +192,7 @@ class UNetActorCriticNetwork(ActorCriticNetwork):
 
     def value(self, obs: torch.Tensor) -> torch.Tensor:
         obs = self._preprocess(obs)
-        e1 = self.enc1(obs)
+        e1 = self.enc1(self.embed(obs))
         e2 = self.enc2(e1)
         e3 = self.enc3(e2)
         e4 = self.enc4(e3)

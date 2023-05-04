@@ -87,6 +87,7 @@ class ActorCritic(OnPolicy):
         cnn_layers_init_orthogonal: Optional[bool] = None,
         impala_channels: Sequence[int] = (16, 32, 32),
         actor_head_style: str = "single",
+        embed_layer: bool = False,
         **kwargs,
     ) -> None:
         super().__init__(env, **kwargs)
@@ -107,6 +108,7 @@ class ActorCritic(OnPolicy):
                 init_layers_orthogonal=init_layers_orthogonal,
                 activation_fn=activation_fn,
                 cnn_layers_init_orthogonal=cnn_layers_init_orthogonal,
+                embed_layer=embed_layer,
             )
         elif share_features_extractor:
             self.network = ConnectedTrioActorCriticNetwork(
