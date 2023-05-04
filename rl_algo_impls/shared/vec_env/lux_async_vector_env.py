@@ -437,7 +437,7 @@ class LuxAsyncVectorEnv(VectorEnv):
     @reward_weights.setter
     def reward_weights(self, reward_weights: LuxRewardWeights) -> None:
         self._reward_weights = reward_weights
-        self.set_attr("reward_weights", reward_weights)
+        self.set_attr("reward_weights", [reward_weights for _ in range(self.num_envs)])
 
     def get_action_mask(self) -> np.ndarray:
         return self.action_masks
