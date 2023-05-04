@@ -7,12 +7,7 @@ import numpy as np
 from luxai_s2.actions import move_deltas
 from luxai_s2.map.position import Position
 
-from rl_algo_impls.lux.shared import (
-    LuxEnvConfig,
-    LuxGameState,
-    LuxUnit,
-    pos_to_numpy,
-)
+from rl_algo_impls.lux.shared import LuxEnvConfig, LuxGameState, LuxUnit, pos_to_numpy
 from rl_algo_impls.lux.stats import ActionStats
 
 FACTORY_ACTION_SIZES = (
@@ -54,10 +49,6 @@ def to_lux_actions(
     lux_actions = {}
 
     positions_occupied: Dict[int, str] = {}
-    unit_actions = sorted(
-        UnitAction(u, actions[pos_to_idx(u.pos, cfg.map_size), 1:])
-        for u in state.units[player].values()
-    )
 
     def cancel_action(unit: LuxUnit):
         enqueued_action = enqueued_actions.get(unit.unit_id)
@@ -83,13 +74,18 @@ def to_lux_actions(
             )
         positions_occupied[current_pos_idx] = unit.unit_id
 
-    for u, a in unit_actions:
+    unit_actions = []
+    for u in state.units[player].values():
         if no_valid_unit_actions(u, action_mask, cfg.map_size):
             if cfg.verbose > 1:
                 logging.warn(f"No valid action for unit {u}")
             action_stats.no_valid_action += 1
             positions_occupied[pos_to_idx(u.pos, cfg.map_size)] = u.unit_id
             continue
+        unit_actions.append(UnitAction(u, actions[pos_to_idx(u.pos, cfg.map_size), 1:]))
+    unit_actions = sorted(unit_actions)
+
+    for u, a in unit_actions:
         action_stats.action_type[a[0]] += 1
 
         def resource_amount(unit: LuxUnit, idx: int) -> int:
