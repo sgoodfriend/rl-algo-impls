@@ -1,6 +1,7 @@
 # Support for PyTorch mps mode (https://pytorch.org/docs/stable/notes/mps.html)
 import os
 
+from rl_algo_impls.ppo.sync_step_rollout import SyncStepRolloutGenerator
 from rl_algo_impls.shared.callbacks.self_play_callback import SelfPlayCallback
 
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
@@ -14,6 +15,9 @@ import yaml
 from torch.utils.tensorboard.writer import SummaryWriter
 
 import wandb
+from rl_algo_impls.lux.callbacks.lux_hyperparam_transitions import (
+    LuxHyperparamTransitions,
+)
 from rl_algo_impls.runner.config import Config, EnvHyperparams, RunArgs
 from rl_algo_impls.runner.running_utils import (
     ALGOS,
@@ -26,9 +30,6 @@ from rl_algo_impls.runner.running_utils import (
 )
 from rl_algo_impls.shared.callbacks.callback import Callback
 from rl_algo_impls.shared.callbacks.eval_callback import EvalCallback
-from rl_algo_impls.lux.callbacks.lux_hyperparam_transitions import (
-    LuxHyperparamTransitions,
-)
 from rl_algo_impls.shared.callbacks.reward_decay_callback import RewardDecayCallback
 from rl_algo_impls.shared.stats import EpisodesStats
 from rl_algo_impls.shared.vec_env import make_env, make_eval_env
@@ -79,7 +80,7 @@ def train(args: TrainArgs):
         config, env, device, **config.policy_hyperparams
     )
     policy = policy_factory()
-    algo = ALGOS[args.algo](policy, env, device, tb_writer, **config.algo_hyperparams)
+    algo = ALGOS[args.algo](policy, device, tb_writer, **config.algo_hyperparams)
 
     num_parameters = policy.num_parameters()
     num_trainable_parameters = policy.num_trainable_parameters()
@@ -133,7 +134,11 @@ def train(args: TrainArgs):
         )
     if self_play_wrapper:
         callbacks.append(SelfPlayCallback(policy, policy_factory, self_play_wrapper))
-    algo.learn(config.n_timesteps, callbacks=callbacks)
+
+    rollout_generator = SyncStepRolloutGenerator(
+        policy, env, **config.rollout_hyperparams
+    )
+    algo.learn(config.n_timesteps, rollout_generator, callbacks=callbacks)
 
     policy.save(config.model_dir_path(best=False))
 

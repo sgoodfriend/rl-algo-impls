@@ -3,7 +3,6 @@ CartPole-v1: &cartpole-defaults
   env_hyperparams:
     n_envs: 8
   algo_hyperparams:
-    n_steps: 32
     batch_size: 256
     n_epochs: 20
     gae_lambda: 0.8
@@ -15,6 +14,8 @@ CartPole-v1: &cartpole-defaults
     clip_range_decay: linear
   eval_hyperparams:
     step_freq: !!float 2.5e4
+  rollout_hyperparams:
+    n_steps: 32
 
 CartPole-v0:
   <<: *cartpole-defaults
@@ -673,7 +674,6 @@ LuxAI_S2-v0: &lux-defaults
       - 0.3
       - 0.2
   algo_hyperparams: &lux-algo-defaults
-    n_steps: 384
     batch_size: 2304
     n_epochs: 4
     learning_rate: !!float 1e-4
@@ -689,6 +689,8 @@ LuxAI_S2-v0: &lux-defaults
     gamma: [0.99, 1]
     gae_lambda: [0.95, 1]
     vf_coef: [0.5, 0.1]
+  rollout_hyperparams:
+    n_steps: 384
 
 LuxAI_S2-v0-double-cone: &lux-dc-defaults
   <<: *lux-defaults
