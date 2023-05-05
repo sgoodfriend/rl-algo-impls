@@ -10,25 +10,25 @@ class SelfPlayCallback(Callback):
         self,
         policy: Policy,
         policy_factory: Callable[[], Policy],
-        selfPlayWrapper: SelfPlayWrapper,
+        self_play_wrapper: SelfPlayWrapper,
     ) -> None:
         super().__init__()
         self.policy = policy
         self.policy_factory = policy_factory
-        self.selfPlayWrapper = selfPlayWrapper
+        self.self_play_wrapper = self_play_wrapper
         self.checkpoint_policy()
 
     def on_step(self, timesteps_elapsed: int = 1) -> bool:
         super().on_step(timesteps_elapsed)
         if (
             self.timesteps_elapsed
-            >= self.last_checkpoint_step + self.selfPlayWrapper.save_steps
+            >= self.last_checkpoint_step + self.self_play_wrapper.save_steps
         ):
             self.checkpoint_policy()
         return True
 
     def checkpoint_policy(self):
-        self.selfPlayWrapper.checkpoint_policy(
+        self.self_play_wrapper.checkpoint_policy(
             self.policy_factory().load_from(self.policy)
         )
         self.last_checkpoint_step = self.timesteps_elapsed
