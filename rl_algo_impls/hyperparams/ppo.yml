@@ -648,7 +648,7 @@ LuxAI_S2-v0: &lux-defaults
     activation_fn: relu
     actor_head_style: unet
     v_hidden_sizes: [256, 128]
-    embed_layer: true
+    embed_layer: false
   lux_hyperparam_transitions_kwargs: &lux-transitions-defaults
     phases:
       - reward_weights:
