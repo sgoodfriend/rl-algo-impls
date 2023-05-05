@@ -7,7 +7,13 @@ import numpy as np
 from luxai_s2.actions import move_deltas
 from luxai_s2.map.position import Position
 
-from rl_algo_impls.lux.shared import LuxEnvConfig, LuxGameState, LuxUnit, pos_to_numpy
+from rl_algo_impls.lux.shared import (
+    LuxEnvConfig,
+    LuxGameState,
+    LuxUnit,
+    pos_to_idx,
+    pos_to_numpy,
+)
 from rl_algo_impls.lux.stats import ActionStats
 
 FACTORY_ACTION_SIZES = (
@@ -29,11 +35,6 @@ UNIT_ACTION_ENCODED_SIZE = sum(UNIT_ACTION_SIZES)
 
 
 ACTION_SIZES = FACTORY_ACTION_SIZES + UNIT_ACTION_SIZES
-
-
-def pos_to_idx(pos: Union[Position, np.ndarray], map_size: int) -> int:
-    pos = pos_to_numpy(pos)
-    return pos[0] * map_size + pos[1]
 
 
 def to_lux_actions(

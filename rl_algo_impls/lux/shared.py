@@ -1,5 +1,5 @@
 import math
-from typing import Union
+from typing import Tuple, Union
 
 import numpy as np
 from luxai_s2.config import EnvConfig
@@ -23,6 +23,15 @@ def pos_to_numpy(pos: Union[Position, np.ndarray]) -> np.ndarray:
     if isinstance(pos, Position):
         return pos.pos
     return pos
+
+
+def pos_to_idx(pos: Union[Position, np.ndarray], map_size: int) -> int:
+    pos = pos_to_numpy(pos)
+    return pos[0] * map_size + pos[1]
+
+
+def idx_to_pos(idx: int, map_size: int) -> Tuple[int, int]:
+    return (idx // map_size, idx % map_size)
 
 
 def factory_water_cost(

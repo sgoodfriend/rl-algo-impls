@@ -6,6 +6,8 @@ import numpy as np
 from luxai_s2.env import LuxAI_S2
 from luxai_s2.unit import UnitType
 
+from rl_algo_impls.lux.shared import LuxGameState, idx_to_pos, pos_to_idx
+
 
 class AgentRunningStats:
     stats: np.ndarray
@@ -24,10 +26,16 @@ class AgentRunningStats:
         "factories_alive",
         "heavies_alive",
         "lights_alive",
+        "ice_rubble_cleared",
+        "ore_rubble_cleared",
     )
 
-    def __init__(self) -> None:
+    def __init__(self, env: LuxAI_S2) -> None:
         self.stats = np.zeros(len(self.NAMES), dtype=np.int32)
+        ice_positions = np.argwhere(env.state.board.ice)
+        self.rubble_by_ice_pos = rubble_at_positions(env.state, ice_positions)
+        ore_positions = np.argwhere(env.state.board.ore)
+        self.rubble_by_ore_pos = rubble_at_positions(env.state, ore_positions)
 
     def update(self, env: LuxAI_S2, agent: str) -> np.ndarray:
         generation = env.state.stats[agent]["generation"]
@@ -56,11 +64,40 @@ class AgentRunningStats:
                 len(env.state.factories[agent]),
                 len([u for u in agent_units.values() if u.unit_type == UnitType.HEAVY]),
                 len([u for u in agent_units.values() if u.unit_type == UnitType.LIGHT]),
+                update_rubble_cleared_off_positions(
+                    env.state, agent, self.rubble_by_ice_pos
+                ),
+                update_rubble_cleared_off_positions(
+                    env.state, agent, self.rubble_by_ore_pos
+                ),
             ]
         )
 
         self.stats = np.concatenate((new_delta_stats, new_current_stats))
         return np.concatenate((delta, new_current_stats))
+
+
+def update_rubble_cleared_off_positions(
+    state: LuxGameState, agent: str, rubble_by_pos: Dict[int, int]
+) -> int:
+    rubble_cleared = 0
+    own_unit_positions = {
+        pos_to_idx(u.pos, state.env_cfg.map_size) for u in state.units[agent].values()
+    }
+    for pos_idx, r in rubble_by_pos.items():
+        pos = idx_to_pos(pos_idx, state.env_cfg.map_size)
+        new_r = state.board.rubble[pos[0], pos[1]]
+        if new_r < r and pos_idx in own_unit_positions:
+            rubble_cleared += r - new_r
+        rubble_by_pos[pos_idx] = new_r
+    return rubble_cleared
+
+
+def rubble_at_positions(state: LuxGameState, positions: np.ndarray) -> Dict[int, int]:
+    rubble = {}
+    for p in positions:
+        rubble[pos_to_idx(p, state.env_cfg.map_size)] = state.board.rubble[p[0], p[1]]
+    return rubble
 
 
 @dataclass
@@ -120,6 +157,6 @@ class StatsTracking:
     def reset(self, env: LuxAI_S2) -> None:
         self.env = env
         self.agents = env.agents
-        self.agent_stats = (AgentRunningStats(), AgentRunningStats())
+        self.agent_stats = (AgentRunningStats(env), AgentRunningStats(env))
         self.action_stats = (ActionStats(), ActionStats())
         self.update()

@@ -39,6 +39,8 @@ class LuxRewardWeights(NamedTuple):
     factories_alive: float = 0
     heavies_alive: float = 0
     lights_alive: float = 0
+    ice_rubble_cleared: float = 0
+    ore_rubble_cleared: float = 0
     # Change in value stats vs opponent
     lichen_delta_vs_opponent: float = 0
 
@@ -55,6 +57,8 @@ class LuxRewardWeights(NamedTuple):
             metal_generation=0.01,  # 1 for building a heavy robot, 0.04 for a heavy dig action
             power_generation=0.0004,  # factory 1/day, heavy 0.12/day, light 0.012/day, lichen 0.02/day
             lost_factory=-1,
+            ice_rubble_cleared=0.008,  # 80% of ice_generation
+            ore_rubble_cleared=1.8e-3,  # 90% of ore_generation
         )
 
     @classmethod

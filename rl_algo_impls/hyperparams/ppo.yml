@@ -657,6 +657,8 @@ LuxAI_S2-v0: &lux-defaults
           water_generation: 0.04 # 2/day of water for factory
           metal_generation: 0.01 # 1/heavy robot build
           power_generation: 0.0004 # factory 1/day, heavy 0.12/day, light 0.012/day, lichen 0.2/day
+          ice_rubble_cleared: 0.008 # 80% of ice_generation
+          ore_rubble_cleared: 0.0018 # 90% of ore_generation
           lost_factory: -1
         gamma: 0.99
         gae_lambda: 0.95
