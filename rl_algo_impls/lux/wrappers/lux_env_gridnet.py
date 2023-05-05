@@ -35,12 +35,13 @@ class LuxRewardWeights(NamedTuple):
     built_light: float = 0
     built_heavy: float = 0
     lost_factory: float = 0
+    # Accumulation stats
+    ice_rubble_cleared: float = 0
+    ore_rubble_cleared: float = 0
     # Current value stats
     factories_alive: float = 0
     heavies_alive: float = 0
     lights_alive: float = 0
-    ice_rubble_cleared: float = 0
-    ore_rubble_cleared: float = 0
     # Change in value stats vs opponent
     lichen_delta_vs_opponent: float = 0
 

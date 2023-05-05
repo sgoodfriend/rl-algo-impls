@@ -22,12 +22,13 @@ class AgentRunningStats:
         "built_light",
         "built_heavy",
         "lost_factory",
+        # Accumalation stats
+        "ice_rubble_cleared",
+        "ore_rubble_cleared",
         # Current value stats
         "factories_alive",
         "heavies_alive",
         "lights_alive",
-        "ice_rubble_cleared",
-        "ore_rubble_cleared",
     )
 
     def __init__(self, env: LuxAI_S2) -> None:
@@ -58,12 +59,8 @@ class AgentRunningStats:
         )
         delta = new_delta_stats - self.stats[: len(new_delta_stats)]
 
-        agent_units = env.state.units[agent]
-        new_current_stats = np.array(
+        accumulation_stats = np.array(
             [
-                len(env.state.factories[agent]),
-                len([u for u in agent_units.values() if u.unit_type == UnitType.HEAVY]),
-                len([u for u in agent_units.values() if u.unit_type == UnitType.LIGHT]),
                 update_rubble_cleared_off_positions(
                     env.state, agent, self.rubble_by_ice_pos
                 ),
@@ -72,9 +69,24 @@ class AgentRunningStats:
                 ),
             ]
         )
+        new_accumulation_stats = (
+            self.stats[len(delta) : len(delta) + len(accumulation_stats)]
+            + accumulation_stats
+        )
 
-        self.stats = np.concatenate((new_delta_stats, new_current_stats))
-        return np.concatenate((delta, new_current_stats))
+        agent_units = env.state.units[agent]
+        new_current_stats = np.array(
+            [
+                len(env.state.factories[agent]),
+                len([u for u in agent_units.values() if u.unit_type == UnitType.HEAVY]),
+                len([u for u in agent_units.values() if u.unit_type == UnitType.LIGHT]),
+            ]
+        )
+
+        self.stats = np.concatenate(
+            (new_delta_stats, new_accumulation_stats, new_current_stats)
+        )
+        return np.concatenate((delta, accumulation_stats, new_current_stats))
 
 
 def update_rubble_cleared_off_positions(
