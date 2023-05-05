@@ -17,14 +17,12 @@ class Algorithm(ABC):
     def __init__(
         self,
         policy: Policy,
-        env: VecEnv,
         device: torch.device,
         tb_writer: SummaryWriter,
         **kwargs,
     ) -> None:
         super().__init__()
         self.policy = policy
-        self.env = env
         self.device = device
         self.tb_writer = tb_writer
 

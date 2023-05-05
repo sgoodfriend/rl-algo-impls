@@ -11,7 +11,11 @@ from rl_algo_impls.wrappers.vectorable_wrapper import (
 
 class SyncStepRolloutGenerator(RolloutGenerator):
     def __init__(
-        self, n_steps: int, sde_sample_freq: int, policy: ActorCritic, vec_env: VecEnv
+        self,
+        policy: ActorCritic,
+        vec_env: VecEnv,
+        n_steps: int = 2048,
+        sde_sample_freq: int = -1,
     ) -> None:
         super().__init__(n_steps, sde_sample_freq)
         self.policy = policy

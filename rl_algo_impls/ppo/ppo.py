@@ -9,6 +9,7 @@ import torch.nn as nn
 from torch.optim import Adam
 from torch.utils.tensorboard.writer import SummaryWriter
 
+from rl_algo_impls.ppo.rollout import RolloutGenerator
 from rl_algo_impls.ppo.sync_step_rollout import SyncStepRolloutGenerator
 from rl_algo_impls.shared.algorithm import Algorithm
 from rl_algo_impls.shared.callbacks import Callback
@@ -86,12 +87,10 @@ class PPO(Algorithm):
     def __init__(
         self,
         policy: ActorCritic,
-        env: VecEnv,
         device: torch.device,
         tb_writer: SummaryWriter,
         learning_rate: float = 3e-4,
         learning_rate_decay: str = "none",
-        n_steps: int = 2048,
         batch_size: int = 64,
         n_epochs: int = 10,
         gamma: NL = 0.99,
@@ -106,13 +105,12 @@ class PPO(Algorithm):
         vf_coef: NumOrList = 0.5,
         ppo2_vf_coef_halving: bool = False,
         max_grad_norm: float = 0.5,
-        sde_sample_freq: int = -1,
         update_advantage_between_epochs: bool = True,
         update_returns_between_epochs: bool = False,
         gamma_end: Optional[NL] = None,
         multi_reward_weights: Optional[List[int]] = None,
     ) -> None:
-        super().__init__(policy, env, device, tb_writer)
+        super().__init__(policy, device, tb_writer)
         self.policy = policy
 
         self.gamma_schedule = (
@@ -129,20 +127,14 @@ class PPO(Algorithm):
         if clip_range_vf:
             self.clip_range_vf_schedule = schedule(clip_range_vf_decay, clip_range_vf)
 
-        if normalize_advantage:
-            assert (
-                env.num_envs * n_steps > 1 and batch_size > 1
-            ), f"Each minibatch must be larger than 1 to support normalization"
         self.normalize_advantage = normalize_advantage
 
         self.ent_coef_schedule = schedule(ent_coef_decay, ent_coef)
         self.vf_coef = num_or_array(vf_coef)
         self.ppo2_vf_coef_halving = ppo2_vf_coef_halving
 
-        self.n_steps = n_steps
         self.batch_size = batch_size
         self.n_epochs = n_epochs
-        self.sde_sample_freq = sde_sample_freq
 
         self.update_advantage_between_epochs = update_advantage_between_epochs
         self.update_returns_between_epochs = update_returns_between_epochs
@@ -154,6 +146,7 @@ class PPO(Algorithm):
     def learn(
         self: PPOSelf,
         train_timesteps: int,
+        rollout_generator: RolloutGenerator,
         callbacks: Optional[List[Callback]] = None,
         total_timesteps: Optional[int] = None,
         start_timesteps: int = 0,
@@ -161,10 +154,6 @@ class PPO(Algorithm):
         if total_timesteps is None:
             total_timesteps = train_timesteps
         assert start_timesteps + train_timesteps <= total_timesteps
-
-        rollout_generator = SyncStepRolloutGenerator(
-            self.n_steps, self.sde_sample_freq, self.policy, self.env
-        )
 
         timesteps_elapsed = start_timesteps
         while timesteps_elapsed < start_timesteps + train_timesteps:
@@ -360,7 +349,7 @@ class PPO(Algorithm):
             )
 
             end_time = perf_counter()
-            rollout_steps = self.n_steps * self.env.num_envs
+            rollout_steps = total_steps
             self.tb_writer.add_scalar(
                 "train/steps_per_second",
                 rollout_steps / (end_time - start_time),

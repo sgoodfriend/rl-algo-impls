@@ -76,6 +76,7 @@ class Hyperparams:
     lux_hyperparam_transitions_kwargs: Dict[str, Any] = dataclasses.field(
         default_factory=dict
     )
+    rollout_hyperparams: Dict[str, Any] = dataclasses.field(default_factory=dict)
 
     @classmethod
     def from_dict_with_extra_fields(
@@ -122,6 +123,10 @@ class Config:
     @property
     def eval_hyperparams(self) -> Dict[str, Any]:
         return self.hyperparams.eval_hyperparams
+
+    @property
+    def rollout_hyperparams(self) -> Dict[str, Any]:
+        return self.hyperparams.rollout_hyperparams
 
     def eval_callback_params(self) -> Dict[str, Any]:
         eval_hyperparams = self.eval_hyperparams.copy()
