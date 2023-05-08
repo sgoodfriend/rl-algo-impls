@@ -31,9 +31,6 @@ def place_factory_action(
         [pos_to_numpy(f.pos) for f in state.factories[p2].values()]
     )
 
-    water_left = state.teams[p1].init_water
-    metal_left = state.teams[p1].init_metal
-
     potential_spawns = np.argwhere(state.board.valid_spawns_mask)
 
     ice_tile_locations = np.argwhere(state.board.ice)
@@ -85,8 +82,19 @@ def place_factory_action(
             best_score = score
             best_loc = loc
 
+    water_left = state.teams[p1].init_water
+    metal_left = state.teams[p1].init_metal
+    factories_to_place = state.teams[p1].factories_to_place
+    heavy_cost_metal = env_cfg.ROBOTS["HEAVY"].METAL_COST
+    metal = (
+        min(metal_left - factories_to_place * heavy_cost_metal, heavy_cost_metal)
+        + heavy_cost_metal
+    )
+    water = metal
+    assert factories_to_place > 1 or (metal == metal_left and water == water_left)
+
     return {
-        "metal": min(env_cfg.INIT_WATER_METAL_PER_FACTORY, metal_left),
-        "water": min(env_cfg.INIT_WATER_METAL_PER_FACTORY, water_left),
+        "metal": metal,
+        "water": water,
         "spawn": best_loc.tolist(),
     }
