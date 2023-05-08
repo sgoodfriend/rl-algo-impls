@@ -1,17 +1,17 @@
 import logging
 from dataclasses import astuple
 from functools import total_ordering
-from typing import Any, Dict, List, NamedTuple, Optional, Set, Tuple, TypeVar, Union
+from typing import Any, Dict, List, NamedTuple, Optional, TypeVar, Union
 
 import numpy as np
 from luxai_s2.actions import move_deltas
-from luxai_s2.map.position import Position
 
 from rl_algo_impls.lux.shared import (
     LuxEnvConfig,
     LuxFactory,
     LuxGameState,
     LuxUnit,
+    move_power_cost,
     pos_to_idx,
     pos_to_numpy,
 )
@@ -80,7 +80,7 @@ def to_lux_actions(
     for u in state.units[player].values():
         if no_valid_unit_actions(u, action_mask, cfg.map_size):
             if cfg.verbose > 1:
-                logging.warn(f"No valid action for unit {u}")
+                logging.warn(f"{state.real_env_steps}: No valid action for unit {u}")
             action_stats.no_valid_action += 1
             positions_occupied[pos_to_idx(u.pos, cfg.map_size)] = u.unit_id
             continue
@@ -106,7 +106,7 @@ def to_lux_actions(
             positions_occupied[target_pos_idx] = u.unit_id
             resource = 0
             amount = 0
-            repeat = max_move_repeats(u, direction, cfg)
+            repeat = max_move_repeats(u, direction, state)
         else:
             positions_occupied[pos_to_idx(u.pos, cfg.map_size)] = u.unit_id
 
@@ -138,7 +138,6 @@ def to_lux_actions(
                 resource = 0
                 amount = 0
                 repeat = u.power // u.unit_cfg.DIG_COST
-                assert repeat > 0
             elif a[0] == 4:  # self-destruct
                 direction = 0
                 resource = 0
@@ -151,7 +150,7 @@ def to_lux_actions(
                 repeat = 1
             else:
                 raise ValueError(f"Unrecognized action {a[0]}")
-
+        assert repeat > 0
         if actions_equal(a, enqueued_actions.get(u.unit_id)):
             action_stats.repeat_action += 1
             continue
@@ -217,19 +216,26 @@ class UnitAction(NamedTuple):
         return is_move == is_other_move and is_unit_heavy == is_other_unit_heavy
 
 
-def max_move_repeats(unit: LuxUnit, direction_idx: int, config: LuxEnvConfig) -> int:
-    def steps_til_edge(p: int, delta: int) -> int:
-        if delta < 0:
-            return p
-        else:
-            return config.map_size - p - 1
+def is_position_in_map(pos: np.ndarray, config: LuxEnvConfig) -> bool:
+    return bool(np.all(pos >= 0) and np.all(pos < config.map_size))
 
+
+def max_move_repeats(unit: LuxUnit, direction_idx: int, state: LuxGameState) -> int:
+    config = state.env_cfg
+    num_repeats = 0
+    power_remaining = unit.power
     move_delta = move_deltas[direction_idx]
-    pos = pos_to_numpy(unit.pos)
-    if move_delta[0]:
-        return steps_til_edge(pos[0], move_delta[0])
-    else:
-        return steps_til_edge(pos[1], move_delta[1])
+    assert not bool(np.all(move_delta == 0)), "No move Move action not expected"
+    target_pos = pos_to_numpy(unit.pos)
+    while True:
+        target_pos += move_delta
+        if not is_position_in_map(target_pos, config):
+            return num_repeats
+        rubble = int(state.board.rubble[target_pos[0], target_pos[1]])
+        power_remaining -= move_power_cost(unit, rubble)
+        if power_remaining <= 0:
+            return num_repeats
+        num_repeats += 1
 
 
 def enqueued_action_from_obs(action_queue: List[np.ndarray]) -> Optional[np.ndarray]:

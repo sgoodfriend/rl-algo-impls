@@ -7,6 +7,7 @@ from luxai_s2.actions import move_deltas
 from rl_algo_impls.lux.actions import (
     FACTORY_ACTION_ENCODED_SIZE,
     factory_at_pos,
+    is_position_in_map,
     min_factory_resources,
 )
 from rl_algo_impls.lux.shared import (
@@ -131,10 +132,6 @@ def valid_destination_map(
             if valid_moves_mask[direction_idx] or direction_idx == 0:
                 move_validity_map[pos[0] + move_delta[0], pos[1] + move_delta[1]] += 1
     return move_validity_map
-
-
-def is_position_in_map(pos: np.ndarray, config: LuxEnvConfig) -> bool:
-    return bool(np.all(pos >= 0) and np.all(pos < config.map_size))
 
 
 def valid_move_mask(
