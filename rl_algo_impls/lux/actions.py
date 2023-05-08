@@ -76,6 +76,11 @@ def to_lux_actions(
             )
         positions_occupied[current_pos_idx] = unit.unit_id
 
+    def resource_amount(unit: Union[LuxUnit, LuxFactory], idx: int) -> int:
+        if idx == 4:
+            return unit.power
+        return astuple(unit.cargo)[idx]
+
     unit_actions = []
     for u in state.units[player].values():
         if no_valid_unit_actions(u, action_mask, cfg.map_size):
@@ -89,11 +94,6 @@ def to_lux_actions(
 
     for u, a in unit_actions:
         action_stats.action_type[a[0]] += 1
-
-        def resource_amount(unit: Union[LuxUnit, LuxFactory], idx: int) -> int:
-            if idx == 4:
-                return unit.power
-            return astuple(unit.cargo)[idx]
 
         if a[0] == 0:  # move
             direction = a[1]
@@ -113,10 +113,8 @@ def to_lux_actions(
             if a[0] == 1:  # transfer
                 direction = a[2]
                 resource = a[3]
-                amount = resource_amount(
-                    u, resource
-                )  # TODO: This can lead to waste (especially for light robots)
-                repeat = cfg.max_episode_length
+                amount = resource_amount(u, resource)
+                repeat = 1  # TODO: Not efficient (especially for transfer chains)
             elif a[0] == 2:  # pickup
                 direction = 0
                 resource = a[4]
@@ -160,17 +158,36 @@ def to_lux_actions(
             np.array([a[0], direction, resource, amount, 0, repeat])
         ]
 
-    # Check transfers have valid targets
+    actions_by_u_id = {u.unit_id: a for u, a in unit_actions}
+    # Check transfers have valid targets and adjust amounts by capacity
     for u, a in unit_actions:
         if a[0] != 1:
             continue
         target_pos = pos_to_numpy(u.pos) + move_deltas[a[2]]
         if state.board.factory_occupancy_map[target_pos[0], target_pos[1]] != -1:
             continue
-        target_pos_idx = pos_to_idx(target_pos, cfg.map_size)
-        if target_pos_idx not in positions_occupied:
+        target_unit_id = positions_occupied.get(pos_to_idx(target_pos, cfg.map_size))
+        if target_unit_id is None:
             cancel_action(u)
             action_stats.transfer_cancelled += 1
+            continue
+        target_unit = state.units[player][target_unit_id]
+        resource = a[3]
+        target_capacity = (
+            target_unit.cargo_space if resource < 4 else target_unit.battery_capacity
+        )
+        if not (
+            target_unit_id in actions_by_u_id
+            and actions_by_u_id[target_unit_id][0] == 1
+            and actions_by_u_id[target_unit_id][3] == resource
+        ):
+            target_capacity -= resource_amount(target_unit, resource)
+        amount = min(lux_actions[u.unit_id][0][3], target_capacity)
+        if amount <= 0:
+            cancel_action(u)
+            action_stats.transfer_cancelled += 1
+            continue
+        lux_actions[u.unit_id][0][3] = amount
 
     for f in state.factories[player].values():
         a = actions[pos_to_idx(f.pos, cfg.map_size), 0]
