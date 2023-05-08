@@ -675,8 +675,8 @@ LuxAI_S2-v0: &lux-defaults
     n_steps: 384
     batch_size: 2304
     n_epochs: 4
-    learning_rate: !!float 2e-4
-    learning_rate_decay: spike
+    learning_rate: !!float 1e-4
+    learning_rate_decay: none
     ent_coef: 0.01
     ent_coef_decay: linear
     vf_coef: 0.5
