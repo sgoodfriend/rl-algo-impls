@@ -89,7 +89,7 @@ def to_lux_actions(
     for u, a in unit_actions:
         action_stats.action_type[a[0]] += 1
 
-        def resource_amount(unit: LuxUnit, idx: int) -> int:
+        def resource_amount(unit: Union[LuxUnit, LuxFactory], idx: int) -> int:
             if idx == 4:
                 return unit.power
             return astuple(unit.cargo)[idx]
@@ -119,8 +119,17 @@ def to_lux_actions(
             elif a[0] == 2:  # pickup
                 direction = 0
                 resource = a[4]
-                capacity = u.cargo_space if resource < 4 else u.battery_capacity
-                amount = capacity - resource_amount(u, resource)
+                _capacity = u.cargo_space if resource < 4 else u.battery_capacity
+                _factory = factory_at_pos(state, pos_to_numpy(u.pos))
+                assert _factory is not None
+                _factory_amount = resource_amount(_factory, resource)
+                amount = max(
+                    min(
+                        _capacity - resource_amount(u, resource),
+                        _factory_amount - int(min_factory_resources(cfg)[resource]),
+                    ),
+                    0,
+                )
             elif a[0] == 3:  # dig
                 direction = 0
                 resource = 0
@@ -248,3 +257,18 @@ def no_valid_unit_actions(
             FACTORY_ACTION_ENCODED_SIZE : FACTORY_ACTION_ENCODED_SIZE + 6,
         ]
     )
+
+
+def factory_at_pos(state: LuxGameState, pos: np.ndarray) -> Optional[LuxFactory]:
+    factory_idx = state.board.factory_occupancy_map[pos[0], pos[1]]
+    if factory_idx == -1:
+        return None
+    factory_id = f"factory_{factory_idx}"
+    if factory_id in state.factories["player_0"]:
+        return state.factories["player_0"][factory_id]
+    else:
+        return state.factories["player_1"][factory_id]
+
+
+def min_factory_resources(cfg: LuxEnvConfig) -> np.ndarray:
+    return np.array([0, 0, cfg.FACTORY_WATER_CONSUMPTION * cfg.CYCLE_LENGTH, 0, 0])

@@ -4,7 +4,11 @@ from typing import Any, Dict, Optional, Tuple
 import numpy as np
 from luxai_s2.actions import move_deltas
 
-from rl_algo_impls.lux.actions import FACTORY_ACTION_ENCODED_SIZE
+from rl_algo_impls.lux.actions import (
+    FACTORY_ACTION_ENCODED_SIZE,
+    factory_at_pos,
+    min_factory_resources,
+)
 from rl_algo_impls.lux.shared import (
     LuxEnvConfig,
     LuxFactory,
@@ -224,13 +228,12 @@ def valid_pickup_resource_mask(
     if (enqueued_action is None or enqueued_action[0] != 2) and not has_power_to_change:
         return np.zeros(5)
     pos = pos_to_numpy(unit.pos)
-    factory_id = state.board.factory_occupancy_map[pos[0], pos[1]]
-    if factory_id == -1:
+    factory = factory_at_pos(state, pos)
+    if not factory:
         return np.zeros(5)
-    factory = state.factories[agent_id(unit)][f"factory_{factory_id}"]
-    has_resource = np.array(astuple(factory.cargo) + (factory.power,)) > np.array(
-        [0, 0, config.FACTORY_WATER_CONSUMPTION * config.CYCLE_LENGTH, 0, 0]
-    )
+    has_resource = np.array(
+        astuple(factory.cargo) + (factory.power,)
+    ) > min_factory_resources(config)
     has_capacity = np.concatenate(
         [
             np.array(astuple(unit.cargo)) < unit.cargo_space,
