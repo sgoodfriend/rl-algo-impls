@@ -9,6 +9,7 @@ from luxai_s2.map.position import Position
 
 from rl_algo_impls.lux.shared import (
     LuxEnvConfig,
+    LuxFactory,
     LuxGameState,
     LuxUnit,
     pos_to_idx,
