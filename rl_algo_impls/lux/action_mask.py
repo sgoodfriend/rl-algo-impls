@@ -55,7 +55,7 @@ def get_action_mask(
             u, state, config, move_mask, move_validity_map, enqueued_action
         )
         transfer_resource_mask = (
-            valid_transfer_resource_mask(u)
+            valid_transfer_resource_mask(u, enqueued_action)
             if np.any(transfer_direction_mask)
             else np.zeros(5)
         )
@@ -63,7 +63,7 @@ def get_action_mask(
         valid_action_types = np.array(
             [
                 np.any(move_mask),
-                np.any(transfer_direction_mask),
+                np.any(transfer_direction_mask) and np.any(transfer_resource_mask),
                 np.any(pickup_resource_mask),
                 is_dig_valid(u, state, enqueued_action),
                 if_self_destruct_valid(u, state, enqueued_action),
@@ -213,8 +213,19 @@ def valid_transfer_direction_mask(
     )
 
 
-def valid_transfer_resource_mask(unit: LuxUnit) -> np.ndarray:
-    return np.array(astuple(unit.cargo) + (unit.power,)) > 0
+def valid_transfer_resource_mask(
+    unit: LuxUnit,
+    enqueued_action: Optional[np.ndarray],
+) -> np.ndarray:
+    has_resources = np.array(astuple(unit.cargo) + (unit.power,)) > 0
+    if unit.power < unit.unit_cfg.ACTION_QUEUE_POWER_COST:
+        zeros = np.full(5, False)
+        if enqueued_action is not None and enqueued_action[0] == 1:
+            prior_resource = enqueued_action[3]
+            zeros[prior_resource] = has_resources[prior_resource]
+        return zeros
+
+    return has_resources
 
 
 def valid_pickup_resource_mask(

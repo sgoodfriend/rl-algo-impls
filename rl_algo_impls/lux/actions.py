@@ -155,6 +155,7 @@ def to_lux_actions(
             action_stats.repeat_action += 1
             continue
 
+        assert u.power >= u.unit_cfg.ACTION_QUEUE_POWER_COST
         lux_actions[u.unit_id] = [
             np.array([a[0], direction, resource, amount, 0, repeat])
         ]
@@ -233,7 +234,7 @@ def max_move_repeats(unit: LuxUnit, direction_idx: int, state: LuxGameState) -> 
             return num_repeats
         rubble = int(state.board.rubble[target_pos[0], target_pos[1]])
         power_remaining -= move_power_cost(unit, rubble)
-        if power_remaining <= 0:
+        if power_remaining < 0:
             return num_repeats
         num_repeats += 1
 
