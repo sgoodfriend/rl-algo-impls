@@ -1,3 +1,4 @@
+import logging
 from typing import Any, Dict, List, NamedTuple, Optional, Tuple, Type, TypeVar
 
 import numpy as np
@@ -78,6 +79,7 @@ class LuxEnvGridnet(Wrapper):
         env,
         bid_std_dev: float = 5,
         reward_weights: Optional[Dict[str, float]] = None,
+        verify: bool = False,
     ) -> None:
         super().__init__(env)
         self.bid_std_dev = bid_std_dev
@@ -85,6 +87,7 @@ class LuxEnvGridnet(Wrapper):
             self.reward_weights = LuxRewardWeights.default_start()
         else:
             self.reward_weights = LuxRewardWeights(**reward_weights)
+        self.verify = verify
         self.map_size = self.unwrapped.env_cfg.map_size
 
         self.stats = StatsTracking()
@@ -226,6 +229,7 @@ class LuxEnvGridnet(Wrapper):
             )
             for idx, agent in enumerate(self.agents):
                 agent_stats = self.stats.agent_stats[idx]
+                action_stats = self.stats.action_stats[idx]
                 info[agent]["stats"] = dict(
                     zip(agent_stats.NAMES, agent_stats.stats.tolist())
                 )
@@ -234,9 +238,16 @@ class LuxEnvGridnet(Wrapper):
                 actions_total = state_agent_stats["action_queue_updates_total"]
                 info[agent]["stats"]["actions_success"] = actions_success
                 info[agent]["stats"]["actions_failed"] = actions_total - actions_success
-                info[agent]["stats"].update(
-                    self.stats.action_stats[idx].stats_dict(prefix="actions_")
-                )
+                info[agent]["stats"].update(action_stats.stats_dict(prefix="actions_"))
+                if self.verify:
+                    assert actions_total - actions_success == 0
+                    built_robots = agent_stats.built_light + agent_stats.built_heavy
+                    alive_robots = agent_stats.heavies_alive + agent_stats.lights_alive
+                    self_destructs = action_stats.self_destruct
+                    if alive_robots + self_destructs != built_robots:
+                        logging.warn(
+                            f"alive ({alive_robots}) + self-destruct {self_destructs} != built {built_robots}"
+                        )
                 info[agent]["results"] = {
                     "WinLoss": _win_loss[idx],
                     "win": int(_win_loss[idx] == 1),

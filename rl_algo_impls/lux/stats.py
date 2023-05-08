@@ -88,6 +88,11 @@ class AgentRunningStats:
         )
         return np.concatenate((delta, accumulation_stats, new_current_stats))
 
+    def __getattr__(self, name):
+        if name in self.NAMES:
+            return self.stats[self.NAMES.index(name)]
+        raise AttributeError(f"{self.__class__.__name__} has no attribute {name}")
+
 
 def update_rubble_cleared_off_positions(
     state: LuxGameState, agent: str, rubble_by_pos: Dict[int, int]
@@ -135,6 +140,11 @@ class ActionStats:
         _dict[f"{prefix}transfer_cancelled"] = self.transfer_cancelled
         _dict[f"{prefix}build_cancelled"] = self.build_cancelled
         return _dict
+
+    def __getattr__(self, name: str):
+        if name in self.ACTION_NAMES:
+            return self.action_type[self.ACTION_NAMES.index(name)]
+        raise AttributeError(f"{self.__class__.__name__} has no attribute {name}")
 
 
 class StatsTracking:

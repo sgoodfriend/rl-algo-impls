@@ -806,6 +806,10 @@ LuxAI_S2-v0-debug:
   env_hyperparams:
     <<: *lux-env-defaults
     vec_env_class: sync
+    make_kwargs:
+      <<: *lux-env-make-defaults
+      verbose: 3
+      verify: true
   eval_hyperparams:
     <<: *lux-eval-defaults
     step_freq: !!float 1e5

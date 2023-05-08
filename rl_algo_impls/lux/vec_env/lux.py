@@ -4,12 +4,12 @@ from typing import Callable, Dict, Optional
 import gym
 from torch.utils.tensorboard.writer import SummaryWriter
 
-from rl_algo_impls.runner.config import Config, EnvHyperparams
 from rl_algo_impls.lux.vec_env.lux_async_vector_env import LuxAsyncVectorEnv
 from rl_algo_impls.lux.vec_env.vec_lux_env import VecLuxEnv
+from rl_algo_impls.lux.wrappers.lux_env_gridnet import LuxEnvGridnet
+from rl_algo_impls.runner.config import Config, EnvHyperparams
 from rl_algo_impls.wrappers.episode_stats_writer import EpisodeStatsWriter
 from rl_algo_impls.wrappers.hwc_to_chw_observation import HwcToChwObservation
-from rl_algo_impls.lux.wrappers.lux_env_gridnet import LuxEnvGridnet
 from rl_algo_impls.wrappers.self_play_eval_wrapper import SelfPlayEvalWrapper
 from rl_algo_impls.wrappers.self_play_wrapper import SelfPlayWrapper
 from rl_algo_impls.wrappers.vectorable_wrapper import VecEnv
@@ -60,12 +60,14 @@ def make_lux_env(
             def _gridnet(
                 bid_std_dev=5,
                 reward_weights: Optional[Dict[str, float]] = None,
+                verify: bool = False,
                 **kwargs,
             ) -> LuxEnvGridnet:
                 return LuxEnvGridnet(
                     gym.make("LuxAI_S2-v0", collect_stats=True, **kwargs),
                     bid_std_dev=bid_std_dev,
                     reward_weights=reward_weights,
+                    verify=verify,
                 )
 
             return _gridnet(**make_kwargs)

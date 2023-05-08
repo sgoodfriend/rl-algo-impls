@@ -17,6 +17,7 @@ class VecLuxEnv(VectorEnv):
         num_envs: int,
         bid_std_dev: float = 5,
         reward_weights: Optional[Dict[str, float]] = None,
+        verify: bool = False,
         **kwargs,
     ) -> None:
         assert num_envs % 2 == 0, f"{num_envs} must be even"
@@ -25,6 +26,7 @@ class VecLuxEnv(VectorEnv):
                 gym.make("LuxAI_S2-v0", collect_stats=True, **kwargs),
                 bid_std_dev=bid_std_dev,
                 reward_weights=reward_weights,
+                verify=verify,
             )
             for _ in range(num_envs // 2)
         ]
