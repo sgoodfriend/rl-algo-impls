@@ -95,7 +95,6 @@ def to_lux_actions(
                 return unit.power
             return astuple(unit.cargo)[idx]
 
-        repeat = cfg.max_episode_length
         if a[0] == 0:  # move
             direction = a[1]
             target_pos_idx = pos_to_idx(
@@ -117,6 +116,7 @@ def to_lux_actions(
                 amount = resource_amount(
                     u, resource
                 )  # TODO: This can lead to waste (especially for light robots)
+                repeat = cfg.max_episode_length
             elif a[0] == 2:  # pickup
                 direction = 0
                 resource = a[4]
@@ -131,18 +131,24 @@ def to_lux_actions(
                     ),
                     0,
                 )
+                assert amount > 0
+                repeat = 1
             elif a[0] == 3:  # dig
                 direction = 0
                 resource = 0
                 amount = 0
+                repeat = u.power // u.unit_cfg.DIG_COST
+                assert repeat > 0
             elif a[0] == 4:  # self-destruct
                 direction = 0
                 resource = 0
                 amount = 0
+                repeat = 1
             elif a[0] == 5:  # recharge
                 direction = 0
                 resource = 0
                 amount = u.battery_capacity
+                repeat = 1
             else:
                 raise ValueError(f"Unrecognized action {a[0]}")
 
