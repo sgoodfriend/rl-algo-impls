@@ -100,7 +100,7 @@ def is_water_action_valid(
     factory: LuxFactory, state: LuxGameState, config: LuxEnvConfig
 ) -> bool:
     water_cost = factory_water_cost(factory, state, config)
-    return factory.cargo.water >= water_cost
+    return factory.cargo.water > water_cost
 
 
 # Unit validity checks
@@ -219,6 +219,7 @@ def valid_transfer_resource_mask(unit: LuxUnit) -> np.ndarray:
 def valid_pickup_resource_mask(
     unit: LuxUnit, state: LuxGameState, enqueued_action: Optional[np.ndarray]
 ) -> np.ndarray:
+    config = state.env_cfg
     has_power_to_change = unit.power >= unit.unit_cfg.ACTION_QUEUE_POWER_COST
     if (enqueued_action is None or enqueued_action[0] != 2) and not has_power_to_change:
         return np.zeros(5)
@@ -227,7 +228,9 @@ def valid_pickup_resource_mask(
     if factory_id == -1:
         return np.zeros(5)
     factory = state.factories[agent_id(unit)][f"factory_{factory_id}"]
-    has_resource = np.array(astuple(factory.cargo) + (factory.power,)) > 0
+    has_resource = np.array(astuple(factory.cargo) + (factory.power,)) > np.array(
+        [0, 0, config.FACTORY_WATER_CONSUMPTION * config.CYCLE_LENGTH, 0, 0]
+    )
     has_capacity = np.concatenate(
         [
             np.array(astuple(unit.cargo)) < unit.cargo_space,
@@ -271,14 +274,14 @@ def is_dig_valid(
 def if_self_destruct_valid(
     unit: LuxUnit, state: LuxGameState, enqueued_action: Optional[np.ndarray]
 ) -> bool:
-    pos = pos_to_numpy(unit.pos)
-    factory_id = state.board.factory_occupancy_map[pos[0], pos[1]]
-    if factory_id != -1:
-        return False
     power_cost = unit.unit_cfg.SELF_DESTRUCT_COST
     if enqueued_action is None or enqueued_action[0] != 4:
         power_cost += unit.unit_cfg.ACTION_QUEUE_POWER_COST
     if unit.power < power_cost:
+        return False
+    pos = pos_to_numpy(unit.pos)
+    factory_id = state.board.factory_occupancy_map[pos[0], pos[1]]
+    if factory_id != -1:
         return False
     return True
 
