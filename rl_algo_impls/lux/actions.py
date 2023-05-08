@@ -228,7 +228,7 @@ def max_move_repeats(unit: LuxUnit, direction_idx: int, state: LuxGameState) -> 
     assert not bool(np.all(move_delta == 0)), "No move Move action not expected"
     target_pos = pos_to_numpy(unit.pos)
     while True:
-        target_pos += move_delta
+        target_pos = target_pos + move_delta
         if not is_position_in_map(target_pos, config):
             return num_repeats
         rubble = int(state.board.rubble[target_pos[0], target_pos[1]])
