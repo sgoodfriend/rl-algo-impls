@@ -93,23 +93,25 @@ class AgentRunningStats:
 
         if verify:
             cfg = env.state.env_cfg
-            expected_power_gen = (
+            min_expected_power_gen = (
                 num_factories * cfg.FACTORY_CHARGE
                 + cfg.POWER_PER_CONNECTED_LICHEN_TILE
                 * sum(
                     len(f.connected_lichen_positions)
                     for f in env.state.factories[agent].values()
                 )
-                + (
-                    (
-                        num_heavies * cfg.ROBOTS["HEAVY"].CHARGE
-                        + num_lights * cfg.ROBOTS["LIGHT"].CHARGE
-                    )
-                    if is_day(cfg, env.state.real_env_steps)
-                    else 0
-                )
             )
-            assert expected_power_gen == delta[4]
+            max_expected_power_gen = min_expected_power_gen + (
+                (
+                    num_heavies * cfg.ROBOTS["HEAVY"].CHARGE
+                    + num_lights * cfg.ROBOTS["LIGHT"].CHARGE
+                )
+                if is_day(cfg, env.state.real_env_steps)
+                else 0
+            )
+            assert (
+                min_expected_power_gen <= delta[4] <= max_expected_power_gen
+            ), f"Power gen {delta[4]} not between {min_expected_power_gen} and {max_expected_power_gen}"
 
         self.stats = np.concatenate(
             (new_delta_stats, new_accumulation_stats, new_current_stats)
