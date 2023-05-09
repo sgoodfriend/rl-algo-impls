@@ -152,7 +152,7 @@ class LuxEnvGridnet(Wrapper):
     def reset(self) -> np.ndarray:
         lux_obs, self.agents = reset_and_early_phase(self.unwrapped, self.bid_std_dev)
         self._enqueued_actions = {}
-        self.stats.reset(self.unwrapped, self.verify)
+        self.stats.reset(self.unwrapped)
         return self._from_lux_observation(lux_obs)
 
     def _from_lux_observation(
@@ -250,7 +250,7 @@ class LuxEnvGridnet(Wrapper):
                 }
         else:
             _done_rewards = np.zeros((2, 2))
-        _stats_delta = self.stats.update(self.verify)
+        _stats_delta = self.stats.update()
         raw_rewards = np.concatenate(
             [
                 _done_rewards,

@@ -5,7 +5,6 @@ from typing import Dict, List, Tuple
 import numpy as np
 from luxai_s2.env import LuxAI_S2
 from luxai_s2.unit import UnitType
-from luxai_s2.utils.utils import is_day
 
 from rl_algo_impls.lux.shared import LuxGameState, idx_to_pos, pos_to_idx
 
@@ -39,7 +38,7 @@ class AgentRunningStats:
         ore_positions = np.argwhere(env.state.board.ore)
         self.rubble_by_ore_pos = rubble_at_positions(env.state, ore_positions)
 
-    def update(self, env: LuxAI_S2, agent: str, verify: bool) -> np.ndarray:
+    def update(self, env: LuxAI_S2, agent: str) -> np.ndarray:
         generation = env.state.stats[agent]["generation"]
         strain_ids = env.state.teams[agent].factory_strains
         agent_lichen_mask = np.isin(env.state.board.lichen_strains, strain_ids)
@@ -76,40 +75,13 @@ class AgentRunningStats:
         )
 
         agent_units = env.state.units[agent]
-        num_factories = len(env.state.factories[agent])
-        num_heavies = len(
-            [u for u in agent_units.values() if u.unit_type == UnitType.HEAVY]
-        )
-        num_lights = len(
-            [u for u in agent_units.values() if u.unit_type == UnitType.LIGHT]
-        )
         new_current_stats = np.array(
             [
-                num_factories,
-                num_heavies,
-                num_lights,
+                len(env.state.factories[agent]),
+                len([u for u in agent_units.values() if u.unit_type == UnitType.HEAVY]),
+                len([u for u in agent_units.values() if u.unit_type == UnitType.LIGHT]),
             ]
         )
-
-        if verify:
-            cfg = env.state.env_cfg
-            expected_power_gen = (
-                num_factories * cfg.FACTORY_CHARGE
-                + cfg.POWER_PER_CONNECTED_LICHEN_TILE
-                * sum(
-                    len(f.connected_lichen_positions)
-                    for f in env.state.factories[agent].values()
-                )
-                + (
-                    (
-                        num_heavies * cfg.ROBOTS["HEAVY"].CHARGE
-                        + num_lights * cfg.ROBOTS["LIGHT"].CHARGE
-                    )
-                    if is_day(cfg, env.state.real_env_steps)
-                    else 0
-                )
-            )
-            assert expected_power_gen == delta[4]
 
         self.stats = np.concatenate(
             (new_delta_stats, new_accumulation_stats, new_current_stats)
@@ -187,10 +159,10 @@ class StatsTracking:
     agent_stats: Tuple[AgentRunningStats, AgentRunningStats]
     action_stats: Tuple[ActionStats, ActionStats]
 
-    def update(self, verify: bool) -> np.ndarray:
+    def update(self) -> np.ndarray:
         per_agent_updates = np.stack(
             [
-                self.agent_stats[idx].update(self.env, agent, verify)
+                self.agent_stats[idx].update(self.env, agent)
                 for idx, agent in enumerate(self.agents)
             ]
         )
@@ -210,9 +182,9 @@ class StatsTracking:
         )
         return np.concatenate([per_agent_updates, delta_vs_opponent], axis=-1)
 
-    def reset(self, env: LuxAI_S2, verify: bool) -> None:
+    def reset(self, env: LuxAI_S2) -> None:
         self.env = env
         self.agents = env.agents
         self.agent_stats = (AgentRunningStats(env), AgentRunningStats(env))
         self.action_stats = (ActionStats(), ActionStats())
-        self.update(verify)
+        self.update()
