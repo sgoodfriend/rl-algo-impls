@@ -1,4 +1,3 @@
-import logging
 from typing import Any, Dict, List, NamedTuple, Optional, Tuple, Type, TypeVar
 
 import numpy as np
@@ -241,13 +240,6 @@ class LuxEnvGridnet(Wrapper):
                 info[agent]["stats"].update(action_stats.stats_dict(prefix="actions_"))
                 if self.verify:
                     assert actions_total - actions_success == 0
-                    built_robots = agent_stats.built_light + agent_stats.built_heavy
-                    alive_robots = agent_stats.heavies_alive + agent_stats.lights_alive
-                    self_destructs = action_stats.self_destruct
-                    if alive_robots + self_destructs != built_robots:
-                        logging.warn(
-                            f"alive ({alive_robots}) + self-destruct {self_destructs} != built {built_robots}"
-                        )
                 info[agent]["results"] = {
                     "WinLoss": _win_loss[idx],
                     "win": int(_win_loss[idx] == 1),

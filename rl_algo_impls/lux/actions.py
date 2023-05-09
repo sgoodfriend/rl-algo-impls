@@ -84,8 +84,8 @@ def to_lux_actions(
     unit_actions = []
     for u in state.units[player].values():
         if no_valid_unit_actions(u, action_mask, cfg.map_size):
-            if cfg.verbose > 1:
-                logging.warn(f"{state.real_env_steps}: No valid action for unit {u}")
+            if cfg.verbose > 2:
+                logging.info(f"{state.real_env_steps}: No valid action for unit {u}")
             action_stats.no_valid_action += 1
             positions_occupied[pos_to_idx(u.pos, cfg.map_size)] = u.unit_id
             continue
@@ -169,7 +169,7 @@ def to_lux_actions(
         target_unit_id = positions_occupied.get(pos_to_idx(target_pos, cfg.map_size))
         if target_unit_id is None:
             cancel_action(u)
-            action_stats.transfer_cancelled += 1
+            action_stats.transfer_cancelled_no_target += 1
             continue
         target_unit = state.units[player][target_unit_id]
         resource = a[3]
@@ -185,7 +185,7 @@ def to_lux_actions(
         amount = min(lux_actions[u.unit_id][0][3], target_capacity)
         if amount <= 0:
             cancel_action(u)
-            action_stats.transfer_cancelled += 1
+            action_stats.transfer_cancelled_target_full += 1
             continue
         lux_actions[u.unit_id][0][3] = amount
 
@@ -196,6 +196,7 @@ def to_lux_actions(
                 action_stats.build_cancelled += 1
                 continue
             lux_actions[f.unit_id] = a
+
     return lux_actions
 
 
