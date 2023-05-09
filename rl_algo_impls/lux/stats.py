@@ -101,12 +101,13 @@ class AgentRunningStats:
                     for f in env.state.factories[agent].values()
                 )
             )
+            ts = env.state.real_env_steps - 1  # Power gen is before step increment
             max_expected_power_gen = min_expected_power_gen + (
                 (
                     num_heavies * cfg.ROBOTS["HEAVY"].CHARGE
                     + num_lights * cfg.ROBOTS["LIGHT"].CHARGE
                 )
-                if is_day(cfg, env.state.real_env_steps)
+                if is_day(cfg, ts)
                 else 0
             )
             assert (
