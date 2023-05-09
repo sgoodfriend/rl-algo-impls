@@ -14,18 +14,27 @@ class ACNForward(NamedTuple):
 
 
 class ActorCriticNetwork(nn.Module, ABC):
-    @abstractmethod
     def forward(
         self,
         obs: torch.Tensor,
         action: torch.Tensor,
         action_masks: Optional[torch.Tensor] = None,
     ) -> ACNForward:
-        ...
+        return self._distribution_and_value(
+            obs, action=action, action_masks=action_masks
+        )
 
-    @abstractmethod
     def distribution_and_value(
         self, obs: torch.Tensor, action_masks: Optional[torch.Tensor] = None
+    ) -> ACNForward:
+        return self._distribution_and_value(obs, action_masks=action_masks)
+
+    @abstractmethod
+    def _distribution_and_value(
+        self,
+        obs: torch.Tensor,
+        action: Optional[torch.Tensor] = None,
+        action_masks: Optional[torch.Tensor] = None,
     ) -> ACNForward:
         ...
 
