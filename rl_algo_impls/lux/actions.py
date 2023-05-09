@@ -106,7 +106,7 @@ def to_lux_actions(
             positions_occupied[target_pos_idx] = u.unit_id
             resource = 0
             amount = 0
-            repeat = max_move_repeats(u, direction, state)
+            num_executions = max_move_repeats(u, direction, state)
         else:
             positions_occupied[pos_to_idx(u.pos, cfg.map_size)] = u.unit_id
 
@@ -114,7 +114,9 @@ def to_lux_actions(
                 direction = a[2]
                 resource = a[3]
                 amount = resource_amount(u, resource)
-                repeat = 1  # TODO: Not efficient (especially for transfer chains)
+                num_executions = (
+                    1  # TODO: Not efficient (especially for transfer chains)
+                )
             elif a[0] == 2:  # pickup
                 direction = 0
                 resource = a[4]
@@ -130,32 +132,32 @@ def to_lux_actions(
                     0,
                 )
                 assert amount > 0
-                repeat = 1
+                num_executions = 1
             elif a[0] == 3:  # dig
                 direction = 0
                 resource = 0
                 amount = 0
-                repeat = u.power // u.unit_cfg.DIG_COST
+                num_executions = u.power // u.unit_cfg.DIG_COST
             elif a[0] == 4:  # self-destruct
                 direction = 0
                 resource = 0
                 amount = 0
-                repeat = 1
+                num_executions = 1
             elif a[0] == 5:  # recharge
                 direction = 0
                 resource = 0
                 amount = u.battery_capacity
-                repeat = 1
+                num_executions = 1
             else:
                 raise ValueError(f"Unrecognized action {a[0]}")
-        assert repeat > 0
+        assert num_executions > 0
         if actions_equal(a, enqueued_actions.get(u.unit_id)):
             action_stats.repeat_action += 1
             continue
 
         assert u.power >= u.unit_cfg.ACTION_QUEUE_POWER_COST
         lux_actions[u.unit_id] = [
-            np.array([a[0], direction, resource, amount, 0, repeat])
+            np.array([a[0], direction, resource, amount, 0, num_executions])
         ]
 
     actions_by_u_id = {u.unit_id: a for u, a in unit_actions}
