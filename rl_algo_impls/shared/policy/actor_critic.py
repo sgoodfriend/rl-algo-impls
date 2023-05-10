@@ -11,6 +11,9 @@ from rl_algo_impls.shared.policy.actor_critic_network import (
     SeparateActorCriticNetwork,
     UNetActorCriticNetwork,
 )
+from rl_algo_impls.shared.policy.actor_critic_network.double_cone import (
+    DoubleConeActorCritic,
+)
 from rl_algo_impls.shared.policy.policy import Policy
 from rl_algo_impls.wrappers.vectorable_wrapper import (
     VecEnv,
@@ -88,6 +91,12 @@ class ActorCritic(OnPolicy):
         impala_channels: Sequence[int] = (16, 32, 32),
         actor_head_style: str = "single",
         embed_layer: bool = False,
+        backbone_channels: int = 128,
+        pooled_channels: int = 512,
+        critic_channels: int = 64,
+        in_num_res_blocks: int = 4,
+        cone_num_res_blocks: int = 6,
+        out_num_res_blocks: int = 4,
         **kwargs,
     ) -> None:
         super().__init__(env, **kwargs)
@@ -100,6 +109,7 @@ class ActorCritic(OnPolicy):
         self.squash_output = squash_output
 
         if actor_head_style == "unet":
+            assert action_plane_space is not None
             self.network = UNetActorCriticNetwork(
                 observation_space,
                 action_space,
@@ -109,6 +119,21 @@ class ActorCritic(OnPolicy):
                 activation_fn=activation_fn,
                 cnn_layers_init_orthogonal=cnn_layers_init_orthogonal,
                 embed_layer=embed_layer,
+            )
+        elif actor_head_style == "double_cone":
+            assert action_plane_space is not None
+            self.network = DoubleConeActorCritic(
+                observation_space,
+                action_space,
+                action_plane_space,
+                init_layers_orthogonal=init_layers_orthogonal,
+                cnn_layers_init_orthogonal=cnn_layers_init_orthogonal,
+                backbone_channels=backbone_channels,
+                pooled_channels=pooled_channels,
+                critic_channels=critic_channels,
+                in_num_res_blocks=in_num_res_blocks,
+                cone_num_res_blocks=cone_num_res_blocks,
+                out_num_res_blocks=out_num_res_blocks,
             )
         elif share_features_extractor:
             self.network = ConnectedTrioActorCriticNetwork(
