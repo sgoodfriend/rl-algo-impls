@@ -134,6 +134,7 @@ class EvalCallback(Callback):
         additional_keys_to_log: Optional[List[str]] = None,
         score_function: str = "mean-std",
         wandb_enabled: bool = False,
+        score_threshold: Optional[float] = None,
     ) -> None:
         super().__init__()
         self.policy = policy
@@ -158,6 +159,7 @@ class EvalCallback(Callback):
         self.additional_keys_to_log = additional_keys_to_log
         self.score_function = score_function
         self.wandb_enabled = wandb_enabled
+        self.score_threshold = score_threshold
 
     def on_step(self, timesteps_elapsed: int = 1) -> bool:
         super().on_step(timesteps_elapsed)
@@ -190,8 +192,14 @@ class EvalCallback(Callback):
 
         self.stats.append(eval_stat)
 
-        if not self.best or eval_stat >= self.best:
+        if self.score_threshold is not None:
+            is_best = eval_stat.score.score() >= self.score_threshold
+            strictly_better = eval_stat.score.score() > self.score_threshold
+        else:
+            is_best = not self.best or eval_stat >= self.best
             strictly_better = not self.best or eval_stat > self.best
+
+        if is_best:
             self.best = eval_stat
             if self.save_best:
                 assert self.best_model_path
@@ -209,8 +217,6 @@ class EvalCallback(Callback):
             self.best.write_to_tensorboard(
                 self.tb_writer, "best_eval", self.timesteps_elapsed
             )
-        else:
-            strictly_better = False
         if self.video_env and (not self.only_record_video_on_best or strictly_better):
             assert self.video_env and self.video_dir
             best_video_base_path = os.path.join(

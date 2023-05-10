@@ -635,7 +635,8 @@ LuxAI_S2-v0: &lux-defaults
     deterministic: false
     step_freq: !!float 1e6
     score_function: mean
-    only_record_video_on_best: false
+    only_record_video_on_best: true
+    score_threshold: 0.27
     env_overrides: &lux-eval-env-overrides
       n_envs: 66
       self_play_kwargs:
