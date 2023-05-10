@@ -733,8 +733,8 @@ LuxAI_S2-v0-dc-A10: &lux-dc-a10-defaults
   <<: *lux-dc-defaults
   algo_hyperparams:
     <<: *lux-dc-algo-defaults
-    n_steps: 96
-    batch_size: 576
+    n_steps: 64
+    batch_size: 256
 
 LuxAI_S2-v0-medium-transfer: &lux-medium-transfer-defaults
   <<: *lux-a10-defaults
@@ -818,7 +818,7 @@ LuxAI_S2-v0-medium-debug:
     vec_env_class: sync
 
 LuxAI_S2-v0-debug:
-  <<: *lux-dc-defaults
+  <<: *lux-dc-a10-defaults
   n_timesteps: !!float 1e6
   device: cpu
   env_hyperparams:
