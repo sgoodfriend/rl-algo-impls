@@ -56,7 +56,7 @@ def to_lux_actions(
         enqueued_action = enqueued_actions.get(unit.unit_id)
         if enqueued_action is not None and enqueued_action[0] != 5:
             lux_actions[unit.unit_id] = [
-                np.array([5, 0, 0, u.battery_capacity, 0, cfg.max_episode_length])
+                np.array([5, 0, 0, unit.battery_capacity, 0, cfg.max_episode_length])
             ]
         elif unit.unit_id in lux_actions:
             del lux_actions[unit.unit_id]
@@ -68,7 +68,7 @@ def to_lux_actions(
 
         if positions_occupied.get(target_pos_idx) == unit.unit_id:
             del positions_occupied[target_pos_idx]
-        current_pos_idx = pos_to_idx(u.pos, cfg.map_size)
+        current_pos_idx = pos_to_idx(unit.pos, cfg.map_size)
         if current_pos_idx in positions_occupied:
             cancel_move(
                 state.units[player][positions_occupied[current_pos_idx]],
