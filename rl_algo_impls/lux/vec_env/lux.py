@@ -8,6 +8,9 @@ from rl_algo_impls.lux.vec_env.lux_async_vector_env import LuxAsyncVectorEnv
 from rl_algo_impls.lux.vec_env.vec_lux_env import VecLuxEnv
 from rl_algo_impls.lux.wrappers.lux_env_gridnet import LuxEnvGridnet
 from rl_algo_impls.runner.config import Config, EnvHyperparams
+from rl_algo_impls.wrappers.additional_win_loss_reward import (
+    AdditionalWinLossRewardWrapper,
+)
 from rl_algo_impls.wrappers.episode_stats_writer import EpisodeStatsWriter
 from rl_algo_impls.wrappers.hwc_to_chw_observation import HwcToChwObservation
 from rl_algo_impls.wrappers.self_play_eval_wrapper import SelfPlayEvalWrapper
@@ -43,6 +46,7 @@ def make_lux_env(
         _,  # bots
         self_play_kwargs,
         selfplay_bots,
+        additional_win_loss_reward,
     ) = astuple(hparams)
 
     seed = config.seed(training=training)
@@ -102,5 +106,8 @@ def make_lux_env(
             rolling_length=rolling_length,
             additional_keys_to_log=config.additional_keys_to_log,
         )
+
+    if additional_win_loss_reward:
+        envs = AdditionalWinLossRewardWrapper(envs)
 
     return envs

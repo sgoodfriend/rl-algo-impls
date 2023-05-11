@@ -2,16 +2,23 @@ from typing import Any, Dict, List, Optional
 
 import numpy as np
 
+from rl_algo_impls.lux.wrappers.lux_env_gridnet import LuxRewardWeights
 from rl_algo_impls.runner.config import Config
 from rl_algo_impls.shared.algorithm import Algorithm
 from rl_algo_impls.shared.callbacks.callback import Callback
 from rl_algo_impls.shared.schedule import constant_schedule, lerp
-from rl_algo_impls.lux.wrappers.lux_env_gridnet import LuxRewardWeights
+from rl_algo_impls.shared.tensor_utils import num_or_array
 from rl_algo_impls.wrappers.vectorable_wrapper import VecEnv
 
-GAMMA_NAME = "gamma"
 GAE_LAMBDA_NAME = "gae_lambda"
-REWARD_WEIGHTS_NAME = "reward_weights"
+MULTI_REWARD_WEIGHTS_NAME = "multi_reward_weights"
+VF_COEF_NAME = "vf_coef"
+ALGO_SET_NAMES = {GAE_LAMBDA_NAME, MULTI_REWARD_WEIGHTS_NAME, VF_COEF_NAME}
+
+GAMMA_NAME = "gamma"
+ALGO_SET_SCHEDULE_NAMES = {GAMMA_NAME}
+
+LUX_REWARD_WEIGHTS_NAME = "reward_weights"
 
 
 class LuxHyperparamTransitions(Callback):
@@ -74,20 +81,18 @@ class LuxHyperparamTransitions(Callback):
         phase = self.phases[phase_idx]
         print(f"{self.timesteps_elapsed}: Entering phase {phase_idx}: {phase}")
         for k, v in phase.items():
-            if k == GAMMA_NAME:
+            if k in ALGO_SET_SCHEDULE_NAMES:
                 name = f"{k}_schedule"
                 assert hasattr(self.algo, name)
-                setattr(self.algo, name, constant_schedule(v))
-            elif k == GAE_LAMBDA_NAME:
+                setattr(self.algo, name, constant_schedule(num_or_array(v)))
+            elif k in ALGO_SET_NAMES:
                 assert hasattr(self.algo, k)
-                setattr(self.algo, k, v)
-            elif k == REWARD_WEIGHTS_NAME:
+                setattr(self.algo, k, num_or_array(v))
+            elif k == LUX_REWARD_WEIGHTS_NAME:
                 assert hasattr(self.env, k)
                 setattr(self.env.unwrapped, k, LuxRewardWeights(**v))
             else:
                 raise ValueError(f"{k} not supported in {self.__class__.__name__}")
-        if REWARD_WEIGHTS_NAME in phase and hasattr(self.env, REWARD_WEIGHTS_NAME):
-            print(f"Current reward weights: {getattr(self.env, 'reward_weights')}")
 
     def update_phase_transition(
         self, prior_phase_idx: int, transition_progress: float
@@ -102,18 +107,30 @@ class LuxHyperparamTransitions(Callback):
         ), f"An override has to be specified in every phase"
         for k, next_v in next_phase.items():
             old_v = prior_phase[k]
-            if k == GAMMA_NAME:
+            if k in ALGO_SET_SCHEDULE_NAMES:
                 name = f"{k}_schedule"
                 assert hasattr(self.algo, name)
                 setattr(
                     self.algo,
                     name,
-                    constant_schedule(lerp(old_v, next_v, transition_progress)),
+                    constant_schedule(
+                        lerp(
+                            num_or_array(old_v),
+                            num_or_array(next_v),
+                            transition_progress,
+                        )
+                    ),
                 )
-            elif k == GAE_LAMBDA_NAME:
+            elif k in ALGO_SET_NAMES:
                 assert hasattr(self.algo, k)
-                setattr(self.algo, k, lerp(old_v, next_v, transition_progress))
-            elif k == REWARD_WEIGHTS_NAME:
+                setattr(
+                    self.algo,
+                    k,
+                    lerp(
+                        num_or_array(old_v), num_or_array(next_v), transition_progress
+                    ),
+                )
+            elif k == LUX_REWARD_WEIGHTS_NAME:
                 assert hasattr(self.env, k)
                 setattr(
                     self.env.unwrapped,

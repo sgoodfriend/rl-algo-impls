@@ -1,4 +1,4 @@
-from typing import Optional, Sequence, Tuple, Type
+from typing import List, Optional, Sequence, Tuple, Type
 
 import numpy as np
 import torch
@@ -30,9 +30,15 @@ class UNetActorCriticNetwork(ActorCriticNetwork):
         activation_fn: str = "tanh",
         cnn_layers_init_orthogonal: Optional[bool] = None,
         embed_layer: bool = False,
+        num_additional_critics: int = 0,
+        additional_critic_activation_functions: Optional[List[str]] = None,
     ) -> None:
         if cnn_layers_init_orthogonal is None:
             cnn_layers_init_orthogonal = True
+        if num_additional_critics and not additional_critic_activation_functions:
+            additional_critic_activation_functions = [
+                "identity"
+            ] * num_additional_critics
         super().__init__()
         assert isinstance(action_space, MultiDiscrete)
         assert isinstance(action_plane_space, MultiDiscrete)
@@ -132,12 +138,16 @@ class UNetActorCriticNetwork(ActorCriticNetwork):
             if v_hidden_sizes is not None
             else default_hidden_sizes(observation_space)
         )
-        self.critic_head = CriticHead(
-            in_dim=cnn_out.shape[1:],
-            hidden_sizes=v_hidden_sizes,
-            activation=activation,
-            init_layers_orthogonal=init_layers_orthogonal,
-        )
+        self.critic_heads = [
+            CriticHead(
+                in_dim=cnn_out.shape[1:],
+                hidden_sizes=v_hidden_sizes,
+                activation=activation,
+                init_layers_orthogonal=init_layers_orthogonal,
+                output_activation=ACTIVATION[out_fn],
+            )
+            for out_fn in ["identity"] + (additional_critic_activation_functions or [])
+        ]
 
     def _preprocess(self, obs: torch.Tensor) -> torch.Tensor:
         if len(obs.shape) == 3:
@@ -161,7 +171,12 @@ class UNetActorCriticNetwork(ActorCriticNetwork):
         e4 = self.enc4(e3)
         e5 = self.enc5(e4)
 
-        v = self.critic_head(F.adaptive_avg_pool2d(e5, output_size=1))
+        v = torch.stack(
+            [ch(F.adaptive_avg_pool2d(e5, output_size=1)) for ch in self.critic_heads],
+            dim=1,
+        )
+        if v.shape[-1] == 1:
+            v = v.squeeze(-1)
 
         d4 = self.dec4(e5)
         d3 = self.dec3(torch.cat((d4, e4), dim=1))
@@ -183,7 +198,13 @@ class UNetActorCriticNetwork(ActorCriticNetwork):
         e4 = self.enc4(e3)
         e5 = self.enc5(e4)
 
-        return self.critic_head(F.adaptive_avg_pool2d(e5, output_size=1))
+        v = torch.stack(
+            [ch(F.adaptive_avg_pool2d(e5, output_size=1)) for ch in self.critic_heads],
+            dim=1,
+        )
+        if v.shape[-1] == 1:
+            v = v.squeeze(-1)
+        return v
 
     def reset_noise(self, batch_size: Optional[int] = None) -> None:
         pass
@@ -191,6 +212,13 @@ class UNetActorCriticNetwork(ActorCriticNetwork):
     @property
     def action_shape(self) -> Tuple[int, ...]:
         return (self.map_size, len(self.action_vec))
+
+    @property
+    def value_shape(self) -> Tuple[int, ...]:
+        if len(self.critic_heads) > 1:
+            return (len(self.critic_heads),)
+        else:
+            return ()
 
 
 def max_pool() -> nn.MaxPool2d:

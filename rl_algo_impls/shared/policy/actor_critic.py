@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from typing import NamedTuple, Optional, Sequence, Tuple, TypeVar
+from typing import List, NamedTuple, Optional, Sequence, Tuple, TypeVar
 
 import gym
 import numpy as np
@@ -71,6 +71,10 @@ class OnPolicy(Policy):
     def action_shape(self) -> Tuple[int, ...]:
         ...
 
+    @property
+    def value_shape(self) -> Tuple[int, ...]:
+        return ()
+
 
 class ActorCritic(OnPolicy):
     def __init__(
@@ -97,6 +101,8 @@ class ActorCritic(OnPolicy):
         in_num_res_blocks: int = 4,
         cone_num_res_blocks: int = 6,
         out_num_res_blocks: int = 4,
+        num_additional_critics: int = 0,
+        additional_critic_activation_functions: Optional[List[str]] = None,
         **kwargs,
     ) -> None:
         super().__init__(env, **kwargs)
@@ -134,6 +140,8 @@ class ActorCritic(OnPolicy):
                 in_num_res_blocks=in_num_res_blocks,
                 cone_num_res_blocks=cone_num_res_blocks,
                 out_num_res_blocks=out_num_res_blocks,
+                num_additional_critics=num_additional_critics,
+                additional_critic_activation_functions=additional_critic_activation_functions,
             )
         elif share_features_extractor:
             self.network = ConnectedTrioActorCriticNetwork(
@@ -241,3 +249,7 @@ class ActorCritic(OnPolicy):
     @property
     def action_shape(self) -> Tuple[int, ...]:
         return self.network.action_shape
+
+    @property
+    def value_shape(self) -> Tuple[int, ...]:
+        return self.network.value_shape

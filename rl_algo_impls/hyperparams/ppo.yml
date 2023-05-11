@@ -631,6 +631,16 @@ LuxAI_S2-v0: &lux-defaults
       window: 33
     make_kwargs: &lux-env-make-defaults
       bid_std_dev: 0
+      reward_weights:
+        ice_generation: 0.005 # 1/day of water for factory, 0.1/heavy dig
+        ore_generation: 0.004 # 2/heavy robot build, 0.08/heavy dig
+        water_generation: 0.02 # 1/day of water for factory
+        metal_generation: 0.02 # 2/heavy robot build
+        power_generation: 0.0004 # factory 1/day, heavy 0.12/day, light 0.012/day, lichen 0.02/day
+        ice_rubble_cleared: 0.004 # 80% of ice_generation
+        ore_rubble_cleared: 0.0036 # 90% of ore_generation
+        lost_factory: -1
+    additional_win_loss_reward: true
   eval_hyperparams: &lux-eval-defaults
     deterministic: false
     step_freq: !!float 1e6
@@ -645,29 +655,19 @@ LuxAI_S2-v0: &lux-defaults
         <<: *lux-env-make-defaults
         reward_weights:
           win_loss: 1
+      additional_win_loss_reward: false
   policy_hyperparams: &lux-policy-defaults
     activation_fn: relu
     actor_head_style: unet
     v_hidden_sizes: [256, 128]
     embed_layer: false
+    additional_critic_activation_functions: [tanh]
   lux_hyperparam_transitions_kwargs: &lux-transitions-defaults
     phases:
-      - reward_weights:
-          ice_generation: 0.005 # 1/day of water for factory, 0.1/heavy dig
-          ore_generation: 0.004 # 2/heavy robot build, 0.08/heavy dig
-          water_generation: 0.02 # 1/day of water for factory
-          metal_generation: 0.02 # 2/heavy robot build
-          power_generation: 0.0004 # factory 1/day, heavy 0.12/day, light 0.012/day, lichen 0.02/day
-          ice_rubble_cleared: 0.004 # 80% of ice_generation
-          ore_rubble_cleared: 0.0032 # 80% of ore_generation
-          lost_factory: -1
-        gamma: 0.99
-        gae_lambda: 0.95
-      - reward_weights:
-          win_loss: 9
-          score_vs_opponent: 0.001 # Clipped between +/- 1
-        gamma: 0.999
-        gae_lambda: 0.99
+      - multi_reward_weights: [0.99, 0.01] # Initial shaped rewards (mostly)
+        vf_coef: [0.5, 0.1]
+      - multi_reward_weights: [0, 1] # Win-loss sparse rewards
+        vf_coef: [0, 0.5]
     durations:
       - 0.5
       - 0.3
@@ -680,18 +680,22 @@ LuxAI_S2-v0: &lux-defaults
     learning_rate_decay: none
     ent_coef: 0.01
     ent_coef_decay: linear
-    vf_coef: 0.5
     max_grad_norm: 0.5
     clip_range: 0.1
     clip_range_decay: none
     clip_range_vf: 0.1
     ppo2_vf_coef_halving: true
+    multi_reward_weights: [0.99, 0.01]
+    gamma: [0.99, 1]
+    gae_lambda: [0.95, 1]
+    vf_coef: [0.5, 0.1]
 
 LuxAI_S2-v0-double-cone: &lux-dc-defaults
   <<: *lux-defaults
   policy_hyperparams:
     actor_head_style: double_cone
     pooled_channels: 128
+    additional_critic_activation_functions: [tanh]
   algo_hyperparams: &lux-dc-algo-defaults
     <<: *lux-algo-defaults
     n_steps: 128

@@ -1,4 +1,4 @@
-from typing import Optional, Sequence, Tuple, Type
+from typing import List, Optional, Sequence, Tuple, Type
 
 import numpy as np
 import torch
@@ -13,6 +13,7 @@ from rl_algo_impls.shared.policy.actor_critic_network.network import (
     ACNForward,
     ActorCriticNetwork,
 )
+from rl_algo_impls.shared.policy.policy import ACTIVATION
 
 
 class SqueezeExcitation(nn.Module):
@@ -175,9 +176,15 @@ class DoubleConeActorCritic(ActorCriticNetwork):
         in_num_res_blocks: int = 4,
         cone_num_res_blocks: int = 6,
         out_num_res_blocks: int = 4,
+        num_additional_critics: int = 0,
+        additional_critic_activation_functions: Optional[List[str]] = None,
     ) -> None:
         if cnn_layers_init_orthogonal is None:
             cnn_layers_init_orthogonal = False
+        if num_additional_critics and not additional_critic_activation_functions:
+            additional_critic_activation_functions = [
+                "identity"
+            ] * num_additional_critics
         super().__init__()
         assert isinstance(observation_space, Box)
         assert isinstance(action_space, MultiDiscrete)
@@ -205,34 +212,45 @@ class DoubleConeActorCritic(ActorCriticNetwork):
                 Transpose((0, 2, 3, 1)),
             ]
         )
-        self.critic_head = nn.Sequential(
-            *[
-                layer_init(
-                    nn.Conv2d(
-                        backbone_channels, critic_channels, 3, stride=2, padding=1
+
+        def critic_head(output_activation_name: str = "identity") -> nn.Module:
+            return nn.Sequential(
+                *[
+                    layer_init(
+                        nn.Conv2d(
+                            backbone_channels, critic_channels, 3, stride=2, padding=1
+                        ),
+                        init_layers_orthogonal=cnn_layers_init_orthogonal,
                     ),
-                    init_layers_orthogonal=cnn_layers_init_orthogonal,
-                ),
-                nn.GELU(),
-                layer_init(
-                    nn.Conv2d(critic_channels, critic_channels, 3, stride=2, padding=1),
-                    init_layers_orthogonal=cnn_layers_init_orthogonal,
-                ),
-                nn.GELU(),
-                nn.AdaptiveAvgPool2d(1),
-                nn.Flatten(),
-                layer_init(
-                    nn.Linear(critic_channels, critic_channels),
-                    init_layers_orthogonal=init_layers_orthogonal,
-                ),
-                nn.GELU(),
-                layer_init(
-                    nn.Linear(critic_channels, 1),
-                    init_layers_orthogonal=init_layers_orthogonal,
-                    std=1.0,
-                ),
-            ]
-        )
+                    nn.GELU(),
+                    layer_init(
+                        nn.Conv2d(
+                            critic_channels, critic_channels, 3, stride=2, padding=1
+                        ),
+                        init_layers_orthogonal=cnn_layers_init_orthogonal,
+                    ),
+                    nn.GELU(),
+                    nn.AdaptiveAvgPool2d(1),
+                    nn.Flatten(),
+                    layer_init(
+                        nn.Linear(critic_channels, critic_channels),
+                        init_layers_orthogonal=init_layers_orthogonal,
+                    ),
+                    nn.GELU(),
+                    layer_init(
+                        nn.Linear(critic_channels, 1),
+                        init_layers_orthogonal=init_layers_orthogonal,
+                        std=1.0,
+                    ),
+                    ACTIVATION[output_activation_name](),
+                ]
+            )
+
+        self.critic_heads = [
+            critic_head(act_fn_name)
+            for act_fn_name in ["identity"]
+            + (additional_critic_activation_functions or [])
+        ]
 
     def _preprocess(self, obs: torch.Tensor) -> torch.Tensor:
         if len(obs.shape) == 3:
@@ -256,14 +274,19 @@ class DoubleConeActorCritic(ActorCriticNetwork):
             int(np.prod(o.shape[-2:])), self.action_vec, logits, action_masks
         )
 
-        v = self.critic_head(x).squeeze(-1)
+        v = torch.hstack([ch(x) for ch in self.critic_heads])
+        if v.shape[-1] == 1:
+            v.squeeze(-1)
 
         return ACNForward(pi_forward(pi, action), v)
 
     def value(self, obs: torch.Tensor) -> torch.Tensor:
         o = self._preprocess(obs)
         x = self.backbone(o)
-        return self.critic_head(x).squeeze(-1)
+        v = torch.hstack([ch(x) for ch in self.critic_heads])
+        if v.shape[-1] == 1:
+            v.squeeze(-1)
+        return v
 
     def reset_noise(self, batch_size: Optional[int] = None) -> None:
         pass
@@ -271,3 +294,10 @@ class DoubleConeActorCritic(ActorCriticNetwork):
     @property
     def action_shape(self) -> Tuple[int, ...]:
         return (self.map_size, len(self.action_vec))
+
+    @property
+    def value_shape(self) -> Tuple[int, ...]:
+        if len(self.critic_heads) > 1:
+            return (len(self.critic_heads),)
+        else:
+            return ()

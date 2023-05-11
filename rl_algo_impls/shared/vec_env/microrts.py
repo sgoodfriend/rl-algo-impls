@@ -51,6 +51,7 @@ def make_microrts_env(
         bots,
         self_play_kwargs,
         selfplay_bots,
+        _, # additional_win_loss_reward
     ) = astuple(hparams)
 
     seed = config.seed(training=training)

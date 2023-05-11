@@ -194,4 +194,8 @@ def log_scalars(
     global_step: int,
 ) -> None:
     for tag, value in tag_scalar_dict.items():
-        tb_writer.add_scalar(f"{main_tag}/{tag}", value, global_step)
+        if isinstance(value, np.ndarray):
+            for idx, v in enumerate(value.flatten()):
+                tb_writer.add_scalar(f"{main_tag}/{tag}_{idx}", v, global_step)
+        else:
+            tb_writer.add_scalar(f"{main_tag}/{tag}", value, global_step)

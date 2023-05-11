@@ -53,6 +53,7 @@ class EnvHyperparams:
     bots: Optional[Dict[str, int]] = None
     self_play_kwargs: Optional[Dict[str, Any]] = None
     selfplay_bots: Optional[Dict[str, int]] = None
+    additional_win_loss_reward: bool = False
 
 
 HyperparamsSelf = TypeVar("HyperparamsSelf", bound="Hyperparams")
