@@ -174,7 +174,7 @@ class UNetActorCriticNetwork(ActorCriticNetwork):
         v = torch.stack(
             [ch(F.adaptive_avg_pool2d(e5, output_size=1)) for ch in self.critic_heads],
             dim=1,
-        )
+        ).to(e5.device)
         if v.shape[-1] == 1:
             v = v.squeeze(-1)
 
@@ -201,7 +201,7 @@ class UNetActorCriticNetwork(ActorCriticNetwork):
         v = torch.stack(
             [ch(F.adaptive_avg_pool2d(e5, output_size=1)) for ch in self.critic_heads],
             dim=1,
-        )
+        ).to(e5.device)
         if v.shape[-1] == 1:
             v = v.squeeze(-1)
         return v

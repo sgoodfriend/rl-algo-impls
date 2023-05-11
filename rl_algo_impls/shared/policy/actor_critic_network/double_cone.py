@@ -274,7 +274,7 @@ class DoubleConeActorCritic(ActorCriticNetwork):
             int(np.prod(o.shape[-2:])), self.action_vec, logits, action_masks
         )
 
-        v = torch.hstack([ch(x) for ch in self.critic_heads])
+        v = torch.hstack([ch(x) for ch in self.critic_heads]).to(x.device)
         if v.shape[-1] == 1:
             v.squeeze(-1)
 
@@ -283,7 +283,7 @@ class DoubleConeActorCritic(ActorCriticNetwork):
     def value(self, obs: torch.Tensor) -> torch.Tensor:
         o = self._preprocess(obs)
         x = self.backbone(o)
-        v = torch.hstack([ch(x) for ch in self.critic_heads])
+        v = torch.hstack([ch(x) for ch in self.critic_heads]).to(x.device)
         if v.shape[-1] == 1:
             v.squeeze(-1)
         return v
