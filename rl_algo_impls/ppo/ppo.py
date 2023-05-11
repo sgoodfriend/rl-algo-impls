@@ -271,11 +271,11 @@ class PPO(Algorithm):
             y_true: np.ndarray = None  # type: ignore
             b_returns: torch.Tensor = None  # type: ignore
             multi_reward_weights = (
-                torch.Tensor(self.multi_reward_weights)
+                torch.Tensor(self.multi_reward_weights).to(self.device)
                 if self.multi_reward_weights is not None
                 else 1
             )
-            vf_coef = torch.Tensor(np.array(self.vf_coef))
+            vf_coef = torch.Tensor(np.array(self.vf_coef)).to(self.device)
             for e in range(self.n_epochs):
                 if e == 0 or self.update_advantage_between_epochs:
                     advantages = compute_advantages(
