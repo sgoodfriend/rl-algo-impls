@@ -1,4 +1,4 @@
-from typing import List, Optional, Sequence, Tuple, Type
+from typing import List, Optional, Sequence, Tuple, Type, TypeVar, Union
 
 import numpy as np
 import torch
@@ -9,6 +9,7 @@ from rl_algo_impls.shared.actor import pi_forward
 from rl_algo_impls.shared.actor.gridnet import GridnetDistribution
 from rl_algo_impls.shared.actor.gridnet_decoder import Transpose
 from rl_algo_impls.shared.module.utils import layer_init
+from rl_algo_impls.shared.module.stack import HStack
 from rl_algo_impls.shared.policy.actor_critic_network.network import (
     ACNForward,
     ActorCriticNetwork,
@@ -246,11 +247,13 @@ class DoubleConeActorCritic(ActorCriticNetwork):
                 ]
             )
 
-        self.critic_heads = [
-            critic_head(act_fn_name)
-            for act_fn_name in ["identity"]
-            + (additional_critic_activation_functions or [])
-        ]
+        self.critic_heads = HStack(
+            [
+                critic_head(act_fn_name)
+                for act_fn_name in ["identity"]
+                + (additional_critic_activation_functions or [])
+            ]
+        )
 
     def _preprocess(self, obs: torch.Tensor) -> torch.Tensor:
         if len(obs.shape) == 3:
@@ -274,7 +277,7 @@ class DoubleConeActorCritic(ActorCriticNetwork):
             int(np.prod(o.shape[-2:])), self.action_vec, logits, action_masks
         )
 
-        v = torch.hstack([ch(x) for ch in self.critic_heads]).to(x.device)
+        v = self.critic_heads(x)
         if v.shape[-1] == 1:
             v.squeeze(-1)
 
@@ -283,7 +286,7 @@ class DoubleConeActorCritic(ActorCriticNetwork):
     def value(self, obs: torch.Tensor) -> torch.Tensor:
         o = self._preprocess(obs)
         x = self.backbone(o)
-        v = torch.hstack([ch(x) for ch in self.critic_heads]).to(x.device)
+        v = self.critic_heads(x)
         if v.shape[-1] == 1:
             v.squeeze(-1)
         return v

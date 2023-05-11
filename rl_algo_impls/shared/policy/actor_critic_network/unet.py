@@ -9,6 +9,7 @@ from gym.spaces import MultiDiscrete, Space
 from rl_algo_impls.shared.actor import pi_forward
 from rl_algo_impls.shared.actor.gridnet import GridnetDistribution
 from rl_algo_impls.shared.actor.gridnet_decoder import Transpose
+from rl_algo_impls.shared.module.stack import Stack
 from rl_algo_impls.shared.module.utils import layer_init
 from rl_algo_impls.shared.policy.actor_critic_network.network import (
     ACNForward,
@@ -138,16 +139,19 @@ class UNetActorCriticNetwork(ActorCriticNetwork):
             if v_hidden_sizes is not None
             else default_hidden_sizes(observation_space)
         )
-        self.critic_heads = [
-            CriticHead(
-                in_dim=cnn_out.shape[1:],
-                hidden_sizes=v_hidden_sizes,
-                activation=activation,
-                init_layers_orthogonal=init_layers_orthogonal,
-                output_activation=ACTIVATION[out_fn],
-            )
-            for out_fn in ["identity"] + (additional_critic_activation_functions or [])
-        ]
+        self.critic_heads = Stack(
+            [
+                CriticHead(
+                    in_dim=cnn_out.shape[1:],
+                    hidden_sizes=v_hidden_sizes,
+                    activation=activation,
+                    init_layers_orthogonal=init_layers_orthogonal,
+                    output_activation=ACTIVATION[out_fn],
+                )
+                for out_fn in ["identity"]
+                + (additional_critic_activation_functions or [])
+            ]
+        )
 
     def _preprocess(self, obs: torch.Tensor) -> torch.Tensor:
         if len(obs.shape) == 3:
@@ -171,10 +175,7 @@ class UNetActorCriticNetwork(ActorCriticNetwork):
         e4 = self.enc4(e3)
         e5 = self.enc5(e4)
 
-        v = torch.stack(
-            [ch(F.adaptive_avg_pool2d(e5, output_size=1)) for ch in self.critic_heads],
-            dim=1,
-        ).to(e5.device)
+        v = self.critic_heads(F.adaptive_avg_pool2d(e5, output_size=1))
         if v.shape[-1] == 1:
             v = v.squeeze(-1)
 
@@ -198,10 +199,7 @@ class UNetActorCriticNetwork(ActorCriticNetwork):
         e4 = self.enc4(e3)
         e5 = self.enc5(e4)
 
-        v = torch.stack(
-            [ch(F.adaptive_avg_pool2d(e5, output_size=1)) for ch in self.critic_heads],
-            dim=1,
-        ).to(e5.device)
+        v = self.critic_heads(F.adaptive_avg_pool2d(e5, output_size=1))
         if v.shape[-1] == 1:
             v = v.squeeze(-1)
         return v
