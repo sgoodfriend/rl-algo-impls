@@ -630,7 +630,7 @@ LuxAI_S2-v0: &lux-defaults
       swap_window_size: 4
       window: 33
     make_kwargs: &lux-env-make-defaults
-      bid_std_dev: 5
+      bid_std_dev: 0
   eval_hyperparams: &lux-eval-defaults
     deterministic: false
     step_freq: !!float 1e6
