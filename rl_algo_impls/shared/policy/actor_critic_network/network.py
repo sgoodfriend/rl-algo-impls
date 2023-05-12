@@ -47,8 +47,13 @@ class ActorCriticNetwork(nn.Module, ABC):
         ...
 
     @property
+    @abstractmethod
     def action_shape(self) -> Tuple[int, ...]:
         ...
+
+    @property
+    def value_shape(self) -> Tuple[int, ...]:
+        return ()
 
 
 def default_hidden_sizes(obs_space: Space) -> Sequence[int]:
