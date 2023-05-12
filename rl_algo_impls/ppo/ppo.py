@@ -211,6 +211,7 @@ class PPO(Algorithm):
                 "pi_clip": pi_clip,
                 "gamma": gamma,
                 "gae_lambda": self.gae_lambda,
+                "vf_coef": self.vf_coef,
             }
             if self.clip_range_vf_schedule:
                 v_clip = self.clip_range_vf_schedule(progress)
