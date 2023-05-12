@@ -113,7 +113,7 @@ class DQN(Algorithm):
         self.exploration_eps_schedule = linear_schedule(
             exploration_initial_eps,
             exploration_final_eps,
-            end_fraction=exploration_fraction,
+            end_progress=exploration_fraction,
         )
 
         self.max_grad_norm = max_grad_norm

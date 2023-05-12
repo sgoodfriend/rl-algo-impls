@@ -1,7 +1,7 @@
 import logging
 from dataclasses import asdict, dataclass
 from time import perf_counter
-from typing import List, NamedTuple, Optional, TypeVar
+from typing import List, NamedTuple, Optional, TypeVar, Union
 
 import numpy as np
 import torch
@@ -20,6 +20,11 @@ from rl_algo_impls.shared.schedule import (
     update_learning_rate,
 )
 from rl_algo_impls.shared.stats import log_scalars
+from rl_algo_impls.shared.tensor_utils import (
+    NumOrList,
+    num_or_array,
+    unqueeze_dims_to_match,
+)
 from rl_algo_impls.wrappers.vectorable_wrapper import (
     VecEnv,
     single_action_space,
@@ -77,6 +82,7 @@ class TrainStats:
 
 
 PPOSelf = TypeVar("PPOSelf", bound="PPO")
+NL = TypeVar("NL", float, List[float])
 
 
 class PPO(Algorithm):
@@ -91,8 +97,8 @@ class PPO(Algorithm):
         n_steps: int = 2048,
         batch_size: int = 64,
         n_epochs: int = 10,
-        gamma: float = 0.99,
-        gae_lambda: float = 0.95,
+        gamma: NL = 0.99,
+        gae_lambda: NumOrList = 0.95,
         clip_range: float = 0.2,
         clip_range_decay: str = "none",
         clip_range_vf: Optional[float] = None,
@@ -100,24 +106,25 @@ class PPO(Algorithm):
         normalize_advantage: bool = True,
         ent_coef: float = 0.0,
         ent_coef_decay: str = "none",
-        vf_coef: float = 0.5,
+        vf_coef: NumOrList = 0.5,
         ppo2_vf_coef_halving: bool = False,
         max_grad_norm: float = 0.5,
         sde_sample_freq: int = -1,
         update_advantage_between_epochs: bool = True,
         update_returns_between_epochs: bool = False,
-        gamma_end: Optional[float] = None,
+        gamma_end: Optional[NL] = None,
+        multi_reward_weights: Optional[List[int]] = None,
     ) -> None:
         super().__init__(policy, env, device, tb_writer)
         self.policy = policy
         self.get_action_mask = getattr(env, "get_action_mask", None)
 
         self.gamma_schedule = (
-            linear_schedule(gamma, gamma_end)
+            linear_schedule(num_or_array(gamma), num_or_array(gamma_end))
             if gamma_end is not None
-            else constant_schedule(gamma)
+            else constant_schedule(num_or_array(gamma))
         )
-        self.gae_lambda = gae_lambda
+        self.gae_lambda = num_or_array(gae_lambda)
         self.optimizer = Adam(self.policy.parameters(), lr=learning_rate, eps=1e-7)
         self.lr_schedule = schedule(learning_rate_decay, learning_rate)
         self.max_grad_norm = max_grad_norm
@@ -133,7 +140,7 @@ class PPO(Algorithm):
         self.normalize_advantage = normalize_advantage
 
         self.ent_coef_schedule = schedule(ent_coef_decay, ent_coef)
-        self.vf_coef = vf_coef
+        self.vf_coef = num_or_array(vf_coef)
         self.ppo2_vf_coef_halving = ppo2_vf_coef_halving
 
         self.n_steps = n_steps
@@ -143,6 +150,10 @@ class PPO(Algorithm):
 
         self.update_advantage_between_epochs = update_advantage_between_epochs
         self.update_returns_between_epochs = update_returns_between_epochs
+
+        self.multi_reward_weights = (
+            np.array(multi_reward_weights) if multi_reward_weights else None
+        )
 
     def learn(
         self: PPOSelf,
@@ -160,6 +171,11 @@ class PPO(Algorithm):
         obs_space = single_observation_space(self.env)
         act_space = single_action_space(self.env)
         act_shape = self.policy.action_shape
+        value_shape = self.policy.value_shape
+        assert (
+            self.multi_reward_weights is None
+            or self.multi_reward_weights.shape == value_shape
+        )
 
         next_obs = self.env.reset()
         next_action_masks = self.get_action_mask() if self.get_action_mask else None
@@ -167,9 +183,9 @@ class PPO(Algorithm):
 
         obs = np.zeros(epoch_dim + obs_space.shape, dtype=obs_space.dtype)  # type: ignore
         actions = np.zeros(epoch_dim + act_shape, dtype=act_space.dtype)  # type: ignore
-        rewards = np.zeros(epoch_dim, dtype=np.float32)
+        rewards = np.zeros(epoch_dim + value_shape, dtype=np.float32)
         episode_starts = np.zeros(epoch_dim, dtype=np.bool_)
-        values = np.zeros(epoch_dim, dtype=np.float32)
+        values = np.zeros(epoch_dim + value_shape, dtype=np.float32)
         logprobs = np.zeros(epoch_dim, dtype=np.float32)
         action_masks = (
             np.zeros(
@@ -201,10 +217,8 @@ class PPO(Algorithm):
                 chart_scalars["v_clip"] = v_clip
             else:
                 v_clip = None
-            if hasattr(self.env, "reward_weights"):
-                chart_scalars["first_reward_weight"] = getattr(
-                    self.env, "reward_weights"
-                )[0]
+            if self.multi_reward_weights is not None:
+                chart_scalars["reward_weights"] = self.multi_reward_weights
             log_scalars(self.tb_writer, "charts", chart_scalars, timesteps_elapsed)
 
             self.policy.eval()
@@ -247,7 +261,7 @@ class PPO(Algorithm):
                 else None
             )
 
-            y_pred = values.reshape(-1)
+            y_pred = values.reshape((-1,) + value_shape)
             b_values = torch.tensor(y_pred).to(self.device)
 
             step_stats = []
@@ -256,6 +270,12 @@ class PPO(Algorithm):
             b_advantages: torch.Tensor = None  # type: ignore
             y_true: np.ndarray = None  # type: ignore
             b_returns: torch.Tensor = None  # type: ignore
+            multi_reward_weights = (
+                torch.Tensor(self.multi_reward_weights).to(self.device)
+                if self.multi_reward_weights is not None
+                else 1
+            )
+            vf_coef = torch.Tensor(np.array(self.vf_coef)).to(self.device)
             for e in range(self.n_epochs):
                 if e == 0 or self.update_advantage_between_epochs:
                     advantages = compute_advantages(
@@ -268,10 +288,12 @@ class PPO(Algorithm):
                         gamma,
                         self.gae_lambda,
                     )
-                    b_advantages = torch.tensor(advantages.reshape(-1)).to(self.device)
+                    b_advantages = torch.tensor(
+                        advantages.reshape((-1,) + value_shape)
+                    ).to(self.device)
                 if e == 0 or self.update_returns_between_epochs:
                     returns = advantages + values
-                    y_true = returns.reshape(-1)
+                    y_true = returns.reshape((-1,) + value_shape)
                     b_returns = torch.tensor(y_true).to(self.device)
 
                 b_idxs = torch.randperm(len(b_obs))
@@ -292,7 +314,8 @@ class PPO(Algorithm):
 
                     mb_adv = b_advantages[mb_idxs]
                     if self.normalize_advantage:
-                        mb_adv = (mb_adv - mb_adv.mean()) / (mb_adv.std() + 1e-8)
+                        mb_adv = (mb_adv - mb_adv.mean(0)) / (mb_adv.std(0) + 1e-8)
+
                     mb_returns = b_returns[mb_idxs]
 
                     new_logprobs, entropy, new_values = self.policy(
@@ -302,7 +325,12 @@ class PPO(Algorithm):
                     logratio = new_logprobs - mb_logprobs
                     ratio = torch.exp(logratio)
                     clipped_ratio = torch.clamp(ratio, min=1 - pi_clip, max=1 + pi_clip)
-                    pi_loss = torch.max(-ratio * mb_adv, -clipped_ratio * mb_adv).mean()
+                    pi_loss = torch.max(
+                        -unqueeze_dims_to_match(ratio, mb_adv.shape) * mb_adv,
+                        -unqueeze_dims_to_match(clipped_ratio, mb_adv.shape) * mb_adv,
+                    ).mean(0)
+                    pi_loss *= multi_reward_weights
+                    pi_loss = pi_loss.sum()
 
                     v_loss_unclipped = (new_values - mb_returns) ** 2
                     if v_clip:
@@ -311,16 +339,17 @@ class PPO(Algorithm):
                             + torch.clamp(new_values - mb_values, -v_clip, v_clip)
                             - mb_returns
                         ) ** 2
-                        v_loss = torch.max(v_loss_unclipped, v_loss_clipped).mean()
+                        v_loss = torch.max(v_loss_unclipped, v_loss_clipped).mean(0)
                     else:
-                        v_loss = v_loss_unclipped.mean()
+                        v_loss = v_loss_unclipped.mean(0)
 
                     if self.ppo2_vf_coef_halving:
                         v_loss *= 0.5
+                    v_loss = (vf_coef * v_loss).sum()
 
                     entropy_loss = -entropy.mean()
 
-                    loss = pi_loss + ent_coef * entropy_loss + self.vf_coef * v_loss
+                    loss = pi_loss + ent_coef * entropy_loss + v_loss
 
                     self.optimizer.zero_grad()
                     loss.backward()

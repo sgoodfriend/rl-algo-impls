@@ -15,6 +15,8 @@ from rl_algo_impls.wrappers.vectorable_wrapper import VecEnv, VecEnvObs, find_wr
 ACTIVATION: Dict[str, Type[nn.Module]] = {
     "tanh": nn.Tanh,
     "relu": nn.ReLU,
+    "identity": nn.Identity,
+    "sigmoid": nn.Sigmoid,
 }
 
 VEC_NORMALIZE_FILENAME = "vecnormalize.pkl"

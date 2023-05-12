@@ -15,6 +15,7 @@ class CriticHead(nn.Module):
         hidden_sizes: Sequence[int] = (),
         activation: Type[nn.Module] = nn.Tanh,
         init_layers_orthogonal: bool = True,
+        output_activation: Type[nn.Module] = nn.Identity,
     ) -> None:
         super().__init__()
         seq = []
@@ -31,6 +32,7 @@ class CriticHead(nn.Module):
                 init_layers_orthogonal=init_layers_orthogonal,
                 final_layer_gain=1.0,
                 hidden_layer_gain=1.0,
+                output_activation=output_activation,
             )
         )
         self._fc = nn.Sequential(*seq)

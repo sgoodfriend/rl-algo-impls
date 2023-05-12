@@ -1,4 +1,4 @@
-from typing import Optional, Sequence, Tuple, Type
+from typing import List, Optional, Sequence, Tuple, Type
 
 import numpy as np
 import torch
@@ -9,6 +9,7 @@ from gym.spaces import MultiDiscrete, Space
 from rl_algo_impls.shared.actor import pi_forward
 from rl_algo_impls.shared.actor.gridnet import GridnetDistribution
 from rl_algo_impls.shared.actor.gridnet_decoder import Transpose
+from rl_algo_impls.shared.module.stack import Stack
 from rl_algo_impls.shared.module.utils import layer_init
 from rl_algo_impls.shared.policy.actor_critic_network.network import (
     ACNForward,
@@ -30,9 +31,15 @@ class UNetActorCriticNetwork(ActorCriticNetwork):
         activation_fn: str = "tanh",
         cnn_layers_init_orthogonal: Optional[bool] = None,
         embed_layer: bool = False,
+        num_additional_critics: int = 0,
+        additional_critic_activation_functions: Optional[List[str]] = None,
     ) -> None:
         if cnn_layers_init_orthogonal is None:
             cnn_layers_init_orthogonal = True
+        if num_additional_critics and not additional_critic_activation_functions:
+            additional_critic_activation_functions = [
+                "identity"
+            ] * num_additional_critics
         super().__init__()
         assert isinstance(action_space, MultiDiscrete)
         assert isinstance(action_plane_space, MultiDiscrete)
@@ -132,32 +139,24 @@ class UNetActorCriticNetwork(ActorCriticNetwork):
             if v_hidden_sizes is not None
             else default_hidden_sizes(observation_space)
         )
-        self.critic_head = CriticHead(
-            in_dim=cnn_out.shape[1:],
-            hidden_sizes=v_hidden_sizes,
-            activation=activation,
-            init_layers_orthogonal=init_layers_orthogonal,
+        self.critic_heads = Stack(
+            [
+                CriticHead(
+                    in_dim=cnn_out.shape[1:],
+                    hidden_sizes=v_hidden_sizes,
+                    activation=activation,
+                    init_layers_orthogonal=init_layers_orthogonal,
+                    output_activation=ACTIVATION[out_fn],
+                )
+                for out_fn in ["identity"]
+                + (additional_critic_activation_functions or [])
+            ]
         )
 
     def _preprocess(self, obs: torch.Tensor) -> torch.Tensor:
         if len(obs.shape) == 3:
             obs = obs.unsqueeze(0)
         return obs.float() / self.range_size
-
-    def forward(
-        self,
-        obs: torch.Tensor,
-        action: torch.Tensor,
-        action_masks: Optional[torch.Tensor] = None,
-    ) -> ACNForward:
-        return self._distribution_and_value(
-            obs, action=action, action_masks=action_masks
-        )
-
-    def distribution_and_value(
-        self, obs: torch.Tensor, action_masks: Optional[torch.Tensor] = None
-    ) -> ACNForward:
-        return self._distribution_and_value(obs, action_masks=action_masks)
 
     def _distribution_and_value(
         self,
@@ -176,7 +175,9 @@ class UNetActorCriticNetwork(ActorCriticNetwork):
         e4 = self.enc4(e3)
         e5 = self.enc5(e4)
 
-        v = self.critic_head(F.adaptive_avg_pool2d(e5, output_size=1))
+        v = self.critic_heads(F.adaptive_avg_pool2d(e5, output_size=1))
+        if v.shape[-1] == 1:
+            v = v.squeeze(-1)
 
         d4 = self.dec4(e5)
         d3 = self.dec3(torch.cat((d4, e4), dim=1))
@@ -198,7 +199,10 @@ class UNetActorCriticNetwork(ActorCriticNetwork):
         e4 = self.enc4(e3)
         e5 = self.enc5(e4)
 
-        return self.critic_head(F.adaptive_avg_pool2d(e5, output_size=1))
+        v = self.critic_heads(F.adaptive_avg_pool2d(e5, output_size=1))
+        if v.shape[-1] == 1:
+            v = v.squeeze(-1)
+        return v
 
     def reset_noise(self, batch_size: Optional[int] = None) -> None:
         pass
@@ -206,6 +210,13 @@ class UNetActorCriticNetwork(ActorCriticNetwork):
     @property
     def action_shape(self) -> Tuple[int, ...]:
         return (self.map_size, len(self.action_vec))
+
+    @property
+    def value_shape(self) -> Tuple[int, ...]:
+        if len(self.critic_heads) > 1:
+            return (len(self.critic_heads),)
+        else:
+            return ()
 
 
 def max_pool() -> nn.MaxPool2d:

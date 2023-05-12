@@ -1,39 +1,41 @@
-from typing import Callable
+from typing import Callable, TypeVar
 
+import numpy as np
 from torch.optim import Optimizer
 
-Schedule = Callable[[float], float]
+from rl_algo_impls.shared.tensor_utils import NumOrArray
+
+NT = TypeVar("NT", float, np.ndarray, NumOrArray)
+Schedule = Callable[[float], NT]
 
 
 def lerp(start, end, progress):
     return start + (end - start) * progress
 
 
-def linear_schedule(
-    start_val: float, end_val: float, end_fraction: float = 1.0
-) -> Schedule:
-    def func(progress_fraction: float) -> float:
-        if progress_fraction >= end_fraction:
+def linear_schedule(start_val: NT, end_val: NT, end_progress: float = 1.0) -> Schedule:
+    def func(progress_fraction: float) -> NT:
+        if progress_fraction >= end_progress:
             return end_val
         else:
-            return lerp(start_val, end_val, progress_fraction / end_fraction)
+            return lerp(start_val, end_val, progress_fraction / end_progress)
 
     return func
 
 
-def constant_schedule(val: float) -> Schedule:
+def constant_schedule(val: NT) -> Schedule:
     return lambda f: val
 
 
 def spike_schedule(
-    max_value: float,
-    start_fraction: float = 1e-2,
-    end_fraction: float = 1e-4,
+    max_value: NT,
+    start_fraction: NT = 1e-2,
+    end_fraction: NT = 1e-4,
     peak_progress: float = 0.1,
 ) -> Schedule:
     assert 0 < peak_progress < 1
 
-    def func(progress_fraction: float) -> float:
+    def func(progress_fraction: float) -> NT:
         if progress_fraction < peak_progress:
             fraction = (
                 start_fraction
@@ -48,9 +50,12 @@ def spike_schedule(
     return func
 
 
-def schedule(name: str, start_val: float) -> Schedule:
+def schedule(name: str, start_val: NT) -> Schedule:
     if name == "linear":
-        return linear_schedule(start_val, 0)
+        return linear_schedule(
+            start_val,
+            np.zeros_like(start_val) if isinstance(start_val, np.ndarray) else 0,
+        )
     elif name == "none":
         return constant_schedule(start_val)
     elif name == "spike":

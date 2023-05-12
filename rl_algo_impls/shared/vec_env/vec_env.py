@@ -14,6 +14,7 @@ from stable_baselines3.common.vec_env.subproc_vec_env import SubprocVecEnv
 from stable_baselines3.common.vec_env.vec_normalize import VecNormalize
 from torch.utils.tensorboard.writer import SummaryWriter
 
+from rl_algo_impls.lux.wrappers.lux_env_gridnet import LuxEnvGridnet
 from rl_algo_impls.runner.config import Config, EnvHyperparams
 from rl_algo_impls.shared.policy.policy import VEC_NORMALIZE_FILENAME
 from rl_algo_impls.shared.vec_env.utils import (
@@ -38,7 +39,6 @@ from rl_algo_impls.wrappers.initial_step_truncate_wrapper import (
     InitialStepTruncateWrapper,
 )
 from rl_algo_impls.wrappers.is_vector_env import IsVectorEnv
-from rl_algo_impls.lux.wrappers.lux_env_gridnet import LuxEnvGridnet
 from rl_algo_impls.wrappers.no_reward_timeout import NoRewardTimeout
 from rl_algo_impls.wrappers.noop_env_seed import NoopEnvSeed
 from rl_algo_impls.wrappers.normalize import NormalizeObservation, NormalizeReward
@@ -78,6 +78,7 @@ def make_vec_env(
         _,  # bots
         self_play_kwargs,
         selfplay_bots,
+        _,  # additional_win_loss_reward
     ) = astuple(hparams)
 
     import_for_env_id(config.env_id)

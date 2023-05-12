@@ -80,21 +80,6 @@ class ConnectedTrioActorCriticNetwork(ActorCriticNetwork):
             init_layers_orthogonal=init_layers_orthogonal,
         )
 
-    def forward(
-        self,
-        obs: torch.Tensor,
-        action: torch.Tensor,
-        action_masks: Optional[torch.Tensor] = None,
-    ) -> ACNForward:
-        return self._distribution_and_value(
-            obs, action=action, action_masks=action_masks
-        )
-
-    def distribution_and_value(
-        self, obs: torch.Tensor, action_masks: Optional[torch.Tensor] = None
-    ) -> ACNForward:
-        return self._distribution_and_value(obs, action_masks=action_masks)
-
     def _distribution_and_value(
         self,
         obs: torch.Tensor,

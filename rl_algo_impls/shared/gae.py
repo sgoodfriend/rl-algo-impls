@@ -1,9 +1,13 @@
+from typing import NamedTuple, Sequence, Union
+
 import numpy as np
 import torch
 
-from typing import NamedTuple, Sequence
-
 from rl_algo_impls.shared.policy.actor_critic import OnPolicy
+from rl_algo_impls.shared.tensor_utils import (
+    expand_dims_to_match,
+    prepend_dims_to_match,
+)
 from rl_algo_impls.shared.trajectory import Trajectory
 from rl_algo_impls.wrappers.vectorable_wrapper import VecEnvObs
 
@@ -75,12 +79,16 @@ def compute_advantages(
     next_episode_starts: np.ndarray,
     next_obs: VecEnvObs,
     policy: OnPolicy,
-    gamma: float,
-    gae_lambda: float,
+    gamma: Union[float, np.ndarray],
+    gae_lambda: Union[float, np.ndarray],
 ) -> np.ndarray:
     advantages = np.zeros_like(rewards)
     last_gae_lam = 0
     n_steps = advantages.shape[0]
+    if isinstance(gamma, np.ndarray):
+        gamma = prepend_dims_to_match(gamma, values.shape[1:])
+    if isinstance(gae_lambda, np.ndarray):
+        gae_lambda = prepend_dims_to_match(gae_lambda, values.shape[1:])
     for t in reversed(range(n_steps)):
         if t == n_steps - 1:
             next_nonterminal = 1.0 - next_episode_starts
@@ -88,6 +96,7 @@ def compute_advantages(
         else:
             next_nonterminal = 1.0 - episode_starts[t + 1]
             next_value = values[t + 1]
+        next_nonterminal = expand_dims_to_match(next_nonterminal, next_value.shape)
         delta = rewards[t] + gamma * next_value * next_nonterminal - values[t]
         last_gae_lam = delta + gamma * gae_lambda * next_nonterminal * last_gae_lam
         advantages[t] = last_gae_lam
