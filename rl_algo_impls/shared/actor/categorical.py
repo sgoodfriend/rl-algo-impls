@@ -27,7 +27,9 @@ class MaskedCategorical(Categorical):
             return super().entropy()
         # If mask set, then use approximation for entropy
         p_log_p = self.logits * self.probs  # type: ignore
-        masked = torch.where(self.mask, p_log_p, torch.tensor(0).float())
+        masked = torch.where(
+            self.mask, p_log_p, torch.tensor(0).float().to(p_log_p.device)
+        )
         return -masked.sum(-1)
 
 
