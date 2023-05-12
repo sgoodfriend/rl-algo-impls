@@ -666,8 +666,10 @@ LuxAI_S2-v0: &lux-defaults
     phases:
       - multi_reward_weights: [0.99, 0.01] # Initial shaped rewards (mostly)
         vf_coef: [0.5, 0.1]
+        ent_coef: 0.01
       - multi_reward_weights: [0, 1] # Win-loss sparse rewards
         vf_coef: [0, 0.5]
+        ent_coef: 0.001
     durations:
       - 0.5
       - 0.3
@@ -679,7 +681,6 @@ LuxAI_S2-v0: &lux-defaults
     learning_rate: !!float 1e-4
     learning_rate_decay: none
     ent_coef: 0.01
-    ent_coef_decay: linear
     max_grad_norm: 0.5
     clip_range: 0.1
     clip_range_decay: none
