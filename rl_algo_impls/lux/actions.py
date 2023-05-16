@@ -317,7 +317,7 @@ def enqueued_action_from_obs(action_queue: List[np.ndarray]) -> Optional[np.ndar
 
 def actions_equal(action: np.ndarray, enqueued: Optional[np.ndarray]) -> bool:
     if enqueued is None:
-        return False
+        return action[0] == 5  # Recharge is equivalent to empty queue
     return bool(np.all(np.where(enqueued == -1, True, action == enqueued)))
 
 
