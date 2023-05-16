@@ -130,7 +130,9 @@ def to_lux_actions(
             positions_occupied[target_pos_idx] = u.unit_id
             resource = 0
             amount = 0
-            num_executions = max_move_repeats(u, direction, state)
+            num_executions = max_move_repeats(
+                u, direction, state, enqueued_actions.get(u.unit_id)
+            )
         else:
             positions_occupied[pos_to_idx(u.pos, cfg.map_size)] = u.unit_id
 
@@ -267,10 +269,21 @@ def is_position_in_map(pos: np.ndarray, config: LuxEnvConfig) -> bool:
     return bool(np.all(pos >= 0) and np.all(pos < config.map_size))
 
 
-def max_move_repeats(unit: LuxUnit, direction_idx: int, state: LuxGameState) -> int:
+def max_move_repeats(
+    unit: LuxUnit,
+    direction_idx: int,
+    state: LuxGameState,
+    enqueued_action: Optional[np.ndarray],
+) -> int:
     config = state.env_cfg
     num_repeats = 0
     power_remaining = unit.power
+    if (
+        enqueued_action is None
+        or enqueued_action[0] != 0
+        or enqueued_action[1] != direction_idx
+    ):
+        power_remaining -= unit.unit_cfg.ACTION_QUEUE_POWER_COST
     move_delta = move_deltas[direction_idx]
     assert not bool(np.all(move_delta == 0)), "No move Move action not expected"
     target_pos = pos_to_numpy(unit.pos)
