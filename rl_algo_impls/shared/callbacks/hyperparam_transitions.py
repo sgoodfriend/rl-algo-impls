@@ -22,7 +22,7 @@ ALGO_SET_SCHEDULE_NAMES = {GAMMA_NAME, ENT_COEF_NAME}
 LUX_REWARD_WEIGHTS_NAME = "reward_weights"
 
 
-class LuxHyperparamTransitions(Callback):
+class HyperparamTransitions(Callback):
     def __init__(
         self,
         config: Config,

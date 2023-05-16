@@ -15,9 +15,6 @@ import yaml
 from torch.utils.tensorboard.writer import SummaryWriter
 
 import wandb
-from rl_algo_impls.shared.callbacks.hyperparam_transitions import (
-    LuxHyperparamTransitions,
-)
 from rl_algo_impls.runner.config import Config, EnvHyperparams, RunArgs
 from rl_algo_impls.runner.running_utils import (
     ALGOS,
@@ -30,6 +27,7 @@ from rl_algo_impls.runner.running_utils import (
 )
 from rl_algo_impls.shared.callbacks.callback import Callback
 from rl_algo_impls.shared.callbacks.eval_callback import EvalCallback
+from rl_algo_impls.shared.callbacks.hyperparam_transitions import HyperparamTransitions
 from rl_algo_impls.shared.callbacks.reward_decay_callback import RewardDecayCallback
 from rl_algo_impls.shared.stats import EpisodesStats
 from rl_algo_impls.shared.vec_env import make_env, make_eval_env
@@ -125,7 +123,7 @@ def train(args: TrainArgs):
         )
     if config.hyperparams.hyperparam_transitions_kwargs:
         callbacks.append(
-            LuxHyperparamTransitions(
+            HyperparamTransitions(
                 config,
                 env,
                 algo,

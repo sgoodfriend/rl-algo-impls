@@ -16,9 +16,6 @@ from torch.utils.tensorboard.writer import SummaryWriter
 
 import wandb
 from rl_algo_impls.a2c.optimize import sample_params as a2c_sample_params
-from rl_algo_impls.shared.callbacks.hyperparam_transitions import (
-    LuxHyperparamTransitions,
-)
 from rl_algo_impls.runner.config import Config, EnvHyperparams, RunArgs
 from rl_algo_impls.runner.running_utils import (
     ALGOS,
@@ -30,6 +27,7 @@ from rl_algo_impls.runner.running_utils import (
     set_seeds,
 )
 from rl_algo_impls.shared.callbacks import Callback
+from rl_algo_impls.shared.callbacks.hyperparam_transitions import HyperparamTransitions
 from rl_algo_impls.shared.callbacks.optimize_callback import (
     Evaluation,
     OptimizeCallback,
@@ -236,7 +234,7 @@ def simple_optimize(trial: optuna.Trial, args: RunArgs, study_args: StudyArgs) -
         )
     if config.hyperparams.hyperparam_transitions_kwargs:
         callbacks.append(
-            LuxHyperparamTransitions(
+            HyperparamTransitions(
                 config,
                 env,
                 algo,
@@ -371,7 +369,7 @@ def stepwise_optimize(
                 )
             if config.hyperparams.hyperparam_transitions_kwargs:
                 callbacks.append(
-                    LuxHyperparamTransitions(
+                    HyperparamTransitions(
                         config,
                         env,
                         algo,
