@@ -617,7 +617,7 @@ procgen-starpilot-hard-4xIMPALA:
     learning_rate: !!float 2.1e-4
 
 LuxAI_S2-v0: &lux-defaults
-  n_timesteps: !!float 20e6
+  n_timesteps: !!float 30e6
   additional_keys_to_log: ["stats", "results"]
   env_id: LuxAI_S2-v0
   env_hyperparams: &lux-env-defaults
@@ -672,9 +672,9 @@ LuxAI_S2-v0: &lux-defaults
         vf_coef: [0.1, 0.5]
         ent_coef: 0.001
     durations:
-      - 0.5
       - 0.3
-      - 0.2
+      - 0.3
+      - 0.4
   algo_hyperparams: &lux-algo-defaults
     batch_size: 2304
     n_epochs: 4
