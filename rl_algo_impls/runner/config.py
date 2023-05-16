@@ -73,7 +73,7 @@ class Hyperparams:
     reward_decay_callback_kwargs: Dict[str, Any] = dataclasses.field(
         default_factory=dict
     )
-    lux_hyperparam_transitions_kwargs: Dict[str, Any] = dataclasses.field(
+    hyperparam_transitions_kwargs: Dict[str, Any] = dataclasses.field(
         default_factory=dict
     )
     rollout_hyperparams: Dict[str, Any] = dataclasses.field(default_factory=dict)

@@ -675,7 +675,7 @@ LuxAI_S2-v0: &lux-defaults
     v_hidden_sizes: [256, 128]
     embed_layer: false
     additional_critic_activation_functions: [tanh]
-  lux_hyperparam_transitions_kwargs: &lux-transitions-defaults
+  hyperparam_transitions_kwargs: &lux-transitions-defaults
     phases:
       - multi_reward_weights: [0.99, 0.01] # Initial shaped rewards (mostly)
         vf_coef: [0.5, 0.1]
@@ -744,7 +744,7 @@ LuxAI_S2-v0-A10: &lux-a10-defaults
 LuxAI_S2-v0-A10-100M:
   <<: *lux-a10-defaults
   n_timesteps: !!float 100e6
-  lux_hyperparam_transitions_kwargs:
+  hyperparam_transitions_kwargs:
     <<: *lux-transitions-defaults
     durations:
       - 0.3
@@ -776,7 +776,7 @@ LuxAI_S2-v0-medium-transfer-debug:
     make_kwargs:
       <<: *lux-env-make-defaults
       verbose: 2
-  lux_hyperparam_transitions_kwargs:
+  hyperparam_transitions_kwargs:
     <<: *lux-transitions-defaults
     durations:
       - 0 # Should already know water generation, so transition to sparse rewards
@@ -855,7 +855,7 @@ LuxAI_S2-v0-debug:
   eval_hyperparams:
     <<: *lux-eval-defaults
     step_freq: !!float 1e5
-  lux_hyperparam_transitions_kwargs:
+  hyperparam_transitions_kwargs:
     <<: *lux-transitions-defaults
     durations:
       - 0.05

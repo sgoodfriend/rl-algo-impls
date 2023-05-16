@@ -15,7 +15,7 @@ import yaml
 from torch.utils.tensorboard.writer import SummaryWriter
 
 import wandb
-from rl_algo_impls.lux.callbacks.lux_hyperparam_transitions import (
+from rl_algo_impls.shared.callbacks.hyperparam_transitions import (
     LuxHyperparamTransitions,
 )
 from rl_algo_impls.runner.config import Config, EnvHyperparams, RunArgs
@@ -123,13 +123,13 @@ def train(args: TrainArgs):
                 config, env, **(config.hyperparams.reward_decay_callback_kwargs or {})
             )
         )
-    if config.hyperparams.lux_hyperparam_transitions_kwargs:
+    if config.hyperparams.hyperparam_transitions_kwargs:
         callbacks.append(
             LuxHyperparamTransitions(
                 config,
                 env,
                 algo,
-                **config.hyperparams.lux_hyperparam_transitions_kwargs,
+                **config.hyperparams.hyperparam_transitions_kwargs,
             )
         )
     if self_play_wrapper:
