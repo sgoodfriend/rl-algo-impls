@@ -669,7 +669,7 @@ LuxAI_S2-v0: &lux-defaults
         vf_coef: [0.5, 0.1]
         ent_coef: 0.01
       - multi_reward_weights: [0, 1] # Win-loss sparse rewards
-        vf_coef: [0, 0.5]
+        vf_coef: [0.1, 0.5]
         ent_coef: 0.001
     durations:
       - 0.5
@@ -687,8 +687,8 @@ LuxAI_S2-v0: &lux-defaults
     clip_range_vf: 0.1
     ppo2_vf_coef_halving: true
     multi_reward_weights: [0.99, 0.01]
-    gamma: [0.99, 1]
-    gae_lambda: [0.95, 1]
+    gamma: [0.99, 0.999]
+    gae_lambda: [0.95, 0.99]
     vf_coef: [0.5, 0.1]
   rollout_hyperparams: &lux-rollout-defaults
     n_steps: 384
