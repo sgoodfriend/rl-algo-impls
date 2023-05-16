@@ -1,7 +1,11 @@
+from typing import Dict, TypeVar
+
 import numpy as np
+from gym.spaces import Dict as DictSpace
 
 from rl_algo_impls.ppo.rollout import Rollout, RolloutGenerator
 from rl_algo_impls.shared.policy.actor_critic import ActorCritic
+from rl_algo_impls.shared.tensor_utils import batch_dict_keys
 from rl_algo_impls.wrappers.vectorable_wrapper import (
     VecEnv,
     single_action_space,
@@ -21,6 +25,9 @@ class SyncStepRolloutGenerator(RolloutGenerator):
         self.policy = policy
         self.vec_env = vec_env
         self.get_action_mask = getattr(vec_env, "get_action_mask", None)
+        if self.get_action_mask:
+            _get_action_mask = self.get_action_mask
+            self.get_action_mask = lambda: batch_dict_keys(_get_action_mask())
 
         epoch_dim = (self.n_steps, vec_env.num_envs)
         step_dim = (vec_env.num_envs,)
@@ -36,19 +43,37 @@ class SyncStepRolloutGenerator(RolloutGenerator):
         self.next_episode_starts = np.full(step_dim, True, dtype=np.bool_)
 
         self.obs = np.zeros(epoch_dim + obs_space.shape, dtype=obs_space.dtype)  # type: ignore
-        self.actions = np.zeros(epoch_dim + act_shape, dtype=act_space.dtype)  # type: ignore
         self.rewards = np.zeros(epoch_dim + value_shape, dtype=np.float32)
         self.episode_starts = np.zeros(epoch_dim, dtype=np.bool_)
         self.values = np.zeros(epoch_dim + value_shape, dtype=np.float32)
         self.logprobs = np.zeros(epoch_dim, dtype=np.float32)
-        self.action_masks = (
-            np.zeros(
-                (self.n_steps,) + self.next_action_masks.shape,
-                dtype=self.next_action_masks.dtype,
+
+        if isinstance(act_shape, dict):
+            self.actions = {
+                k: np.zeros(epoch_dim + a_shape, dtype=act_space[k].dtype)
+                for k, a_shape in act_shape.items()
+            }
+            self.action_masks = (
+                {
+                    k: np.zeros(
+                        (self.n_steps,) + v.shape,
+                        dtype=v.dtype,
+                    )
+                    for k, v in self.next_action_masks.items()
+                }
+                if self.next_action_masks is not None
+                else None
             )
-            if self.next_action_masks is not None
-            else None
-        )
+        else:
+            self.actions = np.zeros(epoch_dim + act_shape, dtype=act_space.dtype)  # type: ignore
+            self.action_masks = (
+                np.zeros(
+                    (self.n_steps,) + self.next_action_masks.shape,
+                    dtype=self.next_action_masks.dtype,
+                )
+                if self.next_action_masks is not None
+                else None
+            )
 
     def rollout(self) -> Rollout:
         self.policy.eval()
@@ -60,20 +85,21 @@ class SyncStepRolloutGenerator(RolloutGenerator):
             self.obs[s] = self.next_obs
             self.episode_starts[s] = self.next_episode_starts
             if self.action_masks is not None:
-                self.action_masks[s] = self.next_action_masks
+                fold_in(self.action_masks, self.next_action_masks, s)
 
             (
-                self.actions[s],
+                actions,
                 self.values[s],
                 self.logprobs[s],
-                clamped_action,
+                clamped_actions,
             ) = self.policy.step(self.next_obs, action_masks=self.next_action_masks)
+            fold_in(self.actions, actions, s)
             (
                 self.next_obs,
                 self.rewards[s],
                 self.next_episode_starts,
                 _,
-            ) = self.vec_env.step(clamped_action)
+            ) = self.vec_env.step(clamped_actions)
             self.next_action_masks = (
                 self.get_action_mask() if self.get_action_mask else None
             )
@@ -82,7 +108,6 @@ class SyncStepRolloutGenerator(RolloutGenerator):
         assert isinstance(self.next_obs, np.ndarray)
         return Rollout(
             next_obs=self.next_obs,
-            next_action_masks=self.next_action_masks,
             next_episode_starts=self.next_episode_starts,
             obs=self.obs,
             actions=self.actions,
@@ -91,5 +116,20 @@ class SyncStepRolloutGenerator(RolloutGenerator):
             values=self.values,
             logprobs=self.logprobs,
             action_masks=self.action_masks,
-            total_steps=self.n_steps * self.vec_env.num_envs,
         )
+
+
+ND = TypeVar("ND", np.ndarray, Dict[str, np.ndarray])
+
+
+def fold_in(destination: ND, subset: ND, idx: int):
+    def fn(_d: np.ndarray, _s: np.ndarray):
+        _d[idx] = _s
+
+    if isinstance(destination, dict):
+        assert isinstance(subset, dict)
+        for k, d in destination.items():
+            fn(d, subset[k])
+    else:
+        assert isinstance(subset, np.ndarray)
+        fn(destination, subset)

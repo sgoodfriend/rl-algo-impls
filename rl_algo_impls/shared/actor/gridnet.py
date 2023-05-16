@@ -10,6 +10,7 @@ from rl_algo_impls.shared.actor import Actor, PiForward, pi_forward
 from rl_algo_impls.shared.actor.categorical import MaskedCategorical
 from rl_algo_impls.shared.encoder import EncoderOutDim
 from rl_algo_impls.shared.module.utils import mlp
+from rl_algo_impls.shared.tensor_utils import TensorOrDict
 
 
 class GridnetDistribution(Distribution):
@@ -18,49 +19,138 @@ class GridnetDistribution(Distribution):
         map_size: int,
         action_vec: NDArray[np.int64],
         logits: torch.Tensor,
-        masks: torch.Tensor,
+        masks: TensorOrDict,
         validate_args: Optional[bool] = None,
     ) -> None:
         self.map_size = map_size
         self.action_vec = action_vec
 
-        masks = masks.view(-1, masks.shape[-1])
-        split_masks = torch.split(masks, action_vec.tolist(), dim=1)
+        masks_per_position = masks["per_position"] if isinstance(masks, dict) else masks
+        masks_per_position = masks_per_position.view(-1, masks_per_position.shape[-1])
+        split_masks_per_position = torch.split(
+            masks_per_position, action_vec.tolist(), dim=1
+        )
 
-        grid_logits = logits.reshape(-1, action_vec.sum())
-        split_logits = torch.split(grid_logits, action_vec.tolist(), dim=1)
-        self.categoricals = [
+        grid_logits = logits.reshape(-1, logits.shape[-1])
+        grid_logits_per_position = grid_logits[:, : action_vec.sum()]
+        split_logits_per_position = torch.split(
+            grid_logits_per_position, action_vec.tolist(), dim=1
+        )
+        self.categoricals_per_position = [
             MaskedCategorical(logits=lg, validate_args=validate_args, mask=m)
-            for lg, m in zip(split_logits, split_masks)
+            for lg, m in zip(split_logits_per_position, split_masks_per_position)
         ]
+
+        if isinstance(masks, dict) and "pick_position" in masks:
+            masks_pick_position = masks["pick_position"]
+            self.pick_vec = [masks_pick_position.shape[-1]] * masks_pick_position.shape[
+                -2
+            ]
+            masks_pick_position = masks_pick_position.view(
+                -1, masks_pick_position.shape[-1]
+            )
+
+            split_masks_pick_position = torch.split(
+                masks_pick_position,
+                self.pick_vec,
+                dim=1,
+            )
+            logits_pick_position = logits[:, :, :, action_vec.sum() :]
+            logits_pick_position = logits_pick_position.reshape(
+                logits_pick_position.shape[0], -1, logits_pick_position.shape[-1]
+            ).transpose(-1, -2)
+            logits_pick_position = logits_pick_position.reshape(
+                -1, logits_pick_position.shape[-1]
+            )
+            split_logits_pick_position = torch.split(
+                logits_pick_position, self.pick_vec, dim=1
+            )
+            self.categoricals_pick_position = [
+                MaskedCategorical(logits=lg, validate_args=validate_args, mask=m)
+                for lg, m in zip(split_logits_pick_position, split_masks_pick_position)
+            ]
+        else:
+            self.categoricals_pick_position = None
 
         batch_shape = logits.size()[:-1] if logits.ndimension() > 1 else torch.Size()
         super().__init__(batch_shape=batch_shape, validate_args=validate_args)
 
-    def log_prob(self, action: torch.Tensor) -> torch.Tensor:
-        prob_stack = torch.stack(
+    def log_prob(self, action: TensorOrDict) -> torch.Tensor:
+        action_per_position = (
+            action["per_position"] if isinstance(action, dict) else action
+        )
+        prob_stack_per_position = torch.stack(
             [
                 c.log_prob(a)
-                for a, c in zip(action.view(-1, action.shape[-1]).T, self.categoricals)
+                for a, c in zip(
+                    action_per_position.view(-1, action_per_position.shape[-1]).T,
+                    self.categoricals_per_position,
+                )
             ],
             dim=-1,
         )
-        logprob = prob_stack.view(-1, self.map_size, len(self.action_vec))
-        return logprob.sum(dim=(1, 2))
+        logprob_per_position = prob_stack_per_position.view(
+            -1, self.map_size, len(self.action_vec)
+        ).sum(dim=(1, 2))
+
+        if isinstance(action, dict) and "pick_position" in action:
+            assert self.categoricals_pick_position is not None
+            action_pick_position = action["pick_position"]
+            prob_stack_pick_position = torch.stack(
+                [
+                    c.log_prob(a)
+                    for a, c in zip(
+                        action_pick_position.view(-1, len(self.pick_vec)).T,
+                        self.categoricals_pick_position,
+                    )
+                ],
+                dim=-1,
+            )
+            logprob_pick_position = prob_stack_pick_position.sum(dim=-1)
+            return logprob_per_position + logprob_pick_position
+
+        return logprob_per_position
 
     def entropy(self) -> torch.Tensor:
-        ent = torch.stack([c.entropy() for c in self.categoricals], dim=-1)
-        ent = ent.view(-1, self.map_size, len(self.action_vec))
-        return ent.sum(dim=(1, 2))
+        ent_per_position = (
+            torch.stack([c.entropy() for c in self.categoricals_per_position], dim=-1)
+            .view(-1, self.map_size, len(self.action_vec))
+            .sum(dim=(1, 2))
+        )
+        if self.categoricals_pick_position:
+            ent_pick_position = (
+                torch.stack(
+                    [c.entropy() for c in self.categoricals_pick_position], dim=-1
+                )
+                .view(-1, len(self.pick_vec))
+                .sum(dim=1)
+            )
+            return ent_per_position + ent_pick_position
+        return ent_per_position
 
-    def sample(self, sample_shape: torch.Size = torch.Size()) -> torch.Tensor:
-        s = torch.stack([c.sample(sample_shape) for c in self.categoricals], dim=-1)
-        return s.view(-1, self.map_size, len(self.action_vec))
+    def sample(self, sample_shape: torch.Size = torch.Size()) -> TensorOrDict:
+        s_per_position = torch.stack(
+            [c.sample(sample_shape) for c in self.categoricals_per_position], dim=-1
+        ).view(-1, self.map_size, len(self.action_vec))
+        if self.categoricals_pick_position:
+            s_pick_position = torch.stack(
+                [c.sample(sample_shape) for c in self.categoricals_pick_position],
+                dim=-1,
+            )
+            return {"per_position": s_per_position, "pick_position": s_pick_position}
+        return s_per_position
 
     @property
-    def mode(self) -> torch.Tensor:
-        m = torch.stack([c.mode for c in self.categoricals], dim=-1)
-        return m.view(-1, self.map_size, len(self.action_vec))
+    def mode(self) -> TensorOrDict:
+        m_per_position = torch.stack(
+            [c.mode for c in self.categoricals_per_position], dim=-1
+        ).view(-1, self.map_size, len(self.action_vec))
+        if self.categoricals_pick_position:
+            m_pick_position = torch.stack(
+                [c.mode for c in self.categoricals_pick_position], dim=-1
+            )
+            return {"per_position": m_per_position, "pick_position": m_pick_position}
+        return m_per_position
 
     @property
     def arg_constraints(self) -> Dict[str, constraints.Constraint]:

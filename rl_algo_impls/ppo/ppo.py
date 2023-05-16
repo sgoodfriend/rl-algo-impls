@@ -1,5 +1,5 @@
 import logging
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, astuple, dataclass
 from time import perf_counter
 from typing import List, NamedTuple, Optional, TypeVar, Union
 
@@ -182,43 +182,10 @@ class PPO(Algorithm):
                 chart_scalars["reward_weights"] = self.multi_reward_weights
             log_scalars(self.tb_writer, "charts", chart_scalars, timesteps_elapsed)
 
-            (
-                next_obs,
-                next_action_masks,
-                next_episode_starts,
-                obs,
-                actions,
-                rewards,
-                episode_starts,
-                values,
-                logprobs,
-                action_masks,
-                total_steps,
-            ) = rollout_generator.rollout()
-            timesteps_elapsed += total_steps
-
-            b_obs = torch.tensor(obs.reshape((-1,) + obs.shape[2:])).to(self.device)
-            b_actions = torch.tensor(actions.reshape((-1,) + actions.shape[2:])).to(
-                self.device
-            )
-            b_logprobs = torch.tensor(logprobs.reshape(-1)).to(self.device)
-            b_action_masks = (
-                torch.tensor(
-                    action_masks.reshape((-1,) + next_action_masks.shape[1:])
-                ).to(self.device)
-                if action_masks is not None
-                else None
-            )
-
-            y_pred = values.reshape(-1, values.shape[-1])
-            b_values = torch.tensor(y_pred).to(self.device)
+            r = rollout_generator.rollout()
+            timesteps_elapsed += r.total_steps
 
             step_stats = []
-            # Define variables that will definitely be set through the first epoch
-            advantages: np.ndarray = None  # type: ignore
-            b_advantages: torch.Tensor = None  # type: ignore
-            y_true: np.ndarray = None  # type: ignore
-            b_returns: torch.Tensor = None  # type: ignore
             multi_reward_weights = (
                 torch.Tensor(self.multi_reward_weights).to(self.device)
                 if self.multi_reward_weights is not None
@@ -227,45 +194,29 @@ class PPO(Algorithm):
             vf_coef = torch.Tensor(np.array(self.vf_coef)).to(self.device)
             for e in range(self.n_epochs):
                 if e == 0 or self.update_advantage_between_epochs:
-                    advantages = compute_advantages(
-                        rewards,
-                        values,
-                        episode_starts,
-                        next_episode_starts,
-                        next_obs,
+                    r.update_advantages(
                         self.policy,
                         gamma,
                         self.gae_lambda,
+                        update_returns=self.update_returns_between_epochs,
                     )
-                    b_advantages = torch.tensor(
-                        advantages.reshape((-1, advantages.shape[-1]))
-                    ).to(self.device)
-                if e == 0 or self.update_returns_between_epochs:
-                    returns = advantages + values
-                    y_true = returns.reshape((-1, returns.shape[-1]))
-                    b_returns = torch.tensor(y_true).to(self.device)
-
-                b_idxs = torch.randperm(len(b_obs))
                 # Only record last epoch's stats
                 step_stats.clear()
-                for i in range(0, len(b_obs), self.batch_size):
+                for mb in r.minibatches(self.batch_size, self.device):
                     self.policy.reset_noise(self.batch_size)
 
-                    mb_idxs = b_idxs[i : i + self.batch_size]
+                    (
+                        mb_obs,
+                        mb_logprobs,
+                        mb_actions,
+                        mb_action_masks,
+                        mb_values,
+                        mb_adv,
+                        mb_returns,
+                    ) = astuple(mb)
 
-                    mb_obs = b_obs[mb_idxs]
-                    mb_actions = b_actions[mb_idxs]
-                    mb_values = b_values[mb_idxs]
-                    mb_logprobs = b_logprobs[mb_idxs]
-                    mb_action_masks = (
-                        b_action_masks[mb_idxs] if b_action_masks is not None else None
-                    )
-
-                    mb_adv = b_advantages[mb_idxs]
                     if self.normalize_advantage:
                         mb_adv = (mb_adv - mb_adv.mean(0)) / (mb_adv.std(0) + 1e-8)
-
-                    mb_returns = b_returns[mb_idxs]
 
                     new_logprobs, entropy, new_values = self.policy(
                         mb_obs, mb_actions, action_masks=mb_action_masks
@@ -340,16 +291,16 @@ class PPO(Algorithm):
                         )
                     )
 
-            var_y = np.var(y_true).item()
+            var_y = np.var(r.y_true).item()
             explained_var = (
-                np.nan if var_y == 0 else 1 - np.var(y_true - y_pred).item() / var_y
+                np.nan if var_y == 0 else 1 - np.var(r.y_true - r.y_pred).item() / var_y
             )
             TrainStats(step_stats, explained_var).write_to_tensorboard(
                 self.tb_writer, timesteps_elapsed
             )
 
             end_time = perf_counter()
-            rollout_steps = total_steps
+            rollout_steps = r.total_steps
             self.tb_writer.add_scalar(
                 "train/steps_per_second",
                 rollout_steps / (end_time - start_time),

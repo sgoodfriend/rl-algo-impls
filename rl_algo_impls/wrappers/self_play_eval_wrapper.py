@@ -1,12 +1,9 @@
-import random
-from collections import deque
-from typing import Any, Deque, Dict, List, Optional, Tuple
+from typing import List, Optional, Tuple
 
 import numpy as np
 
-from rl_algo_impls.runner.config import Config
 from rl_algo_impls.shared.policy.policy import Policy
-from rl_algo_impls.wrappers.action_mask_wrapper import find_action_masker
+from rl_algo_impls.shared.tensor_utils import batch_dict_keys
 from rl_algo_impls.wrappers.self_play_wrapper import SelfPlayWrapper
 from rl_algo_impls.wrappers.vectorable_wrapper import (
     VecEnvObs,
@@ -38,7 +35,7 @@ class SelfPlayEvalWrapper(VectorableWrapper):
             all_actions[policy_indexes] = policy.act(
                 self.next_obs[policy_indexes],  # type: ignore
                 deterministic=False,
-                action_masks=self.next_action_masks[policy_indexes]
+                action_masks=batch_dict_keys(self.next_action_masks[policy_indexes])
                 if self.next_action_masks is not None
                 else None,
             )

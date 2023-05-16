@@ -1,15 +1,17 @@
-from typing import List, Optional, Sequence, Tuple, Type, TypeVar, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import torch
 import torch.nn as nn
-from gym.spaces import Box, MultiDiscrete, Space
+from gym.spaces import Box
+from gym.spaces import Dict as DictSpace
+from gym.spaces import MultiDiscrete, Space
 
 from rl_algo_impls.shared.actor import pi_forward
 from rl_algo_impls.shared.actor.gridnet import GridnetDistribution
 from rl_algo_impls.shared.actor.gridnet_decoder import Transpose
-from rl_algo_impls.shared.module.utils import layer_init
 from rl_algo_impls.shared.module.stack import HStack
+from rl_algo_impls.shared.module.utils import layer_init
 from rl_algo_impls.shared.policy.actor_critic_network.network import (
     ACNForward,
     ActorCriticNetwork,
@@ -188,11 +190,18 @@ class DoubleConeActorCritic(ActorCriticNetwork):
             ] * num_additional_critics
         super().__init__()
         assert isinstance(observation_space, Box)
-        assert isinstance(action_space, MultiDiscrete)
+        assert isinstance(action_space, DictSpace)
         assert isinstance(action_plane_space, MultiDiscrete)
         self.range_size = np.max(observation_space.high) - np.min(observation_space.low)  # type: ignore
-        self.map_size = len(action_space.nvec) // len(action_plane_space.nvec)  # type: ignore
         self.action_vec = action_plane_space.nvec  # type: ignore
+        if isinstance(action_space, DictSpace):
+            action_space_per_position = action_space["per_position"]  # type: ignore
+            self.pick_vec = action_space["pick_position"].nvec  # type: ignore
+        elif isinstance(action_space, MultiDiscrete):
+            action_space_per_position = action_space
+            self.pick_vec = None
+
+        self.map_size = len(action_space_per_position.nvec) // len(action_plane_space.nvec)  # type: ignore
 
         self.backbone = DoubleConeBackbone(
             observation_space.shape[0],  # type: ignore
@@ -206,7 +215,13 @@ class DoubleConeActorCritic(ActorCriticNetwork):
         self.actor_head = nn.Sequential(
             *[
                 layer_init(
-                    nn.Conv2d(backbone_channels, self.action_vec.sum(), 3, padding=1),
+                    nn.Conv2d(
+                        in_channels=backbone_channels,
+                        out_channels=self.action_vec.sum()
+                        + (len(self.pick_vec) if self.pick_vec else 0),
+                        kernel_size=3,
+                        padding=1,
+                    ),
                     init_layers_orthogonal=init_layers_orthogonal,
                     std=0.01,
                 ),
@@ -295,8 +310,14 @@ class DoubleConeActorCritic(ActorCriticNetwork):
         pass
 
     @property
-    def action_shape(self) -> Tuple[int, ...]:
-        return (self.map_size, len(self.action_vec))
+    def action_shape(self) -> Union[Tuple[int, ...], Dict[str, Tuple[int, ...]]]:
+        per_position_action_shape = (self.map_size, len(self.action_vec))
+        if self.pick_vec:
+            return {
+                "per_position": per_position_action_shape,
+                "pick_position": (len(self.pick_vec),),
+            }
+        return per_position_action_shape
 
     @property
     def value_shape(self) -> Tuple[int, ...]:

@@ -6,6 +6,7 @@ import torch.nn as nn
 from gym.spaces import Box, Discrete, Space
 
 from rl_algo_impls.shared.actor import PiForward
+from rl_algo_impls.shared.tensor_utils import TensorOrDict
 
 
 class ACNForward(NamedTuple):
@@ -25,7 +26,7 @@ class ActorCriticNetwork(nn.Module, ABC):
         )
 
     def distribution_and_value(
-        self, obs: torch.Tensor, action_masks: Optional[torch.Tensor] = None
+        self, obs: torch.Tensor, action_masks: Optional[TensorOrDict] = None
     ) -> ACNForward:
         return self._distribution_and_value(obs, action_masks=action_masks)
 
@@ -33,8 +34,8 @@ class ActorCriticNetwork(nn.Module, ABC):
     def _distribution_and_value(
         self,
         obs: torch.Tensor,
-        action: Optional[torch.Tensor] = None,
-        action_masks: Optional[torch.Tensor] = None,
+        action: Optional[TensorOrDict] = None,
+        action_masks: Optional[TensorOrDict] = None,
     ) -> ACNForward:
         ...
 

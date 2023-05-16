@@ -2,7 +2,9 @@ from typing import Any, Dict, List, NamedTuple, Optional, Tuple, Type, TypeVar
 
 import numpy as np
 from gym import Wrapper
-from gym.spaces import Box, MultiDiscrete
+from gym.spaces import Box
+from gym.spaces import Dict as DictSpace
+from gym.spaces import MultiDiscrete
 from gym.spaces import Tuple as TupleSpace
 from gym.vector.utils import batch_space
 from luxai_s2.env import LuxAI_S2
@@ -13,7 +15,7 @@ from rl_algo_impls.lux.actions import (
     enqueued_action_from_obs,
     to_lux_actions,
 )
-from rl_algo_impls.lux.early import bid_action, place_factory_action
+from rl_algo_impls.lux.early import bid_action
 from rl_algo_impls.lux.observation import observation_and_action_mask
 from rl_algo_impls.lux.stats import StatsTracking
 from rl_algo_impls.shared.schedule import lerp
@@ -93,14 +95,25 @@ class LuxEnvGridnet(Wrapper):
 
         self.num_map_tiles = self.map_size * self.map_size
         self.action_plane_space = MultiDiscrete(ACTION_SIZES)
-        self.single_action_space = MultiDiscrete(
-            np.array(ACTION_SIZES * self.num_map_tiles).flatten().tolist()
+        self.single_action_space = DictSpace(
+            {
+                "per_position": MultiDiscrete(
+                    np.array(ACTION_SIZES * self.num_map_tiles).flatten().tolist()
+                ),
+                "pick_position": MultiDiscrete([self.num_map_tiles]),
+            }
         )
         self.action_space = TupleSpace((self.single_action_space,) * 2)
-        self.action_mask_shape = (
-            self.num_map_tiles,
-            self.action_plane_space.nvec.sum(),
-        )
+        self.action_mask_shape = {
+            "per_position": (
+                self.num_map_tiles,
+                self.action_plane_space.nvec.sum(),
+            ),
+            "pick_position": (
+                len(self.single_action_space["pick_position"].nvec),
+                self.num_map_tiles,
+            ),
+        }
 
         observation_sample = self.reset()
         single_obs_shape = observation_sample.shape[1:]
@@ -269,26 +282,10 @@ def bid_actions(agents: List[str], bid_std_dev: float) -> Dict[str, Any]:
     }
 
 
-def place_factory_actions(env: LuxAI_S2) -> Dict[str, Any]:
-    actions = {
-        p: place_factory_action(env.state, env.agents, p_idx)
-        for p_idx, p in enumerate(env.agents)
-    }
-    actions = {k: v for k, v in actions.items() if k}
-    return actions
-
-
 def reset_and_early_phase(
     env: LuxAI_S2, bid_std_dev: float
 ) -> Tuple[Dict[str, ObservationStateDict], List[str]]:
     env.reset()
     agents = env.agents
-    env.step(bid_actions(env.agents, bid_std_dev))
-    while env.state.real_env_steps < 0:
-        env.step(place_factory_actions(env))
-    lux_obs, _, _, _ = env.step(place_initial_robot_action(env))
+    lux_obs, _, _, _ = env.step(bid_actions(env.agents, bid_std_dev))
     return lux_obs, agents
-
-
-def place_initial_robot_action(env: LuxAI_S2) -> Dict[str, Any]:
-    return {p: {f: 1 for f in env.state.factories[p].keys()} for p in env.agents}

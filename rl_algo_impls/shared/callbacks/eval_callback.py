@@ -10,6 +10,7 @@ from torch.utils.tensorboard.writer import SummaryWriter
 from rl_algo_impls.shared.callbacks import Callback
 from rl_algo_impls.shared.policy.policy import Policy
 from rl_algo_impls.shared.stats import Episode, EpisodeAccumulator, EpisodesStats
+from rl_algo_impls.shared.tensor_utils import batch_dict_keys
 from rl_algo_impls.wrappers.action_mask_wrapper import find_action_masker
 from rl_algo_impls.wrappers.vec_episode_recorder import VecEpisodeRecorder
 from rl_algo_impls.wrappers.vectorable_wrapper import VecEnv
@@ -100,7 +101,9 @@ def evaluate(
         act = policy.act(
             obs,
             deterministic=deterministic,
-            action_masks=get_action_mask() if get_action_mask else None,
+            action_masks=batch_dict_keys(get_action_mask())
+            if get_action_mask
+            else None,
         )
         obs, rew, done, info = env.step(act)
         episodes.step(rew, done, info)

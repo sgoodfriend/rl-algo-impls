@@ -690,7 +690,7 @@ LuxAI_S2-v0: &lux-defaults
     gamma: [0.99, 1]
     gae_lambda: [0.95, 1]
     vf_coef: [0.5, 0.1]
-  rollout_hyperparams:
+  rollout_hyperparams: &lux-rollout-defaults
     n_steps: 384
 
 LuxAI_S2-v0-double-cone: &lux-dc-defaults
@@ -701,8 +701,10 @@ LuxAI_S2-v0-double-cone: &lux-dc-defaults
     additional_critic_activation_functions: [tanh]
   algo_hyperparams: &lux-dc-algo-defaults
     <<: *lux-algo-defaults
-    n_steps: 128
     batch_size: 768
+  rollout_hyperparams: &lux-dc-rollout-defaults
+    <<: *lux-rollout-defaults
+    n_steps: 128
 
 LuxAI_S2-v0-eval:
   <<: *lux-defaults
@@ -740,8 +742,10 @@ LuxAI_S2-v0-dc-A10: &lux-dc-a10-defaults
   <<: *lux-dc-defaults
   algo_hyperparams:
     <<: *lux-dc-algo-defaults
-    n_steps: 64
     batch_size: 256
+  rollout_hyperparams:
+    <<: *lux-dc-rollout-defaults
+    n_steps: 64
 
 LuxAI_S2-v0-medium-transfer: &lux-medium-transfer-defaults
   <<: *lux-a10-defaults

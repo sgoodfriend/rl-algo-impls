@@ -11,6 +11,7 @@ from rl_algo_impls.lux.shared import (
     LuxFactory,
     LuxGameState,
     LuxUnit,
+    idx_to_pos,
     move_power_cost,
     pos_to_idx,
     pos_to_numpy,
@@ -48,6 +49,29 @@ def to_lux_actions(
 ) -> Dict[str, Any]:
     cfg = state.env_cfg
 
+    if np.any(action_mask["pick_position"][0]):
+        factory_pos_idx = actions["pick_position"][0]
+        factory_pos = idx_to_pos(factory_pos_idx, cfg.map_size)
+
+        water_left = state.teams[player].init_water
+        metal_left = state.teams[player].init_metal
+        factories_to_place = state.teams[player].factories_to_place
+        heavy_cost_metal = cfg.ROBOTS["HEAVY"].METAL_COST
+        metal = (
+            min(metal_left - factories_to_place * heavy_cost_metal, heavy_cost_metal)
+            + heavy_cost_metal
+        )
+        water = metal
+        assert factories_to_place > 1 or (metal == metal_left and water == water_left)
+
+        return {
+            "metal": metal,
+            "water": water,
+            "spawn": factory_pos,
+        }
+
+    actions = actions["per_position"]
+    action_mask = action_mask["per_position"]
     lux_actions = {}
 
     positions_occupied: Dict[int, str] = {}
@@ -192,6 +216,8 @@ def to_lux_actions(
         lux_actions[u.unit_id][0][3] = amount
 
     for f in state.factories[player].values():
+        if no_valid_factory_actions(f, action_mask, cfg.map_size):
+            continue
         a = actions[pos_to_idx(f.pos, cfg.map_size), 0]
         if a != FACTORY_DO_NOTHING_ACTION:
             if a in {0, 1} and pos_to_idx(f.pos, cfg.map_size) in positions_occupied:
@@ -288,8 +314,17 @@ def no_valid_unit_actions(
     return not np.any(
         action_mask[
             pos_to_idx(unit.pos, map_size),
-            FACTORY_ACTION_ENCODED_SIZE : FACTORY_ACTION_ENCODED_SIZE + 6,
+            FACTORY_ACTION_ENCODED_SIZE : FACTORY_ACTION_ENCODED_SIZE
+            + UNIT_ACTION_SIZES[0],
         ]
+    )
+
+
+def no_valid_factory_actions(
+    factory: LuxFactory, action_mask: np.ndarray, map_size: int
+) -> bool:
+    return not np.any(
+        action_mask[pos_to_idx(factory.pos, map_size), :FACTORY_ACTION_ENCODED_SIZE]
     )
 
 

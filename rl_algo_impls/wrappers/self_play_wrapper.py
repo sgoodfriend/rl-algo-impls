@@ -6,6 +6,7 @@ import numpy as np
 
 from rl_algo_impls.runner.config import Config
 from rl_algo_impls.shared.policy.policy import Policy
+from rl_algo_impls.shared.tensor_utils import batch_dict_keys
 from rl_algo_impls.wrappers.action_mask_wrapper import find_action_masker
 from rl_algo_impls.wrappers.vectorable_wrapper import (
     VecEnvObs,
@@ -120,7 +121,7 @@ class SelfPlayWrapper(VectorableWrapper):
                 all_actions[policy_indexes] = policy.act(
                     self.next_obs[policy_indexes],
                     deterministic=False,
-                    action_masks=self.next_action_masks[policy_indexes]
+                    action_masks=batch_dict_keys(self.next_action_masks[policy_indexes])
                     if self.next_action_masks is not None
                     else None,
                 )

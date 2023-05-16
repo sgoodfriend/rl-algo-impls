@@ -5,6 +5,7 @@ import gym
 import numpy as np
 import torch
 from gym.spaces import Box
+from gym.spaces import Dict as DictSpace
 
 from rl_algo_impls.shared.policy.actor_critic_network import (
     ConnectedTrioActorCriticNetwork,
@@ -15,6 +16,7 @@ from rl_algo_impls.shared.policy.actor_critic_network.double_cone import (
     DoubleConeActorCritic,
 )
 from rl_algo_impls.shared.policy.policy import Policy
+from rl_algo_impls.shared.tensor_utils import NumpyOrDict, tensor_to_numpy
 from rl_algo_impls.wrappers.vectorable_wrapper import (
     VecEnv,
     VecEnvObs,
@@ -24,7 +26,7 @@ from rl_algo_impls.wrappers.vectorable_wrapper import (
 
 
 class Step(NamedTuple):
-    a: np.ndarray
+    a: NumpyOrDict
     v: np.ndarray
     logp_a: np.ndarray
     clamped_a: np.ndarray
@@ -44,17 +46,31 @@ ActorCriticSelf = TypeVar("ActorCriticSelf", bound="ActorCritic")
 
 
 def clamp_actions(
-    actions: np.ndarray, action_space: gym.Space, squash_output: bool
+    actions: NumpyOrDict, action_space: gym.Space, squash_output: bool
 ) -> np.ndarray:
-    if isinstance(action_space, Box):
-        low, high = action_space.low, action_space.high  # type: ignore
-        if squash_output:
-            # Squashed output is already between -1 and 1. Rescale if the actual
-            # output needs to something other than -1 and 1
-            return low + 0.5 * (actions + 1) * (high - low)
-        else:
-            return np.clip(actions, low, high)
-    return actions
+    def clip(action: np.ndarray, space: gym.Space) -> np.ndarray:
+        if isinstance(space, Box):
+            low, high = action_space.low, action_space.high  # type: ignore
+            if squash_output:
+                # Squashed output is already between -1 and 1; however, low and high
+                # might not be -1 and 1.
+                return low + 0.5 * (action + 1) * (high - low)
+            else:
+                return np.clip(action, low, high)
+        return action
+
+    if isinstance(actions, dict):
+        assert isinstance(action_space, DictSpace)
+        clipped = {k: clip(v, action_space[k]) for k, v in actions.items()}  # type: ignore
+
+        return np.array(
+            [
+                {k: clipped[k][i] for k in clipped}
+                for i in range(len(next(iter(clipped.values()))))
+            ]
+        )
+
+    return clip(actions, action_space)
 
 
 class OnPolicy(Policy):
@@ -63,7 +79,7 @@ class OnPolicy(Policy):
         ...
 
     @abstractmethod
-    def step(self, obs: VecEnvObs, action_masks: Optional[np.ndarray] = None) -> Step:
+    def step(self, obs: VecEnvObs, action_masks: Optional[NumpyOrDict] = None) -> Step:
         ...
 
     @property
@@ -195,20 +211,24 @@ class ActorCritic(OnPolicy):
         return ACForward(logp_a, entropy, v)
 
     def value(self, obs: VecEnvObs) -> np.ndarray:
+        assert isinstance(obs, np.ndarray)
         o = self._as_tensor(obs)
+        assert isinstance(o, torch.Tensor)
         with torch.no_grad():
             v = self.network.value(o)
         return v.cpu().numpy()
 
-    def step(self, obs: VecEnvObs, action_masks: Optional[np.ndarray] = None) -> Step:
+    def step(self, obs: VecEnvObs, action_masks: Optional[NumpyOrDict] = None) -> Step:
+        assert isinstance(obs, np.ndarray)
         o = self._as_tensor(obs)
+        assert isinstance(o, torch.Tensor)
         a_masks = self._as_tensor(action_masks) if action_masks is not None else None
         with torch.no_grad():
             (pi, _, _), v = self.network.distribution_and_value(o, action_masks=a_masks)
             a = pi.sample()
             logp_a = pi.log_prob(a)
 
-        a_np = a.cpu().numpy()
+        a_np = tensor_to_numpy(a)
         clamped_a_np = clamp_actions(a_np, self.action_space, self.squash_output)
         return Step(a_np, v.cpu().numpy(), logp_a.cpu().numpy(), clamped_a_np)
 
@@ -216,7 +236,7 @@ class ActorCritic(OnPolicy):
         self,
         obs: np.ndarray,
         deterministic: bool = True,
-        action_masks: Optional[np.ndarray] = None,
+        action_masks: Optional[NumpyOrDict] = None,
     ) -> np.ndarray:
         if not deterministic:
             return self.step(obs, action_masks=action_masks).clamped_a
@@ -230,7 +250,9 @@ class ActorCritic(OnPolicy):
                     o, action_masks=a_masks
                 )
                 a = pi.mode
-            return clamp_actions(a.cpu().numpy(), self.action_space, self.squash_output)
+            return clamp_actions(
+                tensor_to_numpy(a), self.action_space, self.squash_output
+            )
 
     def load(self, path: str) -> None:
         super().load(path)

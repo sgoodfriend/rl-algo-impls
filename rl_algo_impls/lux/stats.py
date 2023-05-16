@@ -91,7 +91,7 @@ class AgentRunningStats:
             ]
         )
 
-        if verify:
+        if verify and env.state.real_env_steps > 0:
             cfg = env.state.env_cfg
             min_expected_power_gen = (
                 num_factories * cfg.FACTORY_CHARGE

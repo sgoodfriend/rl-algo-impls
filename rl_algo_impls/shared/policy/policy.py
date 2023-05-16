@@ -9,6 +9,7 @@ import torch.nn as nn
 from stable_baselines3.common.vec_env import unwrap_vec_normalize
 from stable_baselines3.common.vec_env.vec_normalize import VecNormalize
 
+from rl_algo_impls.shared.tensor_utils import NumpyOrDict, TensorOrDict, numpy_to_tensor
 from rl_algo_impls.wrappers.normalize import NormalizeObservation, NormalizeReward
 from rl_algo_impls.wrappers.vectorable_wrapper import VecEnv, VecEnvObs, find_wrapper
 
@@ -52,7 +53,7 @@ class Policy(nn.Module, ABC):
         self,
         obs: VecEnvObs,
         deterministic: bool = True,
-        action_masks: Optional[np.ndarray] = None,
+        action_masks: Optional[NumpyOrDict] = None,
     ) -> np.ndarray:
         ...
 
@@ -97,12 +98,9 @@ class Policy(nn.Module, ABC):
     def reset_noise(self) -> None:
         pass
 
-    def _as_tensor(self, obs: VecEnvObs) -> torch.Tensor:
-        assert isinstance(obs, np.ndarray)
-        o = torch.as_tensor(obs)
-        if self.device is not None:
-            o = o.to(self.device)
-        return o
+    def _as_tensor(self, a: NumpyOrDict) -> TensorOrDict:
+        assert self.device
+        return numpy_to_tensor(a, self.device)
 
     def num_trainable_parameters(self) -> int:
         return sum(p.numel() for p in self.parameters() if p.requires_grad)
