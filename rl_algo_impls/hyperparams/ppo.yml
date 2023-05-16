@@ -639,7 +639,7 @@ LuxAI_S2-v0: &lux-defaults
     self_play_kwargs:
       num_old_policies: 12
       save_steps: 300000
-      swap_steps: 6000
+      swap_steps: 3000
       swap_window_size: 4
       window: 33
     make_kwargs: &lux-env-make-defaults
