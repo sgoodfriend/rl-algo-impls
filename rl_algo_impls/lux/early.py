@@ -7,4 +7,4 @@ from rl_algo_impls.lux.shared import LuxGameState, pos_to_numpy
 
 
 def bid_action(bid_std_dev: float, faction: str) -> Dict[str, Any]:
-    return {"bid": int(np.random.normal(scale=5)), "faction": faction}
+    return {"bid": int(np.random.normal(scale=bid_std_dev)), "faction": faction}
