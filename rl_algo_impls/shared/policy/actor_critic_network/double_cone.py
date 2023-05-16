@@ -190,7 +190,6 @@ class DoubleConeActorCritic(ActorCriticNetwork):
             ] * num_additional_critics
         super().__init__()
         assert isinstance(observation_space, Box)
-        assert isinstance(action_space, DictSpace)
         assert isinstance(action_plane_space, MultiDiscrete)
         self.range_size = np.max(observation_space.high) - np.min(observation_space.low)  # type: ignore
         self.action_vec = action_plane_space.nvec  # type: ignore
@@ -200,6 +199,10 @@ class DoubleConeActorCritic(ActorCriticNetwork):
         elif isinstance(action_space, MultiDiscrete):
             action_space_per_position = action_space
             self.pick_vec = None
+        else:
+            raise ValueError(
+                f"action_space {action_space.__class__.__name__} must be MultiDiscrete or gym Dict of MultiDiscrete"
+            )
 
         self.map_size = len(action_space_per_position.nvec) // len(action_plane_space.nvec)  # type: ignore
 

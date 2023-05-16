@@ -7,6 +7,7 @@ from torch.utils.tensorboard.writer import SummaryWriter
 
 from rl_algo_impls.runner.config import Config, EnvHyperparams
 from rl_algo_impls.wrappers.action_mask_wrapper import MicrortsMaskWrapper
+from rl_algo_impls.wrappers.additional_win_loss_reward import AdditionalWinLossRewardWrapper
 from rl_algo_impls.wrappers.episode_stats_writer import EpisodeStatsWriter
 from rl_algo_impls.wrappers.hwc_to_chw_observation import HwcToChwObservation
 from rl_algo_impls.wrappers.is_vector_env import IsVectorEnv
@@ -51,7 +52,7 @@ def make_microrts_env(
         bots,
         self_play_kwargs,
         selfplay_bots,
-        _, # additional_win_loss_reward
+        additional_win_loss_reward,
     ) = astuple(hparams)
 
     seed = config.seed(training=training)
@@ -122,5 +123,8 @@ def make_microrts_env(
             rolling_length=rolling_length,
             additional_keys_to_log=config.additional_keys_to_log,
         )
+
+    if additional_win_loss_reward:
+        envs = AdditionalWinLossRewardWrapper(envs)
 
     return envs
