@@ -26,8 +26,9 @@ MountainCar-v0:
   env_hyperparams:
     normalize: true
     n_envs: 16
-  algo_hyperparams:
+  rollout_hyperparams:
     n_steps: 16
+  algo_hyperparams:
     n_epochs: 4
     gae_lambda: 0.98
     gamma: 0.99
@@ -42,8 +43,9 @@ MountainCarContinuous-v0:
   #   init_layers_orthogonal: false
   #   log_std_init: -3.29
   #   use_sde: true
-  algo_hyperparams:
+  rollout_hyperparams:
     n_steps: 512
+  algo_hyperparams:
     batch_size: 256
     n_epochs: 10
     learning_rate: !!float 7.77e-5
@@ -61,8 +63,9 @@ Acrobot-v1:
   env_hyperparams:
     n_envs: 16
     normalize: true
-  algo_hyperparams:
+  rollout_hyperparams:
     n_steps: 256
+  algo_hyperparams:
     n_epochs: 4
     gae_lambda: 0.94
     gamma: 0.99
@@ -72,8 +75,9 @@ LunarLander-v2:
   n_timesteps: !!float 4e6
   env_hyperparams:
     n_envs: 16
-  algo_hyperparams:
+  rollout_hyperparams:
     n_steps: 1024
+  algo_hyperparams:
     batch_size: 64
     n_epochs: 4
     gae_lambda: 0.98
@@ -90,8 +94,9 @@ BipedalWalker-v3:
   env_hyperparams:
     n_envs: 16
     normalize: true
-  algo_hyperparams:
+  rollout_hyperparams:
     n_steps: 2048
+  algo_hyperparams:
     batch_size: 64
     gae_lambda: 0.95
     gamma: 0.99
@@ -115,8 +120,10 @@ CarRacing-v0: &carracing-defaults
     share_features_extractor: false
     cnn_flatten_dim: 256
     hidden_sizes: [256]
-  algo_hyperparams:
+  rollout_hyperparams:
     n_steps: 512
+    sde_sample_freq: 4
+  algo_hyperparams:
     batch_size: 128
     n_epochs: 10
     learning_rate: !!float 1e-4
@@ -124,7 +131,6 @@ CarRacing-v0: &carracing-defaults
     gamma: 0.99
     gae_lambda: 0.95
     ent_coef: 0.0
-    sde_sample_freq: 4
     max_grad_norm: 0.5
     vf_coef: 0.5
     clip_range: 0.2
@@ -153,8 +159,9 @@ _atari: &atari-defaults
     vec_env_class: async
   policy_hyperparams: &atari-policy-defaults
     activation_fn: relu
-  algo_hyperparams: &atari-algo-defaults
+  rollout_hyperparams: &atari-rollout-defaults
     n_steps: 128
+  algo_hyperparams: &atari-algo-defaults
     batch_size: 256
     n_epochs: 4
     learning_rate: !!float 2.5e-4
@@ -267,11 +274,12 @@ _microrts_ai: &microrts-ai-defaults
     <<: *microrts-policy-defaults
     cnn_flatten_dim: 256
     actor_head_style: gridnet
+  rollout_hyperparams: &microrts-ai-rollout-defaults
+    n_steps: 512
   algo_hyperparams: &microrts-ai-algo-defaults
     <<: *microrts-algo-defaults
     learning_rate: !!float 2.5e-4
     learning_rate_decay: linear
-    n_steps: 512
     batch_size: 3072
     n_epochs: 4
     ent_coef: 0.01
@@ -455,8 +463,9 @@ HalfCheetahBulletEnv-v0: &pybullet-defaults
     pi_hidden_sizes: [256, 256]
     v_hidden_sizes: [256, 256]
     activation_fn: relu
-  algo_hyperparams: &pybullet-algo-defaults
+  rollout_hyperparams: &pybullet-rollout-defaults
     n_steps: 512
+  algo_hyperparams: &pybullet-algo-defaults
     batch_size: 128
     n_epochs: 20
     gamma: 0.99
@@ -495,9 +504,11 @@ HumanoidBulletEnv-v0:
   policy_hyperparams:
     <<: *pybullet-policy-defaults
     # log_std_init: -1
+  rollout_hyperparams:
+    <<: *pybullet-rollout-defaults
+    n_steps: 2048
   algo_hyperparams:
     <<: *pybullet-algo-defaults
-    n_steps: 2048
     batch_size: 64
     n_epochs: 10
     gae_lambda: 0.95
@@ -519,10 +530,11 @@ _procgen: &procgen-defaults
     cnn_flatten_dim: 256
     init_layers_orthogonal: true
     cnn_layers_init_orthogonal: false
+  rollout_hyperparams: &procgen-rollout-defaults
+    n_steps: 256
   algo_hyperparams: &procgen-algo-defaults
     gamma: 0.999
     gae_lambda: 0.95
-    n_steps: 256
     batch_size: 2048
     n_epochs: 3
     ent_coef: 0.01
@@ -675,6 +687,8 @@ LuxAI_S2-v0: &lux-defaults
       - 0.3
       - 0.3
       - 0.4
+  rollout_hyperparams: &lux-rollout-defaults
+    n_steps: 384
   algo_hyperparams: &lux-algo-defaults
     batch_size: 2304
     n_epochs: 4
@@ -690,8 +704,6 @@ LuxAI_S2-v0: &lux-defaults
     gamma: [0.99, 0.999]
     gae_lambda: [0.95, 0.99]
     vf_coef: [0.5, 0.1]
-  rollout_hyperparams: &lux-rollout-defaults
-    n_steps: 384
 
 LuxAI_S2-v0-double-cone: &lux-dc-defaults
   <<: *lux-defaults
@@ -699,12 +711,12 @@ LuxAI_S2-v0-double-cone: &lux-dc-defaults
     actor_head_style: double_cone
     pooled_channels: 128
     additional_critic_activation_functions: [tanh]
-  algo_hyperparams: &lux-dc-algo-defaults
-    <<: *lux-algo-defaults
-    batch_size: 768
   rollout_hyperparams: &lux-dc-rollout-defaults
     <<: *lux-rollout-defaults
     n_steps: 128
+  algo_hyperparams: &lux-dc-algo-defaults
+    <<: *lux-algo-defaults
+    batch_size: 768
 
 LuxAI_S2-v0-eval:
   <<: *lux-defaults
@@ -723,9 +735,10 @@ LuxAI_S2-v0-eval:
 
 LuxAI_S2-v0-A10: &lux-a10-defaults
   <<: *lux-defaults
+  rollout_hyperparams:
+    n_steps: 192
   algo_hyperparams:
     <<: *lux-algo-defaults
-    n_steps: 192
     batch_size: 1152
 
 LuxAI_S2-v0-A10-100M:
@@ -740,12 +753,12 @@ LuxAI_S2-v0-A10-100M:
 
 LuxAI_S2-v0-dc-A10: &lux-dc-a10-defaults
   <<: *lux-dc-defaults
-  algo_hyperparams:
-    <<: *lux-dc-algo-defaults
-    batch_size: 256
   rollout_hyperparams:
     <<: *lux-dc-rollout-defaults
     n_steps: 64
+  algo_hyperparams:
+    <<: *lux-dc-algo-defaults
+    batch_size: 256
 
 LuxAI_S2-v0-medium-transfer: &lux-medium-transfer-defaults
   <<: *lux-a10-defaults
