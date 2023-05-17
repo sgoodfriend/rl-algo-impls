@@ -7,7 +7,9 @@ from torch.utils.tensorboard.writer import SummaryWriter
 
 from rl_algo_impls.runner.config import Config, EnvHyperparams
 from rl_algo_impls.wrappers.action_mask_wrapper import MicrortsMaskWrapper
-from rl_algo_impls.wrappers.additional_win_loss_reward import AdditionalWinLossRewardWrapper
+from rl_algo_impls.wrappers.additional_win_loss_reward import (
+    AdditionalWinLossRewardWrapper,
+)
 from rl_algo_impls.wrappers.episode_stats_writer import EpisodeStatsWriter
 from rl_algo_impls.wrappers.hwc_to_chw_observation import HwcToChwObservation
 from rl_algo_impls.wrappers.is_vector_env import IsVectorEnv
@@ -53,6 +55,7 @@ def make_microrts_env(
         self_play_kwargs,
         selfplay_bots,
         additional_win_loss_reward,
+        map_paths,
     ) = astuple(hparams)
 
     seed = config.seed(training=training)
@@ -93,6 +96,41 @@ def make_microrts_env(
                 ai2s.append(ai)
     else:
         ai2s = [microrts_ai.randomAI for _ in range(make_kwargs["num_bot_envs"])]
+    if map_paths:
+        _map_paths = []
+        n_selfplay_historical_envs = self_play_kwargs.get("num_old_policies", 0)
+        assert (
+            n_selfplay_historical_envs % (2 * len(map_paths)) == 0
+        ), "Expect num_old_policies %d to be a multiple of 2 * len(map_paths) %d" % (
+            n_selfplay_historical_envs,
+            len(map_paths),
+        )
+        for i in range(n_selfplay_historical_envs // 2):
+            mp = map_paths[i % len(map_paths)]
+            _map_paths.extend([mp, mp])
+
+        n_selfplay_latest_envs = (
+            make_kwargs["num_selfplay_envs"] - n_selfplay_historical_envs
+        )
+        assert (
+            n_selfplay_latest_envs % len(map_paths) == 0
+        ), "Expect num_selfplay_envs %d to be a multiple of len(map_paths) %d" % (
+            n_selfplay_latest_envs,
+            len(map_paths),
+        )
+        for i in range(n_selfplay_latest_envs):
+            _map_paths.append(map_paths[i % len(map_paths)])
+
+        n_bot_envs = make_kwargs["num_bot_envs"]
+        assert (
+            n_bot_envs % len(map_paths) == 0
+        ), "Expect num_bot_envs %d to be a multiple of len(map_paths) %d" % (
+            n_bot_envs,
+            len(map_paths),
+        )
+        for i in range(n_bot_envs):
+            _map_paths.append(map_paths[i % len(map_paths)])
+        make_kwargs["map_paths"] = _map_paths
     make_kwargs["ai2s"] = ai2s
     if len(make_kwargs.get("map_paths", [])) < 2:
         EnvClass = MicroRTSGridModeSharedMemVecEnvCompat

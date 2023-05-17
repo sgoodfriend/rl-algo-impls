@@ -79,6 +79,7 @@ def make_vec_env(
         self_play_kwargs,
         selfplay_bots,
         _,  # additional_win_loss_reward
+        _,  # map_paths,
     ) = astuple(hparams)
 
     import_for_env_id(config.env_id)

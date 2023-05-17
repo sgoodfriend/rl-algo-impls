@@ -47,6 +47,7 @@ def make_lux_env(
         self_play_kwargs,
         selfplay_bots,
         additional_win_loss_reward,
+        _,  # map_paths,
     ) = astuple(hparams)
 
     seed = config.seed(training=training)

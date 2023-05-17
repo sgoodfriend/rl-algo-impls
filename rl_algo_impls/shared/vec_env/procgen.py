@@ -44,6 +44,7 @@ def make_procgen_env(
         _,  # self_play_kwargs
         _,  # selfplay_bots
         _, # additional_win_loss_reward
+        _,  # map_paths,
     ) = astuple(hparams)
 
     seed = config.seed(training=training)

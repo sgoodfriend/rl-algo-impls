@@ -54,6 +54,7 @@ class EnvHyperparams:
     self_play_kwargs: Optional[Dict[str, Any]] = None
     selfplay_bots: Optional[Dict[str, int]] = None
     additional_win_loss_reward: bool = False
+    map_paths: Optional[List[str]] = None
 
 
 HyperparamsSelf = TypeVar("HyperparamsSelf", bound="Hyperparams")
