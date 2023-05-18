@@ -4,9 +4,12 @@ channels:
   - conda-forge
   - nodefaults
 dependencies:
-  - python>=3.7, <3.10
+  - python=3.9
   - mamba
   - pip
   - pytorch
   - torchvision
   - torchaudio
+  - setuptools=65.5.0
+  - wheel=0.38.4
+  - build

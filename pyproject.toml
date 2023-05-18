@@ -1,6 +1,6 @@
 [project]
 name = "rl_algo_impls"
-version = "0.0.13"
+version = "0.0.14"
 description = "Implementations of reinforcement learning algorithms"
 authors = [
     {name = "Scott Goodfriend", email = "goodfriend.scott@gmail.com"},
@@ -20,10 +20,11 @@ dependencies = [
     "cmake",
     "swig",
     "scipy",
+    "numpy >= 1.24.3",
     "torch",
     "torchvision",
     "tensorboard >= 2.11.2, < 2.12",
-    "AutoROM.accept-rom-license >= 0.4.2, < 0.5",
+    "AutoROM.accept-rom-license >= 0.6",
     "stable-baselines3[extra] >= 1.7.0, < 1.8",
     "gym[box2d] >= 0.21.0, < 0.22",
     "pyglet == 1.5.27",
@@ -66,7 +67,7 @@ microrts-paper = [
     "gym-microrts == 0.3.2",
 ]
 microrts = [
-    "gym-microrts",
+    "gym-microrts @ git+https://github.com/sgoodfriend/MicroRTS-Py.git@master",
 ]
 jupyter = [
     "jupyter",
@@ -87,7 +88,7 @@ all = [
 "Homepage" = "https://github.com/sgoodfriend/rl-algo-impls"
 
 [build-system]
-requires = ["setuptools==65.5.0", "setuptools-scm"]
+requires = ["setuptools==65.5.0", "setuptools-scm", "wheel==0.38.4"]
 build-backend = "setuptools.build_meta"
 
 [tool.isort]
