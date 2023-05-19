@@ -797,6 +797,7 @@ LuxAI_S2-v0-double-cone: &lux-dc-defaults
   algo_hyperparams: &lux-dc-algo-defaults
     <<: *lux-algo-defaults
     batch_size: 768
+    n_epochs: 2
 
 LuxAI_S2-v0-eval:
   <<: *lux-defaults
