@@ -206,6 +206,8 @@ class MicroRTSGridModeVecEnv:
             JArray(AI)([ai2(self.real_utt) for ai2 in self.ai2s]),
             self.real_utt,
             self.partial_obs,
+            self.height,
+            self.width,
         )
         self.render_client = (
             self.vec_client.selfPlayClients[0]
@@ -435,6 +437,8 @@ class MicroRTSBotVecEnv(MicroRTSGridModeVecEnv):
             JArray(AI)([ai2(self.real_utt) for ai2 in self.ai2s]),
             self.real_utt,
             self.partial_obs,
+            self.height,
+            self.width,
         )
         self.render_client = self.vec_client.botClients[0]
         # get the unit type table
@@ -576,6 +580,8 @@ class MicroRTSGridModeSharedMemVecEnv(MicroRTSGridModeVecEnv):
             action_mask_jvm_buffer,
             action_jvm_buffer,
             0,
+            self.height,
+            self.width,
         )
         self.render_client = (
             self.vec_client.selfPlayClients[0]

@@ -456,16 +456,17 @@ Microrts-selfplay-unet-debug-mps:
 
 Microrts-selfplay-dc-phases: &microrts-sp-dc-phases-defaults
   <<: *microrts-selfplay-defaults
-  env_hyperparams:
+  env_hyperparams: &microrts-sp-dc-phases-env-defaults
     <<: *microrts-selfplay-env-defaults
     additional_win_loss_reward: true
     map_paths:
       - maps/16x16/basesWorkers16x16A.xml
       - maps/16x16/TwoBasesBarracks16x16.xml
-      # - maps/8x8/basesWorkers8x8A.xml
-      # - maps/8x8/FourBasesWorkers8x8.xml
-      # - maps/NoWhereToRun9x8.xml
-      # - maps/DoubleGame24x24.xml
+      - maps/8x8/basesWorkers8x8A.xml
+      - maps/8x8/FourBasesWorkers8x8.xml
+      - maps/NoWhereToRun9x8.xml
+      - maps/16x16/EightBasesWorkers16x16.xml # Not public competition map
+      # - maps/DoubleGame24x24.xml # 24x24
       # - maps/BWDistantResources32x32.xml # 32x32
       # - maps/BroodWar/(4)BloodBath.scmB.xml # 64x64
   eval_hyperparams: &microrts-sp-dc-phases-eval-defaults
@@ -501,6 +502,20 @@ Microrts-selfplay-dc-phases-A10: &microrts-sp-dc-phases-a10-defaults
   algo_hyperparams:
     <<: *microrts-sp-dc-phases-algo-defaults
     batch_size: 2048
+
+Microrts-selfplay-dc-phases-maps24: &microrts-sp-dc-phases-m24-defaults
+  <<: *microrts-sp-dc-phases-defaults
+  env_hyperparams:
+    <<: *microrts-sp-dc-phases-env-defaults
+    map_paths:
+      - maps/16x16/basesWorkers16x16A.xml
+      - maps/16x16/TwoBasesBarracks16x16.xml
+      - maps/8x8/basesWorkers8x8A.xml
+      - maps/8x8/FourBasesWorkers8x8.xml
+      - maps/NoWhereToRun9x8.xml
+      - maps/DoubleGame24x24.xml # 24x24
+      # - maps/BWDistantResources32x32.xml # 32x32
+      # - maps/BroodWar/(4)BloodBath.scmB.xml # 64x64
 
 Microrts-selfplay-dc-phases-debug: &microrts-sp-dc-phases-debug-defaults
   <<: *microrts-sp-dc-phases-a10-defaults

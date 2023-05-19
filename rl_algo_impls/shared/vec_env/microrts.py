@@ -99,11 +99,12 @@ def make_microrts_env(
     if map_paths:
         _map_paths = []
         n_selfplay_historical_envs = self_play_kwargs.get("num_old_policies", 0)
-        assert (
-            n_selfplay_historical_envs % (2 * len(map_paths)) == 0
-        ), "Expect num_old_policies %d to be a multiple of 2 * len(map_paths) %d" % (
-            n_selfplay_historical_envs,
-            len(map_paths),
+        assert n_selfplay_historical_envs % (2 * len(map_paths)) == 0, (
+            "Expect num_old_policies %d to be a multiple of twice len(map_paths) (2*%d)"
+            % (
+                n_selfplay_historical_envs,
+                len(map_paths),
+            )
         )
         for i in range(n_selfplay_historical_envs // 2):
             mp = map_paths[i % len(map_paths)]
