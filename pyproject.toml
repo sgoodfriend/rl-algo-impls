@@ -23,7 +23,7 @@ dependencies = [
     "numpy >= 1.24.3",
     "torch",
     "torchvision",
-    "tensorboard >= 2.11.2, < 2.12",
+    "tensorboard >= 2.13.0",
     "AutoROM.accept-rom-license >= 0.6",
     "stable-baselines3[extra] >= 1.7.0, < 1.8",
     "gym[box2d] >= 0.21.0, < 0.22",
