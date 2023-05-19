@@ -516,6 +516,9 @@ Microrts-selfplay-dc-phases-maps24: &microrts-sp-dc-phases-m24-defaults
       - maps/DoubleGame24x24.xml # 24x24
       # - maps/BWDistantResources32x32.xml # 32x32
       # - maps/BroodWar/(4)BloodBath.scmB.xml # 64x64
+  algo_hyperparams:
+    <<: *microrts-sp-dc-phases-algo-defaults
+    batch_size: 1536
 
 Microrts-selfplay-dc-phases-debug: &microrts-sp-dc-phases-debug-defaults
   <<: *microrts-sp-dc-phases-a10-defaults
