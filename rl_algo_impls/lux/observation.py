@@ -242,10 +242,12 @@ def from_lux_observation(
     _day_remaining = 1 - _day_fraction * env_cfg.CYCLE_LENGTH / env_cfg.DAY_LENGTH
     day_cycle = np.ones((map_size, map_size), dtype=np.float32) * _day_remaining
 
-    _init_metal = lux_obs["teams"][p1]["metal"] / (
-        env_cfg.INIT_WATER_METAL_PER_FACTORY * env_cfg.MAX_FACTORIES
+    _factories_to_place = (
+        lux_obs["teams"][p1]["factories_to_place"] / env_cfg.MAX_FACTORIES
     )
-    metal_remaining = np.ones((map_size, map_size), dtype=np.float32) * _init_metal
+    factories_to_place = (
+        np.ones((map_size, map_size), dtype=np.float32) * _factories_to_place
+    )
 
     return np.concatenate(
         (
@@ -292,7 +294,7 @@ def from_lux_observation(
             np.expand_dims(can_collide_with_friendly_unit, axis=-1),
             np.expand_dims(turn, axis=-1),
             np.expand_dims(day_cycle, axis=-1),
-            np.expand_dims(metal_remaining, axis=-1),
+            np.expand_dims(factories_to_place, axis=-1),
         ),
         axis=-1,
         dtype=np.float32,
