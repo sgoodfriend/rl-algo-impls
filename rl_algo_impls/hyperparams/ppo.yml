@@ -484,6 +484,7 @@ Microrts-selfplay-dc-phases: &microrts-sp-dc-phases-defaults
     <<: *microrts-ai-algo-defaults
     learning_rate: !!float 1e-4
     learning_rate_decay: none
+    n_epochs: 2
   hyperparam_transitions_kwargs: &microrts-sp-dc-phases-transitions-defaults
     phases:
       - multi_reward_weights: [0.99, 0.01] # Initial shaped rewards (mostly)
