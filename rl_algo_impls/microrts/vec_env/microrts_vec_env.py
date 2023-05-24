@@ -49,6 +49,9 @@ MicroRTSGridModeVecEnvSelf = TypeVar(
     "MicroRTSGridModeVecEnvSelf", bound="MicroRTSGridModeVecEnv"
 )
 
+MAX_HP = 10
+MAX_RESOURCES = 40
+
 
 class MicroRTSGridModeVecEnv:
     metadata = {"render.modes": ["human", "rgb_array"], "video.frames_per_second": 150}
@@ -163,22 +166,23 @@ class MicroRTSGridModeVecEnv:
         # [num_planes_hp(5), num_planes_resources(5), num_planes_player(5),
         # num_planes_unit_type(z), num_planes_unit_action(6)]
 
-        self.num_planes = [5, 5, 3, len(self.utt["unitTypes"]) + 1, 6, 2]
+        self.float_planes = [1 / MAX_HP, 1 / MAX_RESOURCES, None, None, None]
+        self.bool_planes = [None, [1], None, None, None]
+        self.one_hot_planes = [None, None, 3, len(self.utt["unitTypes"]) + 1, 6, 2]
         if partial_obs:
-            self.num_planes = [5, 5, 3, len(self.utt["unitTypes"]) + 1, 6, 2]
+            self.one_hot_planes = [None, None, 3, len(self.utt["unitTypes"]) + 1, 6, 2]
+        self.n_dim = (
+            len([fp for fp in self.float_planes if fp is not None])
+            + sum([len(bp) for bp in self.bool_planes if bp is not None])
+            + sum([ohp for ohp in self.one_hot_planes if ohp is not None])
+        )
+
         self.observation_space = gym.spaces.Box(
             low=0.0,
             high=1.0,
-            shape=(self.height, self.width, sum(self.num_planes)),
-            dtype=np.int32,
+            shape=(self.height, self.width, self.n_dim),
+            dtype=np.float32,
         )
-
-        self.num_planes_len = len(self.num_planes)
-        self.num_planes_prefix_sum = [0]
-        for num_plane in self.num_planes:
-            self.num_planes_prefix_sum.append(
-                self.num_planes_prefix_sum[-1] + num_plane
-            )
 
         self.action_space_dims = [6, 4, 4, 4, 4, len(self.utt["unitTypes"]), 7 * 7]
         self.action_space = gym.spaces.MultiDiscrete(
@@ -224,15 +228,35 @@ class MicroRTSGridModeVecEnv:
         return np.array(obs)
 
     def _encode_obs(self, obs):
-        obs = obs.reshape(len(obs), -1).clip(0, np.array([self.num_planes]).T - 1)
-        obs_planes = np.zeros(
-            (self.height * self.width, self.num_planes_prefix_sum[-1]), dtype=np.int32
-        )
-        obs_planes_idx = np.arange(len(obs_planes))
-        obs_planes[obs_planes_idx, obs[0]] = 1
+        obs = obs.reshape(len(obs), -1)
+        obs_planes = np.zeros((self.height * self.width, self.n_dim), dtype=np.float32)
 
-        for i in range(1, self.num_planes_len):
-            obs_planes[obs_planes_idx, obs[i] + self.num_planes_prefix_sum[i]] = 1
+        plane_idx = 0
+        for idx, fp in enumerate(self.float_planes):
+            if fp is None:
+                continue
+            obs_planes[:, plane_idx] = obs[idx, :] * fp
+            assert np.all(obs_planes[:, plane_idx] >= 0)
+            if np.any(obs_planes[:, plane_idx] > 1):
+                warnings.warn(
+                    f"Found observations for plane_idx {plane_idx} above max ({np.max(obs[idx, :])})"
+                )
+            obs_planes[:, plane_idx] = obs_planes[:, plane_idx].clip(0, 1)
+            plane_idx += 1
+        for idx, bp in enumerate(self.bool_planes):
+            if bp is None:
+                continue
+            for threshold in bp:
+                obs_planes[:, plane_idx] = obs[idx, :] >= threshold
+                plane_idx += 1
+        for idx, ohp in enumerate(self.one_hot_planes):
+            if ohp is None:
+                continue
+            obs_planes[:, plane_idx : plane_idx + ohp] = np.eye(ohp)[
+                obs[idx, :].clip(0, ohp)
+            ]
+            plane_idx += ohp
+        assert plane_idx == obs_planes.shape[-1]
         return obs_planes.reshape(self.height, self.width, -1)
 
     def step_async(self, actions):
@@ -418,9 +442,9 @@ class MicroRTSBotVecEnv(MicroRTSGridModeVecEnv):
         # [num_planes_hp(5), num_planes_resources(5), num_planes_player(5),
         # num_planes_unit_type(z), num_planes_unit_action(6)]
 
-        self.num_planes = [5, 5, 3, len(self.utt["unitTypes"]) + 1, 6]
+        self.one_hot_planes = [5, 5, 3, len(self.utt["unitTypes"]) + 1, 6]
         if partial_obs:
-            self.num_planes = [5, 5, 3, len(self.utt["unitTypes"]) + 1, 6, 2]
+            self.one_hot_planes = [5, 5, 3, len(self.utt["unitTypes"]) + 1, 6, 2]
         self.observation_space = gym.spaces.Discrete(2)
         self.action_space = gym.spaces.Discrete(2)
 
