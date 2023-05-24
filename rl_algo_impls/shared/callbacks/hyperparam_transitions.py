@@ -10,14 +10,8 @@ from rl_algo_impls.shared.schedule import constant_schedule, lerp
 from rl_algo_impls.shared.tensor_utils import num_or_array
 from rl_algo_impls.wrappers.vectorable_wrapper import VecEnv
 
-GAE_LAMBDA_NAME = "gae_lambda"
-MULTI_REWARD_WEIGHTS_NAME = "multi_reward_weights"
-VF_COEF_NAME = "vf_coef"
-ALGO_SET_NAMES = {GAE_LAMBDA_NAME, MULTI_REWARD_WEIGHTS_NAME, VF_COEF_NAME}
-
-GAMMA_NAME = "gamma"
-ENT_COEF_NAME = "ent_coef"
-ALGO_SET_SCHEDULE_NAMES = {GAMMA_NAME, ENT_COEF_NAME}
+ALGO_SET_NAMES = {"gae_lambda", "multi_reward_weights", "vf_coef"}
+ALGO_SET_SCHEDULE_NAMES = {"gamma", "ent_coef", "learning_rate"}
 
 LUX_REWARD_WEIGHTS_NAME = "reward_weights"
 

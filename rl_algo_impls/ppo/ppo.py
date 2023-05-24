@@ -120,7 +120,7 @@ class PPO(Algorithm):
         )
         self.gae_lambda = num_or_array(gae_lambda)
         self.optimizer = Adam(self.policy.parameters(), lr=learning_rate, eps=1e-7)
-        self.lr_schedule = schedule(learning_rate_decay, learning_rate)
+        self.learning_rate_schedule = schedule(learning_rate_decay, learning_rate)
         self.max_grad_norm = max_grad_norm
         self.clip_range_schedule = schedule(clip_range_decay, clip_range)
         self.clip_range_vf_schedule = None
@@ -161,7 +161,7 @@ class PPO(Algorithm):
 
             progress = timesteps_elapsed / total_timesteps
             ent_coef = self.ent_coef_schedule(progress)
-            learning_rate = self.lr_schedule(progress)
+            learning_rate = self.learning_rate_schedule(progress)
             update_learning_rate(self.optimizer, learning_rate)
             pi_clip = self.clip_range_schedule(progress)
             gamma = self.gamma_schedule(progress)

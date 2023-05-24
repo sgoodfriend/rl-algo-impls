@@ -406,7 +406,7 @@ Microrts-selfplay-unet: &microrts-selfplay-defaults
     make_kwargs: &microrts-selfplay-env-make-kwargs-defaults
       <<: *microrts-ai-env-make-kwargs-defaults
       num_selfplay_envs: 36
-    self_play_kwargs:
+    self_play_kwargs: &microrts-selfplay-self-play-kwargs-defaults
       num_old_policies: 12
       save_steps: 300000
       swap_steps: 6000
@@ -520,6 +520,52 @@ Microrts-selfplay-dc-phases-maps24: &microrts-sp-dc-phases-m24-defaults
   algo_hyperparams:
     <<: *microrts-sp-dc-phases-algo-defaults
     batch_size: 1536
+
+Microrts-selfplay-dc-phases-final: &microrts-sp-dc-phases-final-defaults
+  <<: *microrts-sp-dc-phases-defaults
+  n_timesteps: !!float 100e6
+  env_hyperparams:
+    <<: *microrts-sp-dc-phases-env-defaults
+    n_envs: 32
+    make_kwargs:
+      <<: *microrts-selfplay-env-make-kwargs-defaults
+      num_selfplay_envs: 48
+      max_steps: 8000
+    self_play_kwargs:
+      <<: *microrts-selfplay-self-play-kwargs-defaults
+      num_old_policies: 16
+      save_steps: 600000
+      window: 66 # 40M steps window
+      swap_steps: 10000
+    map_paths:
+      - maps/16x16/basesWorkers16x16A.xml
+      - maps/16x16/TwoBasesBarracks16x16.xml
+      - maps/8x8/basesWorkers8x8A.xml
+      - maps/8x8/FourBasesWorkers8x8.xml
+      - maps/NoWhereToRun9x8.xml
+      - maps/DoubleGame24x24.xml # 24x24
+      - maps/BWDistantResources32x32.xml # 32x32
+      - maps/BroodWar/(4)BloodBath.scmB.xml # 64x64
+  rollout_hyperparams:
+    <<: *microrts-ai-rollout-defaults
+    n_steps: 128
+  algo_hyperparams:
+    <<: *microrts-sp-dc-phases-algo-defaults
+    batch_size: 128
+  hyperparam_transitions_kwargs:
+    phases:
+      - multi_reward_weights: [0, 1] # Win-loss sparse rewards
+        vf_coef: [0.1, 0.5]
+        ent_coef: 0.01
+        learning_rate: !!float 1e-4
+      - multi_reward_weights: [0, 1] # Win-loss sparse rewards
+        vf_coef: [0.1, 0.5]
+        ent_coef: 0.001
+        learning_rate: !!float 5e-5
+    durations:
+      - 0.5
+      - 0.4
+      - 0.1
 
 Microrts-selfplay-dc-phases-debug: &microrts-sp-dc-phases-debug-defaults
   <<: *microrts-sp-dc-phases-a10-defaults
