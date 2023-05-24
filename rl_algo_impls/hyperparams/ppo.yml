@@ -776,9 +776,11 @@ LuxAI_S2-v0: &lux-defaults
         ore_generation: 0.004 # 2/heavy robot build, 0.08/heavy dig
         water_generation: 0.02 # 1/day of water for factory
         metal_generation: 0.02 # 2/heavy robot build
-        power_generation: 0.0004 # factory 1/day, heavy 0.12/day, light 0.012/day, lichen 0.02/day
+        power_generation: 0
         ice_rubble_cleared: 0.004 # 80% of ice_generation
         ore_rubble_cleared: 0.0036 # 90% of ore_generation
+        built_light: 0.1
+        built_heavy: 1
         lost_factory: -1
     additional_win_loss_reward: true
   eval_hyperparams: &lux-eval-defaults
