@@ -133,11 +133,7 @@ def make_microrts_env(
             _map_paths.append(map_paths[i % len(map_paths)])
         make_kwargs["map_paths"] = _map_paths
     make_kwargs["ai2s"] = ai2s
-    if len(make_kwargs.get("map_paths", [])) < 2:
-        EnvClass = MicroRTSGridModeSharedMemVecEnv
-    else:
-        EnvClass = MicroRTSGridModeVecEnv
-    envs = EnvClass(**make_kwargs)
+    envs = MicroRTSGridModeVecEnv(**make_kwargs)
     envs = HwcToChwObservation(envs)
     envs = IsVectorEnv(envs)
     envs = MicrortsMaskWrapper(envs)
