@@ -20,6 +20,8 @@ from rl_algo_impls.lux.observation import observation_and_action_mask
 from rl_algo_impls.lux.stats import StatsTracking
 from rl_algo_impls.shared.schedule import lerp
 
+MIN_SCORE = -1000
+
 LuxRewardWeightsSelf = TypeVar("LuxRewardWeightsSelf", bound="LuxRewardWeights")
 
 
@@ -253,13 +255,19 @@ class LuxEnvGridnet(Wrapper):
                 info[agent]["stats"].update(action_stats.stats_dict(prefix="actions_"))
                 if self.verify:
                     assert actions_total - actions_success == 0
+                self_score = lux_rewards[agent]
+                opp_score = lux_rewards[player_opponent[idx][1]]
+                score_delta = self_score - opp_score
+                score_reward = score_delta / (
+                    self_score + opp_score + 1 - 2 * MIN_SCORE
+                )
                 info[agent]["results"] = {
                     "WinLoss": _win_loss[idx],
                     "win": int(_win_loss[idx] == 1),
                     "loss": int(_win_loss[idx] == -1),
-                    "score": lux_rewards[agent],
-                    "score_delta": lux_rewards[agent]
-                    - lux_rewards[player_opponent[idx][1]],
+                    "score": self_score,
+                    "score_delta": score_delta,
+                    "reward": score_reward,
                 }
         else:
             _done_rewards = np.zeros((2, 2))
