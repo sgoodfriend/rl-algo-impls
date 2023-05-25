@@ -67,7 +67,7 @@ microrts-paper = [
     "gym-microrts == 0.3.2",
 ]
 microrts = [
-    "gym-microrts @ https://github.com/sgoodfriend/MicroRTS-Py/releases/download/v0.6.1-alpha.3/gym_microrts-0.6.1a2.post1.dev0+a67a1a7-py3-none-any.whl",
+    "gym-microrts @ https://github.com/sgoodfriend/MicroRTS-Py/releases/download/v0.6.1-alpha.4/gym_microrts-0.6.1a4-py3-none-any.whl",
 ]
 jupyter = [
     "jupyter",

@@ -267,7 +267,7 @@ class LuxEnvGridnet(Wrapper):
                     "loss": int(_win_loss[idx] == -1),
                     "score": self_score,
                     "score_delta": score_delta,
-                    "reward": score_reward,
+                    "score_reward": score_reward,
                 }
         else:
             _done_rewards = np.zeros((2, 2))

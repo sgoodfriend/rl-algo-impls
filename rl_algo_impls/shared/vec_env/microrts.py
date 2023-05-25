@@ -14,6 +14,7 @@ from rl_algo_impls.wrappers.episode_stats_writer import EpisodeStatsWriter
 from rl_algo_impls.wrappers.hwc_to_chw_observation import HwcToChwObservation
 from rl_algo_impls.wrappers.is_vector_env import IsVectorEnv
 from rl_algo_impls.wrappers.microrts_stats_recorder import MicrortsStatsRecorder
+from rl_algo_impls.wrappers.score_reward_wrapper import ScoreRewardWrapper
 from rl_algo_impls.wrappers.self_play_wrapper import SelfPlayWrapper
 from rl_algo_impls.wrappers.vectorable_wrapper import VecEnv
 
@@ -56,6 +57,7 @@ def make_microrts_env(
         selfplay_bots,
         additional_win_loss_reward,
         map_paths,
+        score_reward_kwargs,
     ) = astuple(hparams)
 
     seed = config.seed(training=training)
@@ -84,6 +86,7 @@ def make_microrts_env(
         # ProduceBuildingRewardFunction
         # AttackRewardFunction
         # ProduceCombatUnitRewardFunction
+        # ScoreRewardFunction
         make_kwargs["reward_weight"] = np.array(make_kwargs["reward_weight"])
     if bots:
         ai2s = []
@@ -161,5 +164,7 @@ def make_microrts_env(
 
     if additional_win_loss_reward:
         envs = AdditionalWinLossRewardWrapper(envs)
+    if score_reward_kwargs:
+        envs = ScoreRewardWrapper(envs, **score_reward_kwargs)
 
     return envs

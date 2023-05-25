@@ -12,5 +12,7 @@ class AdditionalWinLossRewardWrapper(VectorableWrapper):
         winloss = np.array(
             [info.get("results", {}).get("WinLoss", 0) for info in infos]
         )
-        rewards = np.column_stack([r, winloss])
+        if len(r.shape) == 1:
+            r = np.expand_dims(r, axis=-1)
+        rewards = np.concatenate([r, np.expand_dims(winloss, axis=-1)], axis=-1)
         return o, rewards, d, infos

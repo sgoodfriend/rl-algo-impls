@@ -146,6 +146,7 @@ class MicroRTSGridModeVecEnv:
             ProduceWorkerRewardFunction,
             ResourceGatherRewardFunction,
             RewardFunctionInterface,
+            ScoreRewardFunction,
             WinLossRewardFunction,
         )
 
@@ -157,9 +158,11 @@ class MicroRTSGridModeVecEnv:
                 ProduceBuildingRewardFunction(),
                 AttackRewardFunction(),
                 ProduceCombatUnitRewardFunction(),
+                ScoreRewardFunction(),
                 # CloserToEnemyBaseRewardFunction(),
             ]
         )
+        self.raw_names = [str(rf) for rf in self.rfs]
         self.start_client()
 
         # computed properties
@@ -267,34 +270,19 @@ class MicroRTSGridModeVecEnv:
     ) -> List[Dict[str, Any]]:
         infos = []
         for idx, (rewards, obs, d) in enumerate(zip(batch_rewards, batch_obs, done)):
-            scores = np.array([0, 0])
-            obs = obs.reshape(obs.shape[0], -1).transpose()
-            for o in obs:
-                if o[2] == 0:
-                    continue
-                hp = o[0]
-                owner = o[2] - 1
-                u_type = o[3] - 1
-                utt = self.utt["unitTypes"][u_type]
-                max_hp = utt["hp"]
-                cost = utt["cost"]
-                s = cost * (1 + hp / max_hp)
-                scores[owner] += s
-            score_reward = (scores[0] - scores[1]) / (np.sum(scores) + 1)
+            score_reward = rewards[self.raw_names.index("ScoreRewardFunction")]
             delta_reward = score_reward - self.delta_rewards[idx]
             info = {
                 "raw_rewards": rewards,
                 "score_reward": {
-                    "score": scores[0],
                     "reward": score_reward,
                     "delta_reward": delta_reward,
                 },
             }
             if d:
-                winloss = rewards[self.rfs.index("WinLossRewardFunction")]
+                winloss = rewards[self.raw_names.index("WinLossRewardFunction")]
                 info["results"] = {
-                    "score": scores[0],
-                    "reward": score_reward,
+                    "score_reward": score_reward,
                     "WinLoss": winloss,
                     "win": int(winloss == 1),
                     "draw": int(winloss == 0),
@@ -468,6 +456,7 @@ class MicroRTSBotVecEnv(MicroRTSGridModeVecEnv):
             ProduceWorkerRewardFunction,
             ResourceGatherRewardFunction,
             RewardFunctionInterface,
+            ScoreRewardFunction,
             WinLossRewardFunction,
         )
 
@@ -479,9 +468,11 @@ class MicroRTSBotVecEnv(MicroRTSGridModeVecEnv):
                 ProduceBuildingRewardFunction(),
                 AttackRewardFunction(),
                 ProduceCombatUnitRewardFunction(),
+                ScoreRewardFunction(),
                 # CloserToEnemyBaseRewardFunction(),
             ]
         )
+        self.raw_names = [str(rf) for rf in self.rfs]
         self.start_client()
 
         # computed properties
