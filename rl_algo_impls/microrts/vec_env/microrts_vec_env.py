@@ -4,7 +4,7 @@ import sys
 import warnings
 import xml.etree.ElementTree as ET
 from itertools import cycle
-from typing import TypeVar
+from typing import Any, Dict, List, TypeVar
 
 import gym
 import gym_microrts
@@ -196,6 +196,8 @@ class MicroRTSGridModeVecEnv:
             (self.source_unit_idxs.shape + (1,))
         )
 
+        self.delta_rewards = np.zeros(self.num_envs, dtype=np.float32)
+
     def start_client(self):
         from ai.core import AI
         from ts import JNIGridnetVecClient as Client
@@ -224,6 +226,7 @@ class MicroRTSGridModeVecEnv:
     def reset(self):
         responses = self.vec_client.reset([0] * self.num_envs)
         obs = [self._encode_obs(np.array(ro)) for ro in responses.observation]
+        self.delta_rewards = np.zeros_like(self.delta_rewards)
 
         return np.array(obs)
 
@@ -259,6 +262,48 @@ class MicroRTSGridModeVecEnv:
         assert plane_idx == obs_planes.shape[-1]
         return obs_planes.reshape(self.height, self.width, -1)
 
+    def _encode_info(
+        self, batch_obs: np.ndarray, batch_rewards: np.ndarray, done: np.ndarray
+    ) -> List[Dict[str, Any]]:
+        infos = []
+        for idx, (rewards, obs, d) in enumerate(zip(batch_rewards, batch_obs, done)):
+            scores = np.array([0, 0])
+            obs = obs.reshape(obs.shape[0], -1).transpose()
+            for o in obs:
+                if o[2] == 0:
+                    continue
+                hp = o[0]
+                owner = o[2] - 1
+                u_type = o[3] - 1
+                utt = self.utt["unitTypes"][u_type]
+                max_hp = utt["hp"]
+                cost = utt["cost"]
+                s = cost * (1 + hp / max_hp)
+                scores[owner] += s
+            score_reward = (scores[0] - scores[1]) / (np.sum(scores) + 1)
+            delta_reward = score_reward - self.delta_rewards[idx]
+            info = {
+                "raw_rewards": rewards,
+                "score_reward": {
+                    "score": scores[0],
+                    "reward": score_reward,
+                    "delta_reward": delta_reward,
+                },
+            }
+            if d:
+                winloss = rewards[self.rfs.index("WinLossRewardFunction")]
+                info["results"] = {
+                    "score": scores[0],
+                    "reward": score_reward,
+                    "WinLoss": winloss,
+                    "win": int(winloss == 1),
+                    "draw": int(winloss == 0),
+                    "loss": int(winloss == -1),
+                }
+            infos.append(info)
+            self.delta_rewards[idx] = score_reward if not d else 0
+        return infos
+
     def step_async(self, actions):
         actions = actions.reshape((self.num_envs, self.width * self.height, -1))
         actions = np.concatenate(
@@ -280,8 +325,9 @@ class MicroRTSGridModeVecEnv:
     def step_wait(self):
         responses = self.vec_client.gameStep(self.actions, [0] * self.num_envs)
         reward, done = np.array(responses.reward), np.array(responses.done)
-        obs = [self._encode_obs(np.array(ro)) for ro in responses.observation]
-        infos = [{"raw_rewards": item} for item in reward]
+        r_obs = np.array(responses.observation)
+        obs = [self._encode_obs(o) for o in r_obs]
+        infos = self._encode_info(r_obs, reward, done[:, 0])
         # check if it is in evaluation, if not, then change maps
         if len(self.cycle_maps) > 0:
             # check if an environment is done, if done, reset the client, and replace the observation
