@@ -261,6 +261,9 @@ class LuxEnvGridnet(Wrapper):
                 score_reward = score_delta / (
                     self_score + opp_score + 1 - 2 * MIN_SCORE
                 )
+                assert np.sign(score_reward) == np.sign(
+                    _win_loss[idx]
+                ), f"score_reward {score_reward} must be same sign as winloss {_win_loss[idx]}"
                 info[agent]["results"] = {
                     "WinLoss": _win_loss[idx],
                     "win": int(_win_loss[idx] == 1),

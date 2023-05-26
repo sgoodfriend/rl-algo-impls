@@ -281,6 +281,9 @@ class MicroRTSGridModeVecEnv:
             }
             if d:
                 winloss = rewards[self.raw_names.index("WinLossRewardFunction")]
+                assert np.sign(score_reward) == np.sign(
+                    winloss
+                ), f"score_reward {score_reward} must be same sign as winloss {winloss}"
                 info["results"] = {
                     "score_reward": score_reward,
                     "WinLoss": winloss,
