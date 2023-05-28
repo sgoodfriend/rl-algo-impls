@@ -794,6 +794,9 @@ LuxAI_S2-v0: &lux-defaults
         built_light: 0.1
         built_heavy: 1
         lost_factory: -1
+        factories_alive: 0.01
+        heavies_alive: 0.005
+        lights_alive: 0.0005
     additional_win_loss_reward: true
     score_reward_kwargs:
       episode_end: true
