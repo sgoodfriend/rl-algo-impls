@@ -189,7 +189,7 @@ class PPO(Algorithm):
             multi_reward_weights = (
                 torch.Tensor(self.multi_reward_weights).to(self.device)
                 if self.multi_reward_weights is not None
-                else 1
+                else None
             )
             vf_coef = torch.Tensor(np.array(self.vf_coef)).to(self.device)
             for e in range(self.n_epochs):
@@ -217,6 +217,8 @@ class PPO(Algorithm):
 
                     if self.normalize_advantage:
                         mb_adv = (mb_adv - mb_adv.mean(0)) / (mb_adv.std(0) + 1e-8)
+                    if multi_reward_weights is not None:
+                        mb_adv = mb_adv @ multi_reward_weights
 
                     new_logprobs, entropy, new_values = self.policy(
                         mb_obs, mb_actions, action_masks=mb_action_masks
@@ -225,12 +227,7 @@ class PPO(Algorithm):
                     logratio = new_logprobs - mb_logprobs
                     ratio = torch.exp(logratio)
                     clipped_ratio = torch.clamp(ratio, min=1 - pi_clip, max=1 + pi_clip)
-                    pi_loss = torch.max(
-                        -unqueeze_dims_to_match(ratio, mb_adv.shape) * mb_adv,
-                        -unqueeze_dims_to_match(clipped_ratio, mb_adv.shape) * mb_adv,
-                    ).mean(0)
-                    pi_loss *= multi_reward_weights
-                    pi_loss = pi_loss.sum()
+                    pi_loss = torch.max(-ratio * mb_adv, -clipped_ratio * mb_adv).mean()
 
                     v_loss_unclipped = (new_values - mb_returns) ** 2
                     if v_clip:
