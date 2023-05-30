@@ -346,10 +346,10 @@ MicrortsDefeatCoacAIShaped-v3: &microrts-coacai-defaults
   eval_hyperparams: &microrts-coacai-eval-defaults
     <<: *microrts-ai-eval-defaults
     step_freq: !!float 1e6
-    n_episodes: 26
+    n_episodes: 28
     env_overrides: &microrts-coacai-eval-env-overrides
       <<: *microrts-ai-eval-env-overrides
-      n_envs: 26
+      n_envs: 28
       bots:
         coacAI: 2
         randomBiasedAI: 2
@@ -364,6 +364,7 @@ MicrortsDefeatCoacAIShaped-v3: &microrts-coacai-defaults
         tiamat: 2
         droplet: 2
         guidedRojoA3N: 2
+        mayari: 2
 
 MicrortsDefeatCoacAIShaped-v3-diverseBots: &microrts-diverse-defaults
   <<: *microrts-coacai-defaults
