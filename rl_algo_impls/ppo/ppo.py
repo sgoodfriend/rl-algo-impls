@@ -74,15 +74,21 @@ class TrainStats:
                 tb_writer.add_scalar(f"losses/{name}", value, global_step=global_step)
 
     def __repr__(self) -> str:
+        def round_list_or_float(v: Union[float, np.ndarray], ndigits: int) -> str:
+            if isinstance(v, np.ndarray):
+                return "[" + ", ".join(round(a, ndigits) for a in v) + "]"
+            else:
+                return str(round(v, ndigits))
+
         return " | ".join(
             [
                 f"Loss: {round(self.loss, 2)}",
                 f"Pi L: {round(self.pi_loss, 2)}",
-                f"V L: {round(self.v_loss, 2)}",
+                f"V L: {round_list_or_float(self.v_loss, 2)}",
                 f"E L: {round(self.entropy_loss, 2)}",
                 f"Apx KL Div: {round(self.approx_kl, 2)}",
                 f"Clip Frac: {round(self.clipped_frac, 2)}",
-                f"Val Clip Frac: {round(self.val_clipped_frac, 2)}",
+                f"Val Clip Frac: {round_list_or_float(self.val_clipped_frac, 2)}",
             ]
         )
 
