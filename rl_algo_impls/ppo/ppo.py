@@ -275,6 +275,7 @@ class PPO(Algorithm):
                         val_clipped_frac = (
                             ((new_values - mb_values).abs() > v_clip)
                             .float()
+                            .mean(0)
                             .cpu()
                             .numpy()
                             if v_clip
