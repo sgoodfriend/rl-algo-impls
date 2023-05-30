@@ -33,37 +33,45 @@ from rl_algo_impls.wrappers.vectorable_wrapper import VecEnv
 class TrainStepStats(NamedTuple):
     loss: float
     pi_loss: float
-    v_loss: float
+    v_loss: np.ndarray
     entropy_loss: float
     approx_kl: float
     clipped_frac: float
-    val_clipped_frac: float
+    val_clipped_frac: np.ndarray
 
 
 @dataclass
 class TrainStats:
     loss: float
     pi_loss: float
-    v_loss: float
+    v_loss: Union[float, np.ndarray]
     entropy_loss: float
     approx_kl: float
     clipped_frac: float
-    val_clipped_frac: float
+    val_clipped_frac: Union[float, np.ndarray]
     explained_var: float
 
     def __init__(self, step_stats: List[TrainStepStats], explained_var: float) -> None:
         self.loss = np.mean([s.loss for s in step_stats]).item()
         self.pi_loss = np.mean([s.pi_loss for s in step_stats]).item()
-        self.v_loss = np.mean([s.v_loss for s in step_stats]).item()
+        self.v_loss = np.mean([s.v_loss for s in step_stats], axis=0)
         self.entropy_loss = np.mean([s.entropy_loss for s in step_stats]).item()
         self.approx_kl = np.mean([s.approx_kl for s in step_stats]).item()
         self.clipped_frac = np.mean([s.clipped_frac for s in step_stats]).item()
-        self.val_clipped_frac = np.mean([s.val_clipped_frac for s in step_stats]).item()
+        self.val_clipped_frac = np.mean(
+            [s.val_clipped_frac for s in step_stats], axis=0
+        )
         self.explained_var = explained_var
 
     def write_to_tensorboard(self, tb_writer: SummaryWriter, global_step: int) -> None:
         for name, value in asdict(self).items():
-            tb_writer.add_scalar(f"losses/{name}", value, global_step=global_step)
+            if isinstance(value, np.ndarray):
+                for idx, v in enumerate(value.flatten()):
+                    tb_writer.add_scalar(
+                        f"losses/{name}_{idx}", v, global_step=global_step
+                    )
+            else:
+                tb_writer.add_scalar(f"losses/{name}", value, global_step=global_step)
 
     def __repr__(self) -> str:
         return " | ".join(
@@ -242,11 +250,10 @@ class PPO(Algorithm):
 
                     if self.ppo2_vf_coef_halving:
                         v_loss *= 0.5
-                    v_loss = (vf_coef * v_loss).sum()
 
                     entropy_loss = -entropy.mean()
 
-                    loss = pi_loss + ent_coef * entropy_loss + v_loss
+                    loss = pi_loss + ent_coef * entropy_loss + (vf_coef * v_loss).sum()
 
                     self.optimizer.zero_grad()
                     loss.backward()
@@ -268,19 +275,17 @@ class PPO(Algorithm):
                         val_clipped_frac = (
                             ((new_values - mb_values).abs() > v_clip)
                             .float()
-                            .mean()
                             .cpu()
                             .numpy()
-                            .item()
                             if v_clip
-                            else 0
+                            else np.zeros(v_loss.shape)
                         )
 
                     step_stats.append(
                         TrainStepStats(
                             loss.item(),
                             pi_loss.item(),
-                            v_loss.item(),
+                            v_loss.detach().cpu().numpy(),
                             entropy_loss.item(),
                             approx_kl,
                             clipped_frac,
