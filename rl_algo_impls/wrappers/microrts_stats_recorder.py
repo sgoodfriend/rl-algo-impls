@@ -41,7 +41,12 @@ class MicrortsStatsRecorder(VectorableWrapper):
             if done:
                 raw_rewards = np.array(self.raw_rewards[idx]).sum(0)
                 raw_names = [str(rf) for rf in self.env.unwrapped.rfs]
-                info["microrts_stats"] = dict(zip(raw_names, raw_rewards))
+                # ScoreRewardFunction makes no sense to accumulate
+                info["microrts_stats"] = dict(
+                    (n, r)
+                    for n, r in zip(raw_names, raw_rewards)
+                    if n != "ScoreRewardFunction"
+                )
 
                 winloss = raw_rewards[raw_names.index("WinLossRewardFunction")]
                 microrts_results = {
