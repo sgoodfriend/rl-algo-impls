@@ -10,7 +10,7 @@ from stable_baselines3.common.preprocessing import get_flattened_obs_dim
 from rl_algo_impls.shared.encoder.cnn import CnnEncoder
 from rl_algo_impls.shared.encoder.gridnet_encoder import GridnetEncoder
 from rl_algo_impls.shared.encoder.impala_cnn import ImpalaCnn
-from rl_algo_impls.shared.encoder.microrts_cnn import MicrortsCnn
+from rl_algo_impls.microrts.encoder.microrts_cnn import MicrortsCnn
 from rl_algo_impls.shared.encoder.nature_cnn import NatureCnn
 from rl_algo_impls.shared.module.utils import layer_init
 
