@@ -77,15 +77,15 @@ bash scripts/tuning.sh -a ALGO -e ENV -j N_JOBS -s NUM_SEEDS
 
 3 notebooks in the colab directory are setup to be used with Google Colab:
 
-- [colab_benchmark.ipynb](https://github.com/sgoodfriend/rl-algo-impls/tree/main/benchmarks#:~:text=colab_benchmark.ipynb):
+- [colab_benchmark.ipynb](https://github.com/sgoodfriend/rl-algo-impls/blob/main/colab/colab_benchmark.ipynb):
   Even with a Google Colab Pro+ subscription you'd need to only run parts of the
   benchmark. The file recommends 4 splits (basic+pybullet, carcarcing, atari1, atari2)
   because it would otherwise exceed the 24-hour session limit. This mostly comes from
   being unable to get pool_size above 1 because of WandB errors.
-- [colab_train.ipynb](https://github.com/sgoodfriend/rl-algo-impls/blob/main/colab_train.ipynb):
+- [colab_train.ipynb](https://github.com/sgoodfriend/rl-algo-impls/blob/main/colab/colab_train.ipynb):
   Train models while being able to specify the env, seeds, and algo. By default training
   runs are uploaded to the rl-algo-impls project.
-- [colab_enjoy.ipynb](https://github.com/sgoodfriend/rl-algo-impls/blob/main/colab_enjoy.ipynb):
+- [colab_enjoy.ipynb](https://github.com/sgoodfriend/rl-algo-impls/blob/main/colab/colab_enjoy.ipynb):
   Download models from WandB and evaluate them. Training is likely to be more
   interesting given videos are uploaded.
 
