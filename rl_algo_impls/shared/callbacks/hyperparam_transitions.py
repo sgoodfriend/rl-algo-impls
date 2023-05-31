@@ -2,7 +2,7 @@ from typing import Any, Dict, List, Optional
 
 import numpy as np
 
-from rl_algo_impls.lux.wrappers.lux_env_gridnet import LuxRewardWeights
+from rl_algo_impls.lux.rewards import LuxRewardWeights
 from rl_algo_impls.runner.config import Config
 from rl_algo_impls.shared.algorithm import Algorithm
 from rl_algo_impls.shared.callbacks.callback import Callback
