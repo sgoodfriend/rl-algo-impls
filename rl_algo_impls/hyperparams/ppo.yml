@@ -785,19 +785,19 @@ LuxAI_S2-v0: &lux-defaults
     make_kwargs: &lux-env-make-defaults
       bid_std_dev: 0
       reward_weights:
-        ice_generation: 0.005 # 1/day of water for factory, 0.1/heavy dig
-        ore_generation: 0.004 # 2/heavy robot build, 0.08/heavy dig
-        water_generation: 0.02 # 1/day of water for factory
-        metal_generation: 0.02 # 2/heavy robot build
+        ice_generation: 0.0025 # 0.5/day of water for factory, 0.05/heavy dig
+        ore_generation: 0.008 # 4/heavy robot build, 0.16/heavy dig
+        water_generation: 0.01 # 0.5/day of water for factory
+        metal_generation: 0.04 # 4/heavy robot build
         power_generation: 0
-        ice_rubble_cleared: 0.004 # 80% of ice_generation
-        ore_rubble_cleared: 0.0036 # 90% of ore_generation
+        ice_rubble_cleared: 0.002 # 80% of ice_generation
+        ore_rubble_cleared: 0.0064 # 80% of ore_generation
         built_light: 0.1
         built_heavy: 1
         lost_factory: -1
         factories_alive: 0.01
-        heavies_alive: 0.005
-        lights_alive: 0.0005
+        heavies_alive: 0.005 # 0.25/day of heavy alive
+        lights_alive: 0.0005 # 0.025/day of light alive
     additional_win_loss_reward: true
     score_reward_kwargs:
       episode_end: true
