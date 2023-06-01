@@ -50,6 +50,7 @@ MicroRTSGridModeVecEnvSelf = TypeVar(
     "MicroRTSGridModeVecEnvSelf", bound="MicroRTSGridModeVecEnv"
 )
 
+UTT_VERSION_ORIGINAL_FINETUNED = 2
 MAX_HP = 10
 MAX_RESOURCES = 40
 
@@ -139,7 +140,7 @@ class MicroRTSGridModeVecEnv:
         # start microrts client
         from rts.units import UnitTypeTable
 
-        self.real_utt = UnitTypeTable()
+        self.real_utt = UnitTypeTable(UTT_VERSION_ORIGINAL_FINETUNED)
         from ai.reward import (
             AttackRewardFunction,
             ProduceBuildingRewardFunction,
@@ -453,7 +454,7 @@ class MicroRTSBotVecEnv(MicroRTSGridModeVecEnv):
         # start microrts client
         from rts.units import UnitTypeTable
 
-        self.real_utt = UnitTypeTable()
+        self.real_utt = UnitTypeTable(UTT_VERSION_ORIGINAL_FINETUNED)
         from ai.reward import (
             AttackRewardFunction,
             ProduceBuildingRewardFunction,
