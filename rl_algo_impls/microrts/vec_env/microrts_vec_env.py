@@ -8,6 +8,7 @@ from itertools import cycle
 from typing import Any, Dict, List, TypeVar
 
 import gym
+import gym.spaces
 import gym_microrts
 import jpype
 import jpype.imports
@@ -15,6 +16,11 @@ import numpy as np
 from jpype.imports import registerDomain
 from jpype.types import JArray, JInt
 from PIL import Image
+
+from rl_algo_impls.microrts.wrappers.microrts_space_transform import (
+    MAX_HP,
+    MAX_RESOURCES,
+)
 
 MICRORTS_INSTALLTION_MESSAGE = """
 
@@ -51,8 +57,6 @@ MicroRTSGridModeVecEnvSelf = TypeVar(
 )
 
 UTT_VERSION_ORIGINAL_FINETUNED = 2
-MAX_HP = 10
-MAX_RESOURCES = 40
 
 
 class MicroRTSGridModeVecEnv:
@@ -167,38 +171,23 @@ class MicroRTSGridModeVecEnv:
         self.raw_names = [str(rf) for rf in self.rfs]
         self.start_client()
 
-        # computed properties
-        # [num_planes_hp(5), num_planes_resources(5), num_planes_player(5),
-        # num_planes_unit_type(z), num_planes_unit_action(6)]
-
-        self.float_planes = [1 / MAX_HP, 1 / MAX_RESOURCES, None, None, None]
-        self.bool_planes = [None, [1], None, None, None]
-        self.one_hot_planes = [None, None, 3, len(self.utt["unitTypes"]) + 1, 6, 2]
+        high = np.dstack(
+            [MAX_HP, MAX_RESOURCES, 3, len(self.utt["unitTypes"]) + 1, 6, 2]
+            * self.height
+            * self.width
+        ).reshape((self.height, self.width, -1))
         if partial_obs:
-            self.one_hot_planes = [None, None, 3, len(self.utt["unitTypes"]) + 1, 6, 2]
-        self.n_dim = (
-            len([fp for fp in self.float_planes if fp is not None])
-            + sum([len(bp) for bp in self.bool_planes if bp is not None])
-            + sum([ohp for ohp in self.one_hot_planes if ohp is not None])
-        )
+            high = np.concatenate((high, np.full((self.height, self.width, 1), 2)))
 
         self.observation_space = gym.spaces.Box(
-            low=0.0,
-            high=1.0,
-            shape=(self.height, self.width, self.n_dim),
-            dtype=np.float32,
+            low=0,
+            high=high,  # type: ignore
+            dtype=np.int32,
         )
-
-        self.action_space_dims = [6, 4, 4, 4, 4, len(self.utt["unitTypes"]), 7 * 7]
+        # This should be wrapped in a gym.spaces.Sequential, but Sequential doesn't
+        # exist in gym 0.21
         self.action_space = gym.spaces.MultiDiscrete(
-            np.array([self.action_space_dims] * self.height * self.width).flatten()
-        )
-        self.action_plane_space = gym.spaces.MultiDiscrete(self.action_space_dims)
-        self.source_unit_idxs = np.tile(
-            np.arange(self.height * self.width), (self.num_envs, 1)
-        )
-        self.source_unit_idxs = self.source_unit_idxs.reshape(
-            (self.source_unit_idxs.shape + (1,))
+            [6, 4, 4, 4, 4, len(self.utt["unitTypes"]), 7 * 7]
         )
 
         self.delta_rewards = np.zeros(self.num_envs, dtype=np.float32)
@@ -229,49 +218,16 @@ class MicroRTSGridModeVecEnv:
         self.utt = json.loads(str(self.render_client.sendUTT()))
 
     def reset(self):
-        responses = self.vec_client.reset([0] * self.num_envs)
-        obs = [self._encode_obs(np.array(ro)) for ro in responses.observation]
         self.delta_rewards = np.zeros_like(self.delta_rewards)
 
-        return np.array(obs)
-
-    def _encode_obs(self, obs):
-        obs = obs.reshape(len(obs), -1)
-        obs_planes = np.zeros((self.height * self.width, self.n_dim), dtype=np.float32)
-
-        plane_idx = 0
-        for idx, fp in enumerate(self.float_planes):
-            if fp is None:
-                continue
-            obs_planes[:, plane_idx] = obs[idx, :] * fp
-            assert np.all(obs_planes[:, plane_idx] >= 0)
-            if np.any(obs_planes[:, plane_idx] > 1):
-                warnings.warn(
-                    f"Found observations for plane_idx {plane_idx} above max ({np.max(obs[idx, :])})"
-                )
-            obs_planes[:, plane_idx] = obs_planes[:, plane_idx].clip(0, 1)
-            plane_idx += 1
-        for idx, bp in enumerate(self.bool_planes):
-            if bp is None:
-                continue
-            for threshold in bp:
-                obs_planes[:, plane_idx] = obs[idx, :] >= threshold
-                plane_idx += 1
-        for idx, ohp in enumerate(self.one_hot_planes):
-            if ohp is None:
-                continue
-            obs_planes[:, plane_idx : plane_idx + ohp] = np.eye(ohp)[
-                obs[idx, :].clip(0, ohp)
-            ]
-            plane_idx += ohp
-        assert plane_idx == obs_planes.shape[-1]
-        return obs_planes.reshape(self.height, self.width, -1)
+        responses = self.vec_client.reset([0] * self.num_envs)
+        return np.array(responses.observation)
 
     def _encode_info(
-        self, batch_obs: np.ndarray, batch_rewards: np.ndarray, done: np.ndarray
+        self, batch_rewards: np.ndarray, done: np.ndarray
     ) -> List[Dict[str, Any]]:
         infos = []
-        for idx, (rewards, obs, d) in enumerate(zip(batch_rewards, batch_obs, done)):
+        for idx, (rewards, d) in enumerate(zip(batch_rewards, done)):
             score_reward = rewards[self.raw_names.index("ScoreRewardFunction")]
             delta_reward = score_reward - self.delta_rewards[idx]
             info = {
@@ -299,29 +255,18 @@ class MicroRTSGridModeVecEnv:
         return infos
 
     def step_async(self, actions):
-        actions = actions.reshape((self.num_envs, self.width * self.height, -1))
-        actions = np.concatenate(
-            (self.source_unit_idxs, actions), 2
-        )  # specify source unit
-        # valid actions
-        actions = actions[np.where(self.source_unit_mask == 1)]
-        action_counts_per_env = self.source_unit_mask.sum(1)
-        java_actions = [None] * len(action_counts_per_env)
-        action_idx = 0
-        for outer_idx, action_count in enumerate(action_counts_per_env):
-            java_valid_action = [None] * action_count
-            for idx in range(action_count):
-                java_valid_action[idx] = JArray(JInt)(actions[action_idx])
-                action_idx += 1
-            java_actions[outer_idx] = JArray(JArray(JInt))(java_valid_action)
-        self.actions = JArray(JArray(JArray(JInt)))(java_actions)
+        self.actions = JArray(JArray(JArray(JInt)))(
+            [
+                JArray(JArray(JInt))([JArray(JInt)(a) for a in actions_in_env])
+                for actions_in_env in actions
+            ]
+        )
 
     def step_wait(self):
         responses = self.vec_client.gameStep(self.actions, [0] * self.num_envs)
         reward, done = np.array(responses.reward), np.array(responses.done)
-        r_obs = np.array(responses.observation)
-        obs = [self._encode_obs(o) for o in r_obs]
-        infos = self._encode_info(r_obs, reward, done[:, 0])
+        obs = np.array(responses.observation)
+        infos = self._encode_info(reward, done[:, 0])
         # check if it is in evaluation, if not, then change maps
         if len(self.cycle_maps) > 0:
             # check if an environment is done, if done, reset the client, and replace the observation
@@ -331,7 +276,7 @@ class MicroRTSGridModeVecEnv:
                     if d:
                         self.vec_client.clients[done_idx].mapPath = next(self.next_map)
                         response = self.vec_client.clients[done_idx].reset(0)
-                        obs[done_idx] = self._encode_obs(np.array(response.observation))
+                        obs[done_idx] = np.array(response.observation)
                 # selfplay envs settings
                 else:
                     if d and done_idx % 2 == 0:
@@ -346,12 +291,8 @@ class MicroRTSGridModeVecEnv:
                         p1_response = self.vec_client.selfPlayClients[
                             done_idx // 2
                         ].getResponse(1)
-                        obs[done_idx] = self._encode_obs(
-                            np.array(p0_response.observation)
-                        )
-                        obs[done_idx + 1] = self._encode_obs(
-                            np.array(p1_response.observation)
-                        )
+                        obs[done_idx] = np.array(p0_response.observation)
+                        obs[done_idx + 1] = np.array(p1_response.observation)
         return np.array(obs), reward @ self.reward_weight, done[:, 0], infos
 
     def step(self, ac):
@@ -387,12 +328,7 @@ class MicroRTSGridModeVecEnv:
             jpype.shutdownJVM()
 
     def get_action_mask(self):
-        action_mask = np.array(self.vec_client.getMasks(0))
-        self.source_unit_mask = action_mask[:, :, :, 0].reshape(self.num_envs, -1)
-        action_type_and_parameter_mask = action_mask[:, :, :, 1:].reshape(
-            self.num_envs, self.height * self.width, -1
-        )
-        return action_type_and_parameter_mask
+        return np.array(self.vec_client.getMasks(0))
 
     @property
     def unwrapped(self: MicroRTSGridModeVecEnvSelf) -> MicroRTSGridModeVecEnvSelf:
@@ -671,7 +607,7 @@ class MicroRTSGridModeSharedMemVecEnv(MicroRTSGridModeVecEnv):
     def step_wait(self):
         responses = self.vec_client.gameStep([0] * self.num_envs)
         reward, done = np.array(responses.reward), np.array(responses.done)
-        infos = [{"raw_rewards": item} for item in reward]
+        infos = self._encode_info(reward, done[:, 0])
         # check if it is in evaluation, if not, then change maps
         if len(self.cycle_maps) > 0:
             # check if an environment is done, if done, reset the client, and replace the observation

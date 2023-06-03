@@ -80,6 +80,7 @@ def make_vec_env(
         _,  # additional_win_loss_reward
         _,  # map_paths,
         _,  # score_reward_kwargs,
+        _,  # is_agent
     ) = astuple(hparams)
 
     import_for_env_id(config.env_id)

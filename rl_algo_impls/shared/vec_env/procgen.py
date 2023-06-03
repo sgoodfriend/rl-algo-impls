@@ -46,6 +46,7 @@ def make_procgen_env(
         _,  # additional_win_loss_reward,
         _,  # map_paths,
         _,  # score_reward_kwargs,
+        _,  # is_agent
     ) = astuple(hparams)
 
     seed = config.seed(training=training)

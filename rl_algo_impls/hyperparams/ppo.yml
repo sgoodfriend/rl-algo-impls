@@ -594,6 +594,19 @@ Microrts-selfplay-dc-phases-debug: &microrts-sp-dc-phases-debug-defaults
         workerRushAI: 4
         lightRushAI: 4
 
+Microrts-agent: &microrts-agent
+  <<: *microrts-sp-dc-phases-defaults
+  device: cpu
+  eval_hyperparams:
+    <<: *microrts-sp-dc-phases-eval-defaults
+    env_overrides:
+      <<: *microrts-sp-dc-phases-eval-env-overrides
+      n_envs: 1
+      self_play_kwargs:
+        save_steps: .inf
+        swap_steps: .inf
+      is_agent: true
+
 HalfCheetahBulletEnv-v0: &pybullet-defaults
   n_timesteps: !!float 2e6
   env_hyperparams: &pybullet-env-defaults

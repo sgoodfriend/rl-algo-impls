@@ -50,6 +50,7 @@ def make_lux_env(
         additional_win_loss_reward,
         _,  # map_paths,
         score_reward_kwargs,
+        _,  # is_agent
     ) = astuple(hparams)
 
     seed = config.seed(training=training)
