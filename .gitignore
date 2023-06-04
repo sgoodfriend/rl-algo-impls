@@ -145,3 +145,6 @@ scratch/*
 saved_models/*
 downloaded_models/*
 videos/*
+
+# Java
+rl_algo_impls/microrts/java/bin/*
