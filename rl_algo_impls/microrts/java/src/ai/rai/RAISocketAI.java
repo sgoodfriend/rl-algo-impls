@@ -5,6 +5,7 @@ import java.io.DataOutputStream;
 import java.io.InputStreamReader;
 import java.io.StringWriter;
 import java.lang.reflect.Type;
+import java.net.ConnectException;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -43,6 +44,7 @@ public class RAISocketAI extends AIWithComputationBudget {
         utt = a_utt;
         maxAttackDiameter = utt.getMaxAttackRange() * 2 + 1;
         try {
+            startPythonProcess();
             connectToServer();
         } catch (Exception e) {
             e.printStackTrace();
@@ -56,6 +58,7 @@ public class RAISocketAI extends AIWithComputationBudget {
         utt = a_utt;
         maxAttackDiameter = utt.getMaxAttackRange() * 2 + 1;
         try {
+            startPythonProcess();
             connectToServer();
         } catch (Exception e) {
             e.printStackTrace();
@@ -67,6 +70,7 @@ public class RAISocketAI extends AIWithComputationBudget {
         utt = a_utt;
         maxAttackDiameter = utt.getMaxAttackRange() * 2 + 1;
         try {
+            startPythonProcess();
             this.socket = socket;
             in_pipe = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             out_pipe = new DataOutputStream(socket.getOutputStream());
@@ -98,14 +102,25 @@ public class RAISocketAI extends AIWithComputationBudget {
         return new RAISocketAI(mt, mi, a_utt, socket);
     }
 
-    public void startPythonProcess() {
-        ProcessBuilder processBuilder = new ProcessBuilder("python",
-                "src/rl-algo-impls/rl-algo-impls/microrts/agent.py");
+    public void startPythonProcess() throws Exception {
+        ProcessBuilder processBuilder = new ProcessBuilder("python", "../agent.py");
+        processBuilder.start();
     }
 
     public void connectToServer() throws Exception {
         // Make connection and initialize streams
-        socket = new Socket(serverAddress, serverPort);
+        boolean connected = false;
+        int sleepMs = 100;
+        while (!connected) {
+            try {
+                socket = new Socket(serverAddress, serverPort);
+                connected = true;
+            } catch (ConnectException e) {
+                System.out.printf("Waiting %dms for server to be ready%n", sleepMs);
+                Thread.sleep(sleepMs);
+                sleepMs += 100;
+            }
+        }
         in_pipe = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         out_pipe = new DataOutputStream(socket.getOutputStream());
 

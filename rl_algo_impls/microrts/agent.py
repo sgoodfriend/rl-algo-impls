@@ -1,5 +1,11 @@
 import os
+import sys
 from pathlib import Path
+
+file_path = os.path.abspath(Path(__file__))
+root_dir = str(Path(file_path).parent.parent.parent.absolute())
+sys.path.append(root_dir)
+
 
 from rl_algo_impls.runner.config import Config, EnvHyperparams, RunArgs
 from rl_algo_impls.runner.running_utils import get_device, load_hyperparams, make_policy
@@ -8,11 +14,9 @@ from rl_algo_impls.shared.vec_env.make_env import make_eval_env
 MODEL_LOAD_PATH = "saved_models/ppo-Microrts-selfplay-dc-phases-A10-S1-best"
 
 if __name__ == "__main__":
-    root_dir = Path(__file__).parent.parent.parent.absolute()
-
     run_args = RunArgs(algo="ppo", env="Microrts-agent", seed=1)
     hyperparams = load_hyperparams(run_args.algo, run_args.env)
-    config = Config(run_args, hyperparams, str(root_dir))
+    config = Config(run_args, hyperparams, root_dir)
 
     env = make_eval_env(config, EnvHyperparams(**config.env_hyperparams))
     device = get_device(config, env)

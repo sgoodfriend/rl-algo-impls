@@ -7,7 +7,6 @@ package tests;
 import ai.core.AI;
 import ai.rai.RAISocketAI;
 import ai.abstraction.WorkerRush;
-import ai.abstraction.pathfinding.BFSPathFinding;
 import gui.PhysicalGameStatePanel;
 
 import javax.swing.JFrame;
@@ -23,16 +22,16 @@ import rts.units.UnitTypeTable;
 public class GameVisualSimulationTest {
     public static void main(String[] args) throws Exception {
         UnitTypeTable utt = new UnitTypeTable(UnitTypeTable.VERSION_ORIGINAL_FINETUNED);
-        PhysicalGameState pgs = PhysicalGameState.load("maps/16x16/basesWorkers16x16.xml", utt);
+        AI ai1 = new RAISocketAI(utt);
+        AI ai2 = new WorkerRush(utt);
+
+        PhysicalGameState pgs = PhysicalGameState.load("maps/16x16/basesWorkers16x16A.xml", utt);
         // PhysicalGameState pgs = MapGenerator.basesWorkers8x8Obstacle();
 
         GameState gs = new GameState(pgs, utt);
         int MAXCYCLES = 5000;
         int PERIOD = 20;
         boolean gameover = false;
-
-        AI ai1 = new RAISocketAI(utt);
-        AI ai2 = new WorkerRush(utt, new BFSPathFinding());
 
         JFrame w = PhysicalGameStatePanel.newVisualizer(gs, 640, 640, false, PhysicalGameStatePanel.COLORSCHEME_BLACK);
         // JFrame w =
