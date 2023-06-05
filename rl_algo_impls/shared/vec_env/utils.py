@@ -6,8 +6,6 @@ from rl_algo_impls.runner.config import Config
 def import_for_env_id(env_id: str) -> None:
     if "BulletEnv" in env_id:
         import pybullet_envs
-    if "Microrts" in env_id:
-        import gym_microrts
     if "LuxAI_S2" in env_id:
         import luxai_s2
 
