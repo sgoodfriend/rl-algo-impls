@@ -19,6 +19,8 @@ import com.google.gson.reflect.TypeToken;
 import ai.core.AI;
 import ai.core.AIWithComputationBudget;
 import ai.core.ParameterSpecification;
+import ai.rai.GameStateWrapper;
+import rts.Game;
 import rts.GameState;
 import rts.PhysicalGameState;
 import rts.PlayerAction;
@@ -173,12 +175,14 @@ public class RAISocketAI extends AIWithComputationBudget {
 
     @Override
     public PlayerAction getAction(int player, GameState gs) throws Exception {
+        GameStateWrapper gsw = new GameStateWrapper(gs);
+
         Gson gson = new Gson();
 
         StringWriter sw = new StringWriter();
         sw.append("getAction\n");
-        sw.append(gson.toJson(gs.getVectorObservation(player))).append("\n");
-        sw.append(gson.toJson(getMasks(player, gs))).append("\n");
+        sw.append(gson.toJson(gsw.getVectorObservation(player))).append("\n");
+        sw.append(gson.toJson(gsw.getMasks(player))).append("\n");
 
         PhysicalGameState pgs = gs.getPhysicalGameState();
         Map<String, Integer> mapData = new HashMap<>();
@@ -195,22 +199,6 @@ public class RAISocketAI extends AIWithComputationBudget {
         PlayerAction pa = PlayerAction.fromVectorAction(actionVector, gs, utt, player, maxAttackDiameter);
         pa.fillWithNones(gs, player, 1);
         return pa;
-    }
-
-    private int[][][] getMasks(int player, GameState gs) {
-        PhysicalGameState pgs = gs.getPhysicalGameState();
-
-        int[][][] masks = new int[pgs.getHeight()][pgs.getWidth()][1 + 6 + 4 + 4 + 4 + 4 + utt.getUnitTypes().size()
-                + maxAttackDiameter * maxAttackDiameter];
-        for (Unit u : pgs.getUnits()) {
-            final UnitActionAssignment uaa = gs.getActionAssignment(u);
-            if (u.getPlayer() == player && uaa == null) {
-                masks[u.getY()][u.getX()][0] = 1;
-                UnitAction.getValidActionArray(u, gs, utt, masks[u.getY()][u.getX()], maxAttackDiameter, 1);
-            }
-        }
-
-        return masks;
     }
 
     @Override
