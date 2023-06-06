@@ -7,7 +7,9 @@ package tests;
 import ai.core.AI;
 import ai.rai.RAISocketAI;
 import ai.abstraction.WorkerRush;
+import ai.coac.CoacAI;
 import gui.PhysicalGameStatePanel;
+import mayariBot.mayari;
 
 import javax.swing.JFrame;
 import rts.GameState;
@@ -21,9 +23,9 @@ import rts.units.UnitTypeTable;
  */
 public class GameVisualSimulationTest {
     public static void main(String[] args) throws Exception {
-        UnitTypeTable utt = new UnitTypeTable(UnitTypeTable.VERSION_ORIGINAL_FINETUNED);
+        UnitTypeTable utt = new UnitTypeTable(UnitTypeTable.VERSION_ORIGINAL);
         AI ai1 = new RAISocketAI(utt);
-        AI ai2 = new WorkerRush(utt);
+        AI ai2 = new CoacAI(utt);
 
         PhysicalGameState pgs = PhysicalGameState.load("maps/16x16/basesWorkers16x16A.xml", utt);
         // PhysicalGameState pgs = MapGenerator.basesWorkers8x8Obstacle();
