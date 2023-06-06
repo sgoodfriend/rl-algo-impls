@@ -14,7 +14,7 @@ from rl_algo_impls.shared.vec_env.make_env import make_eval_env
 
 MODEL_LOAD_PATH = "saved_models/ppo-Microrts-selfplay-dc-phases-A10-S1-best"
 
-if __name__ == "__main__":
+def main():
     if len(sys.argv) >= 3:
         set_connection_info(int(sys.argv[1]), sys.argv[2] == "true")
 
@@ -45,3 +45,7 @@ if __name__ == "__main__":
             obs = env.reset()
 
         action_mask = get_action_mask()
+
+
+if __name__ == "__main__":
+    main()

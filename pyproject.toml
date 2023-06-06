@@ -1,6 +1,6 @@
 [project]
 name = "rl_algo_impls"
-version = "0.0.14"
+version = "0.0.15"
 description = "Implementations of reinforcement learning algorithms"
 authors = [
     {name = "Scott Goodfriend", email = "goodfriend.scott@gmail.com"},
@@ -94,3 +94,6 @@ build-backend = "setuptools.build_meta"
 
 [tool.isort]
 profile = "black" 
+
+[project.scripts]
+rai_microrts = "rl_algo_impls.microrts.agent:main"

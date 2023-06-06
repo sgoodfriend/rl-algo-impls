@@ -100,8 +100,7 @@ public class RAISocketAI extends AIWithComputationBudget {
     }
 
     private void startPythonProcess(boolean isProcessServer) throws Exception {
-        ProcessBuilder processBuilder = new ProcessBuilder("python",
-                "/Users/sgoodfriend/ml/rl-algo-impls/rl_algo_impls/microrts/agent.py", String.valueOf(serverPort),
+        ProcessBuilder processBuilder = new ProcessBuilder("rai_microrts", String.valueOf(serverPort),
                 String.valueOf(isProcessServer));
         pythonProcess = processBuilder.start();
     }
