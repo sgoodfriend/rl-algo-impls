@@ -19,14 +19,9 @@ import com.google.gson.reflect.TypeToken;
 import ai.core.AI;
 import ai.core.AIWithComputationBudget;
 import ai.core.ParameterSpecification;
-import ai.rai.GameStateWrapper;
-import rts.Game;
 import rts.GameState;
 import rts.PhysicalGameState;
 import rts.PlayerAction;
-import rts.UnitAction;
-import rts.UnitActionAssignment;
-import rts.units.Unit;
 import rts.units.UnitTypeTable;
 
 public class RAISocketAI extends AIWithComputationBudget {
@@ -36,10 +31,12 @@ public class RAISocketAI extends AIWithComputationBudget {
     int maxAttackDiameter;
 
     String serverAddress = "127.0.0.1";
-    int serverPort = 9898;
-    Socket socket;
-    BufferedReader in_pipe;
-    DataOutputStream out_pipe;
+    int serverPort = 56241;
+
+    static Process pythonProcess;
+    static Socket socket;
+    static BufferedReader in_pipe;
+    static DataOutputStream out_pipe;
 
     public RAISocketAI(UnitTypeTable a_utt) {
         super(100, -1);
@@ -67,24 +64,39 @@ public class RAISocketAI extends AIWithComputationBudget {
         }
     }
 
-    private RAISocketAI(int mt, int mi, UnitTypeTable a_utt, Socket socket) {
+    private RAISocketAI(int mt, int mi, UnitTypeTable a_utt, Socket a_socket) {
         super(mt, mi);
         utt = a_utt;
         maxAttackDiameter = utt.getMaxAttackRange() * 2 + 1;
         try {
-            startPythonProcess();
-            this.socket = socket;
+            socket = a_socket;
+
+            if (DEBUG >= 1) {
+                System.out.println("RAISocketAI: initialzing in_pipe");
+            }
             in_pipe = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            if (DEBUG >= 1) {
+                System.out.println("RAISocketAI: initialzing out_pipe");
+            }
             out_pipe = new DataOutputStream(socket.getOutputStream());
+
+            if (DEBUG >= 1) {
+                System.out.println("RAISocketAI: waiting for in_pipe ready");
+            }
 
             // Consume the initial welcoming messages from the server
             while (!in_pipe.ready())
                 ;
+
+            if (DEBUG >= 1) {
+                System.out.println("RAISocketAI: comsuming initial messages");
+            }
+
             while (in_pipe.ready())
                 in_pipe.readLine();
 
             if (DEBUG >= 1) {
-                System.out.println("SocketAI: welcome message received");
+                System.out.println("RAISocketAI: welcome message received");
             }
             reset();
         } catch (Exception e) {
@@ -93,7 +105,7 @@ public class RAISocketAI extends AIWithComputationBudget {
     }
 
     /**
-     * Creates a SocketAI from an existing socket.
+     * Creates a RAISocketAI from an existing socket.
      *
      * @param mt     The time budget in milliseconds.
      * @param mi     The iterations budget in milliseconds
@@ -105,41 +117,50 @@ public class RAISocketAI extends AIWithComputationBudget {
     }
 
     public void startPythonProcess() throws Exception {
-        ProcessBuilder processBuilder = new ProcessBuilder("python", "../agent.py");
-        processBuilder.start();
+        if (pythonProcess == null) {
+            ProcessBuilder processBuilder = new ProcessBuilder("python",
+                    "/Users/sgoodfriend/ml/rl-algo-impls/rl_algo_impls/microrts/agent.py");
+            pythonProcess = processBuilder.start();
+        }
     }
 
     public void connectToServer() throws Exception {
-        // Make connection and initialize streams
-        boolean connected = false;
-        int sleepMs = 100;
-        while (!connected) {
-            try {
-                socket = new Socket(serverAddress, serverPort);
-                connected = true;
-            } catch (ConnectException e) {
-                System.out.printf("Waiting %dms for server to be ready%n", sleepMs);
-                Thread.sleep(sleepMs);
-                sleepMs += 100;
+        if (socket == null) {
+            // Make connection and initialize streams
+            boolean connected = false;
+            int sleepMs = 100;
+            while (!connected) {
+                try {
+                    socket = new Socket(serverAddress, serverPort);
+                    connected = true;
+                } catch (ConnectException e) {
+                    if (DEBUG >= 1)
+                        System.out.printf("Waiting %dms for server to be ready%n", sleepMs);
+                    Thread.sleep(sleepMs);
+                    sleepMs += 100;
+                }
             }
+            in_pipe = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            out_pipe = new DataOutputStream(socket.getOutputStream());
+
+            if (DEBUG >= 1) {
+                System.out.println("RAISocketAI: waiting for in_pipe ready");
+            }
+
+            // Consume the initial welcoming messages from the server
+            while (!in_pipe.ready())
+                ;
+            if (DEBUG >= 1) {
+                System.out.println("RAISocketAI: comsuming initial messages");
+            }
+            while (in_pipe.ready())
+                in_pipe.readLine();
+
+            if (DEBUG >= 1)
+                System.out.println("RAISocketAI: welcome message received");
+
+            reset();
         }
-        in_pipe = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-        out_pipe = new DataOutputStream(socket.getOutputStream());
-
-        // Consume the initial welcoming messages from the server
-        while (!in_pipe.ready())
-            ;
-        while (in_pipe.ready())
-            in_pipe.readLine();
-
-        if (DEBUG >= 1)
-            System.out.println("SocketAI: welcome message received");
-
-        reset();
-    }
-
-    public void close() throws Exception {
-        socket.close();
     }
 
     public void send(String s) throws Exception {
@@ -158,7 +179,7 @@ public class RAISocketAI extends AIWithComputationBudget {
             send(sw.toString());
 
             if (DEBUG >= 1)
-                System.out.println("SocketAI: UTT sent, waiting for ack");
+                System.out.println("RAISocketAI: UTT sent, waiting for ack");
 
             // wait for ack:
             in_pipe.readLine();
@@ -167,7 +188,7 @@ public class RAISocketAI extends AIWithComputationBudget {
             while (in_pipe.ready())
                 in_pipe.readLine();
             if (DEBUG >= 1)
-                System.out.println("SocketAI: ack received");
+                System.out.println("RAISocketAI: ack received");
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -190,7 +211,13 @@ public class RAISocketAI extends AIWithComputationBudget {
         mapData.put("width", pgs.getWidth());
         sw.append(gson.toJson(mapData));
 
+        if (DEBUG >= 1)
+            System.out.println("RAISocketAI: getAction sending");
+
         send(sw.toString());
+
+        if (DEBUG >= 1)
+            System.out.println("RAISocketAI: getAction sent, waiting for actions");
 
         String actionString = in_pipe.readLine();
         Type int2d = new TypeToken<int[][]>() {
@@ -198,6 +225,10 @@ public class RAISocketAI extends AIWithComputationBudget {
         int[][] actionVector = gson.fromJson(actionString, int2d);
         PlayerAction pa = PlayerAction.fromVectorAction(actionVector, gs, utt, player, maxAttackDiameter);
         pa.fillWithNones(gs, player, 1);
+
+        if (DEBUG >= 1)
+            System.out.println("RAISocketAI: actions received");
+
         return pa;
     }
 
@@ -214,12 +245,12 @@ public class RAISocketAI extends AIWithComputationBudget {
 
         // wait for ack:
         in_pipe.readLine();
-
-        close();
     }
 
     @Override
     public AI clone() {
+        if (DEBUG >= 1)
+            System.out.println("RAISocketAI: cloning");
         return new RAISocketAI(TIME_BUDGET, ITERATIONS_BUDGET, serverAddress, serverPort, utt);
     }
 

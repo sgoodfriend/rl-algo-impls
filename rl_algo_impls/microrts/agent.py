@@ -32,9 +32,12 @@ if __name__ == "__main__":
 
     obs = env.reset()
     action_mask = get_action_mask()
-    done = False
-    while not done:
+    # Runs forever. Java process expected to terminate on own.
+    while True:
         act = policy.act(obs, deterministic=False, action_masks=action_mask)
         obs, _, d, _ = env.step(act)
+
+        if d[0]:
+            obs = env.reset()
+
         action_mask = get_action_mask()
-        done = d[0]

@@ -146,5 +146,6 @@ saved_models/*
 downloaded_models/*
 videos/*
 
-# Java
+# MicroRTS
 rl_algo_impls/microrts/java/bin/*
+tournament_[0-9]*

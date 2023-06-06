@@ -15,6 +15,8 @@ from rl_algo_impls.microrts.wrappers.microrts_space_transform import (
     MAX_RESOURCES,
 )
 
+SERVER_PORT = 56241
+
 
 class MicroRTSSocketEnv:
     MESSAGE_SIZE_BYTES = 8192
@@ -33,26 +35,35 @@ class MicroRTSSocketEnv:
 
     def step(self, action):
         self._send(action[0])
-        command, args = self._wait_for_message()
-        if command == "getAction":
-            self._handle_get_action(args)
-            return self.obs, np.zeros(1), np.zeros(1), [{}]
-        elif command == "gameOver":
-            winner = json.loads(args[0])
-            if winner == 0:
-                reward = 1
-            elif winner == 1:
-                reward = -1
-            else:
-                reward = 0
-
-            self._s.close()
-            return np.zeros_like(self.obs), np.ones(1) * reward, np.ones(1), [{}]
-        else:
-            raise ValueError(f"Unhandled command {command}")
+        return self._wait_for_obs()
 
     def reset(self):
+        if self.obs is not None:
+            return self.obs
+        self._wait_for_obs()
         return self.obs
+
+    def _wait_for_obs(self):
+        while True:
+            command, args = self._wait_for_message()
+            if command == "getAction":
+                self._handle_get_action(args)
+                return self.obs, np.zeros(1), np.zeros(1), [{}]
+            elif command == "gameOver":
+                winner = json.loads(args[0])
+                if winner == 0:
+                    reward = 1
+                elif winner == 1:
+                    reward = -1
+                else:
+                    reward = 0
+                self._ack()
+                empty_obs = np.zeros_like(self.obs)
+                self.obs = None
+                return empty_obs, np.ones(1) * reward, np.ones(1), [{}]
+            elif command == "utt":
+                self.utt = json.loads(args[0])
+                self._ack()
 
     def get_action_mask(self) -> np.ndarray:
         return self._action_mask
@@ -101,7 +112,7 @@ class MicroRTSSocketEnv:
 
         # Bind socket to local host and port
         try:
-            self._s.bind(("localhost", 9898))
+            self._s.bind(("localhost", SERVER_PORT))
         except socket.error as msg:
             self._logger.critical(
                 "Bind failed. Error Code : " + str(msg[0]) + " Message " + msg[1]
@@ -137,14 +148,7 @@ class MicroRTSSocketEnv:
         self._ack()
         self._logger.info("Connected with " + addr[0] + ":" + str(addr[1]))
 
-        command, args = self._wait_for_message()
-        assert command == "utt"
-        self.utt = json.loads(args[0])
-        self._ack()
-
-        command, args = self._wait_for_message()
-        assert command == "getAction"
-        self._handle_get_action(args)
+        self._wait_for_obs()
 
         high = np.dstack(
             [MAX_HP, MAX_RESOURCES, 3, len(self.utt["unitTypes"]) + 1, 6, 2]
