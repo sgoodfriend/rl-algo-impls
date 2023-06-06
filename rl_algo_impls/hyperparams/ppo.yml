@@ -507,9 +507,9 @@ Microrts-selfplay-dc-phases: &microrts-sp-dc-phases-defaults
     durations:
       - 0.3
       - 0.2
-      - 0.2
-      - 0.2
       - 0.1
+      - 0.2
+      - 0.2
 
 Microrts-selfplay-dc-phases-A10: &microrts-sp-dc-phases-a10-defaults
   <<: *microrts-sp-dc-phases-defaults
