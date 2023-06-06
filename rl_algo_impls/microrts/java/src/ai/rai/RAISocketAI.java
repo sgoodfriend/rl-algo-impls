@@ -2,16 +2,19 @@ package ai.rai;
 
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.StringWriter;
 import java.lang.reflect.Type;
 import java.net.ConnectException;
+import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -43,8 +46,7 @@ public class RAISocketAI extends AIWithComputationBudget {
         utt = a_utt;
         maxAttackDiameter = utt.getMaxAttackRange() * 2 + 1;
         try {
-            startPythonProcess();
-            connectToServer();
+            connectToServer(true);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -57,8 +59,7 @@ public class RAISocketAI extends AIWithComputationBudget {
         utt = a_utt;
         maxAttackDiameter = utt.getMaxAttackRange() * 2 + 1;
         try {
-            startPythonProcess();
-            connectToServer();
+            connectToServer(false);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -70,34 +71,16 @@ public class RAISocketAI extends AIWithComputationBudget {
         maxAttackDiameter = utt.getMaxAttackRange() * 2 + 1;
         try {
             socket = a_socket;
-
-            if (DEBUG >= 1) {
-                System.out.println("RAISocketAI: initialzing in_pipe");
-            }
             in_pipe = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            if (DEBUG >= 1) {
-                System.out.println("RAISocketAI: initialzing out_pipe");
-            }
             out_pipe = new DataOutputStream(socket.getOutputStream());
-
-            if (DEBUG >= 1) {
-                System.out.println("RAISocketAI: waiting for in_pipe ready");
-            }
 
             // Consume the initial welcoming messages from the server
             while (!in_pipe.ready())
                 ;
 
-            if (DEBUG >= 1) {
-                System.out.println("RAISocketAI: comsuming initial messages");
-            }
-
             while (in_pipe.ready())
                 in_pipe.readLine();
 
-            if (DEBUG >= 1) {
-                System.out.println("RAISocketAI: welcome message received");
-            }
             reset();
         } catch (Exception e) {
             e.printStackTrace();
@@ -116,12 +99,11 @@ public class RAISocketAI extends AIWithComputationBudget {
         return new RAISocketAI(mt, mi, a_utt, socket);
     }
 
-    public void startPythonProcess() throws Exception {
-        if (pythonProcess == null) {
-            ProcessBuilder processBuilder = new ProcessBuilder("python",
-                    "/Users/sgoodfriend/ml/rl-algo-impls/rl_algo_impls/microrts/agent.py");
-            pythonProcess = processBuilder.start();
-        }
+    private void startPythonProcess(boolean isProcessServer) throws Exception {
+        ProcessBuilder processBuilder = new ProcessBuilder("python",
+                "/Users/sgoodfriend/ml/rl-algo-impls/rl_algo_impls/microrts/agent.py", String.valueOf(serverPort),
+                String.valueOf(isProcessServer));
+        pythonProcess = processBuilder.start();
     }
 
     public void connectToServer() throws Exception {
@@ -161,6 +143,61 @@ public class RAISocketAI extends AIWithComputationBudget {
 
             reset();
         }
+    }
+
+    public void connectToServer(boolean createServer) throws Exception {
+        if (socket != null) {
+            return;
+        }
+        if (createServer) {
+            final int minEphemeralPort = 49152;
+            final int maxEphemeralPort = 65535;
+            final int maxAttempts = 20;
+
+            ServerSocket serverSocket = null;
+            for (int i = 0; serverSocket == null && i < maxAttempts; ++i) {
+                serverPort = ThreadLocalRandom.current().nextInt(minEphemeralPort, maxEphemeralPort + 1);
+                try {
+                    serverSocket = new ServerSocket(serverPort);
+                    if (DEBUG >= 1) {
+                        System.out.printf("RAISocketAI: ServerSocket started on port %d%n", serverPort);
+                    }
+                } catch (IOException e) {
+                    if (DEBUG >= 1) {
+                        System.out.printf("RAISocketAI: Port %d busy. Trying another one...%n", serverPort);
+                    }
+                }
+            }
+
+            startPythonProcess(false);
+
+            socket = serverSocket.accept();
+
+            if (DEBUG >= 1) {
+                System.out.printf("RAISocketAI: Connected to server on port %d!%n", serverPort);
+            }
+        } else {
+            startPythonProcess(true);
+
+            boolean connected = false;
+            int sleepMs = 100;
+            while (!connected) {
+                try {
+                    socket = new Socket(serverAddress, serverPort);
+                    connected = true;
+                } catch (ConnectException e) {
+                    if (DEBUG >= 1)
+                        System.out.printf("Waiting %dms for server to be ready%n", sleepMs);
+                    Thread.sleep(sleepMs);
+                    sleepMs += 100;
+                }
+            }
+        }
+
+        in_pipe = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+        out_pipe = new DataOutputStream(socket.getOutputStream());
+
+        reset();
     }
 
     public void send(String s) throws Exception {

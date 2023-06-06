@@ -7,6 +7,7 @@ root_dir = str(Path(file_path).parent.parent.parent.absolute())
 sys.path.append(root_dir)
 
 
+from rl_algo_impls.microrts.vec_env.microrts_socket_env import set_connection_info
 from rl_algo_impls.runner.config import Config, EnvHyperparams, RunArgs
 from rl_algo_impls.runner.running_utils import get_device, load_hyperparams, make_policy
 from rl_algo_impls.shared.vec_env.make_env import make_eval_env
@@ -14,6 +15,9 @@ from rl_algo_impls.shared.vec_env.make_env import make_eval_env
 MODEL_LOAD_PATH = "saved_models/ppo-Microrts-selfplay-dc-phases-A10-S1-best"
 
 if __name__ == "__main__":
+    if len(sys.argv) >= 3:
+        set_connection_info(int(sys.argv[1]), sys.argv[2] == "true")
+
     run_args = RunArgs(algo="ppo", env="Microrts-agent", seed=1)
     hyperparams = load_hyperparams(run_args.algo, run_args.env)
     config = Config(run_args, hyperparams, root_dir)

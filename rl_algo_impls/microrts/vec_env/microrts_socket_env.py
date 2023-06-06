@@ -16,20 +16,24 @@ from rl_algo_impls.microrts.wrappers.microrts_space_transform import (
 )
 
 SERVER_PORT = 56241
+IS_SERVER = True
+MESSAGE_SIZE_BYTES = 8192
+
+
+def set_connection_info(server_port: int, is_server: bool):
+    global SERVER_PORT
+    SERVER_PORT = server_port
+    global IS_SERVER
+    IS_SERVER = is_server
 
 
 class MicroRTSSocketEnv:
-    MESSAGE_SIZE_BYTES = 8192
-
     def __init__(self, logging_level=logging.NOTSET):
         self.partial_obs = False
 
         logging.basicConfig()
         self._logger = logging.getLogger("RTSServer")
         self._logger.setLevel(logging_level)
-
-        self._s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self._s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
         self._start()
 
@@ -87,7 +91,7 @@ class MicroRTSSocketEnv:
         data_length = struct.unpack("!I", self._connection.recv(4))[0]
         d = bytearray()
         while len(d) < data_length:
-            chunk = self._connection.recv(self.MESSAGE_SIZE_BYTES)
+            chunk = self._connection.recv(MESSAGE_SIZE_BYTES)
             if not chunk:
                 break
             d.extend(chunk)
@@ -100,7 +104,7 @@ class MicroRTSSocketEnv:
         self._logger.debug(message_parts[0])
         return message_parts[0], message_parts[1:]
 
-    def _start(self, start_microrts=False, properties_file=None):
+    def _start(self):
         """Start the MicroRTS server.
 
         :param start_microrts: whether to also start a MicroRTS instance along with the server. Be aware that, in order to spawn a java subprocess that will start MicroRTS, the MICRORTSPATH environment variable must be set, containing the path to the microRTS executable JAR. Defaults to False
@@ -110,42 +114,36 @@ class MicroRTSSocketEnv:
         """
         self._logger.info("Socket created")
 
-        # Bind socket to local host and port
-        try:
-            self._s.bind(("localhost", SERVER_PORT))
-        except socket.error as msg:
-            self._logger.critical(
-                "Bind failed. Error Code : " + str(msg[0]) + " Message " + msg[1]
-            )
-            self._s.close()
-            sys.exit()
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        addr = ("localhost", SERVER_PORT)
 
-        self._logger.info("Socket bind complete")
+        if IS_SERVER:
+            # Bind socket to local host and port
+            try:
+                s.bind(addr)
+            except socket.error as msg:
+                self._logger.critical(
+                    "Bind failed. Error Code : " + str(msg[0]) + " Message " + msg[1]
+                )
+                s.close()
+                sys.exit()
 
-        # Start listening on socket
-        self._s.listen(10)
-        self._logger.info("Socket now listening")
+            self._logger.info("Socket bind complete")
 
-        if start_microrts:
-            self._logger.info("Starting MicroRTS")
-            subprocess.Popen(
-                [
-                    "java",
-                    "-cp",
-                    os.environ["MICRORTSPATH"],
-                    "rts.MicroRTS",
-                    "-f",
-                    properties_file,
-                ]
-            )
-            self._logger.info("MicroRTS started")
+            # Start listening on socket
+            s.listen(10)
+            self._logger.info("Socket now listening")
 
-        # now keep talking with the client
-        self._connection, addr = self._s.accept()
+            # now keep talking with the client
+            self._connection, addr = s.accept()
+        else:
+            s.connect(addr)
+            self._connection = s
+
         self._logger.info(self._connection)
         self._logger.info(addr)
 
-        self._ack()
         self._logger.info("Connected with " + addr[0] + ":" + str(addr[1]))
 
         self._wait_for_obs()
