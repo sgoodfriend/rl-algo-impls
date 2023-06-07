@@ -6,6 +6,7 @@ package tests;
 
 import ai.core.AI;
 import ai.rai.RAISocketAI;
+import ai.abstraction.LightRush;
 import ai.abstraction.WorkerRush;
 import ai.coac.CoacAI;
 import gui.PhysicalGameStatePanel;

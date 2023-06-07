@@ -1,10 +1,9 @@
 import json
 import logging
-import os
 import socket
 import struct
-import subprocess
 import sys
+import time
 from typing import List, Tuple
 
 import gym.spaces
@@ -18,6 +17,7 @@ from rl_algo_impls.microrts.wrappers.microrts_space_transform import (
 SERVER_PORT = 56241
 IS_SERVER = True
 MESSAGE_SIZE_BYTES = 8192
+TIME_BUDGET_MS = 100
 
 
 def set_connection_info(server_port: int, is_server: bool):
@@ -30,18 +30,39 @@ def set_connection_info(server_port: int, is_server: bool):
 class MicroRTSSocketEnv:
     def __init__(self):
         self.partial_obs = False
+        self._steps_since_reset = 0
+        self._get_action_response_times = []
 
         self._logger = logging.getLogger("RTSServer")
 
         self._start()
 
     def step(self, action):
+        res_t = (time.perf_counter() - self._get_action_receive_time) * 1000
+        self._get_action_response_times.append(res_t)
+        if res_t >= TIME_BUDGET_MS:
+            self._logger.warn(
+                f"Step: {self._steps_since_reset}: "
+                f"getAction response exceed threshold {int(res_t)}"
+            )
         self._send(action[0])
         return self._wait_for_obs()
 
     def reset(self):
         if self.obs is not None:
             return self.obs
+
+        if self._steps_since_reset:
+            res_times = np.array(self._get_action_response_times)
+            self._logger.info(
+                f"Steps: {self._steps_since_reset} - "
+                f"Average Response Time: {int(np.mean(res_times))}ms (std: {int(np.std(res_times))}ms) - "
+                f"Max Response Time: {int(np.max(res_times))}ms (Step: {np.argmax(res_times)}) - "
+                f"# Over {TIME_BUDGET_MS}ms: {np.sum(res_times >= TIME_BUDGET_MS)}"
+            )
+            self._get_action_response_times.clear()
+            self._steps_since_reset = 0
+
         self._wait_for_obs()
         return self.obs
 
@@ -49,6 +70,8 @@ class MicroRTSSocketEnv:
         while True:
             command, args = self._wait_for_message()
             if command == "getAction":
+                self._steps_since_reset += 1
+                self._get_action_receive_time = time.perf_counter()
                 self._handle_get_action(args)
                 return self.obs, np.zeros(1), np.zeros(1), [{}]
             elif command == "gameOver":

@@ -17,12 +17,14 @@ MODEL_LOAD_PATH = "saved_models/ppo-Microrts-selfplay-dc-phases-A10-S1-best"
 
 
 def main():
+    sys.stderr = open("microrts_python_error.log", "w")
     logging.basicConfig(
         filename="microrts_python.log",
         filemode="w",
         format="%(name)s - %(levelname)s - %(message)s",
-        level=logging.DEBUG,
+        level=logging.INFO,
     )
+    logging.info("Log file start")
 
     if len(sys.argv) >= 3:
         set_connection_info(int(sys.argv[1]), sys.argv[2] == "true")
