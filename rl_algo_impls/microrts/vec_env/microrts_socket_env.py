@@ -36,6 +36,7 @@ class MicroRTSSocketEnv:
 
         self._logger = logging.getLogger("RTSServer")
 
+        self.obs = None
         self._start()
 
     def step(self, action):
@@ -47,7 +48,6 @@ class MicroRTSSocketEnv:
                 f"getAction response exceed threshold {int(res_t)}"
             )
         self._send(action[0])
-        gc.collect()
         return self._wait_for_obs()
 
     def reset(self):
@@ -65,6 +65,11 @@ class MicroRTSSocketEnv:
             self._get_action_response_times.clear()
             self._steps_since_reset = 0
 
+        if self._pending_ack:
+            gc.collect()
+            gc.disable()
+            self._ack()
+            self._pending_ack = False
         self._wait_for_obs()
         return self.obs
 
@@ -84,12 +89,18 @@ class MicroRTSSocketEnv:
                     reward = -1
                 else:
                     reward = 0
-                self._ack()
                 empty_obs = np.zeros_like(self.obs)
                 self.obs = None
+                gc.collect()
+                self._ack()
                 return empty_obs, np.ones(1) * reward, np.ones(1), [{}]
             elif command == "utt":
                 self.utt = json.loads(args[0])
+                self._ack()
+            elif command == "preGameAnalysis":
+                map_data = json.loads(args[0])
+                self.height = map_data["height"]
+                self.width = map_data["width"]
                 self._ack()
 
     def get_action_mask(self) -> np.ndarray:
@@ -169,7 +180,19 @@ class MicroRTSSocketEnv:
 
         self._logger.info("Connected with " + addr[0] + ":" + str(addr[1]))
 
-        self._wait_for_obs()
+        while True:
+            command, args = self._wait_for_message()
+            if command == "utt":
+                self.utt = json.loads(args[0])
+                self._ack()
+            elif command == "preGameAnalysis":
+                map_data = json.loads(args[0])
+                self.height = map_data["height"]
+                self.width = map_data["width"]
+                self._pending_ack = True
+                break
+            else:
+                raise ValueError(f"Unexpected command {command}")
 
         high = np.dstack(
             [MAX_HP, MAX_RESOURCES, 3, len(self.utt["unitTypes"]) + 1, 6, 2]

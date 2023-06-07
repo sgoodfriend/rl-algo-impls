@@ -270,8 +270,22 @@ public class RAISocketAI extends AIWithComputationBudget {
     }
 
     @Override
-    public void preGameAnalysis(GameState gs, long milliseconds, String readWriteFolder) {
+    public void preGameAnalysis(GameState gs, long milliseconds, String readWriteFolder) throws Exception {
+        Gson gson = new Gson();
 
+        PhysicalGameState pgs = gs.getPhysicalGameState();
+
+        StringWriter sw = new StringWriter();
+        sw.append("preGameAnalysis\n");
+
+        Map<String, Integer> mapData = new HashMap<>();
+        mapData.put("height", pgs.getHeight());
+        mapData.put("width", pgs.getWidth());
+        sw.append(gson.toJson(mapData));
+
+        send(sw.toString());
+
+        in_pipe.readLine();
     }
 
     @Override
