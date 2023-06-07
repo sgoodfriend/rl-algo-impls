@@ -28,12 +28,10 @@ def set_connection_info(server_port: int, is_server: bool):
 
 
 class MicroRTSSocketEnv:
-    def __init__(self, logging_level=logging.NOTSET):
+    def __init__(self):
         self.partial_obs = False
 
-        logging.basicConfig()
         self._logger = logging.getLogger("RTSServer")
-        self._logger.setLevel(logging_level)
 
         self._start()
 
