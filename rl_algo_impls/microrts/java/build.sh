@@ -1,5 +1,5 @@
 rm -rf bin rai.jar
-javac -cp "lib/*:src" -d bin $(find . -name "*.java")
+javac -cp "src:$(find lib -name "*.jar" | tr '\n' ':')" -d bin $(find . -name "*.java") --release 11
 cd bin
 find ../lib -name "gson-2.10.1.jar" | xargs -n 1 jar xvf
 rm -rf META-INF
