@@ -1,3 +1,4 @@
+import gc
 import json
 import logging
 import socket
@@ -46,6 +47,7 @@ class MicroRTSSocketEnv:
                 f"getAction response exceed threshold {int(res_t)}"
             )
         self._send(action[0])
+        gc.collect()
         return self._wait_for_obs()
 
     def reset(self):
