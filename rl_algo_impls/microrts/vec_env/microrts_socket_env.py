@@ -54,17 +54,6 @@ class MicroRTSSocketEnv:
         if self.obs is not None:
             return self.obs
 
-        if self._steps_since_reset:
-            res_times = np.array(self._get_action_response_times)
-            self._logger.info(
-                f"Steps: {self._steps_since_reset} - "
-                f"Average Response Time: {int(np.mean(res_times))}ms (std: {int(np.std(res_times))}ms) - "
-                f"Max Response Time: {int(np.max(res_times))}ms (Step: {np.argmax(res_times)}) - "
-                f"# Over {TIME_BUDGET_MS}ms: {np.sum(res_times >= TIME_BUDGET_MS)}"
-            )
-            self._get_action_response_times.clear()
-            self._steps_since_reset = 0
-
         if self._pending_ack:
             gc.collect()
             gc.disable()
@@ -91,8 +80,20 @@ class MicroRTSSocketEnv:
                     reward = 0
                 empty_obs = np.zeros_like(self.obs)
                 self.obs = None
-                gc.collect()
-                self._ack()
+
+                if self._steps_since_reset:
+                    res_times = np.array(self._get_action_response_times)
+                    self._logger.info(
+                        f"Steps: {self._steps_since_reset} - "
+                        f"Average Response Time: {int(np.mean(res_times))}ms (std: {int(np.std(res_times))}ms) - "
+                        f"Max Response Time: {int(np.max(res_times))}ms (Step: {np.argmax(res_times)}) - "
+                        f"# Over {TIME_BUDGET_MS}ms: {np.sum(res_times >= TIME_BUDGET_MS)}"
+                    )
+                    self._get_action_response_times.clear()
+                    self._steps_since_reset = 0
+
+                self._pending_ack = True
+
                 return empty_obs, np.ones(1) * reward, np.ones(1), [{}]
             elif command == "utt":
                 self.utt = json.loads(args[0])
