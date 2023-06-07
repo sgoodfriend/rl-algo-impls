@@ -271,17 +271,23 @@ public class RAISocketAI extends AIWithComputationBudget {
 
     @Override
     public void preGameAnalysis(GameState gs, long milliseconds, String readWriteFolder) throws Exception {
-        Gson gson = new Gson();
+        GameStateWrapper gsw = new GameStateWrapper(gs);
 
-        PhysicalGameState pgs = gs.getPhysicalGameState();
+        Gson gson = new Gson();
 
         StringWriter sw = new StringWriter();
         sw.append("preGameAnalysis\n");
+        sw.append(gson.toJson(gsw.getVectorObservation(0))).append("\n");
+        sw.append(gson.toJson(gsw.getMasks(0))).append("\n");
 
+        PhysicalGameState pgs = gs.getPhysicalGameState();
         Map<String, Integer> mapData = new HashMap<>();
         mapData.put("height", pgs.getHeight());
         mapData.put("width", pgs.getWidth());
         sw.append(gson.toJson(mapData));
+
+        if (DEBUG >= 1)
+            System.out.println("RAISocketAI: getAction sending");
 
         send(sw.toString());
 

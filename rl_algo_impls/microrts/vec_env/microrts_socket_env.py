@@ -40,13 +40,14 @@ class MicroRTSSocketEnv:
         self._start()
 
     def step(self, action):
-        res_t = (time.perf_counter() - self._get_action_receive_time) * 1000
-        self._get_action_response_times.append(res_t)
-        if res_t >= TIME_BUDGET_MS:
-            self._logger.warn(
-                f"Step: {self._steps_since_reset}: "
-                f"getAction response exceed threshold {int(res_t)}"
-            )
+        if self._steps_since_reset:
+            res_t = (time.perf_counter() - self._get_action_receive_time) * 1000
+            self._get_action_response_times.append(res_t)
+            if res_t >= TIME_BUDGET_MS:
+                self._logger.warn(
+                    f"Step: {self._steps_since_reset}: "
+                    f"getAction response exceed threshold {int(res_t)}"
+                )
         self._send(action[0])
         return self._wait_for_obs()
 
@@ -55,7 +56,10 @@ class MicroRTSSocketEnv:
             return self.obs
 
         if self._pending_ack:
+            gs_start = time.perf_counter()
             gc.collect()
+            gs_end = time.perf_counter()
+            self._logger.info(f"gc collect: {int((gs_end-gs_start)*1000)}ms")
             gc.disable()
             self._ack()
             self._pending_ack = False
@@ -65,9 +69,10 @@ class MicroRTSSocketEnv:
     def _wait_for_obs(self):
         while True:
             command, args = self._wait_for_message()
-            if command == "getAction":
-                self._steps_since_reset += 1
-                self._get_action_receive_time = time.perf_counter()
+            if command in {"getAction", "preGameAnalysis"}:
+                if command == "getAction":
+                    self._steps_since_reset += 1
+                    self._get_action_receive_time = time.perf_counter()
                 self._handle_get_action(args)
                 return self.obs, np.zeros(1), np.zeros(1), [{}]
             elif command == "gameOver":
@@ -181,19 +186,7 @@ class MicroRTSSocketEnv:
 
         self._logger.info("Connected with " + addr[0] + ":" + str(addr[1]))
 
-        while True:
-            command, args = self._wait_for_message()
-            if command == "utt":
-                self.utt = json.loads(args[0])
-                self._ack()
-            elif command == "preGameAnalysis":
-                map_data = json.loads(args[0])
-                self.height = map_data["height"]
-                self.width = map_data["width"]
-                self._pending_ack = True
-                break
-            else:
-                raise ValueError(f"Unexpected command {command}")
+        self._wait_for_obs()
 
         high = np.dstack(
             [MAX_HP, MAX_RESOURCES, 3, len(self.utt["unitTypes"]) + 1, 6, 2]

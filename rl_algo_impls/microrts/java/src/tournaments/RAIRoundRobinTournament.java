@@ -52,7 +52,7 @@ public class RAIRoundRobinTournament {
         final File fileToUse = new File(tournamentfolder + "/tournament.csv");
         final String tracesFolder = tournamentfolder + "/traces";
 
-        final int iterations = 10;
+        final int iterations = 1;
         final int maxGameLength = 3000;
         final int timeBudget = 100;
         final int iterationsBudget = -1;
@@ -67,7 +67,7 @@ public class RAIRoundRobinTournament {
         final Writer progress = new PrintWriter(System.out);
         RoundRobinTournament tournament = new RoundRobinTournament(Arrays.asList(AIs));
         tournament.runTournament(
-                -1,
+                0,
                 Arrays.asList(maps),
                 iterations,
                 maxGameLength,
