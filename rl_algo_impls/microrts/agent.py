@@ -1,6 +1,7 @@
 import logging
 import os
 import sys
+import time
 from pathlib import Path
 
 file_path = os.path.abspath(Path(__file__))
@@ -8,7 +9,10 @@ root_dir = str(Path(file_path).parent.parent.parent.absolute())
 sys.path.append(root_dir)
 
 
-from rl_algo_impls.microrts.vec_env.microrts_socket_env import set_connection_info
+from rl_algo_impls.microrts.vec_env.microrts_socket_env import (
+    TIME_BUDGET_MS,
+    set_connection_info,
+)
 from rl_algo_impls.runner.config import Config, EnvHyperparams, RunArgs
 from rl_algo_impls.runner.running_utils import get_device, load_hyperparams, make_policy
 from rl_algo_impls.shared.vec_env.make_env import make_eval_env
@@ -49,7 +53,11 @@ def main():
     action_mask = get_action_mask()
     # Runs forever. Java process expected to terminate on own.
     while True:
+        act_start = time.perf_counter()
         act = policy.act(obs, deterministic=False, action_masks=action_mask)
+        act_duration = (time.perf_counter() - act_start) * 1000
+        if act_duration >= TIME_BUDGET_MS:
+            logging.warn(f"act took too long: {int(act_duration)}ms")
         obs, _, d, _ = env.step(act)
 
         if d[0]:
