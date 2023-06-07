@@ -170,6 +170,7 @@ public class RAISocketAI extends AIWithComputationBudget {
 
             startPythonProcess(false);
 
+            serverSocket.setSoTimeout(20000);
             socket = serverSocket.accept();
 
             if (DEBUG >= 1) {
