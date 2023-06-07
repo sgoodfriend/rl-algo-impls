@@ -36,6 +36,7 @@ class MicroRTSSocketEnv:
 
         self._logger = logging.getLogger("RTSServer")
 
+        self._pending_gc = False
         self.obs = None
         self._start()
 
@@ -54,15 +55,6 @@ class MicroRTSSocketEnv:
     def reset(self):
         if self.obs is not None:
             return self.obs
-
-        if self._pending_ack:
-            gs_start = time.perf_counter()
-            gc.collect()
-            gs_end = time.perf_counter()
-            self._logger.info(f"gc collect: {int((gs_end-gs_start)*1000)}ms")
-            gc.disable()
-            self._ack()
-            self._pending_ack = False
         self._wait_for_obs()
         return self.obs
 
@@ -73,6 +65,8 @@ class MicroRTSSocketEnv:
                 if command == "getAction":
                     self._steps_since_reset += 1
                     self._get_action_receive_time = time.perf_counter()
+                else:
+                    self._pending_gc = True
                 self._handle_get_action(args)
                 return self.obs, np.zeros(1), np.zeros(1), [{}]
             elif command == "gameOver":
@@ -97,7 +91,8 @@ class MicroRTSSocketEnv:
                     self._get_action_response_times.clear()
                     self._steps_since_reset = 0
 
-                self._pending_ack = True
+                self._pending_gc = True
+                self._ack()
 
                 return empty_obs, np.ones(1) * reward, np.ones(1), [{}]
             elif command == "utt":
@@ -120,6 +115,13 @@ class MicroRTSSocketEnv:
         self._send()
 
     def _send(self, data=None):
+        if self._pending_gc:
+            gs_start = time.perf_counter()
+            gc.collect()
+            gs_end = time.perf_counter()
+            self._logger.info(f"gc collect: {int((gs_end-gs_start)*1000)}ms")
+            gc.disable()
+            self._pending_gc = False
         if data is not None:
             data_string = json.dumps(data)
         else:
