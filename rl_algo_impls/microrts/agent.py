@@ -7,6 +7,8 @@ from pathlib import Path
 
 import torch
 
+from rl_algo_impls.utils.timing import measure_time
+
 file_path = os.path.abspath(Path(__file__))
 root_dir = str(Path(file_path).parent.parent.parent.absolute())
 sys.path.append(root_dir)
@@ -64,7 +66,9 @@ def main():
     # Runs forever. Java process expected to terminate on own.
     while True:
         act_start = time.perf_counter()
-        act = policy.act(obs, deterministic=False, action_masks=action_mask)
+        with measure_time("policy.act"):
+            act = policy.act(obs, deterministic=False, action_masks=action_mask)
+
         act_duration = (time.perf_counter() - act_start) * 1000
         if act_duration >= TIME_BUDGET_MS:
             logging.warn(f"act took too long: {int(act_duration)}ms")
