@@ -17,6 +17,7 @@ from rl_algo_impls.shared.policy.actor_critic_network.network import (
     ActorCriticNetwork,
 )
 from rl_algo_impls.shared.policy.policy import ACTIVATION
+from rl_algo_impls.utils.timing import measure_time
 
 
 class SqueezeExcitation(nn.Module):
@@ -290,19 +291,13 @@ class DoubleConeActorCritic(ActorCriticNetwork):
 
         import time
 
-        s_ts = time.perf_counter()
-        o = self._preprocess(obs)
-        x = self.backbone(o)
-        logits = self.actor_head(x)
-        pi = GridnetDistribution(
-            int(np.prod(o.shape[-2:])), self.action_vec, logits, action_masks
-        )
-        e_ts = time.perf_counter()
-        d_ms = (e_ts - s_ts) * 1000
-        if d_ms >= 100:
-            import logging
-
-            logging.warn(f"Network took too long: {int(d_ms)}ms")
+        with measure_time("Run actor"):
+            o = self._preprocess(obs)
+            x = self.backbone(o)
+            logits = self.actor_head(x)
+            pi = GridnetDistribution(
+                int(np.prod(o.shape[-2:])), self.action_vec, logits, action_masks
+            )
 
         v = self.critic_heads(x)
         if v.shape[-1] == 1:
