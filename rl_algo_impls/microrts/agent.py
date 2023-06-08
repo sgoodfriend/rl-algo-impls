@@ -36,6 +36,7 @@ def main():
     if len(sys.argv) >= 3:
         set_connection_info(int(sys.argv[1]), bool(int(sys.argv[2])))
     if torch.get_num_threads() > 8:
+        logging.info(f"Reducing torch num_threads from {torch.get_num_threads()} to 8")
         torch.set_num_threads(8)
 
     run_args = RunArgs(algo="ppo", env="Microrts-agent", seed=1)
