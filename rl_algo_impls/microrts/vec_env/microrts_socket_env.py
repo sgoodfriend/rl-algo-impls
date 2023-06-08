@@ -116,7 +116,7 @@ class MicroRTSSocketEnv:
         else:
             data_string = ""
 
-        if self.command in {"preGameAnalysis", "gameOver"}:
+        if self.command == "preGameAnalysis":
             gc.disable()
             gc.collect()
         self._connection.send(("%s\n" % data_string).encode("utf-8"))
