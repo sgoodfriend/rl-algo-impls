@@ -288,12 +288,21 @@ class DoubleConeActorCritic(ActorCriticNetwork):
             action_masks is not None
         ), f"No mask case unhandled in {self.__class__.__name__}"
 
+        import time
+
+        s_ts = time.perf_counter()
         o = self._preprocess(obs)
         x = self.backbone(o)
         logits = self.actor_head(x)
         pi = GridnetDistribution(
             int(np.prod(o.shape[-2:])), self.action_vec, logits, action_masks
         )
+        e_ts = time.perf_counter()
+        d_ms = (e_ts - s_ts) * 1000
+        if d_ms >= 100:
+            import logging
+
+            logging.warn(f"Network took too long: {int(d_ms)}ms")
 
         v = self.critic_heads(x)
         if v.shape[-1] == 1:
