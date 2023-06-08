@@ -1,3 +1,4 @@
+import gc
 import json
 import logging
 import socket
@@ -35,7 +36,6 @@ class MicroRTSSocketEnv:
 
         self._logger = logging.getLogger("RTSServer")
 
-        self._pending_gc = False
         self.obs = None
         self._start()
 
@@ -116,6 +116,9 @@ class MicroRTSSocketEnv:
         else:
             data_string = ""
 
+        if self.command in {"preGameAnalysis", "gameOver"}:
+            gc.disable()
+            gc.collect()
         self._connection.send(("%s\n" % data_string).encode("utf-8"))
 
     def _wait_for_message(self) -> Tuple[str, List[str]]:
