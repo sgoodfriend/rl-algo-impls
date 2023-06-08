@@ -31,7 +31,7 @@ def main():
     logging.info("Log file start")
 
     if len(sys.argv) >= 3:
-        set_connection_info(int(sys.argv[1]), sys.argv[2] == "true")
+        set_connection_info(int(sys.argv[1]), bool(int(sys.argv[2])))
 
     run_args = RunArgs(algo="ppo", env="Microrts-agent", seed=1)
     hyperparams = load_hyperparams(run_args.algo, run_args.env)
