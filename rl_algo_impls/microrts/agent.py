@@ -1,8 +1,11 @@
 import logging
+import multiprocessing
 import os
 import sys
 import time
 from pathlib import Path
+
+import torch
 
 file_path = os.path.abspath(Path(__file__))
 root_dir = str(Path(file_path).parent.parent.parent.absolute())
@@ -31,7 +34,14 @@ def main():
     logging.info("Log file start")
 
     if len(sys.argv) >= 3:
-        set_connection_info(int(sys.argv[1]), sys.argv[2] == "true")
+        set_connection_info(int(sys.argv[1]), bool(int(sys.argv[2])))
+
+    MAX_TORCH_THREADS = 16
+    if torch.get_num_threads() > MAX_TORCH_THREADS:
+        logging.info(
+            f"Reducing torch num_threads from {torch.get_num_threads()} to {MAX_TORCH_THREADS}"
+        )
+        torch.set_num_threads(MAX_TORCH_THREADS)
 
     run_args = RunArgs(algo="ppo", env="Microrts-agent", seed=1)
     hyperparams = load_hyperparams(run_args.algo, run_args.env)
