@@ -33,9 +33,6 @@ dependencies = [
     "pybullet",
     "tabulate",
     "huggingface-hub",
-    "optuna",
-    "dash",
-    "kaleido",
     "PyYAML",
     "scikit-learn",
     "matplotlib >= 3.7.1"
@@ -52,6 +49,11 @@ test = [
     "flake8",
     "flake8-bugbear",
     "isort",
+]
+optuna = [
+    "optuna",
+    "dash",
+    "kaleido",
 ]
 procgen = [
     "numexpr >= 2.8.4",
@@ -80,6 +82,7 @@ lux = [
 ]
 all = [
     "rl-algo-impls[test]",
+    "rl-algo-impls[dependencies]",
     "rl-algo-impls[procgen]",
     "rl-algo-impls[microrts]",
     "rl-algo-impls[lux]",
