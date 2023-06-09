@@ -135,6 +135,7 @@ public class RAISocketAI extends AIWithComputationBudget {
 
             serverSocket.setSoTimeout(20000);
             socket = serverSocket.accept();
+            socket.setTcpNoDelay(true);
 
             if (DEBUG >= 1) {
                 System.out.printf("RAISocketAI: Connected to server on port %d!%n", serverPort);
