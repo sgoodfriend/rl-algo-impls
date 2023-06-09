@@ -102,8 +102,8 @@ public class RAISocketAI extends AIWithComputationBudget {
     }
 
     private void startPythonProcess(boolean isProcessServer) throws Exception {
-        ProcessBuilder processBuilder = new ProcessBuilder("/bin/sh", "-c",
-                String.format("nice -n -20 rai_microrts %d %d", serverPort, isProcessServer ? 1 : 0));
+        ProcessBuilder processBuilder = new ProcessBuilder("rai_microrts", String.valueOf(serverPort),
+                String.valueOf(isProcessServer ? 1 : 0));
         pythonProcess = processBuilder.start();
     }
 
