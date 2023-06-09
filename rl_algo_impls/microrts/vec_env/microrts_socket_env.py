@@ -145,7 +145,9 @@ class MicroRTSSocketEnv:
             chunk = self._connection.recv(MESSAGE_SIZE_BYTES)
             d.extend(chunk)
             if len(d) < 4:
-                self._logger.warn(f"Chunk ({chunk}) too small. Adding to buffer")
+                self._logger.debug(
+                    f"Chunk ({chunk}) too small. Adding to buffer (now size {len(d)})"
+                )
 
         sz = struct.unpack("!I", d[:4])[0]
 
@@ -155,6 +157,10 @@ class MicroRTSSocketEnv:
             if not chunk:
                 break
             d.extend(chunk)
+            if len(d) < sz:
+                self._logger.debug(
+                    f"Chunk incomplete. Chunk size: {len(chunk)}, data size: {len(d)}, goal size: {sz}"
+                )
 
         idx = 8
         t, n = struct.unpack("!II", d[:idx])
