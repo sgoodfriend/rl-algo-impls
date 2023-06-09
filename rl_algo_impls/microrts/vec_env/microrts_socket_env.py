@@ -140,12 +140,16 @@ class MicroRTSSocketEnv:
         self._connection.send(("%s\n" % data_string).encode("utf-8"))
 
     def _wait_for_message(self) -> Tuple[MessageType, List[bytearray]]:
-        chunk = self._connection.recv(MESSAGE_SIZE_BYTES)
-        if len(chunk) < 4:
-            self._logger.error(f"Chunk missing size data: {chunk}")
-        sz = struct.unpack("!I", chunk[:4])[0]
+        d = bytearray()
+        while len(d) < 4:
+            chunk = self._connection.recv(MESSAGE_SIZE_BYTES)
+            d.extend(chunk)
+            if len(d) < 4:
+                self._logger.warn(f"Chunk ({chunk}) too small. Adding to buffer")
 
-        d = bytearray(chunk[4:])
+        sz = struct.unpack("!I", d[:4])[0]
+
+        d = bytearray(d[4:])
         while len(d) < sz:
             chunk = self._connection.recv(MESSAGE_SIZE_BYTES)
             if not chunk:
