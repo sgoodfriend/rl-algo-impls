@@ -33,11 +33,6 @@ def make_microrts_env(
     normalize_load_path: Optional[str] = None,
     tb_writer: Optional[SummaryWriter] = None,
 ) -> VecEnv:
-    from rl_algo_impls.microrts.vec_env.microrts_vec_env import (
-        MicroRTSGridModeSharedMemVecEnv,
-        MicroRTSGridModeVecEnv,
-    )
-
     (
         _,  # env_type
         n_envs,
@@ -68,6 +63,10 @@ def make_microrts_env(
 
     if not is_agent:
         from gym_microrts import microrts_ai
+
+        from rl_algo_impls.microrts.vec_env.microrts_vec_env import (
+            MicroRTSGridModeVecEnv,
+        )
 
         make_kwargs = make_kwargs or {}
         self_play_kwargs = self_play_kwargs or {}
