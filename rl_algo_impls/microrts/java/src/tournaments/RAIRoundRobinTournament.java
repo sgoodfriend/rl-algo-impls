@@ -31,7 +31,7 @@ public class RAIRoundRobinTournament {
                 new mayari(utt)
         };
         final String[] maps = {
-                "maps/BroodWar/(4)BloodBath.scmB.xml"
+                "maps/16x16/basesWorkers16x16A.xml"
         };
 
         String prefix = "tournament_";
