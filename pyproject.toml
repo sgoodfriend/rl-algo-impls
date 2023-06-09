@@ -17,25 +17,15 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
 ]
 dependencies = [
-    "cmake",
-    "swig",
-    "scipy",
     "numpy >= 1.23.5, < 1.24",
     "torch",
     "torchvision",
     "tensorboard >= 2.11.2, < 2.12",
-    "AutoROM.accept-rom-license >= 0.6",
-    "stable-baselines3[extra] >= 1.7.0, < 1.8",
-    "gym[box2d] >= 0.21.0, < 0.22",
-    "pyglet == 1.5.27",
+    "stable-baselines3 >= 1.7.0, < 1.8",
+    "gym >= 0.21.0, < 0.22",
     "wandb == 0.13.10",
     "pyvirtualdisplay",
-    "pybullet",
-    "tabulate",
-    "huggingface-hub",
     "PyYAML",
-    "scikit-learn",
-    "matplotlib >= 3.7.1"
 ]
 
 [tool.setuptools]
@@ -49,6 +39,19 @@ test = [
     "flake8",
     "flake8-bugbear",
     "isort",
+]
+extra = [
+    "cmake",
+    "swig",
+    "stable-baselines3[extra] >= 1.7.0, < 1.8",
+    "gym[box2d] >= 0.21.0, < 0.22",
+    "AutoROM.accept-rom-license >= 0.6",
+    "pyglet == 1.5.27",
+    "pybullet",
+    "scikit-learn",
+    "matplotlib >= 3.7.1",
+    "tabulate",
+    "huggingface-hub",
 ]
 optuna = [
     "optuna",
@@ -82,6 +85,7 @@ lux = [
 ]
 all = [
     "rl-algo-impls[test]",
+    "rl-algo-impls[extra]",
     "rl-algo-impls[dependencies]",
     "rl-algo-impls[procgen]",
     "rl-algo-impls[microrts]",
