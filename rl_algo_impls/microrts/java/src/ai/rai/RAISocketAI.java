@@ -107,45 +107,6 @@ public class RAISocketAI extends AIWithComputationBudget {
         pythonProcess = processBuilder.start();
     }
 
-    public void connectToServer() throws Exception {
-        if (socket == null) {
-            // Make connection and initialize streams
-            boolean connected = false;
-            int sleepMs = 100;
-            while (!connected) {
-                try {
-                    socket = new Socket(serverAddress, serverPort);
-                    connected = true;
-                } catch (ConnectException e) {
-                    if (DEBUG >= 1)
-                        System.out.printf("Waiting %dms for server to be ready%n", sleepMs);
-                    Thread.sleep(sleepMs);
-                    sleepMs += 100;
-                }
-            }
-            in_pipe = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            out_pipe = new DataOutputStream(socket.getOutputStream());
-
-            if (DEBUG >= 1) {
-                System.out.println("RAISocketAI: waiting for in_pipe ready");
-            }
-
-            // Consume the initial welcoming messages from the server
-            while (!in_pipe.ready())
-                ;
-            if (DEBUG >= 1) {
-                System.out.println("RAISocketAI: comsuming initial messages");
-            }
-            while (in_pipe.ready())
-                in_pipe.readLine();
-
-            if (DEBUG >= 1)
-                System.out.println("RAISocketAI: welcome message received");
-
-            reset();
-        }
-    }
-
     public void connectToServer(boolean createServer) throws Exception {
         if (socket != null) {
             return;
@@ -264,8 +225,10 @@ public class RAISocketAI extends AIWithComputationBudget {
             PhysicalGameState pgs = gs.getPhysicalGameState();
             obs.add(new byte[] { (byte) pgs.getHeight(), (byte) pgs.getWidth() });
             obs.add(gsw.getTerrain());
-            obs.add(gson.toJson(gsw.getVectorObservation(player)).getBytes(StandardCharsets.UTF_8));
-            obs.add(gson.toJson(gsw.getMasks(player)).getBytes(StandardCharsets.UTF_8));
+            if (DEBUG >= 1) {
+                obs.add(gson.toJson(gsw.getVectorObservation(player)).getBytes(StandardCharsets.UTF_8));
+                obs.add(gson.toJson(gsw.getMasks(player)).getBytes(StandardCharsets.UTF_8));
+            }
         }
 
         send(RAISocketMessageType.GET_ACTION, obs.toArray(new byte[0][]));
