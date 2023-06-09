@@ -31,7 +31,7 @@ public class RAIRoundRobinTournament {
                 new mayari(utt)
         };
         final String[] maps = {
-                "maps/16x16/basesWorkers16x16A.xml"
+                "maps/BroodWar/(4)BloodBath.scmB.xml"
         };
 
         String prefix = "tournament_";
@@ -61,7 +61,7 @@ public class RAIRoundRobinTournament {
         final int preAnalysisBudgetRestOfTimes = 1000;
         final boolean fullObservability = true;
         final boolean selfMatches = false;
-        final boolean timeoutCheck = true;
+        final boolean timeoutCheck = false;
         final boolean runGC = true;
         final boolean preAnalysis = preAnalysisBudgetFirstTimeInAMap > 0;
         final Writer out = new FileWriter(fileToUse);

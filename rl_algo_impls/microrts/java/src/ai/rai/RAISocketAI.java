@@ -9,11 +9,11 @@ import java.lang.reflect.Type;
 import java.net.ConnectException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
 import com.google.gson.Gson;
@@ -34,12 +34,14 @@ public class RAISocketAI extends AIWithComputationBudget {
     int maxAttackDiameter;
 
     String serverAddress = "127.0.0.1";
-    int serverPort = 56241;
+    int serverPort = 56242;
 
     static Process pythonProcess;
     static Socket socket;
     static BufferedReader in_pipe;
     static DataOutputStream out_pipe;
+
+    boolean sentInitialMapInformation;
 
     public RAISocketAI(UnitTypeTable a_utt) {
         super(100, -1);
@@ -200,8 +202,21 @@ public class RAISocketAI extends AIWithComputationBudget {
         reset();
     }
 
-    public void send(String s) throws Exception {
-        byte[] b = s.getBytes(StandardCharsets.UTF_8);
+    public void send(RAISocketMessageType messageType, byte[][] bs) throws Exception {
+        int sz = (2 + bs.length) * 4 + Arrays.stream(bs).mapToInt(b -> b.length).sum();
+        ByteBuffer bb = ByteBuffer.allocate(sz);
+        bb.putInt(messageType.ordinal());
+        bb.putInt(bs.length);
+        for (byte[] b : bs) {
+            bb.putInt(b.length);
+        }
+        for (byte[] b : bs) {
+            bb.put(b);
+        }
+        send(bb.array());
+    }
+
+    public void send(byte[] b) throws Exception {
         out_pipe.writeInt(b.length);
         out_pipe.write(b);
         out_pipe.flush();
@@ -210,10 +225,11 @@ public class RAISocketAI extends AIWithComputationBudget {
     @Override
     public void reset() {
         try {
+            sentInitialMapInformation = false;
+
             StringWriter sw = new StringWriter();
-            sw.append("utt\n");
             utt.toJSON(sw);
-            send(sw.toString());
+            send(RAISocketMessageType.UTT, new byte[][] { sw.toString().getBytes(StandardCharsets.UTF_8) });
 
             if (DEBUG >= 1)
                 System.out.println("RAISocketAI: UTT sent, waiting for ack");
@@ -237,21 +253,22 @@ public class RAISocketAI extends AIWithComputationBudget {
 
         Gson gson = new Gson();
 
-        StringWriter sw = new StringWriter();
-        sw.append("getAction\n");
-        sw.append(gson.toJson(gsw.getVectorObservation(player))).append("\n");
-        sw.append(gson.toJson(gsw.getMasks(player))).append("\n");
-
-        PhysicalGameState pgs = gs.getPhysicalGameState();
-        Map<String, Integer> mapData = new HashMap<>();
-        mapData.put("height", pgs.getHeight());
-        mapData.put("width", pgs.getWidth());
-        sw.append(gson.toJson(mapData));
-
         if (DEBUG >= 1)
             System.out.println("RAISocketAI: getAction sending");
 
-        send(sw.toString());
+        ArrayList<byte[]> obs = new ArrayList<>(Arrays.asList(
+                gsw.getArrayObservation(player),
+                gsw.getBinaryMask(player)));
+        if (!sentInitialMapInformation || DEBUG >= 1) {
+            sentInitialMapInformation = true;
+            PhysicalGameState pgs = gs.getPhysicalGameState();
+            obs.add(new byte[] { (byte) pgs.getHeight(), (byte) pgs.getWidth() });
+            obs.add(gsw.getTerrain());
+            obs.add(gson.toJson(gsw.getVectorObservation(player)).getBytes(StandardCharsets.UTF_8));
+            obs.add(gson.toJson(gsw.getMasks(player)).getBytes(StandardCharsets.UTF_8));
+        }
+
+        send(RAISocketMessageType.GET_ACTION, obs.toArray(new byte[0][]));
 
         if (DEBUG >= 1)
             System.out.println("RAISocketAI: getAction sent, waiting for actions");
@@ -272,33 +289,31 @@ public class RAISocketAI extends AIWithComputationBudget {
     @Override
     public void preGameAnalysis(GameState gs, long milliseconds, String readWriteFolder) throws Exception {
         GameStateWrapper gsw = new GameStateWrapper(gs);
-
-        Gson gson = new Gson();
-
-        StringWriter sw = new StringWriter();
-        sw.append("preGameAnalysis\n");
-        sw.append(gson.toJson(gsw.getVectorObservation(0))).append("\n");
-        sw.append(gson.toJson(gsw.getMasks(0))).append("\n");
-
         PhysicalGameState pgs = gs.getPhysicalGameState();
-        Map<String, Integer> mapData = new HashMap<>();
-        mapData.put("height", pgs.getHeight());
-        mapData.put("width", pgs.getWidth());
-        sw.append(gson.toJson(mapData));
 
         if (DEBUG >= 1)
-            System.out.println("RAISocketAI: getAction sending");
+            System.out.println("RAISocketAI: preGameAnalysis sending");
 
-        send(sw.toString());
+        ArrayList<byte[]> obs = new ArrayList<>(Arrays.asList(
+                gsw.getArrayObservation(0),
+                gsw.getBinaryMask(0),
+                new byte[] { (byte) pgs.getHeight(), (byte) pgs.getWidth() },
+                gsw.getTerrain()));
+        if (DEBUG >= 1) {
+            Gson gson = new Gson();
+            obs.add(gson.toJson(gsw.getVectorObservation(0)).getBytes(StandardCharsets.UTF_8));
+            obs.add(gson.toJson(gsw.getMasks(0)).getBytes(StandardCharsets.UTF_8));
+        }
+
+        send(RAISocketMessageType.PRE_GAME_ANALYSIS, obs.toArray(new byte[0][]));
+        sentInitialMapInformation = true;
 
         in_pipe.readLine();
     }
 
     @Override
     public void gameOver(int winner) throws Exception {
-        StringWriter sw = new StringWriter();
-        sw.append("gameOver\n").append(String.valueOf(winner));
-        send(sw.toString());
+        send(RAISocketMessageType.GAME_OVER, new byte[][] { new byte[] { (byte) winner } });
 
         // wait for ack:
         in_pipe.readLine();

@@ -2,6 +2,7 @@ package ai.rai;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import rts.GameState;
 import rts.PhysicalGameState;
@@ -15,7 +16,7 @@ public class GameStateWrapper {
 
     int[][][][] vectorObservation;
     public static final int numVectorObservationFeatureMaps = 6;
-
+    public static final int numArrayObservationFeatureMaps = 2 + numVectorObservationFeatureMaps - 1;
     int[][][][] masks;
 
     public GameStateWrapper(GameState a_gs) {
@@ -94,6 +95,59 @@ public class GameStateWrapper {
         return vectorObservation[player];
     }
 
+    public byte[] getTerrain() {
+        PhysicalGameState pgs = gs.getPhysicalGameState();
+        int height = pgs.getHeight();
+        int width = pgs.getWidth();
+
+        byte walls[] = new byte[height * width];
+        for (int y = 0; y < height; ++y) {
+            for (int x = 0; x < width; ++x) {
+                walls[y * width + x] = (byte) pgs.getTerrain(x, y);
+            }
+        }
+        return walls;
+    }
+
+    /**
+     * Constructs an array observation for a player (length number of units)
+     * 
+     * | Observation Features | Max | Values
+     * |----------------------|------------------------------------------------------------------|
+     * | y | 128 | Java's bytes are signed, while Python's are unsigned
+     * | x | 128 |
+     * | Hit Points | 10
+     * | Resources | 40
+     * | Owner | 3 | -, player 1, player 2)
+     * | Unit Types | 8 | -, resource, base, barrack, worker, light, heavy, ranged
+     * | Current Action | 6 | -, move, harvest, return, produce, attack
+     * 
+     * @param player
+     * @return a vector observation for the specified player
+     */
+    public byte[] getArrayObservation(int player) {
+        PhysicalGameState pgs = gs.getPhysicalGameState();
+        List<Unit> units = pgs.getUnits();
+        byte arrayObs[] = new byte[units.size() * numArrayObservationFeatureMaps];
+        for (int i = 0; i < units.size(); ++i) {
+            Unit u = units.get(i);
+            int idx = i * numArrayObservationFeatureMaps;
+            arrayObs[idx + 0] = (byte) u.getY();
+            arrayObs[idx + 1] = (byte) u.getX();
+            arrayObs[idx + 2] = (byte) u.getHitPoints();
+            arrayObs[idx + 3] = (byte) u.getResources();
+            arrayObs[idx + 4] = (byte) ((u.getPlayer() + player) % 2 + 1);
+            arrayObs[idx + 5] = (byte) (u.getType().ID + 1);
+            UnitActionAssignment uaa = gs.getActionAssignment(u);
+            if (uaa != null) {
+                arrayObs[idx + 6] = (byte) uaa.action.getType();
+            } else {
+                arrayObs[idx + 6] = (byte) UnitAction.TYPE_NONE;
+            }
+        }
+        return arrayObs;
+    }
+
     public int[][][] getMasks(int player) {
         UnitTypeTable utt = gs.getUnitTypeTable();
         PhysicalGameState pgs = gs.getPhysicalGameState();
@@ -116,5 +170,33 @@ public class GameStateWrapper {
         }
 
         return masks[player];
+    }
+
+    public byte[] getBinaryMask(int player) {
+        UnitTypeTable utt = gs.getUnitTypeTable();
+        PhysicalGameState pgs = gs.getPhysicalGameState();
+        List<Unit> units = pgs.getUnits().stream()
+                .filter(u -> u.getPlayer() == player && gs.getActionAssignment(u) == null).collect(Collectors.toList());
+
+        int maxAttackDiameter = utt.getMaxAttackRange() * 2 + 1;
+        final int maskSize = 6 + 4 + 4 + 4 + 4 + utt.getUnitTypes().size()
+                + maxAttackDiameter * maxAttackDiameter;
+        byte byteMask[] = new byte[units.size() * (2 + maskSize)];
+        int unitMask[] = new int[maskSize];
+        for (int i = 0; i < units.size(); ++i) {
+            Unit u = units.get(i);
+            int idx = i * (2 + maskSize);
+            byteMask[idx + 0] = (byte) u.getY();
+            byteMask[idx + 1] = (byte) u.getX();
+
+            UnitAction.getValidActionArray(u, gs, utt, unitMask, maxAttackDiameter, 0);
+            for (int j = 0; j < unitMask.length; ++j) {
+                byteMask[idx + 2 + j] = (byte) unitMask[j];
+            }
+
+            Arrays.fill(unitMask, 0);
+        }
+
+        return byteMask;
     }
 }

@@ -5,7 +5,8 @@ import socket
 import struct
 import sys
 import time
-from typing import List, Tuple
+from enum import Enum
+from typing import List, Optional, Tuple
 
 import gym.spaces
 import numpy as np
@@ -15,7 +16,7 @@ from rl_algo_impls.microrts.wrappers.microrts_space_transform import (
     MAX_RESOURCES,
 )
 
-SERVER_PORT = 56241
+SERVER_PORT = 56242
 IS_SERVER = True
 MESSAGE_SIZE_BYTES = 8192
 TIME_BUDGET_MS = 100
@@ -28,6 +29,16 @@ def set_connection_info(server_port: int, is_server: bool):
     IS_SERVER = is_server
 
 
+class MessageType(Enum):
+    UTT = 0
+    PRE_GAME_ANALYSIS = 1
+    GET_ACTION = 2
+    GAME_OVER = 3
+
+
+message_types = {t.value: t for t in MessageType.__members__.values()}
+
+
 class MicroRTSSocketEnv:
     def __init__(self):
         self.partial_obs = False
@@ -36,11 +47,12 @@ class MicroRTSSocketEnv:
 
         self._logger = logging.getLogger("RTSServer")
 
+        self.terrain = None
         self.obs = None
         self._start()
 
     def step(self, action):
-        if self.command == "getAction":
+        if self.command == MessageType.GET_ACTION:
             res_t = (time.perf_counter() - self._get_action_receive_time) * 1000
             self._get_action_response_times.append(res_t)
             if res_t >= TIME_BUDGET_MS:
@@ -60,14 +72,25 @@ class MicroRTSSocketEnv:
     def _wait_for_obs(self):
         while True:
             self.command, args = self._wait_for_message()
-            if self.command in {"getAction", "preGameAnalysis"}:
-                if self.command == "getAction":
+            if self.command == MessageType.UTT:
+                self.utt = json.loads(args[0].decode("utf-8"))
+                self._ack()
+            elif self.command in {
+                MessageType.PRE_GAME_ANALYSIS,
+                MessageType.GET_ACTION,
+            }:
+                if self.command == MessageType.GET_ACTION:
                     self._steps_since_reset += 1
                     self._get_action_receive_time = time.perf_counter()
-                self._handle_get_action(args)
-                return self.obs, np.zeros(1), np.zeros(1), [{}]
-            elif self.command == "gameOver":
-                winner = json.loads(args[0])
+                if len(args) >= 4:
+                    self.height = args[2][0]
+                    self.width = args[2][1]
+                    self.terrain = np.frombuffer(args[3], dtype=np.int8).reshape(
+                        (self.height, self.width)
+                    )
+                return self.parse_obs(*args[:2], *args[4:])
+            elif self.command == MessageType.GAME_OVER:
+                winner = args[0][0]
                 if winner == 0:
                     reward = 1
                 elif winner == 1:
@@ -88,17 +111,12 @@ class MicroRTSSocketEnv:
                     self._get_action_response_times.clear()
                     self._steps_since_reset = 0
 
+                self._logger.debug(f"Winner: {winner}")
                 self._ack()
 
                 return empty_obs, np.ones(1) * reward, np.ones(1), [{}]
-            elif self.command == "utt":
-                self.utt = json.loads(args[0])
-                self._ack()
-            elif self.command == "preGameAnalysis":
-                map_data = json.loads(args[0])
-                self.height = map_data["height"]
-                self.width = map_data["width"]
-                self._ack()
+            else:
+                raise ValueError(f"Unhandled command {self.command}")
 
     def get_action_mask(self) -> np.ndarray:
         return self._action_mask
@@ -116,27 +134,34 @@ class MicroRTSSocketEnv:
         else:
             data_string = ""
 
-        if self.command == "preGameAnalysis":
+        if self.command == MessageType.PRE_GAME_ANALYSIS:
             gc.disable()
             gc.collect()
         self._connection.send(("%s\n" % data_string).encode("utf-8"))
 
-    def _wait_for_message(self) -> Tuple[str, List[str]]:
-        data_length = struct.unpack("!I", self._connection.recv(4))[0]
+    def _wait_for_message(self) -> Tuple[MessageType, List[bytearray]]:
+        sz = struct.unpack("!I", self._connection.recv(4))[0]
         d = bytearray()
-        while len(d) < data_length:
+        while len(d) < sz:
             chunk = self._connection.recv(MESSAGE_SIZE_BYTES)
             if not chunk:
                 break
             d.extend(chunk)
-        environment_message = d.decode("utf-8")
 
-        if environment_message[0] == "\n":
-            return "ACK", []
-        self._logger.debug("Message: %s" % environment_message)
-        message_parts = environment_message.split("\n")
-        self._logger.debug(message_parts[0])
-        return message_parts[0], message_parts[1:]
+        idx = 8
+        t, n = struct.unpack("!II", d[:idx])
+        part_sizes = struct.unpack("!" + "I" * n, d[idx : idx + 4 * n])
+        idx += 4 * n
+        parts = []
+        for psz in part_sizes:
+            parts.append(d[idx : idx + psz])
+            idx += psz
+        assert idx == sz
+
+        message_type = message_types[t]
+
+        self._logger.debug(f"Received {message_type}, size {sz}")
+        return message_type, parts
 
     def _start(self):
         """Start the MicroRTS server.
@@ -157,9 +182,7 @@ class MicroRTSSocketEnv:
             try:
                 s.bind(addr)
             except socket.error as msg:
-                self._logger.critical(
-                    "Bind failed. Error Code : " + str(msg[0]) + " Message " + msg[1]
-                )
+                self._logger.critical(f"Bind failed. Error: {msg}")
                 s.close()
                 sys.exit()
 
@@ -182,11 +205,9 @@ class MicroRTSSocketEnv:
 
         self._wait_for_obs()
 
-        high = np.dstack(
-            [MAX_HP, MAX_RESOURCES, 3, len(self.utt["unitTypes"]) + 1, 6, 2]
-            * self.height
-            * self.width
-        ).reshape((self.height, self.width, -1))
+        high = np.dstack(self.obs_plane_space * self.height * self.width).reshape(
+            (self.height, self.width, -1)
+        )
         if self.partial_obs:
             high = np.concatenate((high, np.full((self.height, self.width, 1), 2)))
 
@@ -197,18 +218,63 @@ class MicroRTSSocketEnv:
         )
         # This should be wrapped in a gym.spaces.Sequential, but Sequential doesn't
         # exist in gym 0.21
-        self.action_space = gym.spaces.MultiDiscrete(
-            [6, 4, 4, 4, 4, len(self.utt["unitTypes"]), 7 * 7]
+        self.action_space = gym.spaces.MultiDiscrete(self.action_plane_space)
+
+    @property
+    def obs_plane_space(self) -> Tuple[int, ...]:
+        return (MAX_HP, MAX_RESOURCES, 3, len(self.utt["unitTypes"]) + 1, 6, 2)
+
+    @property
+    def action_plane_space(self) -> Tuple[int, ...]:
+        return (6, 4, 4, 4, 4, len(self.utt["unitTypes"]), 7 * 7)
+
+    def parse_obs(
+        self,
+        obs_bytes: bytearray,
+        mask_bytes: bytearray,
+        obs_json_bytes: Optional[bytearray] = None,
+        mask_json_bytes: Optional[bytearray] = None,
+    ):
+        obs_shape: Tuple[int, ...] = (len(self.obs_plane_space), self.height, self.width)  # type: ignore
+        obs_array = np.frombuffer(obs_bytes, dtype=np.int8).reshape(
+            (-1, obs_shape[0] + 1)
         )
 
-    def _handle_get_action(self, args: List[str]):
-        self.obs = np.expand_dims(np.array(json.loads(args[0])), 0)
-        self._action_mask = np.expand_dims(
-            np.array(
-                json.loads(args[1]),
-            ),
-            0,
+        self.obs = np.zeros((1,) + obs_shape, dtype=np.int8)
+        self.obs[0, -1] = self.terrain
+        self.obs[0, :-1, obs_array[:, 0], obs_array[:, 1]] = obs_array[:, 2:]
+        if obs_json_bytes:
+            obs_reference = np.expand_dims(
+                np.array(json.loads(obs_json_bytes.decode("utf-8"))), 0
+            )
+            obs_diff_indices = np.transpose(
+                np.array(np.where(self.obs != obs_reference))
+            )
+            if len(obs_diff_indices):
+                logging.error(f"Observation differences: {obs_diff_indices}")
+
+        act_plane_dim = sum(self.action_plane_space)
+        mask_array = np.frombuffer(mask_bytes, dtype=np.int8).reshape(
+            -1, act_plane_dim + 2
         )
-        map_data = json.loads(args[2])
-        self.height = map_data["height"]
-        self.width = map_data["width"]
+        self._action_mask = np.zeros(
+            (1, self.height, self.width, act_plane_dim + 1),
+            dtype=np.bool_,
+        )
+        self._action_mask[0, mask_array[:, 0], mask_array[:, 1], 0] = 1
+        self._action_mask[0, mask_array[:, 0], mask_array[:, 1], 1:] = mask_array[:, 2:]
+
+        if mask_json_bytes:
+            mask_reference = np.expand_dims(
+                np.array(
+                    json.loads(mask_json_bytes.decode("utf-8")),
+                ),
+                0,
+            )
+            mask_diff_indices = np.transpose(
+                np.array(np.where(self._action_mask != mask_reference))
+            )
+            if len(mask_diff_indices):
+                logging.error(f"Mask differences: {mask_diff_indices}")
+
+        return self.obs, np.zeros(1), np.zeros(1), [{}]
