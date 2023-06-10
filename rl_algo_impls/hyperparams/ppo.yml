@@ -479,7 +479,7 @@ Microrts-selfplay-dc-phases: &microrts-sp-dc-phases-defaults
       additional_win_loss_reward: false
       score_reward_kwargs: {}
       map_paths: [] # Use default map instead
-  policy_hyperparams:
+  policy_hyperparams: &microrts-sp-dc-phases-policy-defaults
     <<: *microrts-ai-policy-defaults
     actor_head_style: double_cone
     pooled_channels: 128
@@ -516,6 +516,24 @@ Microrts-selfplay-dc-phases-A10: &microrts-sp-dc-phases-a10-defaults
   algo_hyperparams:
     <<: *microrts-sp-dc-phases-algo-defaults
     batch_size: 2048
+
+_Microrts-A10-tweaks-base: &microrts-a10-tweaks-base
+  <<: *microrts-sp-dc-phases-a10-defaults
+  policy_hyperparams:
+    <<: *microrts-sp-dc-phases-policy-defaults
+    load_run_path: sgoodfriend/rl-algo-impls-benchmarks/df4flrs4
+    load_run_path_best: false
+
+Microrts-A10-finetuned: &microrts-a10-finetuned
+  <<: *microrts-a10-tweaks-base
+  n_timesteps: !!float 100e6
+  hyperparam_transitions_kwargs:
+    phases:
+      - multi_reward_weights: [0, 0.99, 0.01] # Win-loss sparse rewards
+        vf_coef: [0, 0.5, 0.1]
+        ent_coef: 0.001
+        learning_rate: !!float 5e-5
+    durations: [1]
 
 Microrts-selfplay-dc-phases-maps24: &microrts-sp-dc-phases-m24-defaults
   <<: *microrts-sp-dc-phases-defaults
@@ -581,7 +599,7 @@ Microrts-selfplay-dc-phases-final: &microrts-sp-dc-phases-final-defaults
       - 0.1
 
 Microrts-selfplay-dc-phases-debug: &microrts-sp-dc-phases-debug-defaults
-  <<: *microrts-sp-dc-phases-a10-defaults
+  <<: *microrts-a10-finetuned
   eval_hyperparams:
     <<: *microrts-sp-dc-phases-eval-defaults
     step_freq: !!float 1e5
