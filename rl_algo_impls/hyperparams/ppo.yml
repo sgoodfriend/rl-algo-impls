@@ -535,6 +535,30 @@ Microrts-A10-finetuned: &microrts-a10-finetuned
         learning_rate: !!float 5e-5
     durations: [1]
 
+Microrts-A10-finetuned-shaped: &microrts-a10-finetuned-shaped
+  <<: *microrts-a10-tweaks-base
+  n_timesteps: !!float 100e6
+  hyperparam_transitions_kwargs:
+    phases:
+      - multi_reward_weights: [0, 0.99, 0.01] # Win-loss sparse rewards
+        vf_coef: [0, 0.4, 0.2]
+        ent_coef: 0.01
+        learning_rate: !!float 1e-5
+      - multi_reward_weights: [0, 0.5, 0.5] # Win-loss + Score delta
+        vf_coef: [0, 0.4, 0.4]
+        ent_coef: 0.01
+        learning_rate: !!float 1e-4
+      - multi_reward_weights: [0, 0.99, 0.01] # Win-loss sparse rewards
+        vf_coef: [0, 0.5, 0.1]
+        ent_coef: 0.001
+        learning_rate: !!float 5e-5
+    durations:
+      - 0
+      - 0.1
+      - 0.25
+      - 0.2
+      - 0.45
+
 Microrts-selfplay-dc-phases-maps24: &microrts-sp-dc-phases-m24-defaults
   <<: *microrts-sp-dc-phases-defaults
   env_hyperparams:
@@ -599,7 +623,7 @@ Microrts-selfplay-dc-phases-final: &microrts-sp-dc-phases-final-defaults
       - 0.1
 
 Microrts-selfplay-dc-phases-debug: &microrts-sp-dc-phases-debug-defaults
-  <<: *microrts-a10-finetuned
+  <<: *microrts-a10-finetuned-shaped
   eval_hyperparams:
     <<: *microrts-sp-dc-phases-eval-defaults
     step_freq: !!float 1e5
