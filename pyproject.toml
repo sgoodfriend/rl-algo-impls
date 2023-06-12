@@ -1,6 +1,6 @@
 [project]
 name = "rl_algo_impls"
-version = "0.0.15"
+version = "0.0.16"
 description = "Implementations of reinforcement learning algorithms"
 authors = [
     {name = "Scott Goodfriend", email = "goodfriend.scott@gmail.com"},
@@ -29,7 +29,7 @@ dependencies = [
 ]
 
 [tool.setuptools]
-packages = ["rl_algo_impls"]
+packages = ["rl_algo_impls", "rai_microrts_saved_models"]
 
 [project.optional-dependencies]
 test = [
