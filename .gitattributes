@@ -1,1 +1,2 @@
 rai_microrts_saved_models/* filter=lfs diff=lfs merge=lfs -text
+rai_microrts_saved_models/** filter=lfs diff=lfs merge=lfs -text
