@@ -55,7 +55,7 @@ import tests.RAIGridnetClientSelfPlay;
  * 
  */
 public class RAIGridnetVecClient {
-    public JNIGridnetClient[] clients;
+    public RAIGridnetClient[] clients;
     public RAIGridnetClientSelfPlay[] selfPlayClients;
     public JNIBotClient[] botClients;
     public int maxSteps;
@@ -94,14 +94,14 @@ public class RAIGridnetVecClient {
             selfPlayClients[i] = new RAIGridnetClientSelfPlay(a_rfs, a_micrortsPath, mapPaths[i * 2], a_utt,
                     partialObs);
         }
-        clients = new JNIGridnetClient[a_num_envs];
+        clients = new RAIGridnetClient[a_num_envs];
         for (int i = 0; i < clients.length; i++) {
-            clients[i] = new JNIGridnetClient(a_rfs, a_micrortsPath, mapPaths[a_num_selfplayenvs + i], a_ai2s[i], a_utt,
+            clients[i] = new RAIGridnetClient(a_rfs, a_micrortsPath, mapPaths[a_num_selfplayenvs + i], a_ai2s[i], a_utt,
                     partialObs);
         }
 
         // initialize storage
-        Response r = new JNIGridnetClient(a_rfs, a_micrortsPath, mapPaths[0], new PassiveAI(a_utt), a_utt, partialObs)
+        Response r = new RAIGridnetClient(a_rfs, a_micrortsPath, mapPaths[0], new PassiveAI(a_utt), a_utt, partialObs)
                 .reset(0);
         int s1 = a_num_selfplayenvs + a_num_envs, s2 = r.observation.length, s3 = r.observation[0].length,
                 s4 = r.observation[0][0].length;
@@ -268,7 +268,7 @@ public class RAIGridnetVecClient {
 
     public void close() throws Exception {
         if (clients != null) {
-            for (JNIGridnetClient client : clients) {
+            for (RAIGridnetClient client : clients) {
                 client.close();
             }
         }
