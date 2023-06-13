@@ -5,11 +5,11 @@ import sys
 import warnings
 import xml.etree.ElementTree as ET
 from itertools import cycle
-from typing import Any, Dict, List, TypeVar
+from pathlib import Path
+from typing import Any, Dict, List, Tuple, TypeVar
 
 import gym
 import gym.spaces
-import gym_microrts
 import jpype
 import jpype.imports
 import numpy as np
@@ -21,28 +21,6 @@ from rl_algo_impls.microrts.wrappers.microrts_space_transform import (
     MAX_HP,
     MAX_RESOURCES,
 )
-
-MICRORTS_INSTALLTION_MESSAGE = """
-
-`microrts.jar` not found in `gym-microrts/microrts` folder. 
-Please make sure you have recursively cloned the microrts repository,
-and build the microrts.jar.
-
-If you already has cloned the gym-microrts repo, you can run the following command:
-
-$ git submodule update --init --recursive
-bash build.sh &> build.log
-python hello_world.py
-
-
-Otherwise feel free to start from scratch:
-
-$ git clone --recursive https://github.com/vwxyzjn/gym-microrts.git && \
-cd gym-microrts 
-poetry install
-bash build.sh &> build.log
-python hello_world.py
-"""
 
 MICRORTS_MAC_OS_RENDER_MESSAGE = """
 gym-microrts render is not available on MacOS. See https://github.com/jpype-project/jpype/issues/906
@@ -102,7 +80,7 @@ class MicroRTSGridModeVecEnv:
             ), "if multiple maps are provided, they should be provided for each environment"
         self.reward_weight = reward_weight
 
-        self.microrts_path = os.path.join(gym_microrts.__path__[0], "microrts")
+        self.microrts_path = os.path.join(Path(__file__).parent.parent, "java")
 
         # prepare training maps
         self.cycle_maps = list(
@@ -110,10 +88,8 @@ class MicroRTSGridModeVecEnv:
         )
         self.next_map = cycle(self.cycle_maps)
 
-        # read map
-        if not os.path.exists(f"{self.microrts_path}/microrts.jar"):
-            raise Exception(MICRORTS_INSTALLTION_MESSAGE)
-
+        self.map_actual_heights = []
+        self.map_actual_widths = []
         self.height, self.width = (8, 8)
         for mp in map_paths:
             root = ET.parse(os.path.join(self.microrts_path, mp)).getroot()
@@ -121,13 +97,16 @@ class MicroRTSGridModeVecEnv:
             w = int(root.get("width"))
             self.height = max(self.height, h)
             self.width = max(self.width, w)
+            self.map_actual_heights.append(h)
+            self.map_actual_widths.append(w)
 
         # launch the JVM
         if not jpype._jpype.isStarted():
             registerDomain("ts", alias="tests")
             registerDomain("ai")
             jars = [
-                "microrts.jar",
+                "rai.jar",
+                "lib/microrts.jar",
                 "lib/bots/Coac.jar",
                 "lib/bots/Droplet.jar",
                 "lib/bots/GRojoA3N.jar",
@@ -171,11 +150,9 @@ class MicroRTSGridModeVecEnv:
         self.raw_names = [str(rf) for rf in self.rfs]
         self.start_client()
 
-        high = np.dstack(
-            [MAX_HP, MAX_RESOURCES, 3, len(self.utt["unitTypes"]) + 1, 6, 2]
-            * self.height
-            * self.width
-        ).reshape((self.height, self.width, -1))
+        high = np.dstack(self.obs_plane_space * self.height * self.width).reshape(
+            (self.height, self.width, -1)
+        )
         if partial_obs:
             high = np.concatenate((high, np.full((self.height, self.width, 1), 2)))
 
@@ -186,15 +163,21 @@ class MicroRTSGridModeVecEnv:
         )
         # This should be wrapped in a gym.spaces.Sequential, but Sequential doesn't
         # exist in gym 0.21
-        self.action_space = gym.spaces.MultiDiscrete(
-            [6, 4, 4, 4, 4, len(self.utt["unitTypes"]), 7 * 7]
-        )
+        self.action_space = gym.spaces.MultiDiscrete(self.action_plane_space)
 
         self.delta_rewards = np.zeros(self.num_envs, dtype=np.float32)
 
+    @property
+    def obs_plane_space(self) -> Tuple[int, ...]:
+        return (MAX_HP, MAX_RESOURCES, 3, len(self.utt["unitTypes"]) + 1, 6, 2)
+
+    @property
+    def action_plane_space(self) -> Tuple[int, ...]:
+        return (6, 4, 4, 4, 4, len(self.utt["unitTypes"]), 7 * 7)
+
     def start_client(self):
         from ai.core import AI
-        from ts import JNIGridnetVecClient as Client
+        from ts import RAIGridnetVecClient as Client
 
         self.vec_client = Client(
             self.num_selfplay_envs,
@@ -206,8 +189,6 @@ class MicroRTSGridModeVecEnv:
             JArray(AI)([ai2(self.real_utt) for ai2 in self.ai2s]),
             self.real_utt,
             self.partial_obs,
-            self.height,
-            self.width,
         )
         self.render_client = (
             self.vec_client.selfPlayClients[0]
@@ -217,11 +198,34 @@ class MicroRTSGridModeVecEnv:
         # get the unit type table
         self.utt = json.loads(str(self.render_client.sendUTT()))
 
+    def _translate_observation(self, java_observation) -> np.ndarray:
+        o = np.array(java_observation)
+        map_h = o.shape[1]
+        map_w = o.shape[2]
+        if map_h == self.height and map_w == self.width:
+            return o
+        obs = np.zeros(
+            (
+                len(self.obs_plane_space),
+                self.height,
+                self.width,
+            ),
+            dtype=o.dtype,
+        )
+        obs[-1, :, :] = 1
+        pad_h = (self.height - map_h) // 2
+        pad_w = (self.width - map_w) // 2
+        obs[:, pad_h : pad_h + map_h, pad_w : pad_w + map_w] = o
+        return obs
+
+    def _translate_observations(self, java_observations) -> np.ndarray:
+        return np.array([self._translate_observation(o) for o in java_observations])
+
     def reset(self):
         self.delta_rewards = np.zeros_like(self.delta_rewards)
 
         responses = self.vec_client.reset([0] * self.num_envs)
-        return np.array(responses.observation)
+        return self._translate_observations(responses.observation)
 
     def _encode_info(
         self, batch_rewards: np.ndarray, done: np.ndarray
@@ -255,6 +259,17 @@ class MicroRTSGridModeVecEnv:
         return infos
 
     def step_async(self, actions):
+        for idx, env_actions in enumerate(actions):
+            map_h = self.map_actual_heights[idx]
+            map_w = self.map_actual_widths[idx]
+            if map_h == self.height and map_w == self.width:
+                continue
+            pad_h = (self.height - map_h) // 2
+            pad_w = (self.width - map_w) // 2
+            for a in env_actions:
+                orig_h = a[0] // self.width
+                orig_w = a[0] % self.width
+                a[0] = (orig_h - pad_h) * map_w + orig_w - pad_w
         self.actions = JArray(JArray(JArray(JInt)))(
             [
                 JArray(JArray(JInt))([JArray(JInt)(a) for a in actions_in_env])
@@ -265,7 +280,7 @@ class MicroRTSGridModeVecEnv:
     def step_wait(self):
         responses = self.vec_client.gameStep(self.actions, [0] * self.num_envs)
         reward, done = np.array(responses.reward), np.array(responses.done)
-        obs = np.array(responses.observation)
+        obs = self._translate_observations(responses.observation)
         infos = self._encode_info(reward, done[:, 0])
         # check if it is in evaluation, if not, then change maps
         if len(self.cycle_maps) > 0:
@@ -276,7 +291,9 @@ class MicroRTSGridModeVecEnv:
                     if d:
                         self.vec_client.clients[done_idx].mapPath = next(self.next_map)
                         response = self.vec_client.clients[done_idx].reset(0)
-                        obs[done_idx] = np.array(response.observation)
+                        obs[done_idx] = self._translate_observation(
+                            response.observation
+                        )
                 # selfplay envs settings
                 else:
                     if d and done_idx % 2 == 0:
@@ -291,9 +308,13 @@ class MicroRTSGridModeVecEnv:
                         p1_response = self.vec_client.selfPlayClients[
                             done_idx // 2
                         ].getResponse(1)
-                        obs[done_idx] = np.array(p0_response.observation)
-                        obs[done_idx + 1] = np.array(p1_response.observation)
-        return np.array(obs), reward @ self.reward_weight, done[:, 0], infos
+                        obs[done_idx] = self._translate_observation(
+                            p0_response.observation
+                        )
+                        obs[done_idx + 1] = self._translate_observation(
+                            p1_response.observation
+                        )
+        return obs, reward @ self.reward_weight, done[:, 0], infos
 
     def step(self, ac):
         self.step_async(ac)
@@ -328,309 +349,22 @@ class MicroRTSGridModeVecEnv:
             jpype.shutdownJVM()
 
     def get_action_mask(self):
-        return np.array(self.vec_client.getMasks(0))
+        java_masks = self.vec_client.getMasks(0)
+        masks = []
+        for j_m in java_masks:
+            m = np.array(j_m)
+            map_h = m.shape[0]
+            map_w = m.shape[1]
+            if map_h == self.height and map_w == self.width:
+                masks.append(m)
+                continue
+            new_m = np.zeros((self.height, self.width, m.shape[-1]), dtype=m.dtype)
+            pad_h = (self.height - map_h) // 2
+            pad_w = (self.width - map_w) // 2
+            new_m[pad_h : pad_h + map_h, pad_w : pad_w + map_w] = m
+            masks.append(new_m)
+        return np.array(masks)
 
     @property
     def unwrapped(self: MicroRTSGridModeVecEnvSelf) -> MicroRTSGridModeVecEnvSelf:
         return self
-
-
-class MicroRTSBotVecEnv(MicroRTSGridModeVecEnv):
-    metadata = {"render.modes": ["human", "rgb_array"], "video.frames_per_second": 150}
-
-    def __init__(
-        self,
-        ai1s=[],
-        ai2s=[],
-        partial_obs=False,
-        max_steps=2000,
-        render_theme=2,
-        map_paths="maps/10x10/basesTwoWorkers10x10.xml",
-        reward_weight=np.array([0.0, 1.0, 0.0, 0.0, 0.0, 5.0]),
-    ):
-        self.ai1s = ai1s
-        self.ai2s = ai2s
-        assert len(ai1s) == len(
-            ai2s
-        ), "for each environment, a microrts ai should be provided"
-        self.num_envs = len(ai1s)
-        self.partial_obs = partial_obs
-        self.max_steps = max_steps
-        self.render_theme = render_theme
-        self.map_paths = map_paths
-        self.reward_weight = reward_weight
-
-        # read map
-        self.microrts_path = os.path.join(gym_microrts.__path__[0], "microrts")
-        if not os.path.exists(f"{self.microrts_path}/microrts.jar"):
-            raise Exception(MICRORTS_INSTALLTION_MESSAGE)
-        root = ET.parse(os.path.join(self.microrts_path, self.map_paths[0])).getroot()
-        self.height, self.width = int(root.get("height")), int(root.get("width"))
-
-        # launch the JVM
-        if not jpype._jpype.isStarted():
-            registerDomain("ts", alias="tests")
-            registerDomain("ai")
-            registerDomain("rts")
-            jars = [
-                "microrts.jar",
-                "lib/bots/Coac.jar",
-                "lib/bots/Droplet.jar",
-                "lib/bots/GRojoA3N.jar",
-                "lib/bots/Izanagi.jar",
-                "lib/bots/MixedBot.jar",
-                "lib/bots/TiamatBot.jar",
-                "lib/bots/UMSBot.jar",
-                "lib/bots/mayariBot.jar",  # "MindSeal.jar"
-            ]
-            for jar in jars:
-                jpype.addClassPath(os.path.join(self.microrts_path, jar))
-            jpype.startJVM(convertStrings=False)
-
-        # start microrts client
-        from rts.units import UnitTypeTable
-
-        self.real_utt = UnitTypeTable(UTT_VERSION_ORIGINAL_FINETUNED)
-        from ai.reward import (
-            AttackRewardFunction,
-            ProduceBuildingRewardFunction,
-            ProduceCombatUnitRewardFunction,
-            ProduceWorkerRewardFunction,
-            ResourceGatherRewardFunction,
-            RewardFunctionInterface,
-            ScoreRewardFunction,
-            WinLossRewardFunction,
-        )
-
-        self.rfs = JArray(RewardFunctionInterface)(
-            [
-                WinLossRewardFunction(),
-                ResourceGatherRewardFunction(),
-                ProduceWorkerRewardFunction(),
-                ProduceBuildingRewardFunction(),
-                AttackRewardFunction(),
-                ProduceCombatUnitRewardFunction(),
-                ScoreRewardFunction(),
-                # CloserToEnemyBaseRewardFunction(),
-            ]
-        )
-        self.raw_names = [str(rf) for rf in self.rfs]
-        self.start_client()
-
-        # computed properties
-        # [num_planes_hp(5), num_planes_resources(5), num_planes_player(5),
-        # num_planes_unit_type(z), num_planes_unit_action(6)]
-
-        self.one_hot_planes = [5, 5, 3, len(self.utt["unitTypes"]) + 1, 6]
-        if partial_obs:
-            self.one_hot_planes = [5, 5, 3, len(self.utt["unitTypes"]) + 1, 6, 2]
-        self.observation_space = gym.spaces.Discrete(2)
-        self.action_space = gym.spaces.Discrete(2)
-
-    def start_client(self):
-        from ai.core import AI
-        from ts import JNIGridnetVecClient as Client
-
-        self.vec_client = Client(
-            self.max_steps,
-            self.rfs,
-            os.path.expanduser(self.microrts_path),
-            self.map_paths,
-            JArray(AI)([ai1(self.real_utt) for ai1 in self.ai1s]),
-            JArray(AI)([ai2(self.real_utt) for ai2 in self.ai2s]),
-            self.real_utt,
-            self.partial_obs,
-            self.height,
-            self.width,
-        )
-        self.render_client = self.vec_client.botClients[0]
-        # get the unit type table
-        self.utt = json.loads(str(self.render_client.sendUTT()))
-
-    def reset(self):
-        responses = self.vec_client.reset([0 for _ in range(self.num_envs)])
-        raw_obs, reward, done, info = (
-            np.ones((self.num_envs, 2)),
-            np.array(responses.reward),
-            np.array(responses.done),
-            {},
-        )
-        return raw_obs
-
-    def step_async(self, actions):
-        self.actions = actions
-
-    def step_wait(self):
-        responses = self.vec_client.gameStep(
-            self.actions, [0 for _ in range(self.num_envs)]
-        )
-        raw_obs, reward, done = (
-            np.ones((self.num_envs, 2)),
-            np.array(responses.reward),
-            np.array(responses.done),
-        )
-        infos = [{"raw_rewards": item} for item in reward]
-        return raw_obs, reward @ self.reward_weight, done[:, 0], infos
-
-
-class MicroRTSGridModeSharedMemVecEnv(MicroRTSGridModeVecEnv):
-    """
-    Similar function to `MicroRTSGridModeVecEnv` but uses shared mem buffers for
-    zero-copy data exchange between NumPy and JVM runtimes. Drastically improves
-    performance of the environment with some limitations introduced to the API.
-    Notably, all games should be performed on the same map.
-    """
-
-    def __init__(
-        self,
-        num_selfplay_envs,
-        num_bot_envs,
-        partial_obs=False,
-        max_steps=2000,
-        render_theme=2,
-        frame_skip=0,
-        ai2s=[],
-        map_paths=["maps/10x10/basesTwoWorkers10x10.xml"],
-        reward_weight=np.array([0.0, 1.0, 0.0, 0.0, 0.0, 5.0]),
-        cycle_maps=[],
-    ):
-        if len(map_paths) > 1 and len(set(map_paths)) > 1:
-            raise ValueError(
-                "Mem shared environment requires all games to be played on the same map."
-            )
-
-        super(MicroRTSGridModeSharedMemVecEnv, self).__init__(
-            num_selfplay_envs,
-            num_bot_envs,
-            partial_obs,
-            max_steps,
-            render_theme,
-            frame_skip,
-            ai2s,
-            map_paths,
-            reward_weight,
-            cycle_maps,
-        )
-
-    def _allocate_shared_buffer(self, nbytes):
-        from java.nio import ByteOrder
-        from jpype.nio import convertToDirectBuffer
-
-        c_buffer = bytearray(nbytes)
-        jvm_buffer = (
-            convertToDirectBuffer(c_buffer).order(ByteOrder.nativeOrder()).asIntBuffer()
-        )
-        np_buffer = np.asarray(jvm_buffer, order="C")
-        return jvm_buffer, np_buffer
-
-    def start_client(self):
-        from ai.core import AI
-        from rts import GameState
-        from ts import JNIGridnetSharedMemVecClient as Client
-
-        self.num_feature_planes = GameState.numFeaturePlanes
-        num_unit_types = len(self.real_utt.getUnitTypes())
-        self.action_space_dims = [
-            6,
-            4,
-            4,
-            4,
-            4,
-            num_unit_types,
-            (self.real_utt.getMaxAttackRange() * 2 + 1) ** 2,
-        ]
-        self.masks_dim = sum(self.action_space_dims)
-        self.action_dim = len(self.action_space_dims)
-
-        # pre-allocate shared buffers with JVM
-        obs_nbytes = (
-            self.num_envs * self.height * self.width * self.num_feature_planes * 4
-        )
-        obs_jvm_buffer, obs_np_buffer = self._allocate_shared_buffer(obs_nbytes)
-        self.obs = obs_np_buffer.reshape(
-            (self.num_envs, self.height, self.width, self.num_feature_planes)
-        )
-
-        action_mask_nbytes = (
-            self.num_envs * self.height * self.width * self.masks_dim * 4
-        )
-        action_mask_jvm_buffer, action_mask_np_buffer = self._allocate_shared_buffer(
-            action_mask_nbytes
-        )
-        self.action_mask = action_mask_np_buffer.reshape(
-            (self.num_envs, self.height * self.width, self.masks_dim)
-        )
-
-        action_nbytes = self.num_envs * self.width * self.height * self.action_dim * 4
-        action_jvm_buffer, action_np_buffer = self._allocate_shared_buffer(
-            action_nbytes
-        )
-        self.actions = action_np_buffer.reshape(
-            (self.num_envs, self.height * self.width, self.action_dim)
-        )
-
-        self.vec_client = Client(
-            self.num_selfplay_envs,
-            self.num_bot_envs,
-            self.max_steps,
-            self.rfs,
-            os.path.expanduser(self.microrts_path),
-            self.map_paths[0],
-            JArray(AI)([ai2(self.real_utt) for ai2 in self.ai2s]),
-            self.real_utt,
-            self.partial_obs,
-            obs_jvm_buffer,
-            action_mask_jvm_buffer,
-            action_jvm_buffer,
-            0,
-            self.height,
-            self.width,
-        )
-        self.render_client = (
-            self.vec_client.selfPlayClients[0]
-            if len(self.vec_client.selfPlayClients) > 0
-            else self.vec_client.clients[0]
-        )
-        # get the unit type table
-        self.utt = json.loads(str(self.render_client.sendUTT()))
-
-    def reset(self):
-        self.vec_client.reset([0] * self.num_envs)
-        return self.obs
-
-    def step_async(self, actions):
-        actions = actions.reshape(
-            (self.num_envs, self.width * self.height, self.action_dim)
-        )
-        np.copyto(self.actions, actions)
-
-    def step_wait(self):
-        responses = self.vec_client.gameStep([0] * self.num_envs)
-        reward, done = np.array(responses.reward), np.array(responses.done)
-        infos = self._encode_info(reward, done[:, 0])
-        # check if it is in evaluation, if not, then change maps
-        if len(self.cycle_maps) > 0:
-            # check if an environment is done, if done, reset the client, and replace the observation
-            for done_idx, d in enumerate(done[:, 0]):
-                # bot envs settings
-                if done_idx < self.num_bot_envs:
-                    if d:
-                        self.vec_client.clients[done_idx].mapPath = next(self.next_map)
-                        self.vec_client.clients[done_idx].reset(0)
-                        # self.obs[done_idx] = self._encode_obs(np.array(response.observation))
-                # selfplay envs settings
-                else:
-                    if d and done_idx % 2 == 0:
-                        done_idx -= self.num_bot_envs  # recalibrate the index
-                        self.vec_client.selfPlayClients[done_idx // 2].mapPath = next(
-                            self.next_map
-                        )
-                        self.vec_client.selfPlayClients[done_idx // 2].reset()
-                        # self.vec_client.selfPlayClients[done_idx // 2].reset()
-                        # self.obs[done_idx] = self._encode_obs(np.array(p0_response.observation))
-                        # self.obs[done_idx + 1] = self._encode_obs(np.array(p1_response.observation))
-        return self.obs, reward @ self.reward_weight, done[:, 0], infos
-
-    def get_action_mask(self):
-        self.vec_client.getMasks(0)
-        return self.action_mask

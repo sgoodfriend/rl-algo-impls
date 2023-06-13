@@ -62,8 +62,7 @@ def make_microrts_env(
     seed = config.seed(training=training)
 
     if not is_agent:
-        from gym_microrts import microrts_ai
-
+        from rl_algo_impls.microrts import microrts_ai
         from rl_algo_impls.microrts.vec_env.microrts_vec_env import (
             MicroRTSGridModeVecEnv,
         )
@@ -122,14 +121,16 @@ def make_microrts_env(
             n_selfplay_latest_envs = (
                 make_kwargs["num_selfplay_envs"] - n_selfplay_historical_envs
             )
-            assert (
-                n_selfplay_latest_envs % len(map_paths) == 0
-            ), "Expect num_selfplay_envs %d to be a multiple of len(map_paths) %d" % (
-                n_selfplay_latest_envs,
-                len(map_paths),
+            assert n_selfplay_latest_envs % (2 * len(map_paths)) == 0, (
+                "Expect num_selfplay_envs %d to be a multiple of twice len(map_paths) (2*%d)"
+                % (
+                    n_selfplay_latest_envs,
+                    len(map_paths),
+                )
             )
-            for i in range(n_selfplay_latest_envs):
-                _map_paths.append(map_paths[i % len(map_paths)])
+            for i in range(n_selfplay_latest_envs // 2):
+                mp = map_paths[i % len(map_paths)]
+                _map_paths.extend([mp, mp])
 
             n_bot_envs = make_kwargs["num_bot_envs"]
             assert (

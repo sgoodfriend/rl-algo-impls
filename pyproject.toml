@@ -64,16 +64,10 @@ procgen = [
     "glfw >= 1.12.0, < 1.13",
     "procgen; platform_machine=='x86_64'",
 ]
-microrts-ppo = [
-    "numpy < 1.24.0", # Support for gym-microrts < 0.6.0
-    "gym-microrts == 0.2.0", # Match ppo-implementation-details
-]
-microrts-paper = [
-    "numpy < 1.24.0", # Support for gym-microrts < 0.6.0
-    "gym-microrts == 0.3.2",
-]
 microrts = [
-    "gym-microrts @ https://github.com/sgoodfriend/MicroRTS-Py/releases/download/v0.6.2-alpha.1/gym_microrts-0.6.2a1-py3-none-any.whl",
+    "JPype1 >= 1.3.0, < 1.4",
+    "peewee >= 3.14.8, < 3.15",
+    "PettingZoo >= 1.16.0, < 1.17"
 ]
 jupyter = [
     "jupyter",
@@ -86,7 +80,7 @@ lux = [
 all = [
     "rl-algo-impls[test]",
     "rl-algo-impls[extra]",
-    "rl-algo-impls[dependencies]",
+    "rl-algo-impls[optuna]",
     "rl-algo-impls[procgen]",
     "rl-algo-impls[microrts]",
     "rl-algo-impls[lux]",
