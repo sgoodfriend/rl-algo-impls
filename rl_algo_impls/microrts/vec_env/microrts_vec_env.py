@@ -91,7 +91,7 @@ class MicroRTSGridModeVecEnv:
         self.map_actual_heights = []
         self.map_actual_widths = []
         self.height, self.width = (8, 8)
-        for mp in map_paths:
+        for mp in self.map_paths:
             root = ET.parse(os.path.join(self.microrts_path, mp)).getroot()
             h = int(root.get("height"))
             w = int(root.get("width"))
