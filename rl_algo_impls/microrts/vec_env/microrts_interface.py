@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 
-ByteArray = np.ndarray[Any, np.dtype[np.int8]]
+ByteArray = np.ndarray  # [Any, np.dtype[np.int8]] (Requires Python 3.9)
 
 
 class MicroRTSInterface(ABC):
