@@ -488,8 +488,8 @@ Microrts-selfplay-dc-phases: &microrts-sp-dc-phases-defaults
     <<: *microrts-ai-algo-defaults
     learning_rate_decay: none
     n_epochs: 2
-    gamma: [0.99, 0.999, 0.99]
-    gae_lambda: [0.95, 0.99, 0.95]
+    gamma: [0.99, 0.999, 0.999]
+    gae_lambda: [0.95, 0.99, 0.99]
   hyperparam_transitions_kwargs: &microrts-sp-dc-phases-transitions-defaults
     phases:
       - multi_reward_weights: [0.8, 0.01, 0.19] # Initial shaped rewards (mostly)
