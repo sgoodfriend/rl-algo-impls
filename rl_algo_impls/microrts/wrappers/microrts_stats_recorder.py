@@ -48,7 +48,7 @@ class MicrortsStatsRecorder(VectorableWrapper):
                     if n != "ScoreRewardFunction"
                 )
 
-                winloss = raw_rewards[raw_names.index("WinLossRewardFunction")]
+                winloss = raw_rewards[raw_names.index("RAIWinLossRewardFunction")]
                 microrts_results = {
                     "win": int(winloss == 1),
                     "draw": int(winloss == 0),

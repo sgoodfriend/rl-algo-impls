@@ -85,7 +85,7 @@ def make_microrts_env(
             make_kwargs["num_bot_envs"] = num_bot_envs
         if "reward_weight" in make_kwargs:
             # Reward Weights:
-            # WinLossRewardFunction
+            # RAIWinLossRewardFunction
             # ResourceGatherRewardFunction
             # ProduceWorkerRewardFunction
             # ProduceBuildingRewardFunction

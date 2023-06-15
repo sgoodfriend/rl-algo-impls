@@ -125,15 +125,15 @@ class MicroRTSGridModeVecEnv(MicroRTSInterface):
             ProduceBuildingRewardFunction,
             ProduceCombatUnitRewardFunction,
             ProduceWorkerRewardFunction,
+            RAIWinLossRewardFunction,
             ResourceGatherRewardFunction,
             RewardFunctionInterface,
             ScoreRewardFunction,
-            WinLossRewardFunction,
         )
 
         self.rfs = JArray(RewardFunctionInterface)(
             [
-                WinLossRewardFunction(),
+                RAIWinLossRewardFunction(),
                 ResourceGatherRewardFunction(),
                 ProduceWorkerRewardFunction(),
                 ProduceBuildingRewardFunction(),
@@ -196,7 +196,7 @@ class MicroRTSGridModeVecEnv(MicroRTSInterface):
                 },
             }
             if d:
-                winloss = rewards[self.raw_names.index("WinLossRewardFunction")]
+                winloss = rewards[self.raw_names.index("RAIWinLossRewardFunction")]
                 if np.sign(score_reward) != np.sign(winloss) and np.sign(winloss) != 0:
                     logging.warn(
                         f"score_reward {score_reward} must be same sign as winloss {winloss}"
