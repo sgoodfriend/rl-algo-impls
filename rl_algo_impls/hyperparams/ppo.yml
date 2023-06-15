@@ -576,6 +576,19 @@ Microrts-A10-finetuned-shaped: &microrts-a10-finetuned-shaped
       - 0.2
       - 0.45
 
+Microrts-A10-finetuned-coac: &microrts-a10-finetuned-coac
+  <<: *microrts-a10-finetuned-shaped
+  env_hyperparams:
+    <<: *microrts-sp-dc-phases-env-defaults
+    make_kwargs:
+      <<: *microrts-selfplay-env-make-kwargs-defaults
+      num_selfplay_envs: 12
+    self_play_kwargs:
+      <<: *microrts-selfplay-self-play-kwargs-defaults
+      num_old_policies: 0
+    bots:
+      coacAI: 12
+
 Microrts-selfplay-dc-phases-maps24: &microrts-sp-dc-phases-m24-defaults
   <<: *microrts-sp-dc-phases-defaults
   env_hyperparams:
@@ -640,18 +653,10 @@ Microrts-selfplay-dc-phases-final: &microrts-sp-dc-phases-final-defaults
       - 0.1
 
 Microrts-selfplay-dc-phases-debug: &microrts-sp-dc-phases-debug-defaults
-  <<: *microrts-a10-finetuned-shaped
+  <<: *microrts-a10-finetuned-coac
   eval_hyperparams:
     <<: *microrts-sp-dc-phases-eval-defaults
     step_freq: !!float 1e5
-    env_overrides:
-      <<: *microrts-sp-dc-phases-eval-env-overrides
-      n_envs: 24
-      bots:
-        coacAI: 12
-        randomBiasedAI: 4
-        workerRushAI: 4
-        lightRushAI: 4
 
 Microrts-agent: &microrts-agent
   <<: *microrts-sp-dc-phases-defaults

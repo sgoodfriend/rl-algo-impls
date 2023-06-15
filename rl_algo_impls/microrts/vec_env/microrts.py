@@ -107,16 +107,16 @@ def make_microrts_env(
         if map_paths:
             _map_paths = []
             n_selfplay_historical_envs = self_play_kwargs.get("num_old_policies", 0)
-            assert n_selfplay_historical_envs % (2 * len(map_paths)) == 0, (
-                "Expect num_old_policies %d to be a multiple of twice len(map_paths) (2*%d)"
+            assert n_selfplay_historical_envs % (4 * len(map_paths)) == 0, (
+                "Expect num_old_policies %d to be a multiple of 4 len(map_paths) (4*%d)"
                 % (
                     n_selfplay_historical_envs,
                     len(map_paths),
                 )
             )
-            for i in range(n_selfplay_historical_envs // 2):
+            for i in range(n_selfplay_historical_envs // 4):
                 mp = map_paths[i % len(map_paths)]
-                _map_paths.extend([mp, mp])
+                _map_paths.extend([mp] * 4)
 
             n_selfplay_latest_envs = (
                 make_kwargs["num_selfplay_envs"] - n_selfplay_historical_envs
@@ -130,17 +130,18 @@ def make_microrts_env(
             )
             for i in range(n_selfplay_latest_envs // 2):
                 mp = map_paths[i % len(map_paths)]
-                _map_paths.extend([mp, mp])
+                _map_paths.extend([mp] * 2)
 
             n_bot_envs = make_kwargs["num_bot_envs"]
             assert (
-                n_bot_envs % len(map_paths) == 0
-            ), "Expect num_bot_envs %d to be a multiple of len(map_paths) %d" % (
+                n_bot_envs % (2 * len(map_paths)) == 0
+            ), "Expect num_bot_envs %d to be a multiple of 2 len(map_paths) (2*%d)" % (
                 n_bot_envs,
                 len(map_paths),
             )
-            for i in range(n_bot_envs):
-                _map_paths.append(map_paths[i % len(map_paths)])
+            for i in range(n_bot_envs // 2):
+                mp = map_paths[i % len(map_paths)]
+                _map_paths.extend([mp] * 2)
             make_kwargs["map_paths"] = _map_paths
         make_kwargs["ai2s"] = ai2s
 
