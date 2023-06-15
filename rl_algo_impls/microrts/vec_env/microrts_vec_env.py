@@ -70,6 +70,7 @@ class MicroRTSGridModeVecEnv(MicroRTSInterface):
         self.render_theme = render_theme
         self.frame_skip = frame_skip
         self.ai2s = ai2s
+        self.players = [i % 2 for i in range(self._num_envs)]
         self.map_paths = map_paths
         if len(map_paths) == 1:
             self.map_paths = [map_paths[0] for _ in range(self.num_envs)]
@@ -174,7 +175,7 @@ class MicroRTSGridModeVecEnv(MicroRTSInterface):
     def reset(self):
         self.delta_rewards = np.zeros_like(self.delta_rewards)
 
-        responses = self.vec_client.reset([0] * self.num_envs)
+        responses = self.vec_client.reset(self.players)
         self._terrain = to_byte_array_list(responses.terrain)
         return (
             to_byte_array_list(responses.observation),
@@ -221,7 +222,7 @@ class MicroRTSGridModeVecEnv(MicroRTSInterface):
         )
 
     def step_wait(self):
-        responses = self.vec_client.gameStep(self.actions, [0] * self.num_envs)
+        responses = self.vec_client.gameStep(self.actions, self.players)
         reward, done = np.array(responses.reward), np.array(responses.done)
         obs = to_byte_array_list(responses.observation)
         mask = to_byte_array_list(responses.mask)
@@ -238,7 +239,9 @@ class MicroRTSGridModeVecEnv(MicroRTSInterface):
                     self.vec_client.selfPlayClients[done_idx // 2].mapPath = next(
                         self.next_map
                     )
-                    self.vec_client.selfPlayClients[done_idx // 2].reset(0)
+                    self.vec_client.selfPlayClients[done_idx // 2].reset(
+                        self.players[done_idx]
+                    )
                     p0_response = self.vec_client.selfPlayClients[
                         done_idx // 2
                     ].getResponse(0)
@@ -254,7 +257,9 @@ class MicroRTSGridModeVecEnv(MicroRTSInterface):
                 else:
                     env_idx = done_idx - self.num_selfplay_envs
                     self.vec_client.clients[env_idx].mapPath = next(self.next_map)
-                    response = self.vec_client.clients[env_idx].reset(0)
+                    response = self.vec_client.clients[env_idx].reset(
+                        self.players[done_idx]
+                    )
                     obs[done_idx] = np.array(response.observation)
                     mask[done_idx] = np.array(response.mask)
                     self._terrain[done_idx] = np.array(response.terrain)
