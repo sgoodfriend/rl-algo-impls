@@ -24,8 +24,9 @@ import ai.core.AI;
 import ai.jni.JNIAI;
 import ai.reward.RewardFunctionInterface;
 import ai.jni.JNIInterface;
-import ai.jni.Response;
-import ai.jni.Responses;
+import ai.rai.GameStateWrapper;
+import ai.rai.RAIResponse;
+import ai.rai.RAIResponses;
 import gui.PhysicalGameStateJFrame;
 import gui.PhysicalGameStatePanel;
 import rts.GameState;
@@ -57,7 +58,6 @@ import tests.RAIGridnetClientSelfPlay;
 public class RAIGridnetVecClient {
     public RAIGridnetClient[] clients;
     public RAIGridnetClientSelfPlay[] selfPlayClients;
-    public JNIBotClient[] botClients;
     public int maxSteps;
     public int[] envSteps;
     public RewardFunctionInterface[] rfs;
@@ -66,12 +66,13 @@ public class RAIGridnetVecClient {
     public String[] mapPaths;
 
     // storage
-    int[][][][] masks;
-    int[][][][] observation;
+    byte[][] mask;
+    byte[][] observation;
     double[][] reward;
     boolean[][] done;
-    Response[] rs;
-    Responses responses;
+    RAIResponse[] rs;
+    RAIResponses responses;
+    byte[][] terrain;
 
     double[] terminalReward1;
     boolean[] terminalRone1;
@@ -100,60 +101,21 @@ public class RAIGridnetVecClient {
                     partialObs);
         }
 
-        // initialize storage
-        Response r = new RAIGridnetClient(a_rfs, a_micrortsPath, mapPaths[0], new PassiveAI(a_utt), a_utt, partialObs)
-                .reset(0);
-        int s1 = a_num_selfplayenvs + a_num_envs, s2 = r.observation.length, s3 = r.observation[0].length,
-                s4 = r.observation[0][0].length;
-        masks = new int[s1][][][];
-        observation = new int[s1][s2][s3][s4];
+        int s1 = a_num_selfplayenvs + a_num_envs;
+        mask = new byte[s1][];
+        observation = new byte[s1][];
         reward = new double[s1][rfs.length];
         done = new boolean[s1][rfs.length];
         terminalReward1 = new double[rfs.length];
         terminalRone1 = new boolean[rfs.length];
         terminalReward2 = new double[rfs.length];
         terminalRone2 = new boolean[rfs.length];
-        responses = new Responses(null, null, null);
-        rs = new Response[s1];
+        responses = new RAIResponses(null, null, null, null, null);
+        terrain = new byte[s1][];
+        rs = new RAIResponse[s1];
     }
 
-    public RAIGridnetVecClient(int a_max_steps, RewardFunctionInterface[] a_rfs, String a_micrortsPath,
-            String[] a_mapPaths,
-            AI[] a_ai1s, AI[] a_ai2s, UnitTypeTable a_utt, boolean partial_obs) throws Exception {
-        maxSteps = a_max_steps;
-        utt = a_utt;
-        rfs = a_rfs;
-        partialObs = partial_obs;
-        mapPaths = a_mapPaths;
-
-        // initialize clients
-        botClients = new JNIBotClient[a_ai2s.length];
-        for (int i = 0; i < botClients.length; i++) {
-            botClients[i] = new JNIBotClient(a_rfs, a_micrortsPath, mapPaths[i], a_ai1s[i], a_ai2s[i], a_utt,
-                    partialObs);
-        }
-        responses = new Responses(null, null, null);
-        rs = new Response[a_ai2s.length];
-        reward = new double[a_ai2s.length][rfs.length];
-        done = new boolean[a_ai2s.length][rfs.length];
-        envSteps = new int[a_ai2s.length];
-        terminalReward1 = new double[rfs.length];
-        terminalRone1 = new boolean[rfs.length];
-    }
-
-    public Responses reset(int[] players) throws Exception {
-        if (botClients != null) {
-            for (int i = 0; i < botClients.length; i++) {
-                rs[i] = botClients[i].reset(players[i]);
-            }
-            for (int i = 0; i < rs.length; i++) {
-                // observation[i] = rs[i].observation;
-                reward[i] = rs[i].reward;
-                done[i] = rs[i].done;
-            }
-            responses.set(null, reward, done);
-            return responses;
-        }
+    public RAIResponses reset(int[] players) throws Exception {
         for (int i = 0; i < selfPlayClients.length; i++) {
             selfPlayClients[i].reset();
             rs[i * 2] = selfPlayClients[i].getResponse(0);
@@ -165,40 +127,16 @@ public class RAIGridnetVecClient {
 
         for (int i = 0; i < rs.length; i++) {
             observation[i] = rs[i].observation;
+            mask[i] = rs[i].mask;
             reward[i] = rs[i].reward;
             done[i] = rs[i].done;
+            terrain[i] = rs[i].terrain;
         }
-        responses.set(observation, reward, done);
+        responses.set(observation, mask, reward, done, terrain);
         return responses;
     }
 
-    public Responses gameStep(int[][][] action, int[] players) throws Exception {
-        if (botClients != null) {
-            for (int i = 0; i < botClients.length; i++) {
-                rs[i] = botClients[i].gameStep(players[i]);
-                envSteps[i] += 1;
-                if (rs[i].done[0] || envSteps[i] >= maxSteps) {
-                    for (int j = 0; j < terminalReward1.length; j++) {
-                        terminalReward1[j] = rs[i].reward[j];
-                        terminalRone1[j] = rs[i].done[j];
-                    }
-                    botClients[i].reset(players[i]);
-                    for (int j = 0; j < terminalReward1.length; j++) {
-                        rs[i].reward[j] = terminalReward1[j];
-                        rs[i].done[j] = terminalRone1[j];
-                    }
-                    rs[i].done[0] = true;
-                    envSteps[i] = 0;
-                }
-            }
-            for (int i = 0; i < rs.length; i++) {
-                // observation[i] = rs[i].observation;
-                reward[i] = rs[i].reward;
-                done[i] = rs[i].done;
-            }
-            responses.set(null, reward, done);
-            return responses;
-        }
+    public RAIResponses gameStep(int[][][] action, int[] players) throws Exception {
         for (int i = 0; i < selfPlayClients.length; i++) {
             selfPlayClients[i].gameStep(action[i * 2], action[i * 2 + 1]);
             rs[i * 2] = selfPlayClients[i].getResponse(0);
@@ -248,22 +186,12 @@ public class RAIGridnetVecClient {
         }
         for (int i = 0; i < rs.length; i++) {
             observation[i] = rs[i].observation;
+            mask[i] = rs[i].mask;
             reward[i] = rs[i].reward;
             done[i] = rs[i].done;
         }
-        responses.set(observation, reward, done);
+        responses.set(observation, mask, reward, done, null);
         return responses;
-    }
-
-    public int[][][][] getMasks(int player) throws Exception {
-        for (int i = 0; i < selfPlayClients.length; i++) {
-            masks[i * 2] = selfPlayClients[i].getMasks(0);
-            masks[i * 2 + 1] = selfPlayClients[i].getMasks(1);
-        }
-        for (int i = selfPlayClients.length * 2; i < masks.length; i++) {
-            masks[i] = clients[i - selfPlayClients.length * 2].getMasks(player);
-        }
-        return masks;
     }
 
     public void close() throws Exception {
@@ -275,11 +203,6 @@ public class RAIGridnetVecClient {
         if (selfPlayClients != null) {
             for (RAIGridnetClientSelfPlay client : selfPlayClients) {
                 client.close();
-            }
-        }
-        if (botClients != null) {
-            for (int i = 0; i < botClients.length; i++) {
-                botClients[i].close();
             }
         }
     }

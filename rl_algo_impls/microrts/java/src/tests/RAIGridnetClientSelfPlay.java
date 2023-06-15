@@ -16,7 +16,7 @@ import ai.core.AI;
 import ai.jni.JNIAI;
 import ai.reward.RewardFunctionInterface;
 import ai.jni.JNIInterface;
-import ai.jni.Response;
+import ai.rai.RAIResponse;
 import ai.rai.GameStateWrapper;
 import gui.PhysicalGameStateJFrame;
 import gui.PhysicalGameStatePanel;
@@ -70,7 +70,7 @@ public class RAIGridnetClientSelfPlay {
     int[][][][] masks = new int[2][][][];
     double[][] rewards = new double[2][];
     boolean[][] dones = new boolean[2][];
-    Response[] response = new Response[2];
+    RAIResponse[] response = new RAIResponse[2];
     PlayerAction[] pas = new PlayerAction[2];
 
     public RAIGridnetClientSelfPlay(RewardFunctionInterface[] a_rfs, String a_micrortsPath, String a_mapPath,
@@ -94,7 +94,7 @@ public class RAIGridnetClientSelfPlay {
                     + maxAttackRadius * maxAttackRadius];
             rewards[i] = new double[rfs.length];
             dones[i] = new boolean[rfs.length];
-            response[i] = new Response(null, null, null, null);
+            response[i] = new RAIResponse(null, null, null, null, null, null);
         }
     }
 
@@ -124,7 +124,13 @@ public class RAIGridnetClientSelfPlay {
             if (partialObs) {
                 playergs[i] = new PartiallyObservableGameState(gs, i);
             }
-            pas[i] = i == 0 ? ais[i].getAction(i, playergs[0], action1) : ais[i].getAction(i, playergs[1], action2);
+            if (i == 0) {
+                pas[i] = ais[i].getAction(i, playergs[0], action1);
+                assert pas[i].getActions().size() == action1.length;
+            } else {
+                pas[i] = ais[i].getAction(i, playergs[1], action2);
+                assert pas[i].getActions().size() == action2.length;
+            }
             gs.issueSafe(pas[i]);
             te.addPlayerAction(pas[i].clone());
         }
@@ -143,10 +149,12 @@ public class RAIGridnetClientSelfPlay {
             }
             var gsw = new GameStateWrapper(gs);
             response[i].set(
-                    gsw.getVectorObservation(i),
+                    gsw.getArrayObservation(i),
+                    gsw.getBinaryMask(i),
                     rewards[i],
                     dones[i],
-                    "{}");
+                    "{}",
+                    null);
         }
     }
 
@@ -189,16 +197,18 @@ public class RAIGridnetClientSelfPlay {
             }
             var gsw = new GameStateWrapper(gs);
             response[i].set(
-                    gsw.getVectorObservation(i),
+                    gsw.getArrayObservation(i),
+                    gsw.getBinaryMask(i),
                     rewards[i],
                     dones[i],
-                    "{}");
+                    "{}",
+                    gsw.getTerrain());
         }
 
         // return response;
     }
 
-    public Response getResponse(int player) {
+    public RAIResponse getResponse(int player) {
         return response[player];
     }
 

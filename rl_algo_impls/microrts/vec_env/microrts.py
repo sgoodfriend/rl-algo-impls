@@ -147,9 +147,7 @@ def make_microrts_env(
         envs = MicroRTSGridModeVecEnv(**make_kwargs)
     else:
         envs = MicroRTSSocketEnv()
-    envs = MicroRTSSpaceTransform(
-        envs, envs.utt, envs.height, envs.width, envs.partial_obs
-    )
+    envs = MicroRTSSpaceTransform(envs)
     envs = HwcToChwObservation(envs)
     envs = IsVectorEnv(envs)
     envs = MicrortsMaskWrapper(envs)

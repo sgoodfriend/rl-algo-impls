@@ -44,11 +44,15 @@ public class RAISocketAI extends AIWithComputationBudget {
     boolean sentInitialMapInformation;
 
     public RAISocketAI(UnitTypeTable a_utt) {
+        this(a_utt, true);
+    }
+
+    public RAISocketAI(UnitTypeTable a_utt, boolean createServer) {
         super(100, -1);
         utt = a_utt;
         maxAttackDiameter = utt.getMaxAttackRange() * 2 + 1;
         try {
-            connectToServer(true);
+            connectToServer(createServer);
         } catch (Exception e) {
             e.printStackTrace();
         }

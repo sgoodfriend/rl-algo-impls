@@ -74,10 +74,7 @@ def main():
         act_duration = (time.perf_counter() - act_start) * 1000
         if act_duration >= TIME_BUDGET_MS:
             logging.warn(f"act took too long: {int(act_duration)}ms")
-        obs, _, d, _ = env.step(act)
-
-        if d[0]:
-            obs = env.reset()
+        obs, _, _, _ = env.step(act)
 
         action_mask = get_action_mask()
 

@@ -6,10 +6,8 @@ import warnings
 import xml.etree.ElementTree as ET
 from itertools import cycle
 from pathlib import Path
-from typing import Any, Dict, List, Tuple, TypeVar
+from typing import Any, Dict, List, Optional, TypeVar
 
-import gym
-import gym.spaces
 import jpype
 import jpype.imports
 import numpy as np
@@ -17,9 +15,9 @@ from jpype.imports import registerDomain
 from jpype.types import JArray, JInt
 from PIL import Image
 
-from rl_algo_impls.microrts.wrappers.microrts_space_transform import (
-    MAX_HP,
-    MAX_RESOURCES,
+from rl_algo_impls.microrts.vec_env.microrts_interface import (
+    ByteArray,
+    MicroRTSInterface,
 )
 
 MICRORTS_MAC_OS_RENDER_MESSAGE = """
@@ -37,8 +35,9 @@ MicroRTSGridModeVecEnvSelf = TypeVar(
 UTT_VERSION_ORIGINAL_FINETUNED = 2
 
 
-class MicroRTSGridModeVecEnv:
+class MicroRTSGridModeVecEnv(MicroRTSInterface):
     metadata = {"render.modes": ["human", "rgb_array"], "video.frames_per_second": 150}
+    DEBUG_VERIFY = False
     """
     [[0]x_coordinate*y_coordinate(x*y), [1]a_t(6), [2]p_move(4), [3]p_harvest(4), 
     [4]p_return(4), [5]p_produce_direction(4), [6]p_produce_unit_type(z), 
@@ -62,11 +61,11 @@ class MicroRTSGridModeVecEnv:
     ):
         self.num_selfplay_envs = num_selfplay_envs
         self.num_bot_envs = num_bot_envs
-        self.num_envs = num_selfplay_envs + num_bot_envs
+        self._num_envs = num_selfplay_envs + num_bot_envs
         assert self.num_bot_envs == len(
             ai2s
         ), "for each environment, a microrts ai should be provided"
-        self.partial_obs = partial_obs
+        self._partial_obs = partial_obs
         self.max_steps = max_steps
         self.render_theme = render_theme
         self.frame_skip = frame_skip
@@ -88,17 +87,14 @@ class MicroRTSGridModeVecEnv:
         )
         self.next_map = cycle(self.cycle_maps)
 
-        self.map_actual_heights = []
-        self.map_actual_widths = []
-        self.height, self.width = (8, 8)
+        self._heights = []
+        self._widths = []
         for mp in self.map_paths:
             root = ET.parse(os.path.join(self.microrts_path, mp)).getroot()
             h = int(root.get("height"))
             w = int(root.get("width"))
-            self.height = max(self.height, h)
-            self.width = max(self.width, w)
-            self.map_actual_heights.append(h)
-            self.map_actual_widths.append(w)
+            self._heights.append(h)
+            self._widths.append(w)
 
         # launch the JVM
         if not jpype._jpype.isStarted():
@@ -150,30 +146,7 @@ class MicroRTSGridModeVecEnv:
         self.raw_names = [str(rf) for rf in self.rfs]
         self.start_client()
 
-        high = np.dstack(self.obs_plane_space * self.height * self.width).reshape(
-            (self.height, self.width, -1)
-        )
-        if partial_obs:
-            high = np.concatenate((high, np.full((self.height, self.width, 1), 2)))
-
-        self.observation_space = gym.spaces.Box(
-            low=0,
-            high=high,  # type: ignore
-            dtype=np.int32,
-        )
-        # This should be wrapped in a gym.spaces.Sequential, but Sequential doesn't
-        # exist in gym 0.21
-        self.action_space = gym.spaces.MultiDiscrete(self.action_plane_space)
-
         self.delta_rewards = np.zeros(self.num_envs, dtype=np.float32)
-
-    @property
-    def obs_plane_space(self) -> Tuple[int, ...]:
-        return (MAX_HP, MAX_RESOURCES, 3, len(self.utt["unitTypes"]) + 1, 6, 2)
-
-    @property
-    def action_plane_space(self) -> Tuple[int, ...]:
-        return (6, 4, 4, 4, 4, len(self.utt["unitTypes"]), 7 * 7)
 
     def start_client(self):
         from ai.core import AI
@@ -196,36 +169,17 @@ class MicroRTSGridModeVecEnv:
             else self.vec_client.clients[0]
         )
         # get the unit type table
-        self.utt = json.loads(str(self.render_client.sendUTT()))
-
-    def _translate_observation(self, java_observation) -> np.ndarray:
-        o = np.array(java_observation)
-        map_h = o.shape[1]
-        map_w = o.shape[2]
-        if map_h == self.height and map_w == self.width:
-            return o
-        obs = np.zeros(
-            (
-                len(self.obs_plane_space),
-                self.height,
-                self.width,
-            ),
-            dtype=o.dtype,
-        )
-        obs[-1, :, :] = 1
-        pad_h = (self.height - map_h) // 2
-        pad_w = (self.width - map_w) // 2
-        obs[:, pad_h : pad_h + map_h, pad_w : pad_w + map_w] = o
-        return obs
-
-    def _translate_observations(self, java_observations) -> np.ndarray:
-        return np.array([self._translate_observation(o) for o in java_observations])
+        self._utt = json.loads(str(self.render_client.sendUTT()))
 
     def reset(self):
         self.delta_rewards = np.zeros_like(self.delta_rewards)
 
         responses = self.vec_client.reset([0] * self.num_envs)
-        return self._translate_observations(responses.observation)
+        self._terrain = to_byte_array_list(responses.terrain)
+        return (
+            to_byte_array_list(responses.observation),
+            to_byte_array_list(responses.mask),
+        )
 
     def _encode_info(
         self, batch_rewards: np.ndarray, done: np.ndarray
@@ -259,17 +213,6 @@ class MicroRTSGridModeVecEnv:
         return infos
 
     def step_async(self, actions):
-        for idx, env_actions in enumerate(actions):
-            map_h = self.map_actual_heights[idx]
-            map_w = self.map_actual_widths[idx]
-            if map_h == self.height and map_w == self.width:
-                continue
-            pad_h = (self.height - map_h) // 2
-            pad_w = (self.width - map_w) // 2
-            for a in env_actions:
-                orig_h = a[0] // self.width
-                orig_w = a[0] % self.width
-                a[0] = (orig_h - pad_h) * map_w + orig_w - pad_w
         self.actions = JArray(JArray(JArray(JInt)))(
             [
                 JArray(JArray(JInt))([JArray(JInt)(a) for a in actions_in_env])
@@ -280,57 +223,71 @@ class MicroRTSGridModeVecEnv:
     def step_wait(self):
         responses = self.vec_client.gameStep(self.actions, [0] * self.num_envs)
         reward, done = np.array(responses.reward), np.array(responses.done)
-        obs = self._translate_observations(responses.observation)
+        obs = to_byte_array_list(responses.observation)
+        mask = to_byte_array_list(responses.mask)
         infos = self._encode_info(reward, done[:, 0])
         # check if it is in evaluation, if not, then change maps
         if len(self.cycle_maps) > 0:
             # check if an environment is done, if done, reset the client, and replace the observation
             for done_idx, d in enumerate(done[:, 0]):
-                # bot envs settings
-                if done_idx < self.num_bot_envs:
-                    if d:
-                        self.vec_client.clients[done_idx].mapPath = next(self.next_map)
-                        response = self.vec_client.clients[done_idx].reset(0)
-                        obs[done_idx] = self._translate_observation(
-                            response.observation
-                        )
-                # selfplay envs settings
+                if not d:
+                    continue
+                if done_idx < self.num_selfplay_envs:
+                    if done_idx % 2 == 1:
+                        continue
+                    self.vec_client.selfPlayClients[done_idx // 2].mapPath = next(
+                        self.next_map
+                    )
+                    self.vec_client.selfPlayClients[done_idx // 2].reset(0)
+                    p0_response = self.vec_client.selfPlayClients[
+                        done_idx // 2
+                    ].getResponse(0)
+                    p1_response = self.vec_client.selfPlayClients[
+                        done_idx // 2
+                    ].getResponse(1)
+                    obs[done_idx] = np.array(p0_response.observation)
+                    obs[done_idx + 1] = np.array(p1_response.observation)
+                    mask[done_idx] = np.array(p0_response.mask)
+                    mask[done_idx + 1] = np.array(p1_response.mask)
+                    self._terrain[done_idx] = np.array(p0_response.terrain)
+                    self._terrain[done_idx + 1] = np.array(p1_response.terrain)
                 else:
-                    if d and done_idx % 2 == 0:
-                        done_idx -= self.num_bot_envs  # recalibrate the index
-                        self.vec_client.selfPlayClients[done_idx // 2].mapPath = next(
-                            self.next_map
-                        )
-                        self.vec_client.selfPlayClients[done_idx // 2].reset(0)
-                        p0_response = self.vec_client.selfPlayClients[
-                            done_idx // 2
-                        ].getResponse(0)
-                        p1_response = self.vec_client.selfPlayClients[
-                            done_idx // 2
-                        ].getResponse(1)
-                        obs[done_idx] = self._translate_observation(
-                            p0_response.observation
-                        )
-                        obs[done_idx + 1] = self._translate_observation(
-                            p1_response.observation
-                        )
-        return obs, reward @ self.reward_weight, done[:, 0], infos
+                    env_idx = done_idx - self.num_selfplay_envs
+                    self.vec_client.clients[env_idx].mapPath = next(self.next_map)
+                    response = self.vec_client.clients[env_idx].reset(0)
+                    obs[done_idx] = np.array(response.observation)
+                    mask[done_idx] = np.array(response.mask)
+                    self._terrain[done_idx] = np.array(response.terrain)
+        return obs, mask, reward @ self.reward_weight, done[:, 0], infos
 
     def step(self, ac):
         self.step_async(ac)
         return self.step_wait()
 
-    def getattr_depth_check(self, name, already_found):
-        """
-        Check if an attribute reference is being hidden in a recursive call to __getattr__
-        :param name: (str) name of attribute to check for
-        :param already_found: (bool) whether this attribute has already been found in a wrapper
-        :return: (str or None) name of module whose attribute is being shadowed, if any.
-        """
-        if hasattr(self, name) and already_found:
-            return "{0}.{1}".format(type(self).__module__, type(self).__name__)
-        else:
-            return None
+    @property
+    def num_envs(self):
+        return self._num_envs
+
+    @property
+    def heights(self) -> List[int]:
+        return self._heights
+
+    @property
+    def widths(self) -> List[int]:
+        return self._widths
+
+    @property
+    def utt(self) -> Dict[str, Any]:
+        return self._utt
+
+    @property
+    def partial_obs(self) -> bool:
+        return self._partial_obs
+
+    def terrain(self, env_idx: int) -> np.ndarray:
+        return self._terrain[env_idx].reshape(
+            (self._heights[env_idx], self._widths[env_idx])
+        )
 
     def render(self, mode="human"):
         if mode == "human":
@@ -348,23 +305,37 @@ class MicroRTSGridModeVecEnv:
             self.vec_client.close()
             jpype.shutdownJVM()
 
-    def get_action_mask(self):
-        java_masks = self.vec_client.getMasks(0)
-        masks = []
-        for j_m in java_masks:
-            m = np.array(j_m)
-            map_h = m.shape[0]
-            map_w = m.shape[1]
-            if map_h == self.height and map_w == self.width:
-                masks.append(m)
-                continue
-            new_m = np.zeros((self.height, self.width, m.shape[-1]), dtype=m.dtype)
-            pad_h = (self.height - map_h) // 2
-            pad_w = (self.width - map_w) // 2
-            new_m[pad_h : pad_h + map_h, pad_w : pad_w + map_w] = m
-            masks.append(new_m)
-        return np.array(masks)
+    def debug_matrix_obs(self, env_idx: int) -> Optional[np.ndarray]:
+        if not self.DEBUG_VERIFY:
+            return None
+        from ai.rai import GameStateWrapper
 
-    @property
-    def unwrapped(self: MicroRTSGridModeVecEnvSelf) -> MicroRTSGridModeVecEnvSelf:
-        return self
+        if env_idx < self.num_selfplay_envs:
+            gsw = GameStateWrapper(self.vec_client.selfPlayClients[env_idx // 2].gs)
+            player_id = env_idx % 2
+        else:
+            gsw = GameStateWrapper(
+                self.vec_client.clients[env_idx - self.num_selfplay_envs].gs
+            )
+            player_id = 0  # TODO: Support for second player
+        return np.transpose(np.array(gsw.getVectorObservation(player_id)), (1, 2, 0))
+
+    def debug_matrix_mask(self, env_idx: int) -> Optional[np.ndarray]:
+        if not self.DEBUG_VERIFY:
+            return None
+
+        from ai.rai import GameStateWrapper
+
+        if env_idx < self.num_selfplay_envs:
+            gsw = GameStateWrapper(self.vec_client.selfPlayClients[env_idx // 2].gs)
+            player_id = env_idx % 2
+        else:
+            gsw = GameStateWrapper(
+                self.vec_client.clients[env_idx - self.num_selfplay_envs].gs
+            )
+            player_id = 0  # TODO: Support for second player
+        return np.array(gsw.getMasks(player_id))
+
+
+def to_byte_array_list(java_array) -> List[ByteArray]:
+    return [np.array(a) for a in java_array]

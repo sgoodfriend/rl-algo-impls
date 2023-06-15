@@ -15,7 +15,7 @@ import ai.core.AI;
 import ai.jni.JNIAI;
 import ai.reward.RewardFunctionInterface;
 import ai.jni.JNIInterface;
-import ai.jni.Response;
+import ai.rai.RAIResponse;
 import ai.rai.GameStateWrapper;
 import gui.PhysicalGameStateJFrame;
 import gui.PhysicalGameStatePanel;
@@ -68,7 +68,7 @@ public class RAIGridnetClient {
     int[][][] masks;
     double[] rewards;
     boolean[] dones;
-    Response response;
+    RAIResponse response;
     PlayerAction pa1;
     PlayerAction pa2;
 
@@ -96,7 +96,7 @@ public class RAIGridnetClient {
                 + maxAttackRadius * maxAttackRadius];
         rewards = new double[rfs.length];
         dones = new boolean[rfs.length];
-        response = new Response(null, null, null, null);
+        response = new RAIResponse(null, null, null, null, null, null);
     }
 
     public byte[] render(boolean returnPixels) throws Exception {
@@ -118,7 +118,7 @@ public class RAIGridnetClient {
         return data.getData();
     }
 
-    public Response gameStep(int[][] action, int player) throws Exception {
+    public RAIResponse gameStep(int[][] action, int player) throws Exception {
         if (partialObs) {
             player1gs = new PartiallyObservableGameState(gs, player);
             player2gs = new PartiallyObservableGameState(gs, 1 - player);
@@ -127,6 +127,7 @@ public class RAIGridnetClient {
             player2gs = gs;
         }
         pa1 = ai1.getAction(player, player1gs, action);
+        assert pa1.getActions().size() == action.length;
         pa2 = ai2.getAction(1 - player, player2gs);
         gs.issueSafe(pa1);
         gs.issueSafe(pa2);
@@ -147,10 +148,12 @@ public class RAIGridnetClient {
         }
         var gsw = new GameStateWrapper(gs);
         response.set(
-                gsw.getVectorObservation(player),
+                gsw.getArrayObservation(player),
+                gsw.getBinaryMask(player),
                 rewards,
                 dones,
-                ai1.computeInfo(player, player2gs));
+                ai1.computeInfo(player, player2gs),
+                null);
         return response;
     }
 
@@ -178,7 +181,7 @@ public class RAIGridnetClient {
         return w.toString(); // now it works fine
     }
 
-    public Response reset(int player) throws Exception {
+    public RAIResponse reset(int player) throws Exception {
         ai1.reset();
         ai2 = ai2.clone();
         ai2.reset();
@@ -196,10 +199,12 @@ public class RAIGridnetClient {
         }
         var gsw = new GameStateWrapper(gs);
         response.set(
-                gsw.getVectorObservation(player),
+                gsw.getArrayObservation(player),
+                gsw.getBinaryMask(player),
                 rewards,
                 dones,
-                "{}");
+                "{}",
+                gsw.getTerrain());
         return response;
     }
 
