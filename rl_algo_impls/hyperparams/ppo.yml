@@ -513,7 +513,7 @@ Microrts-selfplay-dc-phases: &microrts-sp-dc-phases-defaults
 
 Microrts-selfplay-dc-phases-A10: &microrts-sp-dc-phases-a10-defaults
   <<: *microrts-sp-dc-phases-defaults
-  algo_hyperparams:
+  algo_hyperparams: &microrts-sp-dc-phases-a10-algo-defaults
     <<: *microrts-sp-dc-phases-algo-defaults
     batch_size: 2048
 
@@ -552,7 +552,7 @@ Microrts-A10-finetuned-shaped: &microrts-a10-finetuned-shaped
   <<: *microrts-a10-tweaks-base
   n_timesteps: !!float 100e6
   algo_hyperparams:
-    <<: *microrts-sp-dc-phases-algo-defaults
+    <<: *microrts-sp-dc-phases-a10-algo-defaults
     gamma: [0.99, 0.999, 0.999]
     gae_lambda: [0.95, 0.99, 0.99]
   hyperparam_transitions_kwargs:
