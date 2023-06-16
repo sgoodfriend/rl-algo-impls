@@ -519,7 +519,7 @@ Microrts-selfplay-dc-phases-A10: &microrts-sp-dc-phases-a10-defaults
 
 Microrts-selfplay-dc-phases-A6000: &microrts-sp-dc-phases-a6000-defaults
   <<: *microrts-sp-dc-phases-defaults
-  algo_hyperparams: &microrts-sp-dc-phases-a10-algo-defaults
+  algo_hyperparams: &microrts-sp-dc-phases-a6000-algo-defaults
     <<: *microrts-sp-dc-phases-algo-defaults
     batch_size: 4096
 
