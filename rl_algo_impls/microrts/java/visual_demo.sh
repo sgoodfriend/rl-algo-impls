@@ -1,1 +1,1 @@
-java -cp "rai.jar:$(find lib -name "*.jar" | tr '\n' ':')" tests.RAIGameVisualSimulationTest
+java -cp "RAISocketAI.jar:$(find lib -name "*.jar" | tr '\n' ':')" tests.RAIGameVisualSimulationTest

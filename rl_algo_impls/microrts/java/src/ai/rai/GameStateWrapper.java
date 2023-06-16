@@ -68,7 +68,10 @@ public class GameStateWrapper {
             UnitActionAssignment uaa = gs.getActionAssignment(u);
             vectorObservation[player][0][u.getY()][u.getX()] = u.getHitPoints();
             vectorObservation[player][1][u.getY()][u.getX()] = u.getResources();
-            vectorObservation[player][2][u.getY()][u.getX()] = (u.getPlayer() + player) % 2;
+            int unitPlayer = u.getPlayer();
+            if (unitPlayer != -1) {
+                vectorObservation[player][2][u.getY()][u.getX()] = (unitPlayer + player) % 2;
+            }
             vectorObservation[player][3][u.getY()][u.getX()] = u.getType().ID;
             if (uaa != null) {
                 vectorObservation[player][4][u.getY()][u.getX()] = uaa.action.getType();
@@ -136,7 +139,10 @@ public class GameStateWrapper {
             arrayObs[idx + 1] = (byte) u.getX();
             arrayObs[idx + 2] = (byte) u.getHitPoints();
             arrayObs[idx + 3] = (byte) u.getResources();
-            arrayObs[idx + 4] = (byte) ((u.getPlayer() + player) % 2 + 1);
+            int unitPlayer = u.getPlayer();
+            if (unitPlayer != -1) {
+                arrayObs[idx + 4] = (byte) ((unitPlayer + player) % 2 + 1);
+            }
             arrayObs[idx + 5] = (byte) (u.getType().ID + 1);
             UnitActionAssignment uaa = gs.getActionAssignment(u);
             if (uaa != null) {

@@ -24,7 +24,7 @@ import rts.units.UnitTypeTable;
  */
 public class RAIGameVisualSimulationTest {
     public static void main(String[] args) throws Exception {
-        UnitTypeTable utt = new UnitTypeTable(UnitTypeTable.VERSION_ORIGINAL);
+        UnitTypeTable utt = new UnitTypeTable(UnitTypeTable.VERSION_ORIGINAL_FINETUNED);
         AI ai1 = new RAISocketAI(utt);
         AI ai2 = new CoacAI(utt);
 

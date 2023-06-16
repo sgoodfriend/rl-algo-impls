@@ -104,7 +104,7 @@ class MicroRTSGridModeVecEnv(MicroRTSInterface):
             registerDomain("ts", alias="tests")
             registerDomain("ai")
             jars = [
-                "rai.jar",
+                "RAISocketAI.jar",
                 "lib/microrts.jar",
                 "lib/bots/Coac.jar",
                 "lib/bots/Droplet.jar",
@@ -267,6 +267,21 @@ class MicroRTSGridModeVecEnv(MicroRTSInterface):
                     obs[done_idx] = np.array(response.observation)
                     mask[done_idx] = np.array(response.mask)
                     self._terrain[done_idx] = np.array(response.terrain)
+        else:
+            if self.bot_envs_alternate_player:
+                for done_idx, d in enumerate(done[:, 0]):
+                    if not d:
+                        continue
+                    if done_idx < self.num_selfplay_envs:
+                        continue
+                    self.players[done_idx] = (self.players[done_idx] + 1) % 2
+                    env_idx = done_idx - self.num_selfplay_envs
+                    response = self.vec_client.clients[env_idx].reset(
+                        self.players[done_idx]
+                    )
+                    obs[done_idx] = np.array(response.observation)
+                    mask[done_idx] = np.array(response.mask)
+                    self._terrain[done_idx] = np.array(response.terrain)
         return obs, mask, reward @ self.reward_weight, done[:, 0], infos
 
     def step(self, ac):
@@ -326,7 +341,7 @@ class MicroRTSGridModeVecEnv(MicroRTSInterface):
             gsw = GameStateWrapper(
                 self.vec_client.clients[env_idx - self.num_selfplay_envs].gs
             )
-            player_id = 0  # TODO: Support for second player
+            player_id = self.players[env_idx]
         return np.transpose(np.array(gsw.getVectorObservation(player_id)), (1, 2, 0))
 
     def debug_matrix_mask(self, env_idx: int) -> Optional[np.ndarray]:
@@ -342,7 +357,7 @@ class MicroRTSGridModeVecEnv(MicroRTSInterface):
             gsw = GameStateWrapper(
                 self.vec_client.clients[env_idx - self.num_selfplay_envs].gs
             )
-            player_id = 0  # TODO: Support for second player
+            player_id = self.players[env_idx]
         return np.array(gsw.getMasks(player_id))
 
 

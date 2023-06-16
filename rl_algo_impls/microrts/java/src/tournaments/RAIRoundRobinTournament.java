@@ -20,7 +20,7 @@ import rts.units.UnitTypeTable;
 
 public class RAIRoundRobinTournament {
     public static void main(String args[]) throws Exception {
-        final UnitTypeTable utt = new UnitTypeTable(UnitTypeTable.VERSION_ORIGINAL);
+        final UnitTypeTable utt = new UnitTypeTable(UnitTypeTable.VERSION_ORIGINAL_FINETUNED);
         final AI[] AIs = {
                 new RAISocketAI(utt),
                 new RandomBiasedAI(utt),
