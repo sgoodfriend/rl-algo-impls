@@ -106,11 +106,11 @@ def make_microrts_env(
             ai2s = [microrts_ai.randomAI for _ in range(make_kwargs["num_bot_envs"])]
         if map_paths:
             _map_paths = []
-            n_selfplay_historical_envs = self_play_kwargs.get("num_old_policies", 0)
+            n_selfplay_historical_envs = self_play_kwargs.get("num_old_policies", 0) * 2
             assert n_selfplay_historical_envs % (4 * len(map_paths)) == 0, (
-                "Expect num_old_policies %d to be a multiple of 4 len(map_paths) (4*%d)"
+                "Expect num_old_policies %d to be a multiple of 2 len(map_paths) (2*%d)"
                 % (
-                    n_selfplay_historical_envs,
+                    self_play_kwargs.get("num_old_policies", 0),
                     len(map_paths),
                 )
             )
