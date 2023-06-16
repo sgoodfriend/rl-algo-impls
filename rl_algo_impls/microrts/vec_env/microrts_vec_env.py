@@ -257,6 +257,7 @@ class MicroRTSGridModeVecEnv(MicroRTSInterface):
                 else:
                     env_idx = done_idx - self.num_selfplay_envs
                     self.vec_client.clients[env_idx].mapPath = next(self.next_map)
+                    self.players[done_idx] = (self.players[done_idx] + 1) % 2
                     response = self.vec_client.clients[env_idx].reset(
                         self.players[done_idx]
                     )

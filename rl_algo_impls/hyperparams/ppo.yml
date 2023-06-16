@@ -579,7 +579,7 @@ Microrts-A6000-finetuned-shaped: &microrts-a6000-finetuned-shaped
 
 Microrts-A6000-finetuned-coac: &microrts-a6000-finetuned-coac
   <<: *microrts-a6000-finetuned-shaped
-  env_hyperparams:
+  env_hyperparams: &microrts-a6000-finetuned-coac-env-defaults
     <<: *microrts-sp-dc-phases-env-defaults
     make_kwargs:
       <<: *microrts-selfplay-env-make-kwargs-defaults
@@ -589,6 +589,14 @@ Microrts-A6000-finetuned-coac: &microrts-a6000-finetuned-coac
       num_old_policies: 0
     bots:
       coacAI: 12
+
+Microrts-A6000-finetuned-coac-mayari: &microrts-a6000-finetuned-coac-mayari
+  <<: *microrts-a6000-finetuned-coac
+  env_hyperparams:
+    <<: *microrts-a6000-finetuned-coac-env-defaults
+    bots:
+      coacAI: 6
+      mayari: 6
 
 Microrts-selfplay-dc-phases-maps24: &microrts-sp-dc-phases-m24-defaults
   <<: *microrts-sp-dc-phases-defaults
@@ -654,7 +662,7 @@ Microrts-selfplay-dc-phases-final: &microrts-sp-dc-phases-final-defaults
       - 0.1
 
 Microrts-selfplay-dc-phases-debug: &microrts-sp-dc-phases-debug-defaults
-  <<: *microrts-a6000-finetuned-coac
+  <<: *microrts-a6000-finetuned-coac-mayari
   eval_hyperparams:
     <<: *microrts-sp-dc-phases-eval-defaults
     step_freq: !!float 1e5

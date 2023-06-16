@@ -134,14 +134,14 @@ def make_microrts_env(
 
             n_bot_envs = make_kwargs["num_bot_envs"]
             assert (
-                n_bot_envs % (2 * len(map_paths)) == 0
-            ), "Expect num_bot_envs %d to be a multiple of 2 len(map_paths) (2*%d)" % (
+                n_bot_envs % len(map_paths) == 0
+            ), "Expect num_bot_envs %d to be a multiple of len(map_paths) (%d)" % (
                 n_bot_envs,
                 len(map_paths),
             )
-            for i in range(n_bot_envs // 2):
+            for i in range(n_bot_envs):
                 mp = map_paths[i % len(map_paths)]
-                _map_paths.extend([mp] * 2)
+                _map_paths.extend([mp])
             make_kwargs["map_paths"] = _map_paths
         make_kwargs["ai2s"] = ai2s
 
