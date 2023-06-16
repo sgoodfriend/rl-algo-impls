@@ -292,7 +292,7 @@ _microrts_ai: &microrts-ai-defaults
     score_function: mean
     max_video_length: 4000
     env_overrides: &microrts-ai-eval-env-overrides
-      make_kwargs:
+      make_kwargs: &microrts-ai-eval-env-make-kwargs-overrides
         <<: *microrts-ai-env-make-kwargs-defaults
         max_steps: 4000
         reward_weight: [1.0, 0, 0, 0, 0, 0, 0]
@@ -521,8 +521,8 @@ _Microrts-A10-tweaks-base: &microrts-a10-tweaks-base
   <<: *microrts-sp-dc-phases-a10-defaults
   policy_hyperparams:
     <<: *microrts-sp-dc-phases-policy-defaults
-    load_run_path: sgoodfriend/rl-algo-impls-benchmarks/df4flrs4
-    load_run_path_best: false
+    load_run_path: sgoodfriend/rl-algo-impls-benchmarks/nhweti29
+    load_run_path_best: true
 
 Microrts-A10-finetuned: &microrts-a10-finetuned
   <<: *microrts-a10-tweaks-base
@@ -581,7 +581,7 @@ Microrts-A6000-finetuned-coac: &microrts-a6000-finetuned-coac
   <<: *microrts-a6000-finetuned-shaped
   env_hyperparams: &microrts-a6000-finetuned-coac-env-defaults
     <<: *microrts-sp-dc-phases-env-defaults
-    make_kwargs:
+    make_kwargs: &microrts-a6000-finetuned-coac-env-make-kwargs
       <<: *microrts-selfplay-env-make-kwargs-defaults
       num_selfplay_envs: 12
     self_play_kwargs:
@@ -594,9 +594,19 @@ Microrts-A6000-finetuned-coac-mayari: &microrts-a6000-finetuned-coac-mayari
   <<: *microrts-a6000-finetuned-coac
   env_hyperparams:
     <<: *microrts-a6000-finetuned-coac-env-defaults
+    make_kwargs:
+      <<: *microrts-a6000-finetuned-coac-env-make-kwargs
+      bot_envs_alternate_player: true
     bots:
       coacAI: 6
       mayari: 6
+  eval_hyperparams:
+    <<: *microrts-sp-dc-phases-eval-defaults
+    env_overrides:
+      <<: *microrts-sp-dc-phases-eval-env-overrides
+      make_kwargs:
+        <<: *microrts-ai-eval-env-make-kwargs-overrides
+        bot_envs_alternate_player: false
 
 Microrts-selfplay-dc-phases-maps24: &microrts-sp-dc-phases-m24-defaults
   <<: *microrts-sp-dc-phases-defaults

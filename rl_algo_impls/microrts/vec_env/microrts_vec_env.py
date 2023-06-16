@@ -58,6 +58,7 @@ class MicroRTSGridModeVecEnv(MicroRTSInterface):
         map_paths=["maps/10x10/basesTwoWorkers10x10.xml"],
         reward_weight=np.array([0.0, 1.0, 0.0, 0.0, 0.0, 5.0]),
         cycle_maps=[],
+        bot_envs_alternate_player: bool = False,
     ):
         self.num_selfplay_envs = num_selfplay_envs
         self.num_bot_envs = num_bot_envs
@@ -71,6 +72,7 @@ class MicroRTSGridModeVecEnv(MicroRTSInterface):
         self.frame_skip = frame_skip
         self.ai2s = ai2s
         self.players = [i % 2 for i in range(self._num_envs)]
+        self.bot_envs_alternate_player = bot_envs_alternate_player
         self.map_paths = map_paths
         if len(map_paths) == 1:
             self.map_paths = [map_paths[0] for _ in range(self.num_envs)]
@@ -257,7 +259,8 @@ class MicroRTSGridModeVecEnv(MicroRTSInterface):
                 else:
                     env_idx = done_idx - self.num_selfplay_envs
                     self.vec_client.clients[env_idx].mapPath = next(self.next_map)
-                    self.players[done_idx] = (self.players[done_idx] + 1) % 2
+                    if self.bot_envs_alternate_player:
+                        self.players[done_idx] = (self.players[done_idx] + 1) % 2
                     response = self.vec_client.clients[env_idx].reset(
                         self.players[done_idx]
                     )
