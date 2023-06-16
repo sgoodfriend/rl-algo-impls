@@ -215,7 +215,7 @@ public class RAISocketAI extends AIWithComputationBudget {
 
     @Override
     public PlayerAction getAction(int player, GameState gs) throws Exception {
-        GameStateWrapper gsw = new GameStateWrapper(gs);
+        GameStateWrapper gsw = new GameStateWrapper(gs, DEBUG);
 
         Gson gson = new Gson();
 
@@ -256,7 +256,7 @@ public class RAISocketAI extends AIWithComputationBudget {
 
     @Override
     public void preGameAnalysis(GameState gs, long milliseconds, String readWriteFolder) throws Exception {
-        GameStateWrapper gsw = new GameStateWrapper(gs);
+        GameStateWrapper gsw = new GameStateWrapper(gs, DEBUG);
         PhysicalGameState pgs = gs.getPhysicalGameState();
 
         if (DEBUG >= 1)
