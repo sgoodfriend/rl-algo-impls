@@ -1,5 +1,4 @@
 import logging
-import warnings
 from typing import Any, Dict, List
 
 import gym
@@ -10,6 +9,14 @@ import numpy as np
 from rl_algo_impls.microrts.vec_env.microrts_interface import (
     ByteArray,
     MicroRTSInterface,
+)
+from rl_algo_impls.microrts.vec_env.planes import (
+    MultiplierPlane,
+    OffsetPlane,
+    OffsetThresholdPlane,
+    OneHotPlane,
+    Planes,
+    ThresholdPlane,
 )
 from rl_algo_impls.wrappers.vectorable_wrapper import VecEnvStepReturn
 
@@ -38,21 +45,33 @@ class MicroRTSSpaceTransform(gym.vector.VectorEnv):
         # num_planes_unit_type(z), num_planes_unit_action(6)]
         utt = self.interface.utt
 
-        self.float_planes = [1 / MAX_HP, 1 / MAX_RESOURCES, None, None, None, None]
-        self.bool_planes = [None, [1], None, None, None, None]
-        self.one_hot_planes = [None, None, 3, len(utt["unitTypes"]) + 1, 6, 2]
+        self.planes = [
+            Planes([MultiplierPlane(1 / MAX_HP)]),  # HP
+            Planes(
+                [MultiplierPlane(1 / MAX_RESOURCES), ThresholdPlane(1)]
+            ),  # Resources
+            Planes([OneHotPlane(3)]),  # Owner
+            Planes([OneHotPlane(len(utt["unitTypes"]) + 2)]),  # Unit Types + Pending
+            Planes([OneHotPlane(6)]),  # Current Action
+            Planes([OneHotPlane(5)]),  # Move Direction
+            Planes([OneHotPlane(5)]),  # Harvest Direction
+            Planes([OneHotPlane(5)]),  # Return Direction
+            Planes([OneHotPlane(5)]),  # Produce Direction
+            Planes([OneHotPlane(8)]),  # Produce Unit Type
+            Planes([OneHotPlane(6)]),  # Relative Attack Position
+            Planes(
+                [
+                    OffsetPlane(multiplier=1 / 255, offset=128),
+                    OffsetThresholdPlane(offset=128, min_threshold=5),
+                    OffsetThresholdPlane(offset=128, min_threshold=10),
+                ]
+            ),  # ETA
+            Planes([OneHotPlane(2)]),  # Terrain
+        ]
         if self.interface.partial_obs:
-            self.float_planes.append(None)
-            self.bool_planes.append(None)
-            self.one_hot_planes.append(2)
-        self.obs_dim = len(self.float_planes)
-        assert self.obs_dim == len(self.bool_planes)
-        assert self.obs_dim == len(self.one_hot_planes)
-        self.n_dim = (
-            len([fp for fp in self.float_planes if fp is not None])
-            + sum([len(bp) for bp in self.bool_planes if bp is not None])
-            + sum([ohp for ohp in self.one_hot_planes if ohp is not None])
-        )
+            self.planes.append(Planes([OneHotPlane(2)]))
+
+        self.n_dim = sum(p.n_dim for p in self.planes)
 
         observation_space = gym.spaces.Box(
             low=0.0,
@@ -75,6 +94,10 @@ class MicroRTSSpaceTransform(gym.vector.VectorEnv):
             (self.source_unit_idxs.shape + (1,))
         )
         self.metadata = self.interface.metadata
+
+    @property
+    def obs_dim(self) -> int:
+        return len(self.planes)
 
     def __getattr__(self, name: str) -> Any:
         return getattr(self.interface, name)
@@ -167,6 +190,7 @@ class MicroRTSSpaceTransform(gym.vector.VectorEnv):
         obs_array = obs_bytes.reshape((-1, self.obs_dim + 1))
 
         o = np.zeros((env_h, env_w, self.obs_dim), dtype=obs_array.dtype)
+        o[:, :, 11] = -128  # ETA offset by -128
         o[:, :, -1] = self.interface.terrain(env_idx)
         o[obs_array[:, 0], obs_array[:, 1], :-1] = obs_array[:, 2:]
 
@@ -205,32 +229,11 @@ class MicroRTSSpaceTransform(gym.vector.VectorEnv):
         obs = obs.reshape(-1, obs.shape[-1])
         obs_planes = np.zeros((self.height * self.width, self.n_dim), dtype=np.float32)
 
-        plane_idx = 0
-        for idx, fp in enumerate(self.float_planes):
-            if fp is None:
-                continue
-            obs_planes[:, plane_idx] = obs[:, idx] * fp
-            assert np.all(obs_planes[:, plane_idx] >= 0)
-            if np.any(obs_planes[:, plane_idx] > 1):
-                warnings.warn(
-                    f"Found observations for plane_idx {plane_idx} above max ({np.max(obs[:, idx])})"
-                )
-            obs_planes[:, plane_idx] = obs_planes[:, plane_idx].clip(0, 1)
-            plane_idx += 1
-        for idx, bp in enumerate(self.bool_planes):
-            if bp is None:
-                continue
-            for threshold in bp:
-                obs_planes[:, plane_idx] = obs[:, idx] >= threshold
-                plane_idx += 1
-        for idx, ohp in enumerate(self.one_hot_planes):
-            if ohp is None:
-                continue
-            obs_planes[:, plane_idx : plane_idx + ohp] = np.eye(ohp)[
-                obs[:, idx].clip(0, ohp)
-            ]
-            plane_idx += ohp
-        assert plane_idx == obs_planes.shape[-1]
+        destination_col = 0
+        for source_col, p in enumerate(self.planes):
+            destination_col = p.transform(obs, source_col, obs_planes, destination_col)
+        assert destination_col == obs_planes.shape[-1]
+
         return obs_planes.reshape(self.height, self.width, -1)
 
     def get_action_mask(self) -> np.ndarray:

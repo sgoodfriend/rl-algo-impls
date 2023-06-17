@@ -2,9 +2,7 @@ package ai.rai;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import rts.GameState;
@@ -20,9 +18,10 @@ import rts.units.UnitTypeTable;
 public class GameStateWrapper {
     GameState gs;
     int debugLevel;
+    ResourceUsage base_ru;
 
     int[][][][] vectorObservation;
-    public static final int numVectorObservationFeatureMaps = 6;
+    public static final int numVectorObservationFeatureMaps = 13;
     public static final int numArrayObservationFeatureMaps = 2 + numVectorObservationFeatureMaps - 1;
     int[][][][] masks;
 
@@ -33,19 +32,38 @@ public class GameStateWrapper {
     public GameStateWrapper(GameState a_gs, int a_debugLevel) {
         gs = a_gs;
         debugLevel = a_debugLevel;
+
+        base_ru = new ResourceUsage();
+        var pgs = gs.getPhysicalGameState();
+        for (Unit u : pgs.getUnits()) {
+            UnitActionAssignment uaa = gs.getActionAssignment(u);
+            if (uaa != null) {
+                ResourceUsage ru = uaa.action.resourceUsage(u, pgs);
+                base_ru.merge(ru);
+            }
+        }
     }
 
     /**
      * Constructs a vector observation for a player
      * 
-     * | Observation Features | Max | Values
-     * |----------------------|------------------------------------------------------------------|
-     * | Hit Points | 10
-     * | Resources | 40
-     * | Owner | 3 | -, player 1, player 2)
-     * | Unit Types | 8 | -, resource, base, barrack, worker, light, heavy, ranged
-     * | Current Action | 6 | -, move, harvest, return, produce, attack
-     * | Terrain | 2 | empty, wall
+     * |Idx| Observation Features | Max | Values
+     * |---|-------------------|------------------------------------------------------------------|
+     * | 0 | Hit Points | 10
+     * | 1 | Resources | 40
+     * | 2 | Owner | 3 | -, player 1, player 2
+     * | 3 | Unit Types | 9 | -, resource, base, barrack, worker, light, heavy,
+     * ranged, pending
+     * | 4 | Current Action | 6 | -, move, harvest, return, produce, attack
+     * | 5 | Move Parameter | 5 | -, north, east, south, west
+     * | 6 | Harvest Parameter | 5 | -, north, east, south, west
+     * | 7 | Return Parameter | 5 | -, north, east, south, west
+     * | 8 | Produce Direction Parameter | 5 | -, north, east, south, west
+     * | 9 | Produce Type Parameter | 8 | -, resource, base, barrack, worker, light,
+     * heavy, ranged
+     * |10 | Relative Attack Position | 6 | -, north, east, south, west, ranged
+     * |11 | ETA | -128 - +127 | ETA can be up to 200, so offset by -128 to fit
+     * |12 | Terrain | 2 | empty, wall
      * 
      * @param player
      * @return a vector observation for the specified player
@@ -57,21 +75,19 @@ public class GameStateWrapper {
         if (vectorObservation == null) {
             vectorObservation = new int[2][numVectorObservationFeatureMaps][height][width];
         }
-        // hitpointsMatrix is vectorObservation[player][0]
-        // resourcesMatrix is vectorObservation[player][1]
-        // playersMatrix is vectorObservation[player][2]
-        // unitTypesMatrix is vectorObservation[player][3]
-        // unitActionMatrix is vectorObservation[player][4]
-        // terrainMatrix is matrixObservation[player][5]
 
-        for (int i = 0; i < vectorObservation[player][0].length; i++) {
-            Arrays.fill(vectorObservation[player][0][i], 0);
-            Arrays.fill(vectorObservation[player][1][i], 0);
-            Arrays.fill(vectorObservation[player][4][i], 0);
-            Arrays.fill(vectorObservation[player][5][i], 0);
-            // temp default value for empty spaces
-            Arrays.fill(vectorObservation[player][2][i], -1);
-            Arrays.fill(vectorObservation[player][3][i], -1);
+        for (int f = 0; f < numVectorObservationFeatureMaps; ++f) {
+            int default_v;
+            if (f == 2 || f == 3) {
+                default_v = -1;
+            } else if (f == 11) {
+                default_v = -128;
+            } else {
+                default_v = 0;
+            }
+            for (int y = 0; y < vectorObservation[player][0].length; y++) {
+                Arrays.fill(vectorObservation[player][f][y], default_v);
+            }
         }
 
         List<Unit> units = pgs.getUnits();
@@ -86,7 +102,50 @@ public class GameStateWrapper {
             }
             vectorObservation[player][3][u.getY()][u.getX()] = u.getType().ID;
             if (uaa != null) {
-                vectorObservation[player][4][u.getY()][u.getX()] = uaa.action.getType();
+                int type = uaa.action.getType();
+                vectorObservation[player][4][u.getY()][u.getX()] = type;
+                switch (type) {
+                    case UnitAction.TYPE_NONE: {
+                        break;
+                    }
+                    case UnitAction.TYPE_MOVE: {
+                        vectorObservation[player][5][u.getY()][u.getX()] = uaa.action.getDirection() + 1;
+                        break;
+                    }
+                    case UnitAction.TYPE_HARVEST: {
+                        vectorObservation[player][6][u.getY()][u.getX()] = uaa.action.getDirection() + 1;
+                        break;
+                    }
+                    case UnitAction.TYPE_RETURN: {
+                        vectorObservation[player][7][u.getY()][u.getX()] = uaa.action.getDirection() + 1;
+                        break;
+                    }
+                    case UnitAction.TYPE_PRODUCE: {
+                        vectorObservation[player][8][u.getY()][u.getX()] = uaa.action.getDirection() + 1;
+                        vectorObservation[player][9][u.getY()][u.getX()] = uaa.action.getUnitType().ID + 1;
+                    }
+                    case UnitAction.TYPE_ATTACK_LOCATION: {
+                        int relativeX = uaa.action.getLocationX() - u.getX();
+                        int relativeY = uaa.action.getLocationY() - u.getY();
+                        int attackLoc = 4;
+                        if (relativeX == 0) {
+                            if (relativeY == -1) {
+                                attackLoc = UnitAction.DIRECTION_UP;
+                            } else if (relativeY == 1) {
+                                attackLoc = UnitAction.DIRECTION_DOWN;
+                            }
+                        } else if (relativeY == 0) {
+                            if (relativeX == -1) {
+                                attackLoc = UnitAction.DIRECTION_LEFT;
+                            } else if (relativeX == 1) {
+                                attackLoc = UnitAction.DIRECTION_RIGHT;
+                            }
+                        }
+                        vectorObservation[player][10][u.getY()][u.getX()] = attackLoc + 1;
+                    }
+                }
+                int timestepsToCompletion = uaa.time + uaa.action.ETA(u) - gs.getTime();
+                vectorObservation[player][11][u.getY()][u.getX()] = byteClampValue(timestepsToCompletion);
             } else {
                 vectorObservation[player][4][u.getY()][u.getX()] = UnitAction.TYPE_NONE;
             }
@@ -103,8 +162,15 @@ public class GameStateWrapper {
         // Terrain
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
-                vectorObservation[player][5][y][x] = pgs.getTerrain(x, y);
+                vectorObservation[player][12][y][x] = pgs.getTerrain(x, y);
             }
+        }
+
+        // Spots reserved by other unit actions
+        for (Integer pos : base_ru.getPositionsUsed()) {
+            int y = pos / pgs.getWidth();
+            int x = pos % pgs.getWidth();
+            vectorObservation[player][3][y][x] = 8;
         }
 
         return vectorObservation[player];
@@ -127,15 +193,24 @@ public class GameStateWrapper {
     /**
      * Constructs an array observation for a player (length number of units)
      * 
-     * | Observation Features | Max | Values
-     * |----------------------|------------------------------------------------------------------|
-     * | y | 128 | Java's bytes are signed, while Python's are unsigned
-     * | x | 128 |
-     * | Hit Points | 10
-     * | Resources | 40
-     * | Owner | 3 | -, player 1, player 2)
-     * | Unit Types | 8 | -, resource, base, barrack, worker, light, heavy, ranged
-     * | Current Action | 6 | -, move, harvest, return, produce, attack
+     * |Idx| Observation Features | Max | Values
+     * |---|-------------------|------------------------------------------------------------------|
+     * | 0 | y | 128 | Java's bytes are signed, while Python's are unsigned
+     * | 1 | x | 128 |
+     * | 2 | Hit Points | 10
+     * | 3 | Resources | 40
+     * | 4 | Owner | 3 | -, player 1, player 2
+     * | 5 | Unit Types | 9 | -, resource, base, barrack, worker, light, heavy,
+     * ranged, pending
+     * | 6 | Current Action | 6 | -, move, harvest, return, produce, attack
+     * | 7 | Move Parameter | 5 | -, north, east, south, west
+     * | 8 | Harvest Parameter | 5 | -, north, east, south, west
+     * | 9 | Return Parameter | 5 | -, north, east, south, west
+     * |10 | Produce Direction Parameter | 5 | -, north, east, south, west
+     * |11 | Produce Type Parameter | 8 | -, resource, base, barrack, worker, light,
+     * heavy, ranged
+     * |12 | Relative Attack Position | 6 | -, north, east, south, west, ranged
+     * |13 | ETA | -128 - +127 | ETA can be up to 200, so offset by -128 to fit
      * 
      * @param player
      * @return a vector observation for the specified player
@@ -143,7 +218,8 @@ public class GameStateWrapper {
     public byte[] getArrayObservation(int player) {
         PhysicalGameState pgs = gs.getPhysicalGameState();
         List<Unit> units = pgs.getUnits();
-        byte arrayObs[] = new byte[units.size() * numArrayObservationFeatureMaps];
+        List<Integer> positionsUsed = base_ru.getPositionsUsed();
+        byte arrayObs[] = new byte[(units.size() + positionsUsed.size()) * numArrayObservationFeatureMaps];
         for (int i = 0; i < units.size(); ++i) {
             Unit u = units.get(i);
             int idx = i * numArrayObservationFeatureMaps;
@@ -158,11 +234,68 @@ public class GameStateWrapper {
             arrayObs[idx + 5] = (byte) (u.getType().ID + 1);
             UnitActionAssignment uaa = gs.getActionAssignment(u);
             if (uaa != null) {
-                arrayObs[idx + 6] = (byte) uaa.action.getType();
+                byte type = (byte) uaa.action.getType();
+                arrayObs[idx + 6] = type;
+                switch (type) {
+                    case UnitAction.TYPE_NONE: {
+                        break;
+                    }
+                    case UnitAction.TYPE_MOVE: {
+                        arrayObs[idx + 7] = (byte) (uaa.action.getDirection() + 1);
+                        break;
+                    }
+                    case UnitAction.TYPE_HARVEST: {
+                        arrayObs[idx + 8] = (byte) (uaa.action.getDirection() + 1);
+                        break;
+                    }
+                    case UnitAction.TYPE_RETURN: {
+                        arrayObs[idx + 9] = (byte) (uaa.action.getDirection() + 1);
+                        break;
+                    }
+                    case UnitAction.TYPE_PRODUCE: {
+                        arrayObs[idx + 10] = (byte) (uaa.action.getDirection() + 1);
+                        arrayObs[idx + 11] = (byte) (uaa.action.getUnitType().ID + 1);
+                    }
+                    case UnitAction.TYPE_ATTACK_LOCATION: {
+                        int relativeX = uaa.action.getLocationX() - u.getX();
+                        int relativeY = uaa.action.getLocationY() - u.getY();
+                        int attackLoc = 4;
+                        if (relativeX == 0) {
+                            if (relativeY == -1) {
+                                attackLoc = UnitAction.DIRECTION_UP;
+                            } else if (relativeY == 1) {
+                                attackLoc = UnitAction.DIRECTION_DOWN;
+                            }
+                        } else if (relativeY == 0) {
+                            if (relativeX == -1) {
+                                attackLoc = UnitAction.DIRECTION_LEFT;
+                            } else if (relativeX == 1) {
+                                attackLoc = UnitAction.DIRECTION_RIGHT;
+                            }
+                        }
+                        arrayObs[idx + 12] = (byte) (attackLoc + 1);
+                    }
+                }
+                int timestepsToCompletion = uaa.time + uaa.action.ETA(u) - gs.getTime();
+                arrayObs[idx + 13] = byteClampValue(timestepsToCompletion);
             } else {
                 arrayObs[idx + 6] = (byte) UnitAction.TYPE_NONE;
+                arrayObs[idx + 13] = byteClampValue(0);
             }
         }
+
+        // Spots reserved by other unit actions
+        for (int i = 0; i < positionsUsed.size(); ++i) {
+            Integer pos = positionsUsed.get(i);
+            int idx = (i + units.size()) * numArrayObservationFeatureMaps;
+            int y = pos / pgs.getWidth();
+            int x = pos % pgs.getWidth();
+            arrayObs[idx + 0] = (byte) y;
+            arrayObs[idx + 1] = (byte) x;
+            arrayObs[idx + 5] = (byte) 8;
+            arrayObs[idx + 13] = byteClampValue(0);
+        }
+
         return arrayObs;
     }
 
@@ -385,15 +518,6 @@ public class GameStateWrapper {
             }
         }
 
-        ResourceUsage base_ru = new ResourceUsage();
-        for (Unit u : pgs.getUnits()) {
-            UnitActionAssignment uaa = gs.getActionAssignment(u);
-            if (uaa != null) {
-                ResourceUsage ru = uaa.action.resourceUsage(u, pgs);
-                base_ru.merge(ru);
-            }
-        }
-
         // if the player has enough resources, adds a produce action for each type this
         // unit produces.
         // a produce action is added for each free tile around the producer
@@ -468,5 +592,9 @@ public class GameStateWrapper {
         }
         int timestepsToCompletion = uaa.time + uaa.action.ETA(uaa.unit) - gs.getTime();
         return timestepsToCompletion < timesteps;
+    }
+
+    public static byte byteClampValue(int v) {
+        return (byte) (Math.max(0, Math.min(v, 255)) - 128);
     }
 }
