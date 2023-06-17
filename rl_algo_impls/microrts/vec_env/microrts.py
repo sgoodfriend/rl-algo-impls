@@ -6,7 +6,7 @@ import numpy as np
 from torch.utils.tensorboard.writer import SummaryWriter
 
 from rl_algo_impls.microrts.vec_env.microrts_socket_env import MicroRTSSocketEnv
-from rl_algo_impls.microrts.wrappers.microrts_space_transform import (
+from rl_algo_impls.microrts.vec_env.microrts_space_transform import (
     MicroRTSSpaceTransform,
 )
 from rl_algo_impls.microrts.wrappers.microrts_stats_recorder import (
