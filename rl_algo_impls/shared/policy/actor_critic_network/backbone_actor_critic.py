@@ -91,7 +91,7 @@ class BackboneActorCritic(ActorCriticNetwork):
                     nn.GELU(),
                     layer_init(
                         nn.Conv2d(
-                            backbone_out_channels,
+                            critic_channels,
                             critic_channels,
                             3,
                             stride=2,
@@ -103,12 +103,12 @@ class BackboneActorCritic(ActorCriticNetwork):
                     nn.AdaptiveAvgPool2d(1),
                     nn.Flatten(),
                     layer_init(
-                        nn.Linear(backbone_out_channels, critic_channels),
+                        nn.Linear(critic_channels, critic_channels),
                         init_layers_orthogonal=init_layers_orthogonal,
                     ),
                     nn.GELU(),
                     layer_init(
-                        nn.Linear(backbone_out_channels, 1),
+                        nn.Linear(critic_channels, 1),
                         init_layers_orthogonal=init_layers_orthogonal,
                         std=1.0,
                     ),
