@@ -670,7 +670,7 @@ Microrts-squnet-map64: &microrts-squnet-map64
         map_paths: [maps/BroodWar/(4)BloodBath.scmB.xml]
   policy_hyperparams: &microrts-squnet-map64-policy-defaults
     <<: *microrts-squnet-policy-defaults
-    channels_per_level: [128, 256, 256, 256]
+    channels_per_level: [64, 128, 256, 256]
     strides_per_level: [2, 4, 4]
     encoder_residual_blocks_per_level: [1, 1, 1, 1]
     decoder_residual_blocks_per_level: [1, 1, 1]
@@ -679,7 +679,7 @@ Microrts-squnet-map64: &microrts-squnet-map64
     n_steps: 256
   algo_hyperparams: &microrts-squnet-map64-algo-defaults
     <<: *microrts-squnet-algo-defaults
-    batch_size: 256
+    batch_size: 512
 
 Microrts-squnet-map64-selfplay: &microrts-squnet-map64-selfplay
   <<: *microrts-squnet-map64
