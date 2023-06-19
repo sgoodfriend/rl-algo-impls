@@ -536,22 +536,16 @@ Microrts-A6000-finetuned: &microrts-a6000-finetuned
     phases:
       - multi_reward_weights: [0, 0.99, 0.01] # Win-loss sparse rewards
         vf_coef: [0, 0.5, 0.1]
-        ent_coef: 0.01
-        learning_rate: !!float 5e-5
-      - multi_reward_weights: [0, 0.99, 0.01] # Win-loss sparse rewards
-        vf_coef: [0, 0.5, 0.1]
-        ent_coef: 0.01
-        learning_rate: !!float 1e-4
-      - multi_reward_weights: [0, 0.99, 0.01] # Win-loss sparse rewards
-        vf_coef: [0, 0.5, 0.1]
         ent_coef: 0.001
         learning_rate: !!float 5e-5
+      - multi_reward_weights: [0, 0.99, 0.01] # Win-loss sparse rewards
+        vf_coef: [0, 0.5, 0.1]
+        ent_coef: 0.0001
+        learning_rate: !!float 1e-5
     durations:
-      - 0
-      - 0.1
-      - 0.25
-      - 0.2
-      - 0.45
+      - 0.3
+      - 0.4
+      - 0.3
 
 Microrts-A6000-finetuned-shaped: &microrts-a6000-finetuned-shaped
   <<: *microrts-a10-tweaks-base
