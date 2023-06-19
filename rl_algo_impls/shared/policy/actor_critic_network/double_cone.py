@@ -85,9 +85,12 @@ class DoubleConeBlock(nn.Module):
         init_layers_orthogonal: bool = False,
     ) -> None:
         super().__init__()
-        self.pool_conv = layer_init(
-            nn.Conv2d(channels, pooled_channels, 4, stride=4),
-            init_layers_orthogonal=init_layers_orthogonal,
+        self.pool_conv = nn.Sequential(
+            layer_init(
+                nn.Conv2d(channels, pooled_channels, 4, stride=4),
+                init_layers_orthogonal=init_layers_orthogonal,
+            ),
+            nn.GELU(),
         )
         self.res_blocks = nn.Sequential(
             *[
