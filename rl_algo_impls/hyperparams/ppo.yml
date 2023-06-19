@@ -645,21 +645,21 @@ Microrts-squnet-map64: &microrts-squnet-map64
   env_id: Microrts-squnet-map64
   env_hyperparams: &microrts-squnet-map64-env-defaults
     <<: *microrts-squnet-env-defaults
-    n_envs: 24
+    n_envs: 12
     map_paths:
       - maps/BroodWar/(4)BloodBath.scmB.xml # 64x64
       - maps/BroodWar/(4)BloodBath.scmE.xml # 64x64
     make_kwargs:
       <<: *microrts-selfplay-env-make-kwargs-defaults
-      num_selfplay_envs: 20
+      num_selfplay_envs: 10
       max_steps: 8000
     self_play_kwargs:
       <<: *microrts-selfplay-self-play-kwargs-defaults
-      num_old_policies: 4
-      swap_window_size: 4
+      num_old_policies: 2
+      swap_window_size: 2
     bots:
-      coacAI: 4
-      mayari: 4
+      coacAI: 2
+      mayari: 2
   eval_hyperparams: &microrts-squnet-map64-eval-defaults
     <<: *microrts-squnet-eval-defaults
     env_overrides:
@@ -674,6 +674,9 @@ Microrts-squnet-map64: &microrts-squnet-map64
     strides_per_level: [2, 4, 4]
     encoder_residual_blocks_per_level: [1, 1, 1, 1]
     decoder_residual_blocks_per_level: [1, 1, 1]
+  rollout_hyperparams:
+    <<: *microrts-ai-rollout-defaults
+    n_steps: 256
   algo_hyperparams: &microrts-squnet-map64-algo-defaults
     <<: *microrts-squnet-algo-defaults
     batch_size: 256
