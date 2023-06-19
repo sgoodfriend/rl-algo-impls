@@ -550,6 +550,140 @@ Microrts-squnet-map12-wide-selfplay: &microrts-squnet-map12-wide-selfplay
   hyperparam_transitions_kwargs:
     <<: *microrts-squnet-map12-selfplay-phases
 
+Microrts-squnet-map16: &microrts-squnet-map16
+  <<: *microrts-squnet
+  env_id: Microrts-squnet-map16
+  env_hyperparams: &microrts-squnet-map16-env-defaults
+    <<: *microrts-squnet-env-defaults
+    n_envs: 24
+    map_paths:
+      - maps/16x16/basesWorkers16x16A.xml
+      - maps/16x16/TwoBasesBarracks16x16.xml
+      - maps/16x16/melee16x16Mixed12.xml
+    make_kwargs:
+      <<: *microrts-selfplay-env-make-kwargs-defaults
+      num_selfplay_envs: 24
+      max_steps: 4000
+    self_play_kwargs:
+      <<: *microrts-selfplay-self-play-kwargs-defaults
+      num_old_policies: 6
+      swap_window_size: 3
+    bots:
+      coacAI: 3
+      mayari: 3
+  eval_hyperparams: &microrts-squnet-map16-eval-defaults
+    <<: *microrts-squnet-eval-defaults
+    env_overrides:
+      <<: *microrts-squnet-eval-env-overrides
+      make_kwargs:
+        <<: *microrts-ai-eval-env-make-kwargs-overrides
+        max_steps: 4000
+        map_paths: [maps/16x16/basesWorkers16x16A.xml]
+  policy_hyperparams: &microrts-squnet-map16-policy-defaults
+    <<: *microrts-squnet-policy-defaults
+    channels_per_level: [128, 256, 256, 256]
+    strides_per_level: [2, 2, 2]
+    encoder_residual_blocks_per_level: [1, 1, 1, 1]
+    decoder_residual_blocks_per_level: [1, 1, 1]
+  algo_hyperparams: &microrts-squnet-map16-algo-defaults
+    <<: *microrts-squnet-algo-defaults
+    batch_size: 6144
+
+Microrts-squnet-map16-selfplay: &microrts-squnet-map16-selfplay
+  <<: *microrts-squnet-map16
+  n_timesteps: !!float 200e6
+  hyperparam_transitions_kwargs:
+    <<: *microrts-squnet-map12-selfplay-phases
+
+Microrts-squnet-map32: &microrts-squnet-map32
+  <<: *microrts-squnet
+  env_id: Microrts-squnet-map32
+  env_hyperparams: &microrts-squnet-map32-env-defaults
+    <<: *microrts-squnet-env-defaults
+    n_envs: 24
+    map_paths:
+      - maps/DoubleGame24x24.xml
+      - maps/BWDistantResources32x32.xml
+      - maps/chambers32x32.xml
+    make_kwargs:
+      <<: *microrts-selfplay-env-make-kwargs-defaults
+      num_selfplay_envs: 24
+      max_steps: 6000
+    self_play_kwargs:
+      <<: *microrts-selfplay-self-play-kwargs-defaults
+      num_old_policies: 6
+      swap_window_size: 3
+    bots:
+      coacAI: 3
+      mayari: 3
+  eval_hyperparams: &microrts-squnet-map32-eval-defaults
+    <<: *microrts-squnet-eval-defaults
+    env_overrides:
+      <<: *microrts-squnet-eval-env-overrides
+      make_kwargs:
+        <<: *microrts-ai-eval-env-make-kwargs-overrides
+        max_steps: 6000
+        map_paths: [maps/BWDistantResources32x32.xml]
+  policy_hyperparams: &microrts-squnet-map32-policy-defaults
+    <<: *microrts-squnet-policy-defaults
+    channels_per_level: [128, 256, 256, 256]
+    strides_per_level: [2, 2, 4]
+    encoder_residual_blocks_per_level: [1, 1, 1, 1]
+    decoder_residual_blocks_per_level: [1, 1, 1]
+  algo_hyperparams: &microrts-squnet-map32-algo-defaults
+    <<: *microrts-squnet-algo-defaults
+    batch_size: 3072
+
+Microrts-squnet-map32-selfplay: &microrts-squnet-map32-selfplay
+  <<: *microrts-squnet-map32
+  n_timesteps: !!float 200e6
+  hyperparam_transitions_kwargs:
+    <<: *microrts-squnet-map12-selfplay-phases
+
+Microrts-squnet-map64: &microrts-squnet-map64
+  <<: *microrts-squnet
+  env_id: Microrts-squnet-map64
+  env_hyperparams: &microrts-squnet-map64-env-defaults
+    <<: *microrts-squnet-env-defaults
+    n_envs: 24
+    map_paths:
+      - maps/BroodWar/(4)BloodBath.scmB.xml # 64x64
+      - maps/BroodWar/(4)BloodBath.scmE.xml # 64x64
+    make_kwargs:
+      <<: *microrts-selfplay-env-make-kwargs-defaults
+      num_selfplay_envs: 20
+      max_steps: 8000
+    self_play_kwargs:
+      <<: *microrts-selfplay-self-play-kwargs-defaults
+      num_old_policies: 4
+      swap_window_size: 4
+    bots:
+      coacAI: 4
+      mayari: 4
+  eval_hyperparams: &microrts-squnet-map64-eval-defaults
+    <<: *microrts-squnet-eval-defaults
+    env_overrides:
+      <<: *microrts-squnet-eval-env-overrides
+      make_kwargs:
+        <<: *microrts-ai-eval-env-make-kwargs-overrides
+        max_steps: 8000
+        map_paths: [maps/BroodWar/(4)BloodBath.scmB.xml]
+  policy_hyperparams: &microrts-squnet-map64-policy-defaults
+    <<: *microrts-squnet-policy-defaults
+    channels_per_level: [128, 256, 256, 256]
+    strides_per_level: [2, 4, 4]
+    encoder_residual_blocks_per_level: [1, 1, 1, 1]
+    decoder_residual_blocks_per_level: [1, 1, 1]
+  algo_hyperparams: &microrts-squnet-map64-algo-defaults
+    <<: *microrts-squnet-algo-defaults
+    batch_size: 1536
+
+Microrts-squnet-map64-selfplay: &microrts-squnet-map64-selfplay
+  <<: *microrts-squnet-map64
+  n_timesteps: !!float 200e6
+  hyperparam_transitions_kwargs:
+    <<: *microrts-squnet-map12-selfplay-phases
+
 Microrts-selfplay-dc-phases: &microrts-sp-dc-phases-defaults
   <<: *microrts-selfplay-defaults
   env_hyperparams: &microrts-sp-dc-phases-env-defaults
@@ -773,9 +907,10 @@ Microrts-selfplay-dc-phases-final: &microrts-sp-dc-phases-final-defaults
       - 0.1
 
 Microrts-debug: &microrts-debug-defaults
-  <<: *microrts-squnet-map12-wide-selfplay
+  <<: *microrts-squnet-map64-selfplay
+  device: mps
   eval_hyperparams:
-    <<: *microrts-sp-dc-phases-eval-defaults
+    <<: *microrts-squnet-map64-eval-defaults
     step_freq: !!float 1e5
 
 Microrts-agent: &microrts-agent

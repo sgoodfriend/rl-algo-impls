@@ -198,4 +198,5 @@ class SqueezeUnetActorCriticNetwork(BackboneActorCritic):
             critic_channels=critic_channels,
             init_layers_orthogonal=init_layers_orthogonal,
             cnn_layers_init_orthogonal=cnn_layers_init_orthogonal,
+            strides=strides_per_level,
         )
