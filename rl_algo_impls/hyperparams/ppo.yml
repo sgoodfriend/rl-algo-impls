@@ -676,7 +676,7 @@ Microrts-squnet-map64: &microrts-squnet-map64
     decoder_residual_blocks_per_level: [1, 1, 1]
   algo_hyperparams: &microrts-squnet-map64-algo-defaults
     <<: *microrts-squnet-algo-defaults
-    batch_size: 512
+    batch_size: 384
 
 Microrts-squnet-map64-selfplay: &microrts-squnet-map64-selfplay
   <<: *microrts-squnet-map64
