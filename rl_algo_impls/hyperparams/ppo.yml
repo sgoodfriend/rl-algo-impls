@@ -521,12 +521,17 @@ _Microrts-A10-tweaks-base: &microrts-a10-tweaks-base
   <<: *microrts-sp-dc-phases-a10-defaults
   policy_hyperparams:
     <<: *microrts-sp-dc-phases-policy-defaults
-    load_run_path: sgoodfriend/rl-algo-impls-benchmarks/df4flrs4
-    load_run_path_best: false
+    load_run_path: sgoodfriend/rl-algo-impls-benchmarks/9bz7wsuv
+    load_run_path_best: true
 
-Microrts-A10-finetuned: &microrts-a10-finetuned
+Microrts-A6000-finetuned: &microrts-a6000-finetuned
   <<: *microrts-a10-tweaks-base
   n_timesteps: !!float 100e6
+  algo_hyperparams:
+    <<: *microrts-sp-dc-phases-a10-algo-defaults
+    batch_size: 4096
+    gamma: [0.99, 0.999, 0.999]
+    gae_lambda: [0.95, 0.99, 0.99]
   hyperparam_transitions_kwargs:
     phases:
       - multi_reward_weights: [0, 0.99, 0.01] # Win-loss sparse rewards
@@ -578,7 +583,7 @@ Microrts-A6000-finetuned-shaped: &microrts-a6000-finetuned-shaped
       - 0.45
 
 Microrts-A6000-finetuned-coac: &microrts-a6000-finetuned-coac
-  <<: *microrts-a6000-finetuned-shaped
+  <<: *microrts-a6000-finetuned
   env_hyperparams: &microrts-a6000-finetuned-coac-env-defaults
     <<: *microrts-sp-dc-phases-env-defaults
     make_kwargs:
