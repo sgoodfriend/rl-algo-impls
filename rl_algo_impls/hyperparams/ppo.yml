@@ -294,7 +294,6 @@ _microrts_ai: &microrts-ai-defaults
     env_overrides: &microrts-ai-eval-env-overrides
       make_kwargs: &microrts-ai-eval-env-make-kwargs-overrides
         <<: *microrts-ai-env-make-kwargs-defaults
-        max_steps: 4000
         reward_weight: [1.0, 0, 0, 0, 0, 0, 0]
 
 MicrortsAttackPassiveEnemySparseReward-v3:
@@ -502,6 +501,12 @@ Microrts-squnet-map12: &microrts-squnet-map12
     bots:
       coacAI: 4
       mayari: 4
+  eval_hyperparams: &microrts-squnet-map12-eval-defaults
+    <<: *microrts-squnet-eval-defaults
+    make_kwargs:
+      <<: *microrts-ai-eval-env-make-kwargs-overrides
+      max_steps: 3000
+      map_paths: [maps/8x8/basesWorkers8x8A.xml]
   policy_hyperparams: &microrts-squnet-map12-policy-defaults
     <<: *microrts-squnet-policy-defaults
     channels_per_level: [64, 128, 256]
