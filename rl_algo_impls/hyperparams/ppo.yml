@@ -510,7 +510,7 @@ Microrts-squnet-map12: &microrts-squnet-map12
     decoder_residual_blocks_per_level: [1, 1]
   algo_hyperparams: &microrts-squnet-map12-algo-defaults
     <<: *microrts-squnet-algo-defaults
-    batch_size: 8192
+    batch_size: 16384
 
 Microrts-squnet-map12-selfplay: &microrts-squnet-map12-selfplay
   <<: *microrts-squnet-map12
