@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import torch
@@ -32,6 +32,7 @@ class BackboneActorCritic(ActorCriticNetwork):
         critic_channels: int = 64,
         init_layers_orthogonal: bool = True,
         cnn_layers_init_orthogonal: bool = False,
+        strides: Sequence[int] = (2, 2),
     ):
         if num_additional_critics and not additional_critic_activation_functions:
             additional_critic_activation_functions = [
@@ -76,44 +77,46 @@ class BackboneActorCritic(ActorCriticNetwork):
         )
 
         def critic_head(output_activation_name: str = "identity") -> nn.Module:
+            def down_conv(
+                in_channels: int, out_channels: int, stride: int
+            ) -> nn.Module:
+                kernel_size = max(3, stride)
+                return nn.Sequential(
+                    layer_init(
+                        nn.Conv2d(
+                            in_channels,
+                            out_channels,
+                            kernel_size,
+                            stride=stride,
+                            padding=1 if kernel_size % 2 else 0,
+                        ),
+                        init_layers_orthogonal=cnn_layers_init_orthogonal,
+                    ),
+                    nn.GELU(),
+                )
+
+            down_convs = [down_conv(backbone_out_channels, critic_channels, strides[0])]
+            for s in strides[1:]:
+                down_convs.append(down_conv(critic_channels, critic_channels, s))
             return nn.Sequential(
-                *[
-                    layer_init(
-                        nn.Conv2d(
-                            backbone_out_channels,
-                            critic_channels,
-                            3,
-                            stride=2,
-                            padding=1,
+                *(
+                    down_convs
+                    + [
+                        nn.AdaptiveAvgPool2d(1),
+                        nn.Flatten(),
+                        layer_init(
+                            nn.Linear(critic_channels, critic_channels),
+                            init_layers_orthogonal=init_layers_orthogonal,
                         ),
-                        init_layers_orthogonal=cnn_layers_init_orthogonal,
-                    ),
-                    nn.GELU(),
-                    layer_init(
-                        nn.Conv2d(
-                            critic_channels,
-                            critic_channels,
-                            3,
-                            stride=2,
-                            padding=1,
+                        nn.GELU(),
+                        layer_init(
+                            nn.Linear(critic_channels, 1),
+                            init_layers_orthogonal=init_layers_orthogonal,
+                            std=1.0,
                         ),
-                        init_layers_orthogonal=cnn_layers_init_orthogonal,
-                    ),
-                    nn.GELU(),
-                    nn.AdaptiveAvgPool2d(1),
-                    nn.Flatten(),
-                    layer_init(
-                        nn.Linear(critic_channels, critic_channels),
-                        init_layers_orthogonal=init_layers_orthogonal,
-                    ),
-                    nn.GELU(),
-                    layer_init(
-                        nn.Linear(critic_channels, 1),
-                        init_layers_orthogonal=init_layers_orthogonal,
-                        std=1.0,
-                    ),
-                    ACTIVATION[output_activation_name](),
-                ]
+                        ACTIVATION[output_activation_name](),
+                    ]
+                )
             )
 
         self.critic_heads = HStack(
