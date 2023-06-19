@@ -295,6 +295,7 @@ _microrts_ai: &microrts-ai-defaults
       make_kwargs: &microrts-ai-eval-env-make-kwargs-overrides
         <<: *microrts-ai-env-make-kwargs-defaults
         reward_weight: [1.0, 0, 0, 0, 0, 0, 0]
+        bot_envs_alternate_player: false
 
 MicrortsAttackPassiveEnemySparseReward-v3:
   <<: *microrts-ai-defaults
@@ -406,6 +407,7 @@ Microrts-selfplay-unet: &microrts-selfplay-defaults
     make_kwargs: &microrts-selfplay-env-make-kwargs-defaults
       <<: *microrts-ai-env-make-kwargs-defaults
       num_selfplay_envs: 36
+      bot_envs_alternate_player: true
     self_play_kwargs: &microrts-selfplay-self-play-kwargs-defaults
       num_old_policies: 12
       save_steps: 300000
@@ -759,7 +761,7 @@ Microrts-selfplay-dc-phases-final: &microrts-sp-dc-phases-final-defaults
       - 0.4
       - 0.1
 
-Microrts-debug: &microrts-sp-dc-phases-debug-defaults
+Microrts-debug: &microrts-debug-defaults
   <<: *microrts-squnet-map12-selfplay
   eval_hyperparams:
     <<: *microrts-sp-dc-phases-eval-defaults
