@@ -22,26 +22,30 @@ class SqueezeUnetBackbone(nn.Module):
         init_layers_orthogonal: bool = False,
     ) -> None:
         super().__init__()
-        self.encoders = [
-            nn.Sequential(
-                *(
-                    [
-                        layer_init(
-                            nn.Conv2d(in_channels, channels_per_level[0], 3, padding=1),
-                            init_layers_orthogonal=init_layers_orthogonal,
-                        ),
-                        nn.GELU(),
-                    ]
-                    + [
-                        ResidualBlock(
-                            channels_per_level[0],
-                            init_layers_orthogonal=init_layers_orthogonal,
-                        )
-                        for _ in range(encoder_residual_blocks_per_level[0])
-                    ]
+        self.encoders = nn.ModuleList(
+            [
+                nn.Sequential(
+                    *(
+                        [
+                            layer_init(
+                                nn.Conv2d(
+                                    in_channels, channels_per_level[0], 3, padding=1
+                                ),
+                                init_layers_orthogonal=init_layers_orthogonal,
+                            ),
+                            nn.GELU(),
+                        ]
+                        + [
+                            ResidualBlock(
+                                channels_per_level[0],
+                                init_layers_orthogonal=init_layers_orthogonal,
+                            )
+                            for _ in range(encoder_residual_blocks_per_level[0])
+                        ]
+                    )
                 )
-            )
-        ]
+            ]
+        )
         for in_channels, channels, stride, num_residual_blocks in zip(
             channels_per_level[:-1],
             channels_per_level[1:],
@@ -72,20 +76,22 @@ class SqueezeUnetBackbone(nn.Module):
                     )
                 )
             )
-        self.decoders = [
-            nn.Sequential(
-                layer_init(
-                    nn.ConvTranspose2d(
-                        channels_per_level[-1],
-                        channels_per_level[-2],
-                        kernel_size=strides_per_level[-1],
-                        stride=strides_per_level[-1],
+        self.decoders = nn.ModuleList(
+            [
+                nn.Sequential(
+                    layer_init(
+                        nn.ConvTranspose2d(
+                            channels_per_level[-1],
+                            channels_per_level[-2],
+                            kernel_size=strides_per_level[-1],
+                            stride=strides_per_level[-1],
+                        ),
+                        init_layers_orthogonal=init_layers_orthogonal,
                     ),
-                    init_layers_orthogonal=init_layers_orthogonal,
-                ),
-                nn.GELU(),
-            )
-        ]
+                    nn.GELU(),
+                )
+            ]
+        )
         for channels, out_channels, stride, num_residual_blocks in zip(
             reversed(channels_per_level[1:-1]),
             reversed(channels_per_level[:-2]),
