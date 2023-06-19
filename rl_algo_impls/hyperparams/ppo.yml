@@ -455,6 +455,80 @@ Microrts-selfplay-unet-debug-mps:
   <<: *microrts-selfplay-debug-defaults
   device: mps
 
+_Microrts-squnet: &microrts-squnet
+  <<: *microrts-selfplay-defaults
+  env_hyperparams: &microrts-squnet-env-defaults
+    <<: *microrts-selfplay-env-defaults
+    additional_win_loss_reward: true
+    score_reward_kwargs:
+      delta_every_step: true
+  eval_hyperparams: &microrts-squnet-eval-defaults
+    <<: *microrts-selfplay-eval-defaults
+    env_overrides: &microrts-squnet-eval-env-overrides
+      <<: *microrts-selfplay-eval-env-overrides
+      additional_win_loss_reward: false
+      score_reward_kwargs: {}
+      map_paths: [] # Use default map instead
+  policy_hyperparams: &microrts-squnet-policy-defaults
+    <<: *microrts-ai-policy-defaults
+    actor_head_style: squeeze_unet
+    additional_critic_activation_functions: [tanh, identity]
+  algo_hyperparams: &microrts-squnet-algo-defaults
+    <<: *microrts-ai-algo-defaults
+    learning_rate_decay: none
+    n_epochs: 2
+    gamma: [0.99, 0.999, 0.999]
+    gae_lambda: [0.95, 0.99, 0.99]
+
+Microrts-squnet-map12: &microrts-squnet-map12
+  env_id: Microrts-squnet-map12
+  env_hyperparams: &microrts-squnet-map12-env-defaults
+    <<: *microrts-squnet-env-defaults
+    n_envs: 32
+    map_paths:
+      - maps/8x8/basesWorkers8x8A.xml
+      - maps/8x8/FourBasesWorkers8x8.xml
+      - maps/NoWhereToRun9x8.xml
+      - maps/12x12/basesWorkers12x12J.xml
+    make_kwargs:
+      <<: *microrts-selfplay-env-make-kwargs-defaults
+      num_selfplay_envs: 32
+      max_steps: 3500
+      map_paths: [maps/8x8/basesWorkers8x8A.xml]
+    self_play_kwargs:
+      <<: *microrts-selfplay-self-play-kwargs-defaults
+      num_old_policies: 8
+    bots:
+      coacAI: 4
+      mayari: 4
+  policy_hyperparams: &microrts-squnet-map12-policy-defaults
+    <<: *microrts-squnet-policy-defaults
+    channels_per_level: [64, 128, 256]
+    strides_per_level: [2, 2]
+    encoder_residual_blocks_per_level: [1, 1, 1]
+    decoder_residual_blocks_per_level: [1, 1]
+  algo_hyperparams: &microrts-squnet-map12-algo-defaults
+    <<: *microrts-squnet-algo-defaults
+    batch_size: 8192
+
+Microrts-squnet-map12-selfplay: &microrts-squnet-map12-selfplay
+  <<: *microrts-squnet-map12
+  n_timesteps: !!float 200e6
+  hyperparam_transitions_kwargs: &microrts-squnet-map12-selfplay-phases
+    phases:
+      - multi_reward_weights: [0.8, 0.01, 0.19] # Initial shaped rewards (mostly)
+        vf_coef: [0.5, 0.1, 0.2]
+        ent_coef: 0.01
+        learning_rate: !!float 1e-4
+      - multi_reward_weights: [0, 0.99, 0.01] # Win-loss sparse rewards
+        vf_coef: [0, 0.5, 0.1]
+        ent_coef: 0.001
+        learning_rate: !!float 5e-5
+    durations:
+      - 0.5
+      - 0.3
+      - 0.2
+
 Microrts-selfplay-dc-phases: &microrts-sp-dc-phases-defaults
   <<: *microrts-selfplay-defaults
   env_hyperparams: &microrts-sp-dc-phases-env-defaults
@@ -677,8 +751,8 @@ Microrts-selfplay-dc-phases-final: &microrts-sp-dc-phases-final-defaults
       - 0.4
       - 0.1
 
-Microrts-selfplay-dc-phases-debug: &microrts-sp-dc-phases-debug-defaults
-  <<: *microrts-sp-dc-phases-a6000-defaults
+Microrts-debug: &microrts-sp-dc-phases-debug-defaults
+  <<: *microrts-squnet-map12-selfplay
   eval_hyperparams:
     <<: *microrts-sp-dc-phases-eval-defaults
     step_freq: !!float 1e5

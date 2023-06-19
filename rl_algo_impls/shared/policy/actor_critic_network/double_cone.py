@@ -1,22 +1,13 @@
-from typing import Dict, List, Optional, Tuple, Union
+from typing import List, Optional
 
-import numpy as np
 import torch
 import torch.nn as nn
-from gym.spaces import Box
-from gym.spaces import Dict as DictSpace
-from gym.spaces import MultiDiscrete, Space
+from gym.spaces import Box, Space
 
-from rl_algo_impls.shared.actor import pi_forward
-from rl_algo_impls.shared.actor.gridnet import GridnetDistribution
-from rl_algo_impls.shared.actor.gridnet_decoder import Transpose
-from rl_algo_impls.shared.module.stack import HStack
 from rl_algo_impls.shared.module.utils import layer_init
-from rl_algo_impls.shared.policy.actor_critic_network.network import (
-    ACNForward,
-    ActorCriticNetwork,
+from rl_algo_impls.shared.policy.actor_critic_network.backbone_actor_critic import (
+    BackboneActorCritic,
 )
-from rl_algo_impls.shared.policy.policy import ACTIVATION
 
 
 class SqueezeExcitation(nn.Module):
@@ -168,7 +159,7 @@ class DoubleConeBackbone(nn.Module):
         return self.out_block(self.double_cone(self.in_block(x)))
 
 
-class DoubleConeActorCritic(ActorCriticNetwork):
+class DoubleConeActorCritic(BackboneActorCritic):
     def __init__(
         self,
         observation_space: Space,
@@ -187,29 +178,8 @@ class DoubleConeActorCritic(ActorCriticNetwork):
     ) -> None:
         if cnn_layers_init_orthogonal is None:
             cnn_layers_init_orthogonal = False
-        if num_additional_critics and not additional_critic_activation_functions:
-            additional_critic_activation_functions = [
-                "identity"
-            ] * num_additional_critics
-        super().__init__()
         assert isinstance(observation_space, Box)
-        assert isinstance(action_plane_space, MultiDiscrete)
-        self.range_size = np.max(observation_space.high) - np.min(observation_space.low)  # type: ignore
-        self.action_vec = action_plane_space.nvec  # type: ignore
-        if isinstance(action_space, DictSpace):
-            action_space_per_position = action_space["per_position"]  # type: ignore
-            self.pick_vec = action_space["pick_position"].nvec  # type: ignore
-        elif isinstance(action_space, MultiDiscrete):
-            action_space_per_position = action_space
-            self.pick_vec = None
-        else:
-            raise ValueError(
-                f"action_space {action_space.__class__.__name__} must be MultiDiscrete or gym Dict of MultiDiscrete"
-            )
-
-        self.map_size = len(action_space_per_position.nvec) // len(action_plane_space.nvec)  # type: ignore
-
-        self.backbone = DoubleConeBackbone(
+        backcone = DoubleConeBackbone(
             observation_space.shape[0],  # type: ignore
             backbone_channels,
             pooled_channels,
@@ -218,116 +188,15 @@ class DoubleConeActorCritic(ActorCriticNetwork):
             cone_num_res_blocks=cone_num_res_blocks,
             out_num_res_blocks=out_num_res_blocks,
         )
-        self.actor_head = nn.Sequential(
-            *[
-                layer_init(
-                    nn.Conv2d(
-                        in_channels=backbone_channels,
-                        out_channels=self.action_vec.sum()
-                        + (len(self.pick_vec) if self.pick_vec else 0),
-                        kernel_size=3,
-                        padding=1,
-                    ),
-                    init_layers_orthogonal=init_layers_orthogonal,
-                    std=0.01,
-                ),
-                Transpose((0, 2, 3, 1)),
-            ]
+        super().__init__(
+            observation_space,
+            action_space,
+            action_plane_space,
+            backcone,
+            backbone_channels,
+            num_additional_critics=num_additional_critics,
+            additional_critic_activation_functions=additional_critic_activation_functions,
+            critic_channels=critic_channels,
+            init_layers_orthogonal=init_layers_orthogonal,
+            cnn_layers_init_orthogonal=cnn_layers_init_orthogonal,
         )
-
-        def critic_head(output_activation_name: str = "identity") -> nn.Module:
-            return nn.Sequential(
-                *[
-                    layer_init(
-                        nn.Conv2d(
-                            backbone_channels, critic_channels, 3, stride=2, padding=1
-                        ),
-                        init_layers_orthogonal=cnn_layers_init_orthogonal,
-                    ),
-                    nn.GELU(),
-                    layer_init(
-                        nn.Conv2d(
-                            critic_channels, critic_channels, 3, stride=2, padding=1
-                        ),
-                        init_layers_orthogonal=cnn_layers_init_orthogonal,
-                    ),
-                    nn.GELU(),
-                    nn.AdaptiveAvgPool2d(1),
-                    nn.Flatten(),
-                    layer_init(
-                        nn.Linear(critic_channels, critic_channels),
-                        init_layers_orthogonal=init_layers_orthogonal,
-                    ),
-                    nn.GELU(),
-                    layer_init(
-                        nn.Linear(critic_channels, 1),
-                        init_layers_orthogonal=init_layers_orthogonal,
-                        std=1.0,
-                    ),
-                    ACTIVATION[output_activation_name](),
-                ]
-            )
-
-        self.critic_heads = HStack(
-            [
-                critic_head(act_fn_name)
-                for act_fn_name in ["identity"]
-                + (additional_critic_activation_functions or [])
-            ]
-        )
-
-    def _preprocess(self, obs: torch.Tensor) -> torch.Tensor:
-        if len(obs.shape) == 3:
-            obs = obs.unsqueeze(0)
-        return obs.float() / self.range_size
-
-    def _distribution_and_value(
-        self,
-        obs: torch.Tensor,
-        action: Optional[torch.Tensor] = None,
-        action_masks: Optional[torch.Tensor] = None,
-    ) -> ACNForward:
-        assert (
-            action_masks is not None
-        ), f"No mask case unhandled in {self.__class__.__name__}"
-
-        o = self._preprocess(obs)
-        x = self.backbone(o)
-        logits = self.actor_head(x)
-        pi = GridnetDistribution(
-            int(np.prod(o.shape[-2:])), self.action_vec, logits, action_masks
-        )
-
-        v = self.critic_heads(x)
-        if v.shape[-1] == 1:
-            v.squeeze(-1)
-
-        return ACNForward(pi_forward(pi, action), v)
-
-    def value(self, obs: torch.Tensor) -> torch.Tensor:
-        o = self._preprocess(obs)
-        x = self.backbone(o)
-        v = self.critic_heads(x)
-        if v.shape[-1] == 1:
-            v.squeeze(-1)
-        return v
-
-    def reset_noise(self, batch_size: Optional[int] = None) -> None:
-        pass
-
-    @property
-    def action_shape(self) -> Union[Tuple[int, ...], Dict[str, Tuple[int, ...]]]:
-        per_position_action_shape = (self.map_size, len(self.action_vec))
-        if self.pick_vec:
-            return {
-                "per_position": per_position_action_shape,
-                "pick_position": (len(self.pick_vec),),
-            }
-        return per_position_action_shape
-
-    @property
-    def value_shape(self) -> Tuple[int, ...]:
-        if len(self.critic_heads) > 1:
-            return (len(self.critic_heads),)
-        else:
-            return ()

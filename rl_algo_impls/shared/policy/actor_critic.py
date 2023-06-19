@@ -15,6 +15,9 @@ from rl_algo_impls.shared.policy.actor_critic_network import (
 from rl_algo_impls.shared.policy.actor_critic_network.double_cone import (
     DoubleConeActorCritic,
 )
+from rl_algo_impls.shared.policy.actor_critic_network.squeeze_unet import (
+    SqueezeUnetActorCriticNetwork,
+)
 from rl_algo_impls.shared.policy.policy import Policy
 from rl_algo_impls.shared.tensor_utils import NumpyOrDict, tensor_to_numpy
 from rl_algo_impls.wrappers.vectorable_wrapper import (
@@ -119,6 +122,10 @@ class ActorCritic(OnPolicy):
         out_num_res_blocks: int = 4,
         num_additional_critics: int = 0,
         additional_critic_activation_functions: Optional[List[str]] = None,
+        channels_per_level: Optional[List[int]] = None,
+        strides_per_level: Optional[List[int]] = None,
+        encoder_residual_blocks_per_level: Optional[List[int]] = None,
+        decoder_residual_blocks_per_level: Optional[List[int]] = None,
         **kwargs,
     ) -> None:
         super().__init__(env, **kwargs)
@@ -158,6 +165,22 @@ class ActorCritic(OnPolicy):
                 out_num_res_blocks=out_num_res_blocks,
                 num_additional_critics=num_additional_critics,
                 additional_critic_activation_functions=additional_critic_activation_functions,
+            )
+        elif actor_head_style == "squeeze_unet":
+            assert action_plane_space is not None
+            self.network = SqueezeUnetActorCriticNetwork(
+                observation_space,
+                action_space,
+                action_plane_space,
+                init_layers_orthogonal=init_layers_orthogonal,
+                cnn_layers_init_orthogonal=cnn_layers_init_orthogonal,
+                num_additional_critics=num_additional_critics,
+                additional_critic_activation_functions=additional_critic_activation_functions,
+                critic_channels=critic_channels,
+                channels_per_level=channels_per_level,
+                strides_per_level=strides_per_level,
+                encoder_residual_blocks_per_level=encoder_residual_blocks_per_level,
+                decoder_residual_blocks_per_level=decoder_residual_blocks_per_level,
             )
         elif share_features_extractor:
             self.network = ConnectedTrioActorCriticNetwork(
