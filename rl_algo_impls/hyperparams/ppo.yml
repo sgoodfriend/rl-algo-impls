@@ -496,7 +496,6 @@ Microrts-squnet-map12: &microrts-squnet-map12
       <<: *microrts-selfplay-env-make-kwargs-defaults
       num_selfplay_envs: 32
       max_steps: 3500
-      map_paths: [maps/8x8/basesWorkers8x8A.xml]
     self_play_kwargs:
       <<: *microrts-selfplay-self-play-kwargs-defaults
       num_old_policies: 8
