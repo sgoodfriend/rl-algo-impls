@@ -178,6 +178,7 @@ class MicroRTSGridModeVecEnv(MicroRTSInterface):
         self.delta_rewards = np.zeros_like(self.delta_rewards)
 
         responses = self.vec_client.reset(self.players)
+        self._resources = to_byte_array_list(responses.resources)
         self._terrain = to_byte_array_list(responses.terrain)
         return (
             to_byte_array_list(responses.observation),
@@ -228,6 +229,7 @@ class MicroRTSGridModeVecEnv(MicroRTSInterface):
         reward, done = np.array(responses.reward), np.array(responses.done)
         obs = to_byte_array_list(responses.observation)
         mask = to_byte_array_list(responses.mask)
+        self._resources = to_byte_array_list(responses.resources)
         infos = self._encode_info(reward, done[:, 0])
         # check if it is in evaluation, if not, then change maps
         if len(self.cycle_maps) > 0:
@@ -256,6 +258,8 @@ class MicroRTSGridModeVecEnv(MicroRTSInterface):
                     mask[done_idx + 1] = np.array(p1_response.mask)
                     self._terrain[done_idx] = np.array(p0_response.terrain)
                     self._terrain[done_idx + 1] = np.array(p1_response.terrain)
+                    self._resources[done_idx] = np.array(p0_response.resources)
+                    self._resources[done_idx + 1] = np.array(p1_response.resources)
                 else:
                     env_idx = done_idx - self.num_selfplay_envs
                     self.vec_client.clients[env_idx].mapPath = next(self.next_map)
@@ -267,6 +271,7 @@ class MicroRTSGridModeVecEnv(MicroRTSInterface):
                     obs[done_idx] = np.array(response.observation)
                     mask[done_idx] = np.array(response.mask)
                     self._terrain[done_idx] = np.array(response.terrain)
+                    self._resources[done_idx] = np.array(response.resources)
         else:
             if self.bot_envs_alternate_player:
                 for done_idx, d in enumerate(done[:, 0]):
@@ -282,6 +287,7 @@ class MicroRTSGridModeVecEnv(MicroRTSInterface):
                     obs[done_idx] = np.array(response.observation)
                     mask[done_idx] = np.array(response.mask)
                     self._terrain[done_idx] = np.array(response.terrain)
+                    self._resources[done_idx] = np.array(response.resources)
         return obs, mask, reward @ self.reward_weight, done[:, 0], infos
 
     def step(self, ac):
@@ -312,6 +318,9 @@ class MicroRTSGridModeVecEnv(MicroRTSInterface):
         return self._terrain[env_idx].reshape(
             (self._heights[env_idx], self._widths[env_idx])
         )
+
+    def resources(self, env_idx: int) -> np.ndarray:
+        return self._resources[env_idx]
 
     def render(self, mode="human"):
         if mode == "human":

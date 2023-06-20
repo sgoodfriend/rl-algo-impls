@@ -47,6 +47,7 @@ class MicroRTSSocketEnv(MicroRTSInterface):
         self._matrix_mask = None
         self.obs = None
         self.action_mask = None
+        self._resources = None
         self._start()
 
     def step(self, action):
@@ -91,6 +92,11 @@ class MicroRTSSocketEnv(MicroRTSInterface):
         assert self._terrain is not None
         return self._terrain
 
+    def resources(self, env_idx: int) -> np.ndarray:
+        assert env_idx == 0
+        assert self._resources is not None
+        return self._resources
+
     def close(self, **kwargs):
         pass
 
@@ -107,18 +113,19 @@ class MicroRTSSocketEnv(MicroRTSInterface):
                 if self.command == MessageType.GET_ACTION:
                     self._steps_since_reset += 1
                     self._get_action_receive_time = time.perf_counter()
-                if len(args) >= 4:
-                    self.height = args[2][0]
-                    self.width = args[2][1]
-                    self._terrain = np.frombuffer(args[3], dtype=np.int8).reshape(
+                if len(args) >= 5:
+                    self.height = args[3][0]
+                    self.width = args[3][1]
+                    self._terrain = np.frombuffer(args[4], dtype=np.int8).reshape(
                         (self.height, self.width)
                     )
                 self.obs = [np.frombuffer(args[0], dtype=np.int8)]
                 self.action_mask = [np.frombuffer(args[1], dtype=np.int8)]
-                if len(args) >= 6:
-                    self._matrix_obs = np.array(json.loads(args[4].decode("utf-8")))
+                self._resources = np.frombuffer(args[2], dtype=np.int8)
+                if len(args) >= 7:
+                    self._matrix_obs = np.array(json.loads(args[5].decode("utf-8")))
                     self._matrix_mask = np.array(
-                        json.loads(args[5].decode("utf-8")),
+                        json.loads(args[6].decode("utf-8")),
                     )
                 return self.obs, self.action_mask, np.zeros(1), np.zeros(1), [{}]
             elif self.command == MessageType.GAME_OVER:

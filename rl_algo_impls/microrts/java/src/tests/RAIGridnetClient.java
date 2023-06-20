@@ -96,7 +96,7 @@ public class RAIGridnetClient {
                 + maxAttackRadius * maxAttackRadius];
         rewards = new double[rfs.length];
         dones = new boolean[rfs.length];
-        response = new RAIResponse(null, null, null, null, null, null);
+        response = new RAIResponse(null, null, null, null, null, null, null);
     }
 
     public byte[] render(boolean returnPixels) throws Exception {
@@ -146,6 +146,7 @@ public class RAIGridnetClient {
             dones[i] = rfs[i].isDone();
             rewards[i] = rfs[i].getReward();
         }
+
         var gsw = new GameStateWrapper(gs);
         response.set(
                 gsw.getArrayObservation(player),
@@ -153,26 +154,9 @@ public class RAIGridnetClient {
                 rewards,
                 dones,
                 ai1.computeInfo(player, player2gs),
-                null);
+                null,
+                gsw.getPlayerResources(player));
         return response;
-    }
-
-    public int[][][] getMasks(int player) throws Exception {
-        for (int i = 0; i < masks.length; i++) {
-            for (int j = 0; j < masks[0].length; j++) {
-                for (int k = 0; k < masks[0][0].length; k++) {
-                    masks[i][j][k] = 0;
-                }
-            }
-        }
-        for (Unit u : pgs.getUnits()) {
-            final UnitActionAssignment uaa = gs.getActionAssignment(u);
-            if (u.getPlayer() == player && uaa == null) {
-                masks[u.getY()][u.getX()][0] = 1;
-                UnitAction.getValidActionArray(u, gs, utt, masks[u.getY()][u.getX()], maxAttackRadius, 1);
-            }
-        }
-        return masks;
     }
 
     public String sendUTT() throws Exception {
@@ -197,6 +181,7 @@ public class RAIGridnetClient {
             rewards[i] = 0;
             dones[i] = false;
         }
+
         var gsw = new GameStateWrapper(gs);
         response.set(
                 gsw.getArrayObservation(player),
@@ -204,7 +189,8 @@ public class RAIGridnetClient {
                 rewards,
                 dones,
                 "{}",
-                gsw.getTerrain());
+                gsw.getTerrain(),
+                gsw.getPlayerResources(player));
         return response;
     }
 

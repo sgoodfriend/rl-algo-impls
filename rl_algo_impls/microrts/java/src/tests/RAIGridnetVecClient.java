@@ -70,6 +70,7 @@ public class RAIGridnetVecClient {
     byte[][] observation;
     double[][] reward;
     boolean[][] done;
+    byte[][] resources;
     RAIResponse[] rs;
     RAIResponses responses;
     byte[][] terrain;
@@ -106,11 +107,12 @@ public class RAIGridnetVecClient {
         observation = new byte[s1][];
         reward = new double[s1][rfs.length];
         done = new boolean[s1][rfs.length];
+        resources = new byte[s1][2];
         terminalReward1 = new double[rfs.length];
         terminalRone1 = new boolean[rfs.length];
         terminalReward2 = new double[rfs.length];
         terminalRone2 = new boolean[rfs.length];
-        responses = new RAIResponses(null, null, null, null, null);
+        responses = new RAIResponses(null, null, null, null, null, null);
         terrain = new byte[s1][];
         rs = new RAIResponse[s1];
     }
@@ -131,8 +133,9 @@ public class RAIGridnetVecClient {
             reward[i] = rs[i].reward;
             done[i] = rs[i].done;
             terrain[i] = rs[i].terrain;
+            resources[i] = rs[i].resources;
         }
-        responses.set(observation, mask, reward, done, terrain);
+        responses.set(observation, mask, reward, done, terrain, resources);
         return responses;
     }
 
@@ -189,8 +192,9 @@ public class RAIGridnetVecClient {
             mask[i] = rs[i].mask;
             reward[i] = rs[i].reward;
             done[i] = rs[i].done;
+            resources[i] = rs[i].resources;
         }
-        responses.set(observation, mask, reward, done, null);
+        responses.set(observation, mask, reward, done, null, resources);
         return responses;
     }
 

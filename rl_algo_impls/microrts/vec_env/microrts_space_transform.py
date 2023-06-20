@@ -70,13 +70,27 @@ class MicroRTSSpaceTransform(gym.vector.VectorEnv):
         ]
         if self.interface.partial_obs:
             self.planes.append(Planes([OneHotPlane(2)]))
-
         self.n_dim = sum(p.n_dim for p in self.planes)
+
+        self.resources_planes = [
+            Planes(  # Player Resources
+                [
+                    MultiplierPlane(1 / 32, clip_expected=True),
+                    ThresholdPlane(1),  # Worker Cost
+                    ThresholdPlane(2),  # Light or Ranged Cost
+                    ThresholdPlane(3),  # Heavy Cost
+                    ThresholdPlane(5),  # Barracks Cost
+                    ThresholdPlane(10),  # Base Cost
+                    ThresholdPlane(32),
+                ]
+            )
+        ] * 2
+        self.resources_dim = sum(rp.n_dim for rp in self.resources_planes)
 
         observation_space = gym.spaces.Box(
             low=0.0,
             high=1.0,
-            shape=(self.height, self.width, self.n_dim),
+            shape=(self.height, self.width, self.n_dim + self.resources_dim),
             dtype=np.float32,
         )
 
@@ -234,7 +248,26 @@ class MicroRTSSpaceTransform(gym.vector.VectorEnv):
             destination_col = p.transform(obs, source_col, obs_planes, destination_col)
         assert destination_col == obs_planes.shape[-1]
 
-        return obs_planes.reshape(self.height, self.width, -1)
+        resources = np.expand_dims(self.interface.resources(env_idx), 0)
+        destination_col = 0
+        resource_planes = np.zeros((1, self.resources_dim), dtype=np.float32)
+        for source_col, rp in enumerate(self.resources_planes):
+            destination_col = rp.transform(
+                resources, source_col, resource_planes, destination_col
+            )
+        assert destination_col == resource_planes.shape[-1]
+
+        return np.concatenate(
+            [
+                obs_planes.reshape(self.height, self.width, -1),
+                np.ones(
+                    (self.height, self.width, resource_planes.shape[-1]),
+                    dtype=np.float32,
+                )
+                * resource_planes,
+            ],
+            axis=-1,
+        )
 
     def get_action_mask(self) -> np.ndarray:
         return self._action_mask

@@ -27,6 +27,7 @@ class Plane(ABC):
 class OffsetPlane(Plane):
     multiplier: float
     offset: int
+    clip_expected: bool = False
 
     def transform(
         self,
@@ -38,7 +39,7 @@ class OffsetPlane(Plane):
         col = (
             source[:, source_col].astype(destination.dtype) + self.offset
         ) * self.multiplier
-        if np.any(np.logical_or(col < 0, col > 1)):
+        if not self.clip_expected and np.any(np.logical_or(col < 0, col > 1)):
             logging.warn(
                 f"{self.__class__.__name__}: source_col {source_col} has scaled values outside [0, 1]"
             )
@@ -51,8 +52,8 @@ class OffsetPlane(Plane):
 
 
 class MultiplierPlane(OffsetPlane):
-    def __init__(self, multiplier: float) -> None:
-        super().__init__(multiplier=multiplier, offset=0)
+    def __init__(self, multiplier: float, clip_expected: bool = False) -> None:
+        super().__init__(multiplier=multiplier, offset=0, clip_expected=clip_expected)
 
 
 @dataclass

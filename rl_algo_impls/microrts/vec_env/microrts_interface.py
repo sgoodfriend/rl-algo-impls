@@ -52,6 +52,10 @@ class MicroRTSInterface(ABC):
         ...
 
     @abstractmethod
+    def resources(self, env_idx: int) -> np.ndarray:
+        ...
+
+    @abstractmethod
     def close(self, **kwargs):
         ...
 

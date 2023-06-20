@@ -224,7 +224,8 @@ public class RAISocketAI extends AIWithComputationBudget {
 
         ArrayList<byte[]> obs = new ArrayList<>(Arrays.asList(
                 gsw.getArrayObservation(player),
-                gsw.getBinaryMask(player)));
+                gsw.getBinaryMask(player),
+                gsw.getPlayerResources(player)));
         if (!sentInitialMapInformation || DEBUG >= 1) {
             sentInitialMapInformation = true;
             PhysicalGameState pgs = gs.getPhysicalGameState();
@@ -265,6 +266,7 @@ public class RAISocketAI extends AIWithComputationBudget {
         ArrayList<byte[]> obs = new ArrayList<>(Arrays.asList(
                 gsw.getArrayObservation(0),
                 gsw.getBinaryMask(0),
+                gsw.getPlayerResources(0),
                 new byte[] { (byte) pgs.getHeight(), (byte) pgs.getWidth() },
                 gsw.getTerrain()));
         if (DEBUG >= 1) {

@@ -597,4 +597,11 @@ public class GameStateWrapper {
     public static byte byteClampValue(int v) {
         return (byte) (Math.max(0, Math.min(v, 255)) - 128);
     }
+
+    public byte[] getPlayerResources(int player) {
+        return new byte[] {
+                (byte) gs.getPlayer(player).getResources(),
+                (byte) gs.getPlayer(1 - player).getResources()
+        };
+    }
 }

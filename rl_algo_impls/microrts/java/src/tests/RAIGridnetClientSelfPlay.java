@@ -94,7 +94,7 @@ public class RAIGridnetClientSelfPlay {
                     + maxAttackRadius * maxAttackRadius];
             rewards[i] = new double[rfs.length];
             dones[i] = new boolean[rfs.length];
-            response[i] = new RAIResponse(null, null, null, null, null, null);
+            response[i] = new RAIResponse(null, null, null, null, null, null, null);
         }
     }
 
@@ -154,26 +154,9 @@ public class RAIGridnetClientSelfPlay {
                     rewards[i],
                     dones[i],
                     "{}",
-                    null);
+                    null,
+                    gsw.getPlayerResources(i));
         }
-    }
-
-    public int[][][] getMasks(int player) throws Exception {
-        for (int i = 0; i < masks[0].length; i++) {
-            for (int j = 0; j < masks[0][0].length; j++) {
-                for (int k = 0; k < masks[0][0][0].length; k++) {
-                    masks[player][i][j][k] = 0;
-                }
-            }
-        }
-        for (Unit u : pgs.getUnits()) {
-            final UnitActionAssignment uaa = gs.getActionAssignment(u);
-            if (u.getPlayer() == player && uaa == null) {
-                masks[player][u.getY()][u.getX()][0] = 1;
-                UnitAction.getValidActionArray(u, gs, utt, masks[player][u.getY()][u.getX()], maxAttackRadius, 1);
-            }
-        }
-        return masks[player];
     }
 
     public String sendUTT() throws Exception {
@@ -185,6 +168,7 @@ public class RAIGridnetClientSelfPlay {
     public void reset() throws Exception {
         pgs = PhysicalGameState.load(mapPath, utt);
         gs = new GameState(pgs, utt);
+
         for (int i = 0; i < numPlayers; i++) {
             playergs[i] = gs;
             if (partialObs) {
@@ -195,6 +179,7 @@ public class RAIGridnetClientSelfPlay {
                 rewards[i][j] = 0;
                 dones[i][j] = false;
             }
+
             var gsw = new GameStateWrapper(gs);
             response[i].set(
                     gsw.getArrayObservation(i),
@@ -202,7 +187,8 @@ public class RAIGridnetClientSelfPlay {
                     rewards[i],
                     dones[i],
                     "{}",
-                    gsw.getTerrain());
+                    gsw.getTerrain(),
+                    gsw.getPlayerResources(i));
         }
 
         // return response;
