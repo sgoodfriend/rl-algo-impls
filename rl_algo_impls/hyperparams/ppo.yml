@@ -913,7 +913,7 @@ Microrts-debug: &microrts-debug-defaults
   <<: *microrts-squnet-map12-selfplay
   device: mps
   eval_hyperparams:
-    <<: *microrts-squnet-map64-eval-defaults
+    <<: *microrts-squnet-map12-eval-defaults
     step_freq: !!float 1e5
 
 Microrts-agent: &microrts-agent
