@@ -333,7 +333,7 @@ class MicroRTSGridModeVecEnv(MicroRTSInterface):
             image = Image.frombytes("RGB", (640, 640), bytes_array)
             return np.array(image)[:, :, ::-1]
 
-    def close(self):
+    def close(self, **kwargs):
         if jpype._jpype.isStarted():
             self.vec_client.close()
             jpype.shutdownJVM()
