@@ -488,20 +488,20 @@ _Microrts-squnet-map8: &microrts-squnet-map8
   env_id: Microrts-squnet-map8
   env_hyperparams: &microrts-squnet-map8-env-defaults
     <<: *microrts-squnet-env-defaults
-    n_envs: 48
+    n_envs: 32
     map_paths:
       - maps/8x8/basesWorkers8x8A.xml
       - maps/8x8/FourBasesWorkers8x8.xml
     make_kwargs:
       <<: *microrts-selfplay-env-make-kwargs-defaults
-      num_selfplay_envs: 40
+      num_selfplay_envs: 32
       max_steps: 3000
     self_play_kwargs:
       <<: *microrts-selfplay-self-play-kwargs-defaults
       num_old_policies: 8
     bots:
-      coacAI: 8
-      mayari: 8
+      coacAI: 4
+      mayari: 4
   eval_hyperparams: &microrts-squnet-map8-eval-defaults
     <<: *microrts-squnet-eval-defaults
     env_overrides:
@@ -518,7 +518,7 @@ _Microrts-squnet-map8: &microrts-squnet-map8
     decoder_residual_blocks_per_level: [1, 1]
   algo_hyperparams: &microrts-squnet-map8-algo-defaults
     <<: *microrts-squnet-algo-defaults
-    batch_size: 24576
+    batch_size: 16384
 
 Microrts-squnet-map8-selfplay: &microrts-squnet-map8-selfplay
   <<: *microrts-squnet-map8
