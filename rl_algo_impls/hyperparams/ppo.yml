@@ -701,14 +701,14 @@ Microrts-squnet-map64-selfplay: &microrts-squnet-map64-selfplay
   hyperparam_transitions_kwargs:
     <<: *microrts-squnet-map12-selfplay-phases
 
-_Microrts-squnet-map64-128ch: &microrts-squnet-map64-128ch
+_Microrts-squnet-map64-64ch: &microrts-squnet-map64-128ch
   <<: *microrts-squnet-map64
   policy_hyperparams: &microrts-squnet-map64-128ch-policy-defaults
     <<: *microrts-squnet-map64-policy-defaults
-    channels_per_level: [128, 128, 128, 128]
+    channels_per_level: [64, 64, 64, 64]
   algo_hyperparams:
     <<: *microrts-squnet-map64-algo-defaults
-    batch_size: 512
+    batch_size: 1024
 
 Microrts-squnet-map64-128ch-selfplay: &microrts-squnet-map64-128ch-selfplay
   <<: *microrts-squnet-map64-128ch
