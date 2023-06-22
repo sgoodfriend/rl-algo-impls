@@ -122,6 +122,7 @@ class ActorCritic(OnPolicy):
         out_num_res_blocks: int = 4,
         num_additional_critics: int = 0,
         additional_critic_activation_functions: Optional[List[str]] = None,
+        gelu_pool_conv: bool = True,
         channels_per_level: Optional[List[int]] = None,
         strides_per_level: Optional[List[int]] = None,
         encoder_residual_blocks_per_level: Optional[List[int]] = None,
@@ -165,6 +166,7 @@ class ActorCritic(OnPolicy):
                 out_num_res_blocks=out_num_res_blocks,
                 num_additional_critics=num_additional_critics,
                 additional_critic_activation_functions=additional_critic_activation_functions,
+                gelu_pool_conv=gelu_pool_conv,
             )
         elif actor_head_style == "squeeze_unet":
             assert action_plane_space is not None

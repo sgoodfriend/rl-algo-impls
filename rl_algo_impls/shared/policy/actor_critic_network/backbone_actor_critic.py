@@ -79,9 +79,9 @@ class BackboneActorCritic(ActorCriticNetwork):
         def critic_head(output_activation_name: str = "identity") -> nn.Module:
             def down_conv(
                 in_channels: int, out_channels: int, stride: int
-            ) -> nn.Module:
+            ) -> List[nn.Module]:
                 kernel_size = max(3, stride)
-                return nn.Sequential(
+                return [
                     layer_init(
                         nn.Conv2d(
                             in_channels,
@@ -93,11 +93,11 @@ class BackboneActorCritic(ActorCriticNetwork):
                         init_layers_orthogonal=cnn_layers_init_orthogonal,
                     ),
                     nn.GELU(),
-                )
+                ]
 
-            down_convs = [down_conv(backbone_out_channels, critic_channels, strides[0])]
+            down_convs = down_conv(backbone_out_channels, critic_channels, strides[0])
             for s in strides[1:]:
-                down_convs.append(down_conv(critic_channels, critic_channels, s))
+                down_convs.extend(down_conv(critic_channels, critic_channels, s))
             return nn.Sequential(
                 *(
                     down_convs

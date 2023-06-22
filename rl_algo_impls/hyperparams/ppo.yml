@@ -744,6 +744,7 @@ Microrts-selfplay-dc-phases: &microrts-sp-dc-phases-defaults
     actor_head_style: double_cone
     pooled_channels: 128
     additional_critic_activation_functions: [tanh, identity]
+    gelu_pool_conv: false # Bug with prior model, but was trained with this
   algo_hyperparams: &microrts-sp-dc-phases-algo-defaults
     <<: *microrts-ai-algo-defaults
     learning_rate_decay: none

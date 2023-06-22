@@ -74,15 +74,14 @@ class DoubleConeBlock(nn.Module):
         pooled_channels: int,
         num_residual_blocks: int = 6,
         init_layers_orthogonal: bool = False,
+        gelu_pool_conv: bool = True,
     ) -> None:
         super().__init__()
-        self.pool_conv = nn.Sequential(
-            layer_init(
-                nn.Conv2d(channels, pooled_channels, 4, stride=4),
-                init_layers_orthogonal=init_layers_orthogonal,
-            ),
-            nn.GELU(),
+        self.pool_conv = layer_init(
+            nn.Conv2d(channels, pooled_channels, 4, stride=4),
+            init_layers_orthogonal=init_layers_orthogonal,
         )
+        self.gelu = nn.GELU() if gelu_pool_conv else nn.Identity()
         self.res_blocks = nn.Sequential(
             *[
                 ResidualBlock(
@@ -110,7 +109,7 @@ class DoubleConeBlock(nn.Module):
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return x + self.up_conv(self.res_blocks(self.pool_conv(x)))
+        return x + self.up_conv(self.res_blocks(self.gelu(self.pool_conv(x))))
 
 
 class DoubleConeBackbone(nn.Module):
@@ -123,6 +122,7 @@ class DoubleConeBackbone(nn.Module):
         in_num_res_blocks: int = 4,
         cone_num_res_blocks: int = 6,
         out_num_res_blocks: int = 4,
+        gelu_pool_conv: bool = True,
     ) -> None:
         super().__init__()
         self.in_block = nn.Sequential(
@@ -147,6 +147,7 @@ class DoubleConeBackbone(nn.Module):
             pooled_channels,
             num_residual_blocks=cone_num_res_blocks,
             init_layers_orthogonal=init_layers_orthogonal,
+            gelu_pool_conv=gelu_pool_conv,
         )
         self.out_block = nn.Sequential(
             *[
@@ -175,6 +176,7 @@ class DoubleConeActorCritic(BackboneActorCritic):
         out_num_res_blocks: int = 4,
         num_additional_critics: int = 0,
         additional_critic_activation_functions: Optional[List[str]] = None,
+        gelu_pool_conv: bool = True,
     ) -> None:
         if cnn_layers_init_orthogonal is None:
             cnn_layers_init_orthogonal = False
@@ -187,6 +189,7 @@ class DoubleConeActorCritic(BackboneActorCritic):
             in_num_res_blocks=in_num_res_blocks,
             cone_num_res_blocks=cone_num_res_blocks,
             out_num_res_blocks=out_num_res_blocks,
+            gelu_pool_conv=gelu_pool_conv,
         )
         super().__init__(
             observation_space,
