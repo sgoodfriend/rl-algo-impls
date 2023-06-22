@@ -620,6 +620,7 @@ _Microrts-squnet-map32: &microrts-squnet-map32
       mayari: 3
   eval_hyperparams: &microrts-squnet-map32-eval-defaults
     <<: *microrts-squnet-eval-defaults
+    step_freq: !!float 5e6
     env_overrides:
       <<: *microrts-squnet-eval-env-overrides
       make_kwargs:
@@ -676,6 +677,7 @@ _Microrts-squnet-map64: &microrts-squnet-map64
       mayari: 2
   eval_hyperparams: &microrts-squnet-map64-eval-defaults
     <<: *microrts-squnet-eval-defaults
+    step_freq: !!float 10e6
     env_overrides:
       <<: *microrts-squnet-eval-env-overrides
       make_kwargs:
