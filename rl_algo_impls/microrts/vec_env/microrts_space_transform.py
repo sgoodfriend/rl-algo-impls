@@ -126,8 +126,8 @@ class MicroRTSSpaceTransform(gym.vector.VectorEnv, MicroRTSInterfaceListener):
     ) -> Optional[Tuple[gym.spaces.Box, gym.spaces.MultiDiscrete]]:
         # Set height and width to next factor of 4 if not factor of 4 already
         next_factor_of_4 = lambda n: n + 4 - n % 4 if n % 4 else n
-        height = max(next_factor_of_4(np.max(self.interface.heights)), 12)
-        width = max(next_factor_of_4(np.max(self.interface.widths)), 12)
+        height = next_factor_of_4(np.max(self.interface.heights))
+        width = next_factor_of_4(np.max(self.interface.widths))
         assert height % 4 == 0, f"{height} must be multiple of 4"
         assert width % 4 == 0, f"{width} must be multiple of 4"
         sz = max(height, width)
