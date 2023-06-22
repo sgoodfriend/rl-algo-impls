@@ -522,7 +522,7 @@ _Microrts-squnet-map12: &microrts-squnet-map12
     <<: *microrts-squnet-algo-defaults
     batch_size: 16384
 
-Microrts-squnet-map12-selfplay: &microrts-squnet-map12-selfplay
+_Microrts-squnet-map12-selfplay: &microrts-squnet-map12-selfplay
   <<: *microrts-squnet-map12
   n_timesteps: !!float 200e6
   hyperparam_transitions_kwargs: &microrts-squnet-map12-selfplay-phases
