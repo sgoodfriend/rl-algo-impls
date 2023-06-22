@@ -126,7 +126,9 @@ class MicroRTSGridModeVecEnv(MicroRTSInterface):
         from ai.reward import (
             AttackRewardFunction,
             ProduceBuildingRewardFunction,
-            ProduceCombatUnitRewardFunction,
+            ProduceHeavyUnitRewardFunction,
+            ProduceLightUnitRewardFunction,
+            ProduceRangedUnitRewardFunction,
             ProduceWorkerRewardFunction,
             RAIWinLossRewardFunction,
             ResourceGatherRewardFunction,
@@ -141,7 +143,9 @@ class MicroRTSGridModeVecEnv(MicroRTSInterface):
                 ProduceWorkerRewardFunction(),
                 ProduceBuildingRewardFunction(),
                 AttackRewardFunction(),
-                ProduceCombatUnitRewardFunction(),
+                ProduceLightUnitRewardFunction(),
+                ProduceRangedUnitRewardFunction(),
+                ProduceHeavyUnitRewardFunction(),
                 ScoreRewardFunction(),
                 # CloserToEnemyBaseRewardFunction(),
             ]

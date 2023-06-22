@@ -90,7 +90,9 @@ def make_microrts_env(
             # ProduceWorkerRewardFunction
             # ProduceBuildingRewardFunction
             # AttackRewardFunction
-            # ProduceCombatUnitRewardFunction
+            # ProduceLightUnitRewardFunction
+            # ProduceHeavyUnitRewardFunction
+            # ProduceRangedUnitRewardFunction
             # ScoreRewardFunction
             make_kwargs["reward_weight"] = np.array(make_kwargs["reward_weight"])
         if bots:

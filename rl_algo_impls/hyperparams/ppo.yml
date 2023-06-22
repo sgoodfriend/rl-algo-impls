@@ -269,7 +269,7 @@ _microrts_ai: &microrts-ai-defaults
       max_steps: 4000
       render_theme: 2
       map_paths: [maps/16x16/basesWorkers16x16.xml]
-      reward_weight: [10.0, 1.0, 1.0, 0.2, 1.0, 4.0, 0]
+      reward_weight: [10.0, 1.0, 1.0, 0.2, 1.0, 4.0, 5.25, 6.0, 0]
   policy_hyperparams: &microrts-ai-policy-defaults
     <<: *microrts-policy-defaults
     cnn_flatten_dim: 256
@@ -294,7 +294,7 @@ _microrts_ai: &microrts-ai-defaults
     env_overrides: &microrts-ai-eval-env-overrides
       make_kwargs: &microrts-ai-eval-env-make-kwargs-overrides
         <<: *microrts-ai-env-make-kwargs-defaults
-        reward_weight: [1.0, 0, 0, 0, 0, 0, 0]
+        reward_weight: [1.0, 0, 0, 0, 0, 0, 0, 0, 0]
         bot_envs_alternate_player: false
 
 MicrortsAttackPassiveEnemySparseReward-v3:
@@ -426,7 +426,7 @@ Microrts-selfplay-unet-winloss: &microrts-selfplay-winloss-defaults
     <<: *microrts-selfplay-env-defaults
     make_kwargs:
       <<: *microrts-selfplay-env-make-kwargs-defaults
-      reward_weight: [1.0, 0, 0, 0, 0, 0, 0]
+      reward_weight: [1.0, 0, 0, 0, 0, 0, 0, 0, 0]
   algo_hyperparams: &microrts-selfplay-winloss-algo-defaults
     <<: *microrts-unet-algo-defaults
     gamma: 0.999
