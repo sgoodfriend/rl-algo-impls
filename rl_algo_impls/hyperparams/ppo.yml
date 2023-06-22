@@ -637,7 +637,7 @@ _Microrts-squnet-map32: &microrts-squnet-map32
     <<: *microrts-squnet-algo-defaults
     batch_size: 2048
 
-Microrts-squnet-map32-selfplay: &microrts-squnet-map32-selfplay
+_Microrts-squnet-map32-selfplay: &microrts-squnet-map32-selfplay
   <<: *microrts-squnet-map32
   n_timesteps: !!float 200e6
   hyperparam_transitions_kwargs:
@@ -710,7 +710,7 @@ _Microrts-squnet-map64-64ch: &microrts-squnet-map64-64ch
     channels_per_level: [64, 64, 64, 64]
   algo_hyperparams:
     <<: *microrts-squnet-map64-algo-defaults
-    batch_size: 1024
+    batch_size: 512
 
 Microrts-squnet-map64-64ch-selfplay: &microrts-squnet-map64-64ch-selfplay
   <<: *microrts-squnet-map64-64ch
