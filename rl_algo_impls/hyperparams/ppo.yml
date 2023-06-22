@@ -463,7 +463,7 @@ _Microrts-squnet: &microrts-squnet
     additional_win_loss_reward: true
     score_reward_kwargs:
       delta_every_step: true
-    valid_sizes: [12, 16, 32, 64]
+    valid_sizes: [8, 12, 16, 32, 64]
   eval_hyperparams: &microrts-squnet-eval-defaults
     <<: *microrts-selfplay-eval-defaults
     env_overrides: &microrts-squnet-eval-env-overrides
@@ -559,6 +559,7 @@ _Microrts-squnet-map12: &microrts-squnet-map12
     bots:
       coacAI: 4
       mayari: 4
+    valid_sizes: [12, 16, 32, 64]
   eval_hyperparams: &microrts-squnet-map12-eval-defaults
     <<: *microrts-squnet-eval-defaults
     env_overrides:
