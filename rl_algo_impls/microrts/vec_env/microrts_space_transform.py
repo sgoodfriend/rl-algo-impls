@@ -22,10 +22,17 @@ from rl_algo_impls.wrappers.vectorable_wrapper import VecEnvStepReturn
 
 MAX_HP = 10
 MAX_RESOURCES = 40
-ACTION_TYPE_TO_ACTION_INDEXES = {1: {1}, 2: {2}, 3: {3}, 4: {4, 5}, 5: {6}}
 
 
 class MicroRTSSpaceTransform(gym.vector.VectorEnv):
+ACTION_TYPE_TO_ACTION_INDEXES = {
+    0: {},  # NOOP
+    1: {1},  # move
+    2: {2},  # harvest
+    3: {3},  # return
+    4: {4, 5},  # produce
+    5: {6},  # attack
+}
     def __init__(
         self,
         interface: MicroRTSInterface,
@@ -171,7 +178,7 @@ class MicroRTSSpaceTransform(gym.vector.VectorEnv):
                 if np.all(valid == 0):
                     continue
                 if not valid[a[idx + 1]]:
-                    if idx == 0 or (idx + 1) in ACTION_TYPE_TO_ACTION_INDEXES[a[1]]:
+                    if idx == 0 or idx in ACTION_TYPE_TO_ACTION_INDEXES[a[1]]:
                         logging.error(
                             f"Invalid action in env {env_idx}, loc {a[0]}, action {a[1:]}, idx {idx+1}, valid {valid}"
                         )
