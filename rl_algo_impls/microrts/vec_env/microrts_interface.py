@@ -6,6 +6,14 @@ import numpy as np
 ByteArray = np.ndarray  # [Any, np.dtype[np.int8]] (Requires Python 3.9)
 
 
+class MicroRTSInterfaceListener(ABC):
+    @abstractmethod
+    def map_size_change(
+        self, old_heights: List[int], old_widths: List[int], indexes_changed: int
+    ) -> None:
+        ...
+
+
 class MicroRTSInterface(ABC):
     metadata = {"render.modes": []}
 
@@ -24,7 +32,7 @@ class MicroRTSInterface(ABC):
 
     @property
     @abstractmethod
-    def num_envs(self):
+    def num_envs(self) -> int:
         ...
 
     @property
@@ -57,6 +65,14 @@ class MicroRTSInterface(ABC):
 
     @abstractmethod
     def close(self, **kwargs):
+        ...
+
+    @abstractmethod
+    def add_listener(self, listener: MicroRTSInterfaceListener) -> None:
+        ...
+
+    @abstractmethod
+    def remove_listener(self, listener: MicroRTSInterfaceListener) -> None:
         ...
 
     @abstractmethod

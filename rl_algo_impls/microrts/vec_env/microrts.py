@@ -57,6 +57,8 @@ def make_microrts_env(
         map_paths,
         score_reward_kwargs,
         is_agent,
+        valid_sizes,
+        paper_planes_sizes,
     ) = astuple(hparams)
 
     seed = config.seed(training=training)
@@ -150,7 +152,9 @@ def make_microrts_env(
         envs = MicroRTSGridModeVecEnv(**make_kwargs)
     else:
         envs = MicroRTSSocketEnv()
-    envs = MicroRTSSpaceTransform(envs)
+    envs = MicroRTSSpaceTransform(
+        envs, valid_sizes=valid_sizes, paper_planes_sizes=paper_planes_sizes
+    )
     envs = HwcToChwObservation(envs)
     envs = IsVectorEnv(envs)
     envs = MicrortsMaskWrapper(envs)

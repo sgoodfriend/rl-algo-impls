@@ -1,7 +1,7 @@
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import List, Optional, Sized, Tuple, TypeVar
 
 import numpy as np
 
@@ -100,6 +100,7 @@ class ThresholdPlane(OffsetThresholdPlane):
 @dataclass
 class OneHotPlane(Plane):
     num_planes: int
+    set_out_of_range_to_0: bool = False
 
     def transform(
         self,
@@ -109,13 +110,15 @@ class OneHotPlane(Plane):
         destination_col: int,
     ) -> int:
         col = source[:, source_col]
-        if np.any(np.logical_or(col < 0, col > self.num_planes)):
+        if self.set_out_of_range_to_0:
+            col[np.logical_or(col < 0, col >= self.num_planes)] = 0
+        if np.any(np.logical_or(col < 0, col >= self.num_planes)):
             logging.warn(
                 f"{self.__class__.__name__}: source_col {source_col} has values outside {self.num_planes}"
             )
         destination[:, destination_col : destination_col + self.num_planes] = np.eye(
             self.num_planes
-        )[col.clip(0, self.num_planes)]
+        )[col.clip(0, self.num_planes - 1)]
         return destination_col + self.num_planes
 
     @property
@@ -125,6 +128,7 @@ class OneHotPlane(Plane):
 
 @dataclass
 class Planes:
+    name: str
     planes: List[Plane]
 
     def transform(
@@ -143,3 +147,55 @@ class Planes:
     @property
     def n_dim(self) -> int:
         return sum(p.n_dim for p in self.planes)
+
+
+ObservationTransformSelf = TypeVar(
+    "ObservationTransformSelf", bound="ObservationTransform"
+)
+
+
+class ObservationTransform(Sized):
+    _planes: List[Planes]
+
+    def __init__(
+        self,
+        planes: List[Planes],
+        full_transform: Optional[ObservationTransformSelf] = None,
+    ) -> None:
+        if full_transform is not None:
+            planes_by_name = {ps.name: ps for ps in planes}
+            self._planes = [
+                Planes(
+                    ps.name,
+                    planes_by_name[ps.name].planes if ps.name in planes_by_name else [],
+                )
+                for ps in full_transform
+            ]
+        else:
+            self._planes = planes
+
+        col_offset = 0
+        self._planes_by_name = {}
+        for ps in self._planes:
+            self._planes_by_name[ps.name] = (ps, col_offset)
+            col_offset += ps.n_dim
+
+        self.n_dim = col_offset
+
+    def planes_by_name(self, name: str) -> Planes:
+        return self._planes_by_name[name][0]
+
+    def col_offset_by_name(self, name: str) -> int:
+        return self._planes_by_name[name][1]
+
+    def __iter__(self):
+        return iter(self._planes)
+
+    def __len__(self) -> int:
+        return len(self._planes)
+
+    def append(self, planes: Planes):
+        self._planes.append(planes)
+
+        self._planes_by_name[planes.name] = (planes, self.n_dim)
+        self.n_dim += planes.n_dim

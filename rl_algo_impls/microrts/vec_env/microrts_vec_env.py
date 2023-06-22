@@ -18,6 +18,7 @@ from PIL import Image
 from rl_algo_impls.microrts.vec_env.microrts_interface import (
     ByteArray,
     MicroRTSInterface,
+    MicroRTSInterfaceListener,
 )
 
 MICRORTS_MAC_OS_RENDER_MESSAGE = """
@@ -341,6 +342,12 @@ class MicroRTSGridModeVecEnv(MicroRTSInterface):
         if jpype._jpype.isStarted():
             self.vec_client.close()
             jpype.shutdownJVM()
+
+    def add_listener(self, listener: MicroRTSInterfaceListener) -> None:
+        pass
+
+    def remove_listener(self, listener: MicroRTSInterfaceListener) -> None:
+        pass
 
     def debug_matrix_obs(self, env_idx: int) -> Optional[np.ndarray]:
         if not self.DEBUG_VERIFY:

@@ -57,6 +57,8 @@ class EnvHyperparams:
     map_paths: Optional[List[str]] = None
     score_reward_kwargs: Optional[Dict[str, int]] = None
     is_agent: bool = False
+    valid_sizes: Optional[List[int]] = None
+    paper_planes_sizes: Optional[List[int]] = None
 
 
 HyperparamsSelf = TypeVar("HyperparamsSelf", bound="Hyperparams")

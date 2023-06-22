@@ -1,5 +1,4 @@
 import logging
-import multiprocessing
 import os
 import sys
 import time
@@ -7,22 +6,32 @@ from pathlib import Path
 
 import torch
 
-from rl_algo_impls.utils.timing import measure_time
-
 file_path = os.path.abspath(Path(__file__))
 root_dir = str(Path(file_path).parent.parent.parent.absolute())
 sys.path.append(root_dir)
 
-
+from rl_algo_impls.microrts.map_size_policy_picker import (
+    MapSizePolicyPicker,
+    PickerArgs,
+)
 from rl_algo_impls.microrts.vec_env.microrts_socket_env import (
     TIME_BUDGET_MS,
     set_connection_info,
 )
 from rl_algo_impls.runner.config import Config, EnvHyperparams, RunArgs
-from rl_algo_impls.runner.running_utils import get_device, load_hyperparams, make_policy
+from rl_algo_impls.runner.running_utils import get_device, load_hyperparams
 from rl_algo_impls.shared.vec_env.make_env import make_eval_env
+from rl_algo_impls.utils.timing import measure_time
 
-MODEL_LOAD_PATH = "rai_microrts_saved_models/ppo-Microrts-A10-finetuned-S1-best"
+AGENT_ARGS_BY_MAP_SIZE = {
+    16: PickerArgs(
+        algo="ppo",
+        env="Microrts-A6000-finetuned-coac-mayari",
+        seed=1,
+        best=True,
+        use_paper_obs=True,
+    ),
+}
 
 
 def main():
@@ -47,17 +56,11 @@ def main():
 
     run_args = RunArgs(algo="ppo", env="Microrts-agent", seed=1)
     hyperparams = load_hyperparams(run_args.algo, run_args.env)
-    config = Config(run_args, hyperparams, root_dir)
+    env_config = Config(run_args, hyperparams, root_dir)
 
-    env = make_eval_env(config, EnvHyperparams(**config.env_hyperparams))
-    device = get_device(config, env)
-    policy = make_policy(
-        config,
-        env,
-        device,
-        load_path=os.path.join(root_dir, MODEL_LOAD_PATH),
-        **config.policy_hyperparams,
-    ).eval()
+    env = make_eval_env(env_config, EnvHyperparams(**env_config.env_hyperparams))
+    device = get_device(env_config, env)
+    policy = MapSizePolicyPicker(AGENT_ARGS_BY_MAP_SIZE, env, device).eval()
 
     get_action_mask = getattr(env, "get_action_mask")
 

@@ -81,6 +81,8 @@ def make_vec_env(
         _,  # map_paths,
         _,  # score_reward_kwargs,
         _,  # is_agent
+        _,  # valid_sizes,
+        _,  # paper_planes_sizes,
     ) = astuple(hparams)
 
     import_for_env_id(config.env_id)

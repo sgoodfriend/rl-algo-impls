@@ -47,6 +47,8 @@ def make_procgen_env(
         _,  # map_paths,
         _,  # score_reward_kwargs,
         _,  # is_agent
+        _, # valid_sizes,
+        _, # paper_planes_sizes,
     ) = astuple(hparams)
 
     seed = config.seed(training=training)

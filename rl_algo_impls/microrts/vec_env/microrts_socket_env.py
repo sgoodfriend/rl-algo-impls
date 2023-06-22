@@ -10,7 +10,10 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 
-from rl_algo_impls.microrts.vec_env.microrts_interface import MicroRTSInterface
+from rl_algo_impls.microrts.vec_env.microrts_interface import (
+    MicroRTSInterface,
+    MicroRTSInterfaceListener,
+)
 
 SERVER_PORT = 56242
 IS_SERVER = True
@@ -39,9 +42,12 @@ class MicroRTSSocketEnv(MicroRTSInterface):
     def __init__(self):
         self._steps_since_reset = 0
         self._get_action_response_times = []
+        self.listeners = []
 
         self._logger = logging.getLogger("RTSServer")
 
+        self.height = 0
+        self.width = 0
         self._terrain = None
         self._matrix_obs = None
         self._matrix_mask = None
@@ -100,6 +106,12 @@ class MicroRTSSocketEnv(MicroRTSInterface):
     def close(self, **kwargs):
         pass
 
+    def add_listener(self, listener: MicroRTSInterfaceListener) -> None:
+        self.listeners.append(listener)
+
+    def remove_listener(self, listener: MicroRTSInterfaceListener) -> None:
+        self.listeners.remove(listener)
+
     def _wait_for_obs(self):
         while True:
             self.command, args = self._wait_for_message()
@@ -114,11 +126,19 @@ class MicroRTSSocketEnv(MicroRTSInterface):
                     self._steps_since_reset += 1
                     self._get_action_receive_time = time.perf_counter()
                 if len(args) >= 5:
-                    self.height = args[3][0]
-                    self.width = args[3][1]
+                    h, w = args[3]
+                    map_size_change = self.height != h or self.width != w
+                    self.height = h
+                    self.width = w
                     self._terrain = np.frombuffer(args[4], dtype=np.int8).reshape(
-                        (self.height, self.width)
+                        (
+                            self.height,
+                            self.width,
+                        )
                     )
+                    if map_size_change:
+                        for listener in self.listeners:
+                            listener.map_size_change([h], [w], [0])
                 self.obs = [np.frombuffer(args[0], dtype=np.int8)]
                 self.action_mask = [np.frombuffer(args[1], dtype=np.int8)]
                 self._resources = np.frombuffer(args[2], dtype=np.int8)

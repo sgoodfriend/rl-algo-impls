@@ -1,17 +1,20 @@
 import logging
-from typing import Any, Dict, List
+from typing import Any, List, Optional, Tuple
 
 import gym
 import gym.spaces
 import gym.vector
 import numpy as np
+from gym.vector.utils.spaces import batch_space
 
 from rl_algo_impls.microrts.vec_env.microrts_interface import (
     ByteArray,
     MicroRTSInterface,
+    MicroRTSInterfaceListener,
 )
 from rl_algo_impls.microrts.vec_env.planes import (
     MultiplierPlane,
+    ObservationTransform,
     OffsetPlane,
     OffsetThresholdPlane,
     OneHotPlane,
@@ -22,9 +25,6 @@ from rl_algo_impls.wrappers.vectorable_wrapper import VecEnvStepReturn
 
 MAX_HP = 10
 MAX_RESOURCES = 40
-
-
-class MicroRTSSpaceTransform(gym.vector.VectorEnv):
 ACTION_TYPE_TO_ACTION_INDEXES = {
     0: {},  # NOOP
     1: {1},  # move
@@ -33,79 +33,140 @@ ACTION_TYPE_TO_ACTION_INDEXES = {
     4: {4, 5},  # produce
     5: {6},  # attack
 }
+
+PAPER_PLANES = [
+    Planes("hp", [MultiplierPlane(1 / MAX_HP)]),
+    Planes("resources", [MultiplierPlane(1 / MAX_RESOURCES), ThresholdPlane(1)]),
+    Planes("owner", [OneHotPlane(3)]),
+    Planes("unit_type", [OneHotPlane(8, set_out_of_range_to_0=True)]),
+    Planes("action", [OneHotPlane(6)]),
+    Planes("terrain", [OneHotPlane(2)]),
+]
+
+
+class MicroRTSSpaceTransform(gym.vector.VectorEnv, MicroRTSInterfaceListener):
     def __init__(
         self,
         interface: MicroRTSInterface,
+        valid_sizes: Optional[List[int]] = None,
+        paper_planes_sizes: Optional[List[int]] = None,
     ) -> None:
         self.interface = interface
+        self.valid_sizes = list(sorted(valid_sizes)) if valid_sizes else None
+        self.paper_planes_sizes = set(paper_planes_sizes if paper_planes_sizes else [])
+
+        # computed properties
+        # [hp, resources, resources_non_zero, num_planes_player(5),
+        # num_planes_unit_type(z), num_planes_unit_action(6)]
+        self.metadata = self.interface.metadata
+
+        self.planes = ObservationTransform(
+            [
+                Planes("hp", [MultiplierPlane(1 / MAX_HP)]),
+                Planes(
+                    "resources", [MultiplierPlane(1 / MAX_RESOURCES), ThresholdPlane(1)]
+                ),
+                Planes("owner", [OneHotPlane(3)]),
+                Planes(
+                    "unit_type", [OneHotPlane(len(self.interface.utt["unitTypes"]) + 2)]
+                ),
+                Planes("action", [OneHotPlane(6)]),
+                Planes("move_dir", [OneHotPlane(5)]),
+                Planes("harvest_dir", [OneHotPlane(5)]),
+                Planes("return_dir", [OneHotPlane(5)]),
+                Planes("produce_dir", [OneHotPlane(5)]),
+                Planes("produce_type", [OneHotPlane(8)]),
+                Planes("attack_dir", [OneHotPlane(6)]),
+                Planes(
+                    "eta",
+                    [
+                        OffsetPlane(multiplier=1 / 255, offset=128),
+                        OffsetThresholdPlane(offset=128, min_threshold=5),
+                        OffsetThresholdPlane(offset=128, min_threshold=10),
+                    ],
+                ),
+                Planes("terrain", [OneHotPlane(2)]),
+            ]
+        )
+        if self.interface.partial_obs:
+            self.planes.append(Planes("observable", [OneHotPlane(2)]))
+
+        if self.paper_planes_sizes:
+            self.paper_planes = ObservationTransform(PAPER_PLANES, self.planes)
+
+        self.resources_planes = ObservationTransform(
+            [
+                Planes(
+                    "player_{p}_resources",
+                    [
+                        MultiplierPlane(1 / 32, clip_expected=True),
+                        ThresholdPlane(1),  # Worker Cost
+                        ThresholdPlane(2),  # Light or Ranged Cost
+                        ThresholdPlane(3),  # Heavy Cost
+                        ThresholdPlane(5),  # Barracks Cost
+                        ThresholdPlane(10),  # Base Cost
+                        ThresholdPlane(32),
+                    ],
+                )
+                for p in range(2)
+            ]
+        )
+
+        self.height, self.width = 0, 0
+        spaces = self._update_spaces(is_init=True)
+        assert spaces is not None
+        observation_space, action_space = spaces
+
+        super().__init__(self.interface.num_envs, observation_space, action_space)
+
+        self.interface.add_listener(self)
+
+    def _update_spaces(
+        self, is_init: bool = False
+    ) -> Optional[Tuple[gym.spaces.Box, gym.spaces.MultiDiscrete]]:
         # Set height and width to next factor of 4 if not factor of 4 already
         next_factor_of_4 = lambda n: n + 4 - n % 4 if n % 4 else n
         height = max(next_factor_of_4(np.max(self.interface.heights)), 12)
         width = max(next_factor_of_4(np.max(self.interface.widths)), 12)
         assert height % 4 == 0, f"{height} must be multiple of 4"
-        self.height = height
         assert width % 4 == 0, f"{width} must be multiple of 4"
-        self.width = width
+        sz = max(height, width)
+        if self.valid_sizes is not None:
+            for valid_sz in self.valid_sizes:
+                if sz <= valid_sz:
+                    sz = valid_sz
+                    break
+            else:
+                logging.warning(
+                    f"Map size {sz} larger than all valid sizes {self.valid_sizes}"
+                )
+        if not is_init and sz == self.height and sz == self.width:
+            return None
 
-        # computed properties
-        # [hp, resources, resources_non_zero, num_planes_player(5),
-        # num_planes_unit_type(z), num_planes_unit_action(6)]
-        utt = self.interface.utt
+        self.height = sz
+        self.width = sz
 
-        self.planes = [
-            Planes([MultiplierPlane(1 / MAX_HP)]),  # HP
-            Planes(
-                [MultiplierPlane(1 / MAX_RESOURCES), ThresholdPlane(1)]
-            ),  # Resources
-            Planes([OneHotPlane(3)]),  # Owner
-            Planes([OneHotPlane(len(utt["unitTypes"]) + 2)]),  # Unit Types + Pending
-            Planes([OneHotPlane(6)]),  # Current Action
-            Planes([OneHotPlane(5)]),  # Move Direction
-            Planes([OneHotPlane(5)]),  # Harvest Direction
-            Planes([OneHotPlane(5)]),  # Return Direction
-            Planes([OneHotPlane(5)]),  # Produce Direction
-            Planes([OneHotPlane(8)]),  # Produce Unit Type
-            Planes([OneHotPlane(6)]),  # Relative Attack Position
-            Planes(
-                [
-                    OffsetPlane(multiplier=1 / 255, offset=128),
-                    OffsetThresholdPlane(offset=128, min_threshold=5),
-                    OffsetThresholdPlane(offset=128, min_threshold=10),
-                ]
-            ),  # ETA
-            Planes([OneHotPlane(2)]),  # Terrain
-        ]
-        if self.interface.partial_obs:
-            self.planes.append(Planes([OneHotPlane(2)]))
-        self.n_dim = sum(p.n_dim for p in self.planes)
-
-        self.resources_planes = [
-            Planes(  # Player Resources
-                [
-                    MultiplierPlane(1 / 32, clip_expected=True),
-                    ThresholdPlane(1),  # Worker Cost
-                    ThresholdPlane(2),  # Light or Ranged Cost
-                    ThresholdPlane(3),  # Heavy Cost
-                    ThresholdPlane(5),  # Barracks Cost
-                    ThresholdPlane(10),  # Base Cost
-                    ThresholdPlane(32),
-                ]
-            )
-        ] * 2
-        self.resources_dim = sum(rp.n_dim for rp in self.resources_planes)
+        if sz in self.paper_planes_sizes:
+            num_features = self.paper_planes.n_dim
+        else:
+            num_features = self.planes.n_dim + self.resources_planes.n_dim
 
         observation_space = gym.spaces.Box(
             low=0.0,
             high=1.0,
-            shape=(self.height, self.width, self.n_dim + self.resources_dim),
+            shape=(
+                self.height,
+                self.width,
+                num_features,
+            ),
             dtype=np.float32,
         )
 
-        action_space_dims = [6, 4, 4, 4, 4, len(utt["unitTypes"]), 7 * 7]
+        action_space_dims = [6, 4, 4, 4, 4, len(self.interface.utt["unitTypes"]), 7 * 7]
         action_space = gym.spaces.MultiDiscrete(
             np.array([action_space_dims] * self.height * self.width).flatten().tolist()
         )
-        super().__init__(self.interface.num_envs, observation_space, action_space)
+
         self.action_plane_space = gym.spaces.MultiDiscrete(action_space_dims)
 
         self.source_unit_idxs = np.tile(
@@ -114,7 +175,23 @@ ACTION_TYPE_TO_ACTION_INDEXES = {
         self.source_unit_idxs = self.source_unit_idxs.reshape(
             (self.source_unit_idxs.shape + (1,))
         )
-        self.metadata = self.interface.metadata
+
+        if is_init:
+            return observation_space, action_space
+        else:
+            self.single_observation_space = observation_space
+            self.observation_space = batch_space(
+                observation_space, n=self.interface.num_envs
+            )
+            self.single_action_space = action_space
+            self.action_space = gym.spaces.Tuple(
+                (action_space,) * self.interface.num_envs
+            )
+
+    def map_size_change(
+        self, old_heights: List[int], old_widths: List[int], indexes_changed: int
+    ) -> None:
+        self._update_spaces(is_init=False)
 
     @property
     def obs_dim(self) -> int:
@@ -140,6 +217,7 @@ ACTION_TYPE_TO_ACTION_INDEXES = {
         return self.interface.render(mode)
 
     def close_extras(self, **kwargs):
+        self.interface.remove_listener(self)
         self.interface.close(**kwargs)
 
     def _translate_actions(
@@ -248,16 +326,29 @@ ACTION_TYPE_TO_ACTION_INDEXES = {
         obs = self._get_matrix_obs(obs_bytes, env_idx)
         self._verify_matrix_obs(obs, env_idx)
         obs = obs.reshape(-1, obs.shape[-1])
-        obs_planes = np.zeros((self.height * self.width, self.n_dim), dtype=np.float32)
+
+        use_paper_planes = self.height in self.paper_planes_sizes
+
+        obs_transform = self.planes if not use_paper_planes else self.paper_planes
+        obs_planes = np.zeros(
+            (self.height * self.width, obs_transform.n_dim), dtype=np.float32
+        )
 
         destination_col = 0
-        for source_col, p in enumerate(self.planes):
+        for source_col, p in enumerate(obs_transform):
             destination_col = p.transform(obs, source_col, obs_planes, destination_col)
         assert destination_col == obs_planes.shape[-1]
 
+        obs_out = obs_planes.reshape(self.height, self.width, -1)
+
+        if use_paper_planes:
+            return obs_out
+
         resources = np.expand_dims(self.interface.resources(env_idx), 0)
         destination_col = 0
-        resource_planes = np.zeros((1, self.resources_dim), dtype=np.float32)
+        resource_planes = np.zeros(
+            (1, self.resources_planes.n_dim), dtype=obs_planes.dtype
+        )
         for source_col, rp in enumerate(self.resources_planes):
             destination_col = rp.transform(
                 resources, source_col, resource_planes, destination_col
@@ -266,10 +357,10 @@ ACTION_TYPE_TO_ACTION_INDEXES = {
 
         return np.concatenate(
             [
-                obs_planes.reshape(self.height, self.width, -1),
+                obs_out,
                 np.ones(
                     (self.height, self.width, resource_planes.shape[-1]),
-                    dtype=np.float32,
+                    dtype=resource_planes.dtype,
                 )
                 * resource_planes,
             ],
