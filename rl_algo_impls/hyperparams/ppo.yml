@@ -518,10 +518,10 @@ _Microrts-squnet-map8: &microrts-squnet-map8
     decoder_residual_blocks_per_level: [1, 1]
   rollout_hyperparams:
     <<: *microrts-ai-rollout-defaults
-    n_steps: 256
+    n_steps: 512
   algo_hyperparams: &microrts-squnet-map8-algo-defaults
     <<: *microrts-squnet-algo-defaults
-    batch_size: 12288
+    batch_size: 24576
 
 Microrts-squnet-map8-selfplay: &microrts-squnet-map8-selfplay
   <<: *microrts-squnet-map8
