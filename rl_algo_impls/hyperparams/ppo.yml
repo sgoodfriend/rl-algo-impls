@@ -753,21 +753,21 @@ _Microrts-squnet-map64: &microrts-squnet-map64
   env_id: Microrts-squnet-map64
   env_hyperparams: &microrts-squnet-map64-env-defaults
     <<: *microrts-squnet-env-defaults
-    n_envs: 16
+    n_envs: 24
     map_paths:
       - maps/BroodWar/(4)BloodBath.scmB.xml # 64x64
       - maps/BroodWar/(4)BloodBath.scmE.xml # 64x64
     make_kwargs:
       <<: *microrts-selfplay-env-make-kwargs-defaults
-      num_selfplay_envs: 16
+      num_selfplay_envs: 20
       max_steps: 8000
     self_play_kwargs:
       <<: *microrts-selfplay-self-play-kwargs-defaults
       num_old_policies: 4
       swap_window_size: 4
     bots:
-      coacAI: 2
-      mayari: 2
+      coacAI: 4
+      mayari: 4
   eval_hyperparams: &microrts-squnet-map64-eval-defaults
     <<: *microrts-squnet-eval-defaults
     step_freq: !!float 10e6
@@ -788,10 +788,25 @@ _Microrts-squnet-map64: &microrts-squnet-map64
     n_steps: 256
   algo_hyperparams: &microrts-squnet-map64-algo-defaults
     <<: *microrts-squnet-algo-defaults
-    batch_size: 512
+    batch_size: 384
 
 _Microrts-squnet-map64-selfplay: &microrts-squnet-map64-selfplay
   <<: *microrts-squnet-map64
+  n_timesteps: !!float 200e6
+  hyperparam_transitions_kwargs:
+    <<: *microrts-squnet-map12-selfplay-phases
+
+_Microrts-squnet-map64-128ch: &microrts-squnet-map64-128ch
+  <<: *microrts-squnet-map64
+  policy_hyperparams: &microrts-squnet-map64-128ch-policy-defaults
+    <<: *microrts-squnet-map64-policy-defaults
+    channels_per_level: [128, 128, 128, 128]
+  algo_hyperparams:
+    <<: *microrts-squnet-map64-algo-defaults
+    batch_size: 384
+
+Microrts-squnet-map64-128ch-selfplay: &microrts-squnet-map64-128ch-selfplay
+  <<: *microrts-squnet-map64-128ch
   n_timesteps: !!float 200e6
   hyperparam_transitions_kwargs:
     <<: *microrts-squnet-map12-selfplay-phases
@@ -803,7 +818,7 @@ _Microrts-squnet-map64-64ch: &microrts-squnet-map64-64ch
     channels_per_level: [64, 64, 64, 64]
   algo_hyperparams:
     <<: *microrts-squnet-map64-algo-defaults
-    batch_size: 512
+    batch_size: 768
 
 Microrts-squnet-map64-64ch-selfplay: &microrts-squnet-map64-64ch-selfplay
   <<: *microrts-squnet-map64-64ch
@@ -1035,10 +1050,10 @@ Microrts-selfplay-dc-phases-final: &microrts-sp-dc-phases-final-defaults
       - 0.1
 
 Microrts-debug: &microrts-debug-defaults
-  <<: *microrts-dc-repro-map16-selfplay
+  <<: *microrts-squnet-map64-128ch-selfplay
   device: mps
   eval_hyperparams:
-    <<: *microrts-squnet-map16-eval-defaults
+    <<: *microrts-squnet-map64-eval-defaults
     step_freq: !!float 1e5
 
 Microrts-agent: &microrts-agent
