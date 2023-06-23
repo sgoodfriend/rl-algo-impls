@@ -803,7 +803,7 @@ _Microrts-squnet-map64-128ch: &microrts-squnet-map64-128ch
     channels_per_level: [128, 128, 128, 128]
   algo_hyperparams:
     <<: *microrts-squnet-map64-algo-defaults
-    batch_size: 384
+    batch_size: 258
 
 Microrts-squnet-map64-128ch-selfplay: &microrts-squnet-map64-128ch-selfplay
   <<: *microrts-squnet-map64-128ch
