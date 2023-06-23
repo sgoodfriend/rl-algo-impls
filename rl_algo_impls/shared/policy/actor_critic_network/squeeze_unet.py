@@ -21,7 +21,8 @@ class SqueezeUnetBackbone(nn.Module):
         decoder_residual_blocks_per_level: List[int],
         init_layers_orthogonal: bool = False,
         increment_kernel_size_on_down_conv: bool = False,
-        stepped_conv_transpose: bool = False,
+        conv_transpose_split_large_strides: bool = False,
+        conv_transpose_extra_padding: bool = False,
     ) -> None:
         super().__init__()
         self.encoders = nn.ModuleList(
@@ -88,32 +89,26 @@ class SqueezeUnetBackbone(nn.Module):
         def conv_transpose_2d(
             in_channels: int, out_channels: int, stride: int
         ) -> List[nn.Module]:
-            if not stepped_conv_transpose:
-                return [
-                    layer_init(
-                        nn.ConvTranspose2d(
-                            in_channels,
-                            out_channels,
-                            kernel_size=stride,
-                            stride=stride,
-                        ),
-                        init_layers_orthogonal=init_layers_orthogonal,
-                    ),
-                    nn.GELU(),
-                ]
             stride_factors = []
-            while stride > 1:
-                if stride % 2 == 0:
-                    stride_factors.append(2)
-                    stride //= 2
-                else:
-                    stride_factors.append(stride)
-                    break
+            if not conv_transpose_split_large_strides:
+                stride_factors.append(stride)
+            else:
+                while stride > 1:
+                    if stride % 2 == 0:
+                        stride_factors.append(2)
+                        stride //= 2
+                    else:
+                        stride_factors.append(stride)
+                        break
 
             layers = []
             for idx, s in enumerate(stride_factors):
-                kernel_size = s + 2
-                padding = 1
+                if conv_transpose_extra_padding:
+                    kernel_size = s + 2
+                    padding = 1
+                else:
+                    kernel_size = s
+                    padding = 0
                 layers.append(
                     layer_init(
                         nn.ConvTranspose2d(
@@ -198,7 +193,8 @@ class SqueezeUnetActorCriticNetwork(BackboneActorCritic):
         additional_critic_activation_functions: Optional[List[str]] = None,
         critic_channels: int = 64,
         increment_kernel_size_on_down_conv: bool = False,
-        stepped_conv_transpose: bool = False,
+        conv_transpose_split_large_strides: bool = False,
+        conv_transpose_extra_padding: bool = False,
     ) -> None:
         if cnn_layers_init_orthogonal is None:
             cnn_layers_init_orthogonal = False
@@ -226,7 +222,8 @@ class SqueezeUnetActorCriticNetwork(BackboneActorCritic):
             decoder_residual_blocks_per_level,
             init_layers_orthogonal=cnn_layers_init_orthogonal,
             increment_kernel_size_on_down_conv=increment_kernel_size_on_down_conv,
-            stepped_conv_transpose=stepped_conv_transpose,
+            conv_transpose_split_large_strides=conv_transpose_split_large_strides,
+            conv_transpose_extra_padding=conv_transpose_extra_padding,
         )
         super().__init__(
             observation_space,
