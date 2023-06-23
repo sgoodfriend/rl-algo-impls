@@ -28,7 +28,7 @@ public class RAIGameVisualSimulationTest {
         AI ai1 = new RAISocketAI(utt);
         AI ai2 = new CoacAI(utt);
 
-        PhysicalGameState pgs = PhysicalGameState.load("maps/16x16/basesWorkers16x16A.xml", utt);
+        PhysicalGameState pgs = PhysicalGameState.load("maps/BroodWar/(4)BloodBath.scmB.xml", utt);
         // PhysicalGameState pgs = MapGenerator.basesWorkers8x8Obstacle();
 
         GameState gs = new GameState(pgs, utt);

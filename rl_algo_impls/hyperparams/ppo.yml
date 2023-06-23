@@ -1054,7 +1054,7 @@ Microrts-agent: &microrts-agent
         swap_steps: .inf
       is_agent: true
       valid_sizes: [16, 32, 64]
-      paper_planes_sizes: [16, 32, 64] # TODO: Only 16 once new models trained
+      paper_planes_sizes: [16]
 
 HalfCheetahBulletEnv-v0: &pybullet-defaults
   n_timesteps: !!float 2e6

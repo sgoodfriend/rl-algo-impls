@@ -31,6 +31,20 @@ AGENT_ARGS_BY_MAP_SIZE = {
         best=True,
         use_paper_obs=True,
     ),
+    32: PickerArgs(
+        algo="ppo",
+        env="Microrts-squnet-map32-128ch-selfplay",
+        seed=1,
+        best=True,
+        use_paper_obs=False,
+    ),
+    64: PickerArgs(
+        algo="ppo",
+        env="Microrts-squnet-map64-64ch-selfplay",
+        seed=1,
+        best=True,
+        use_paper_obs=False,
+    ),
 }
 
 

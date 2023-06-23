@@ -31,8 +31,9 @@ public class RAIRoundRobinTournament {
                 new mayari(utt)
         };
         final String[] maps = {
-                "maps/16x16/basesWorkers16x16A.xml"
+                "maps/BWDistantResources32x32.xml"
         };
+        final int maxGameLength = 6000;
 
         String prefix = "tournament_";
         if (maps.length == 1) {
@@ -54,7 +55,6 @@ public class RAIRoundRobinTournament {
 
         final boolean onlyPlayFirstAI = true;
         final int iterations = 10;
-        final int maxGameLength = 3000;
         final int timeBudget = 100;
         final int iterationsBudget = -1;
         final int preAnalysisBudgetFirstTimeInAMap = 1000;
