@@ -127,6 +127,8 @@ class ActorCritic(OnPolicy):
         strides_per_level: Optional[List[int]] = None,
         encoder_residual_blocks_per_level: Optional[List[int]] = None,
         decoder_residual_blocks_per_level: Optional[List[int]] = None,
+        increment_kernel_size_on_down_conv: bool = False,
+        stepped_conv_transpose: bool = False,
         **kwargs,
     ) -> None:
         super().__init__(env, **kwargs)
@@ -183,6 +185,8 @@ class ActorCritic(OnPolicy):
                 strides_per_level=strides_per_level,
                 encoder_residual_blocks_per_level=encoder_residual_blocks_per_level,
                 decoder_residual_blocks_per_level=decoder_residual_blocks_per_level,
+                increment_kernel_size_on_down_conv=increment_kernel_size_on_down_conv,
+                stepped_conv_transpose=stepped_conv_transpose,
             )
         elif share_features_extractor:
             self.network = ConnectedTrioActorCriticNetwork(

@@ -541,6 +541,20 @@ Microrts-squnet-map8-selfplay: &microrts-squnet-map8-selfplay
       - 0.3
       - 0.2
 
+_Microrts-squnet-map8-kernel-tweaks: &microrts-squnet-map8-kernel-tweaks
+  <<: *microrts-squnet-map8
+  policy_hyperparams:
+    <<: *microrts-squnet-map8-policy-defaults
+    increment_kernel_size_on_down_conv: true
+    stepped_conv_transpose: true
+
+Microrts-squnet-map8-kernel-tweaks-selfplay:
+  &microrts-squnet-map8-kernel-tweaks-selfplay
+  <<: *microrts-squnet-map8-kernel-tweaks
+  n_timesteps: !!float 200e6
+  hyperparam_transitions_kwargs:
+    <<: *microrts-squnet-map8-selfplay-phases
+
 _Microrts-squnet-map12: &microrts-squnet-map12
   <<: *microrts-squnet
   env_id: Microrts-squnet-map12
@@ -1001,8 +1015,8 @@ Microrts-selfplay-dc-phases-final: &microrts-sp-dc-phases-final-defaults
       - 0.1
 
 Microrts-debug: &microrts-debug-defaults
-  <<: *microrts-squnet-map8-selfplay
-  device: mps
+  <<: *microrts-squnet-map8-kernel-tweaks-selfplay
+  device: cpu
   eval_hyperparams:
     <<: *microrts-squnet-map8-eval-defaults
     step_freq: !!float 1e5
