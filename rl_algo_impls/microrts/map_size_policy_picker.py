@@ -57,12 +57,23 @@ class MapSizePolicyPicker(Policy):
         picker_args_by_size: Dict[int, PickerArgs],
         env: VecEnv,
         device: torch.device,
+        envs_per_size: Dict[int, VecEnv],
     ) -> None:
         super().__init__(env)
         self.to(device)
-        self.picker_args_by_size = picker_args_by_size
-        self.policies_by_size = {}
-        self.policies_by_size_name = nn.ModuleDict(self.policies_by_size)
+        self.policies_by_size = {
+            sz: make_policy(
+                args.config,
+                envs_per_size[sz],
+                device,
+                args.model_path,
+                **args.config.policy_hyperparams,
+            )
+            for sz, args in picker_args_by_size.items()
+        }
+        self.policies_by_size_name = nn.ModuleDict(
+            {str(sz): p for sz, p in self.policies_by_size.items()}
+        )
 
     def act(
         self,
@@ -71,11 +82,10 @@ class MapSizePolicyPicker(Policy):
         action_masks: Optional[NumpyOrDict] = None,
     ) -> np.ndarray:
         global errored_on_sizes
-        obs_space = single_observation_space(self.env)
-        assert isinstance(obs_space, gym.spaces.Box)
-        obs_size = obs_space.shape[-1]  # type: ignore
+        assert isinstance(obs, np.ndarray)
+        obs_size = obs.shape[-1]
 
-        for sz in self.picker_args_by_size:
+        for sz in self.policies_by_size:
             if sz >= obs_size:
                 if sz > obs_size and sz not in errored_on_sizes:
                     logging.warn(
@@ -84,7 +94,7 @@ class MapSizePolicyPicker(Policy):
                     errored_on_sizes.add(obs_size)
                 return self.use_policy(sz, obs, deterministic, action_masks)
         else:
-            sz = max(self.picker_args_by_size)
+            sz = max(self.policies_by_size)
             if obs_size not in errored_on_sizes:
                 logging.error(
                     f"Obseration size {obs_size} exceeded {sz}, using biggest model"
@@ -99,20 +109,6 @@ class MapSizePolicyPicker(Policy):
         deterministic: bool,
         action_masks: Optional[NumpyOrDict],
     ) -> np.ndarray:
-        if sz not in self.policies_by_size:
-            args = self.picker_args_by_size[sz]
-            config = args.config
-            assert self.device
-            self.policies_by_size[sz] = make_policy(
-                config,
-                self.env,
-                self.device,
-                args.model_path,
-                **config.policy_hyperparams,
-            )
-            self.policies_by_size_name = nn.ModuleDict(
-                {str(sz): policy for sz, policy in self.policies_by_size.items()}
-            )
-
-        policy = self.policies_by_size[sz]
-        return policy.act(obs, deterministic=deterministic, action_masks=action_masks)
+        return self.policies_by_size[sz].act(
+            obs, deterministic=deterministic, action_masks=action_masks
+        )

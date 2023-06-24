@@ -6,7 +6,7 @@ import struct
 import sys
 import time
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Type, TypeVar
 
 import numpy as np
 
@@ -38,7 +38,18 @@ class MessageType(Enum):
 message_types = {t.value: t for t in MessageType.__members__.values()}
 
 
+MicroRTSSocketEnvSelf = TypeVar("MicroRTSSocketEnvSelf", bound="MicroRTSSocketEnv")
+_singleton = None
+
+
 class MicroRTSSocketEnv(MicroRTSInterface):
+    @classmethod
+    def singleton(cls: Type[MicroRTSSocketEnvSelf]) -> MicroRTSSocketEnvSelf:
+        global _singleton
+        if _singleton is None:
+            _singleton = cls()
+        return _singleton
+
     def __init__(self):
         self._steps_since_reset = 0
         self._get_action_response_times = []

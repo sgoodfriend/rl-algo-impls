@@ -145,8 +145,6 @@ public class RAISocketAI extends AIWithComputationBudget {
                 System.out.printf("RAISocketAI: Connected to server on port %d!%n", serverPort);
             }
         } else {
-            startPythonProcess(true);
-
             boolean connected = false;
             int sleepMs = 100;
             while (!connected) {

@@ -28,11 +28,11 @@ public class RAIGameVisualSimulationTest {
         AI ai1 = new RAISocketAI(utt);
         AI ai2 = new CoacAI(utt);
 
-        PhysicalGameState pgs = PhysicalGameState.load("maps/BroodWar/(4)BloodBath.scmB.xml", utt);
+        PhysicalGameState pgs = PhysicalGameState.load("maps/NoWhereToRun9x8.xml", utt);
         // PhysicalGameState pgs = MapGenerator.basesWorkers8x8Obstacle();
 
         GameState gs = new GameState(pgs, utt);
-        int MAXCYCLES = 5000;
+        int MAXCYCLES = 4000;
         int PERIOD = 20;
         boolean gameover = false;
 

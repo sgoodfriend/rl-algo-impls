@@ -151,7 +151,7 @@ def make_microrts_env(
 
         envs = MicroRTSGridModeVecEnv(**make_kwargs)
     else:
-        envs = MicroRTSSocketEnv()
+        envs = MicroRTSSocketEnv.singleton()
     envs = MicroRTSSpaceTransform(
         envs, valid_sizes=valid_sizes, paper_planes_sizes=paper_planes_sizes
     )

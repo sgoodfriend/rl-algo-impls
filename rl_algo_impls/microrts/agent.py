@@ -73,8 +73,21 @@ def main():
     env_config = Config(run_args, hyperparams, root_dir)
 
     env = make_eval_env(env_config, EnvHyperparams(**env_config.env_hyperparams))
+    envs_per_size = {
+        sz: make_eval_env(
+            env_config,
+            EnvHyperparams(**env_config.env_hyperparams),
+            override_hparams={
+                "valid_sizes": [sz],
+                "paper_planes_sizes": [sz] if p_args.use_paper_obs else [],
+            },
+        )
+        for sz, p_args in AGENT_ARGS_BY_MAP_SIZE.items()
+    }
     device = get_device(env_config, env)
-    policy = MapSizePolicyPicker(AGENT_ARGS_BY_MAP_SIZE, env, device).eval()
+    policy = MapSizePolicyPicker(
+        AGENT_ARGS_BY_MAP_SIZE, env, device, envs_per_size
+    ).eval()
 
     get_action_mask = getattr(env, "get_action_mask")
 
