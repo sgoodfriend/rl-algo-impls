@@ -50,7 +50,7 @@ def read_matches(cols: Sequence[str], row_iter: Iterator[Sequence[str]]) -> List
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("directory_name", nargs="?", default="tournament_33")
+    parser.add_argument("directory_name", nargs="?", default="tournament_34")
     args = parser.parse_args()
 
     filename = os.path.join(
@@ -60,12 +60,11 @@ if __name__ == "__main__":
         reader = csv.reader(f, delimiter="\t")
         iterator = iter(reader)
         for r in iterator:
-            r = next(iterator)
             if r[0] == "AIs":
-                ais = read_ais_rows(reader)
-                maps = read_maps_rows(reader)
+                ais = read_ais_rows(iterator)
+                maps = read_maps_rows(iterator)
             if r[0] == "iteration":
-                matches = read_matches(r, reader)
+                matches = read_matches(r, iterator)
 
     maps_by_idx = {idx: m for idx, m in enumerate(maps)}
     ais_by_idx = {idx: ai for idx, ai in enumerate(ais)}
