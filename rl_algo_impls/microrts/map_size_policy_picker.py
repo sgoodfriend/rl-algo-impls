@@ -61,16 +61,21 @@ class MapSizePolicyPicker(Policy):
     ) -> None:
         super().__init__(env)
         self.to(device)
-        self.policies_by_size = {
-            sz: make_policy(
+        self.policies_by_size = {}
+        for sz, args in picker_args_by_size.items():
+            policy_hyperparams = args.config.policy_hyperparams
+            if "load_run_path" in policy_hyperparams:
+                del policy_hyperparams["load_run_path"]
+            if "load_run_path_best" in policy_hyperparams:
+                del policy_hyperparams["load_run_path_best"]
+            self.policies_by_size[sz] = make_policy(
                 args.config,
                 envs_per_size[sz],
                 device,
                 args.model_path,
-                **args.config.policy_hyperparams,
+                **policy_hyperparams,
             )
-            for sz, args in picker_args_by_size.items()
-        }
+
         self.policies_by_size_name = nn.ModuleDict(
             {str(sz): p for sz, p in self.policies_by_size.items()}
         )
