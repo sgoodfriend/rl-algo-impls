@@ -50,7 +50,7 @@ def read_matches(cols: Sequence[str], row_iter: Iterator[Sequence[str]]) -> List
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("directory_name", nargs="?", default="tournament_35")
+    parser.add_argument("directory_name", nargs="?", default="tournament_38")
     args = parser.parse_args()
 
     filename = os.path.join(
