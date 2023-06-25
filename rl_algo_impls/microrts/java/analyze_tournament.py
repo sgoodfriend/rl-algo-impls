@@ -50,7 +50,7 @@ def read_matches(cols: Sequence[str], row_iter: Iterator[Sequence[str]]) -> List
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("directory_name", nargs="?", default="tournament_34")
+    parser.add_argument("directory_name", nargs="?", default="tournament_35")
     args = parser.parse_args()
 
     filename = os.path.join(
@@ -85,14 +85,18 @@ if __name__ == "__main__":
 
     ai2_losses = df[(df["ai2_id"] == 0) & (df["winner"] == 0)]
     ai2_ties = df[(df["ai2_id"] == 0) & (df["winner"] == -1)]
-    player_2_points = ai2_losses.pivot_table(
-        index="map_id", columns="ai1_id", aggfunc="size", fill_value=0
-    ).add(
-        ai2_ties.pivot_table(
+    player_2_points = (
+        ai2_losses.pivot_table(
             index="map_id", columns="ai1_id", aggfunc="size", fill_value=0
         )
-        * 0.5,
-        fill_value=0,
+        .add(
+            ai2_ties.pivot_table(
+                index="map_id", columns="ai1_id", aggfunc="size", fill_value=0
+            )
+            * 0.5,
+            fill_value=0,
+        )
+        .fillna(0)
     )
 
     print(player_2_points.rename(index=maps_by_idx, columns=ais_by_idx))
