@@ -1002,6 +1002,29 @@ Microrts-finetuned-NoWhereToRun: &microrts-finetuned-nowheretorun
         <<: *microrts-a6000-finetuned-coac-mayari-eval-env-make-kwargs-overrides
         map_paths: [maps/NoWhereToRun9x8.xml]
 
+Microrts-finetuned-NoWhereToRun-shaped: &microrts-finetuned-nowheretorun-shaped
+  <<: *microrts-finetuned-nowheretorun
+  hyperparam_transitions_kwargs:
+    phases:
+      - multi_reward_weights: [0, 0.99, 0.01] # Win-loss sparse rewards
+        vf_coef: [0.2, 0.4, 0.2]
+        ent_coef: 0.01
+        learning_rate: !!float 5e-5
+      - multi_reward_weights: [0.3, 0.5, 0.2] # Sparse + Shaped rewards
+        vf_coef: [0.25, 0.4, 0.15]
+        ent_coef: 0.01
+        learning_rate: !!float 7e-5
+      - multi_reward_weights: [0, 0.99, 0.01] # Win-loss sparse rewards
+        vf_coef: [0, 0.5, 0.1]
+        ent_coef: 0.0001
+        learning_rate: !!float 1e-5
+    durations:
+      - 0
+      - 0.05
+      - 0.3
+      - 0.2
+      - 0.45
+
 Microrts-finetuned-DoubleGame24x24: &microrts-finetuned-doublegame
   <<: *microrts-a6000-finetuned-coac-mayari
   env_id: Microrts-finetuned-doublegame
@@ -1021,6 +1044,29 @@ Microrts-finetuned-DoubleGame24x24: &microrts-finetuned-doublegame
   algo_hyperparams:
     <<: *microrts-tweaks-base-algo-defaults
     batch_size: 2048
+
+Microrts-finetuned-DoubleGame-shaped: &microrts-finetuned-doublegame-shaped
+  <<: *microrts-finetuned-doublegame
+  hyperparam_transitions_kwargs:
+    phases:
+      - multi_reward_weights: [0, 0.99, 0.01] # Win-loss sparse rewards
+        vf_coef: [0.2, 0.4, 0.2]
+        ent_coef: 0.01
+        learning_rate: !!float 5e-5
+      - multi_reward_weights: [0.3, 0.5, 0.2] # Sparse + Shaped rewards
+        vf_coef: [0.25, 0.4, 0.15]
+        ent_coef: 0.01
+        learning_rate: !!float 7e-5
+      - multi_reward_weights: [0, 0.99, 0.01] # Win-loss sparse rewards
+        vf_coef: [0, 0.5, 0.1]
+        ent_coef: 0.0001
+        learning_rate: !!float 1e-5
+    durations:
+      - 0
+      - 0.05
+      - 0.3
+      - 0.2
+      - 0.45
 
 Microrts-selfplay-dc-phases-maps24: &microrts-sp-dc-phases-m24-defaults
   <<: *microrts-sp-dc-phases-defaults
@@ -1086,10 +1132,10 @@ Microrts-selfplay-dc-phases-final: &microrts-sp-dc-phases-final-defaults
       - 0.1
 
 Microrts-debug: &microrts-debug-defaults
-  <<: *microrts-finetuned-doublegame
+  <<: *microrts-finetuned-nowheretorun-shaped
   device: mps
   eval_hyperparams:
-    <<: *microrts-finetuned-doublegame-eval-defaults
+    <<: *microrts-finetuned-nowheretorun-eval-defaults
     step_freq: !!float 1e5
 
 Microrts-agent: &microrts-agent
