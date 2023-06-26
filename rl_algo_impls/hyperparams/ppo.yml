@@ -906,7 +906,7 @@ _Microrts-tweaks-base: &microrts-tweaks-base
     load_run_path: sgoodfriend/rl-algo-impls-benchmarks/tff7xk4b
     load_run_path_best: false
     gelu_pool_conv: true
-  algo_hyperparams:
+  algo_hyperparams: &microrts-tweaks-base-algo-defaults
     <<: *microrts-sp-dc-phases-a6000-algo-defaults
     gamma: [0.99, 0.999, 0.999]
     gae_lambda: [0.95, 0.99, 0.99]
@@ -1018,6 +1018,9 @@ Microrts-finetuned-DoubleGame24x24: &microrts-finetuned-doublegame
       make_kwargs:
         <<: *microrts-a6000-finetuned-coac-mayari-eval-env-make-kwargs-overrides
         map_paths: [maps/DoubleGame24x24.xml]
+  algo_hyperparams:
+    <<: *microrts-tweaks-base-algo-defaults
+    batch_size: 2048
 
 Microrts-selfplay-dc-phases-maps24: &microrts-sp-dc-phases-m24-defaults
   <<: *microrts-sp-dc-phases-defaults
