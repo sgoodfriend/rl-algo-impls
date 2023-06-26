@@ -1133,7 +1133,7 @@ Microrts-finetuned-BloodBath: &microrts-finetuned-bloodbath
     n_steps: 256
   algo_hyperparams:
     <<: *microrts-tweaks-base-algo-defaults
-    batch_size: 384
+    batch_size: 256
 
 Microrts-finetuned-BloodBath-shaped: &microrts-finetuned-bloodbath-shaped
   <<: *microrts-finetuned-bloodbath
