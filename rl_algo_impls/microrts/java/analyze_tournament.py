@@ -50,7 +50,8 @@ def read_matches(cols: Sequence[str], row_iter: Iterator[Sequence[str]]) -> List
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("directory_name", nargs="?", default="tournament_38")
+    parser.add_argument("directory_name", nargs="?", default="tournament_3x")
+    parser.add_argument("out_filepath", nargs="?", default="~/Desktop/v0.0.2x.csv")
     args = parser.parse_args()
 
     filename = os.path.join(
@@ -105,3 +106,21 @@ if __name__ == "__main__":
     points_table.loc["AI Total"] = points_table.sum(axis=0)
     points_table["Map Total"] = points_table.sum(axis=1)
     print(points_table.rename(index=maps_by_idx, columns=ais_by_idx))
+
+    if args.out_filepath:
+        filepath = os.path.expanduser(args.out_filepath)
+        with open(filepath, "w") as f:
+            f.write("RAISocketAI Player 1 Wins\n")
+        player_1_points.rename(index=maps_by_idx, columns=ais_by_idx).to_csv(
+            filepath, mode="a"
+        )
+        with open(filepath, "a") as f:
+            f.write("RAISocketAI Player 2 Losses\n")
+        player_2_points.rename(index=maps_by_idx, columns=ais_by_idx).to_csv(
+            filepath, mode="a"
+        )
+        with open(filepath, "a") as f:
+            f.writelines("RAISocketAI Point Differential\n")
+        points_table.rename(index=maps_by_idx, columns=ais_by_idx).to_csv(
+            filepath, mode="a"
+        )
