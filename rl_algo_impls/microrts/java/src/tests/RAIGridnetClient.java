@@ -24,8 +24,6 @@ import rts.PartiallyObservableGameState;
 import rts.PhysicalGameState;
 import rts.PlayerAction;
 import rts.TraceEntry;
-import rts.UnitAction;
-import rts.UnitActionAssignment;
 import rts.units.Unit;
 import rts.units.UnitTypeTable;
 
@@ -135,18 +133,31 @@ public class RAIGridnetClient {
             pa2 = new PlayerAction();
             pa2.fillWithNones(player2gs, 1 - player, 1);
         }
-        gs.issueSafe(pa1);
-        gs.issueSafe(pa2);
         TraceEntry te = new TraceEntry(gs.getPhysicalGameState().clone(), gs.getTime());
+        gs.issueSafe(pa1);
         te.addPlayerAction(pa1.clone());
-        te.addPlayerAction(pa2.clone());
+        try {
+            gs.issueSafe(pa2);
+            te.addPlayerAction(pa2.clone());
+        } catch (Exception e) {
+            e.printStackTrace();
+            // Remove all AI units, which should cause it to auto-lose.
+            var player2units = gs.getUnits().stream().filter(u -> u.getPlayer() == 1 - player).toArray(Unit[]::new);
+            for (Unit p2Unit : player2units) {
+                gs.removeUnit(p2Unit);
+            }
+            gameover = true;
+        }
 
-        // simulate:
-        gameover = gs.cycle();
+        if (!gameover) {
+            // simulate:
+            gameover = gs.cycle();
+        }
         if (gameover) {
             // ai1.gameOver(gs.winner());
             ai2.gameOver(gs.winner());
         }
+
         for (int i = 0; i < rewards.length; i++) {
             rfs[i].computeReward(player, 1 - player, te, gs);
             dones[i] = rfs[i].isDone();
