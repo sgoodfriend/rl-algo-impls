@@ -968,7 +968,7 @@ Microrts-A6000-finetuned-coac: &microrts-a6000-finetuned-coac
 
 Microrts-A6000-finetuned-coac-mayari: &microrts-a6000-finetuned-coac-mayari
   <<: *microrts-a6000-finetuned-coac
-  env_hyperparams:
+  env_hyperparams: &microrts-a6000-finetuned-coac-mayari-env-defaults
     <<: *microrts-a6000-finetuned-coac-env-defaults
     make_kwargs:
       <<: *microrts-a6000-finetuned-coac-env-make-kwargs
@@ -976,13 +976,48 @@ Microrts-A6000-finetuned-coac-mayari: &microrts-a6000-finetuned-coac-mayari
     bots:
       coacAI: 6
       mayari: 6
-  eval_hyperparams:
+  eval_hyperparams: &microrts-a6000-finetuned-coac-mayari-eval-defaults
     <<: *microrts-sp-dc-phases-eval-defaults
-    env_overrides:
+    env_overrides: &microrts-a6000-finetuned-coac-mayari-eval-env-overrides
       <<: *microrts-sp-dc-phases-eval-env-overrides
       make_kwargs:
+        &microrts-a6000-finetuned-coac-mayari-eval-env-make-kwargs-overrides
         <<: *microrts-ai-eval-env-make-kwargs-overrides
         bot_envs_alternate_player: false
+
+Microrts-finetuned-NoWhereToRun: &microrts-finetuned-nowheretorun
+  <<: *microrts-a6000-finetuned-coac-mayari
+  env_id: Microrts-finetuned-NoWhereToRun
+  env_hyperparams:
+    <<: *microrts-a6000-finetuned-coac-mayari-env-defaults
+    map_paths:
+      - maps/NoWhereToRun9x8.xml
+    valid_sizes: [12]
+    paper_planes_sizes: [12]
+  eval_hyperparams: &microrts-finetuned-nowheretorun-eval-defaults
+    <<: *microrts-a6000-finetuned-coac-mayari-eval-defaults
+    env_overrides:
+      <<: *microrts-a6000-finetuned-coac-mayari-eval-env-overrides
+      make_kwargs:
+        <<: *microrts-a6000-finetuned-coac-mayari-eval-env-make-kwargs-overrides
+        map_paths: [maps/NoWhereToRun9x8.xml]
+
+Microrts-finetuned-DoubleGame24x24: &microrts-finetuned-doublegame
+  <<: *microrts-a6000-finetuned-coac-mayari
+  env_id: Microrts-finetuned-doublegame
+  env_hyperparams:
+    <<: *microrts-a6000-finetuned-coac-mayari-env-defaults
+    map_paths:
+      - maps/DoubleGame24x24.xml
+    valid_sizes: [24]
+    paper_planes_sizes: [24]
+  eval_hyperparams: &microrts-finetuned-doublegame-eval-defaults
+    <<: *microrts-a6000-finetuned-coac-mayari-eval-defaults
+    env_overrides:
+      <<: *microrts-a6000-finetuned-coac-mayari-eval-env-overrides
+      make_kwargs:
+        <<: *microrts-a6000-finetuned-coac-mayari-eval-env-make-kwargs-overrides
+        map_paths: [maps/DoubleGame24x24.xml]
 
 Microrts-selfplay-dc-phases-maps24: &microrts-sp-dc-phases-m24-defaults
   <<: *microrts-sp-dc-phases-defaults
@@ -1048,10 +1083,10 @@ Microrts-selfplay-dc-phases-final: &microrts-sp-dc-phases-final-defaults
       - 0.1
 
 Microrts-debug: &microrts-debug-defaults
-  <<: *microrts-a6000-finetuned-coac-mayari
+  <<: *microrts-finetuned-doublegame
   device: mps
   eval_hyperparams:
-    <<: *microrts-sp-dc-phases-eval-defaults
+    <<: *microrts-finetuned-doublegame-eval-defaults
     step_freq: !!float 1e5
 
 Microrts-agent: &microrts-agent
