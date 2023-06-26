@@ -1,10 +1,10 @@
-name: rl_algo_impls
+name: rl_algo_impls_311
 channels:
   - pytorch
   - conda-forge
   - nodefaults
 dependencies:
-  - python=3.9
+  - python=3.11
   - mamba
   - pip
   - pytorch
