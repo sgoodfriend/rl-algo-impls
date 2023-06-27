@@ -140,7 +140,8 @@ public class RAIGridnetClient {
         try {
             gs.issueSafe(pa2);
             te.addPlayerAction(pa2.clone());
-        } catch (Exception e) {
+        } catch (Throwable e) {
+            System.err.println("Player 2 Error: " + e.getMessage());
             e.printStackTrace();
             // Remove all AI units, which should cause it to auto-lose.
             var player2units = gs.getUnits().stream().filter(u -> u.getPlayer() == 1 - player).toArray(Unit[]::new);
