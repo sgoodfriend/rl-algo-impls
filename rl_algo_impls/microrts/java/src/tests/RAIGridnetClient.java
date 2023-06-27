@@ -136,6 +136,7 @@ public class RAIGridnetClient {
         TraceEntry te = new TraceEntry(gs.getPhysicalGameState().clone(), gs.getTime());
         gs.issueSafe(pa1);
         te.addPlayerAction(pa1.clone());
+        var errored = false;
         try {
             gs.issueSafe(pa2);
             te.addPlayerAction(pa2.clone());
@@ -146,16 +147,17 @@ public class RAIGridnetClient {
             for (Unit p2Unit : player2units) {
                 gs.removeUnit(p2Unit);
             }
-            gameover = true;
+            errored = true;
         }
 
-        if (!gameover) {
+        if (!errored) {
             // simulate:
             gameover = gs.cycle();
         }
-        if (gameover) {
+        if (gameover || errored) {
             // ai1.gameOver(gs.winner());
             ai2.gameOver(gs.winner());
+            gameover = true;
         }
 
         for (int i = 0; i < rewards.length; i++) {

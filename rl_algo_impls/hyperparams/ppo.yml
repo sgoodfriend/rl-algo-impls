@@ -1222,10 +1222,10 @@ Microrts-selfplay-dc-phases-final: &microrts-sp-dc-phases-final-defaults
       - 0.1
 
 Microrts-debug: &microrts-debug-defaults
-  <<: *microrts-finetuned-bloodbath-shaped
+  <<: *microrts-finetuned-distantresources-shaped
   device: mps
   eval_hyperparams:
-    <<: *microrts-finetuned-bloodbath-eval-defaults
+    <<: *microrts-finetuned-distantresources-eval-defaults
     step_freq: !!float 1e5
 
 Microrts-agent: &microrts-agent
