@@ -58,9 +58,6 @@ def main():
     )
     logging.info("Log file start")
 
-    if len(sys.argv) >= 3:
-        set_connection_info(int(sys.argv[1]), bool(int(sys.argv[2])))
-
     MAX_TORCH_THREADS = 16
     if torch.get_num_threads() > MAX_TORCH_THREADS:
         logging.info(

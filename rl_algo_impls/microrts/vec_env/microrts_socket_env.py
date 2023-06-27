@@ -1,7 +1,6 @@
 import gc
 import json
 import logging
-import socket
 import struct
 import sys
 import time
@@ -65,6 +64,9 @@ class MicroRTSSocketEnv(MicroRTSInterface):
         self.obs = None
         self.action_mask = None
         self._resources = None
+
+        self.in_pipe = sys.stdin.buffer
+        self.out_pipe = sys.stdout.buffer
         self._start()
 
     def step(self, action):
@@ -211,12 +213,13 @@ class MicroRTSSocketEnv(MicroRTSInterface):
         if self.command == MessageType.PRE_GAME_ANALYSIS:
             gc.disable()
             gc.collect()
-        self._connection.send(("%s\n" % data_string).encode("utf-8"))
+        self.out_pipe.write(("%s\n" % data_string).encode("utf-8"))
+        self.out_pipe.flush()
 
     def _wait_for_message(self) -> Tuple[MessageType, List[bytearray]]:
         d = bytearray()
         while len(d) < 4:
-            chunk = self._connection.recv(MESSAGE_SIZE_BYTES)
+            chunk = self.in_pipe.read(4)
             d.extend(chunk)
             if len(d) < 4:
                 self._logger.debug(
@@ -227,7 +230,7 @@ class MicroRTSSocketEnv(MicroRTSInterface):
 
         d = bytearray(d[4:])
         while len(d) < sz:
-            chunk = self._connection.recv(MESSAGE_SIZE_BYTES)
+            chunk = self.in_pipe.read(sz)
             if not chunk:
                 break
             d.extend(chunk)
@@ -252,45 +255,6 @@ class MicroRTSSocketEnv(MicroRTSInterface):
         return message_type, parts
 
     def _start(self):
-        """Start the MicroRTS server.
-
-        :param start_microrts: whether to also start a MicroRTS instance along with the server. Be aware that, in order to spawn a java subprocess that will start MicroRTS, the MICRORTSPATH environment variable must be set, containing the path to the microRTS executable JAR. Defaults to False
-        :type start_microrts: bool, optional
-        :param properties_file: path to a properties file, which will be read by MicroRTS -f flag, defaults to None
-        :type properties_file: str, optional
-        """
-        self._logger.info("Socket created")
-
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        addr = ("localhost", SERVER_PORT)
-
-        if IS_SERVER:
-            # Bind socket to local host and port
-            try:
-                s.bind(addr)
-            except socket.error as msg:
-                self._logger.critical(f"Bind failed. Error: {msg}")
-                s.close()
-                sys.exit()
-
-            self._logger.info("Socket bind complete")
-
-            # Start listening on socket
-            s.listen(10)
-            self._logger.info("Socket now listening")
-
-            # now keep talking with the client
-            self._connection, addr = s.accept()
-        else:
-            s.connect(addr)
-            self._connection = s
-
-        self._logger.info(self._connection)
-        self._logger.info(addr)
-
-        self._logger.info("Connected with " + addr[0] + ":" + str(addr[1]))
-
         self._wait_for_obs()
 
     def debug_matrix_obs(self, env_idx: int) -> Optional[np.ndarray]:

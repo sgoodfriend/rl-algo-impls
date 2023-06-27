@@ -28,7 +28,7 @@ public class RAIGameVisualSimulationTest {
         AI ai1 = new RAISocketAI(utt);
         AI ai2 = new CoacAI(utt);
 
-        PhysicalGameState pgs = PhysicalGameState.load("maps/NoWhereToRun9x8.xml", utt);
+        PhysicalGameState pgs = PhysicalGameState.load("maps/16x16/TwoBasesBarracks16x16.xml", utt);
         // PhysicalGameState pgs = MapGenerator.basesWorkers8x8Obstacle();
 
         GameState gs = new GameState(pgs, utt);

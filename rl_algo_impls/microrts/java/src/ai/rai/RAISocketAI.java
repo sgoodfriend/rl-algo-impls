@@ -2,19 +2,14 @@ package ai.rai;
 
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.StringWriter;
 import java.lang.reflect.Type;
-import java.net.ConnectException;
-import java.net.ServerSocket;
-import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -33,135 +28,42 @@ public class RAISocketAI extends AIWithComputationBudget {
     UnitTypeTable utt;
     int maxAttackDiameter;
 
-    String serverAddress = "127.0.0.1";
-    int serverPort = 56242;
-
     static Process pythonProcess;
-    static Socket socket;
-    static BufferedReader in_pipe;
-    static DataOutputStream out_pipe;
+    static BufferedReader inPipe;
+    static DataOutputStream outPipe;
 
     boolean sentInitialMapInformation;
 
     public RAISocketAI(UnitTypeTable a_utt) {
-        this(a_utt, true);
-    }
-
-    public RAISocketAI(UnitTypeTable a_utt, boolean createServer) {
         super(100, -1);
         utt = a_utt;
         maxAttackDiameter = utt.getMaxAttackRange() * 2 + 1;
         try {
-            connectToServer(createServer);
+            connectChildProcess();
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    public RAISocketAI(int mt, int mi, String a_sa, int a_port, UnitTypeTable a_utt) {
-        super(mt, mi);
-        serverAddress = a_sa;
-        serverPort = a_port;
-        utt = a_utt;
-        maxAttackDiameter = utt.getMaxAttackRange() * 2 + 1;
-        try {
-            connectToServer(false);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    private RAISocketAI(int mt, int mi, UnitTypeTable a_utt, Socket a_socket) {
+    public RAISocketAI(int mt, int mi, UnitTypeTable a_utt) {
         super(mt, mi);
         utt = a_utt;
         maxAttackDiameter = utt.getMaxAttackRange() * 2 + 1;
         try {
-            socket = a_socket;
-            in_pipe = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            out_pipe = new DataOutputStream(socket.getOutputStream());
-
-            // Consume the initial welcoming messages from the server
-            while (!in_pipe.ready())
-                ;
-
-            while (in_pipe.ready())
-                in_pipe.readLine();
-
-            reset();
+            connectChildProcess();
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    /**
-     * Creates a RAISocketAI from an existing socket.
-     *
-     * @param mt     The time budget in milliseconds.
-     * @param mi     The iterations budget in milliseconds
-     * @param socket The socket the ai will communicate over.
-     */
-    public static RAISocketAI createFromExistingSocket(int mt, int mi, rts.units.UnitTypeTable a_utt,
-            java.net.Socket socket) {
-        return new RAISocketAI(mt, mi, a_utt, socket);
-    }
-
-    private void startPythonProcess(boolean isProcessServer) throws Exception {
-        ProcessBuilder processBuilder = new ProcessBuilder("rai_microrts", String.valueOf(serverPort),
-                String.valueOf(isProcessServer ? 1 : 0));
-        pythonProcess = processBuilder.start();
-    }
-
-    public void connectToServer(boolean createServer) throws Exception {
-        if (socket != null) {
+    public void connectChildProcess() throws Exception {
+        if (pythonProcess != null) {
             return;
         }
-        if (createServer) {
-            final int minEphemeralPort = 49152;
-            final int maxEphemeralPort = 65535;
-            final int maxAttempts = 20;
-
-            ServerSocket serverSocket = null;
-            for (int i = 0; serverSocket == null && i < maxAttempts; ++i) {
-                serverPort = ThreadLocalRandom.current().nextInt(minEphemeralPort, maxEphemeralPort + 1);
-                try {
-                    serverSocket = new ServerSocket(serverPort);
-                    if (DEBUG >= 1) {
-                        System.out.printf("RAISocketAI: ServerSocket started on port %d%n", serverPort);
-                    }
-                } catch (IOException e) {
-                    if (DEBUG >= 1) {
-                        System.out.printf("RAISocketAI: Port %d busy. Trying another one...%n", serverPort);
-                    }
-                }
-            }
-
-            startPythonProcess(false);
-
-            serverSocket.setSoTimeout(20000);
-            socket = serverSocket.accept();
-            socket.setTcpNoDelay(true);
-
-            if (DEBUG >= 1) {
-                System.out.printf("RAISocketAI: Connected to server on port %d!%n", serverPort);
-            }
-        } else {
-            boolean connected = false;
-            int sleepMs = 100;
-            while (!connected) {
-                try {
-                    socket = new Socket(serverAddress, serverPort);
-                    connected = true;
-                } catch (ConnectException e) {
-                    if (DEBUG >= 1)
-                        System.out.printf("Waiting %dms for server to be ready%n", sleepMs);
-                    Thread.sleep(sleepMs);
-                    sleepMs += 100;
-                }
-            }
-        }
-
-        in_pipe = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-        out_pipe = new DataOutputStream(socket.getOutputStream());
+        ProcessBuilder processBuilder = new ProcessBuilder("rai_microrts");
+        pythonProcess = processBuilder.start();
+        inPipe = new BufferedReader(new InputStreamReader(pythonProcess.getInputStream()));
+        outPipe = new DataOutputStream(pythonProcess.getOutputStream());
 
         reset();
     }
@@ -181,9 +83,9 @@ public class RAISocketAI extends AIWithComputationBudget {
     }
 
     public void send(byte[] b) throws Exception {
-        out_pipe.writeInt(b.length);
-        out_pipe.write(b);
-        out_pipe.flush();
+        outPipe.writeInt(b.length);
+        outPipe.write(b);
+        outPipe.flush();
     }
 
     @Override
@@ -199,11 +101,11 @@ public class RAISocketAI extends AIWithComputationBudget {
                 System.out.println("RAISocketAI: UTT sent, waiting for ack");
 
             // wait for ack:
-            in_pipe.readLine();
+            inPipe.readLine();
 
             // read any extra left-over lines
-            while (in_pipe.ready())
-                in_pipe.readLine();
+            while (inPipe.ready())
+                inPipe.readLine();
             if (DEBUG >= 1)
                 System.out.println("RAISocketAI: ack received");
         } catch (Exception e) {
@@ -240,7 +142,7 @@ public class RAISocketAI extends AIWithComputationBudget {
         if (DEBUG >= 1)
             System.out.println("RAISocketAI: getAction sent, waiting for actions");
 
-        String actionString = in_pipe.readLine();
+        String actionString = inPipe.readLine();
         Type int2d = new TypeToken<int[][]>() {
         }.getType();
         int[][] actionVector = gson.fromJson(actionString, int2d);
@@ -276,7 +178,7 @@ public class RAISocketAI extends AIWithComputationBudget {
         send(RAISocketMessageType.PRE_GAME_ANALYSIS, obs.toArray(new byte[0][]));
         sentInitialMapInformation = true;
 
-        in_pipe.readLine();
+        inPipe.readLine();
     }
 
     @Override
@@ -284,22 +186,19 @@ public class RAISocketAI extends AIWithComputationBudget {
         send(RAISocketMessageType.GAME_OVER, new byte[][] { new byte[] { (byte) winner } });
 
         // wait for ack:
-        in_pipe.readLine();
+        inPipe.readLine();
     }
 
     @Override
     public AI clone() {
         if (DEBUG >= 1)
             System.out.println("RAISocketAI: cloning");
-        return new RAISocketAI(TIME_BUDGET, ITERATIONS_BUDGET, serverAddress, serverPort, utt);
+        return new RAISocketAI(TIME_BUDGET, ITERATIONS_BUDGET, utt);
     }
 
     @Override
     public List<ParameterSpecification> getParameters() {
         List<ParameterSpecification> l = new ArrayList<>();
-
-        l.add(new ParameterSpecification("Server Address", String.class, "127.0.0.1"));
-        l.add(new ParameterSpecification("Server Port", Integer.class, 9898));
 
         return l;
     }
