@@ -154,7 +154,9 @@ class MicroRTSSocketEnv(MicroRTSInterface):
                 self.action_mask = [np.frombuffer(args[1], dtype=np.int8)]
                 self._resources = np.frombuffer(args[2], dtype=np.int8)
                 if len(args) >= 7:
-                    self._matrix_obs = np.array(json.loads(args[5].decode("utf-8")))
+                    self._matrix_obs = np.transpose(
+                        np.array(json.loads(args[5].decode("utf-8"))), (1, 2, 0)
+                    )
                     self._matrix_mask = np.array(
                         json.loads(args[6].decode("utf-8")),
                     )
