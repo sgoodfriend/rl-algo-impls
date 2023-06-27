@@ -14,17 +14,7 @@ from rl_algo_impls.microrts.vec_env.microrts_interface import (
     MicroRTSInterfaceListener,
 )
 
-SERVER_PORT = 56242
-IS_SERVER = True
-MESSAGE_SIZE_BYTES = 8192
 TIME_BUDGET_MS = 100
-
-
-def set_connection_info(server_port: int, is_server: bool):
-    global SERVER_PORT
-    SERVER_PORT = server_port
-    global IS_SERVER
-    IS_SERVER = is_server
 
 
 class MessageType(Enum):

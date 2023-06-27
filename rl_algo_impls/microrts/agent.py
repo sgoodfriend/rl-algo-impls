@@ -14,10 +14,7 @@ from rl_algo_impls.microrts.map_size_policy_picker import (
     MapSizePolicyPicker,
     PickerArgs,
 )
-from rl_algo_impls.microrts.vec_env.microrts_socket_env import (
-    TIME_BUDGET_MS,
-    set_connection_info,
-)
+from rl_algo_impls.microrts.vec_env.microrts_socket_env import TIME_BUDGET_MS
 from rl_algo_impls.runner.config import Config, EnvHyperparams, RunArgs
 from rl_algo_impls.runner.running_utils import get_device, load_hyperparams
 from rl_algo_impls.shared.vec_env.make_env import make_eval_env

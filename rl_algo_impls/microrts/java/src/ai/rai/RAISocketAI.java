@@ -62,6 +62,11 @@ public class RAISocketAI extends AIWithComputationBudget {
         }
         ProcessBuilder processBuilder = new ProcessBuilder("rai_microrts");
         pythonProcess = processBuilder.start();
+
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            pythonProcess.destroy();
+        }));
+
         inPipe = new BufferedReader(new InputStreamReader(pythonProcess.getInputStream()));
         outPipe = new DataOutputStream(pythonProcess.getOutputStream());
 

@@ -1,0 +1,1 @@
+java -cp "RAISocketAI.jar:$(find lib -name "*.jar" | tr '\n' ':')" tournaments.RAIPerformanceTournament
