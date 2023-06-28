@@ -36,9 +36,9 @@ public class RAIPerformanceTournament extends Tournament {
         var tournament = new RAIPerformanceTournament(Arrays.asList(AIs));
 
         final List<Pair<String, Integer>> maps = new ArrayList<Pair<String, Integer>>();
-        maps.add(new Pair<>("maps/16x16/TwoBasesBarracks16x16.xml", 1000));
-        maps.add(new Pair<>("maps/BWDistantResources32x32.xml", 1000));
         maps.add(new Pair<>("maps/BroodWar/(4)BloodBath.scmB.xml", 1000));
+        maps.add(new Pair<>("maps/BWDistantResources32x32.xml", 1000));
+        maps.add(new Pair<>("maps/16x16/TwoBasesBarracks16x16.xml", 1000));
 
         String prefix = "tournament_";
         if (maps.size() == 1) {
@@ -127,6 +127,7 @@ public class RAIPerformanceTournament extends Tournament {
                         }
                         progress.write("Starting iteration " + iteration +
                                 " on " + map.m_a + "\n");
+                        progress.flush();
                         tournament.playSingleGame(map.m_b, timeBudget, iterationsBudget,
                                 preAnalysisBudgetFirstTimeInAMap, preAnalysisBudgetRestOfTimes, fullObservability,
                                 timeoutCheck, runGC, preAnalysis, utt, traceOutputFolder, out, progress,
