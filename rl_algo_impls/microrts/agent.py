@@ -63,7 +63,12 @@ def main():
         )
         torch.set_num_threads(MAX_TORCH_THREADS)
     elif num_proc_units > 1:
-        reduce_threads = 2 if num_proc_units > 4 else 1
+        if num_proc_units > 8:
+            reduce_threads = 4
+        elif num_proc_units > 4:
+            reduce_threads = 2
+        else:
+            reduce_threads = 1
         final_num_threads = num_proc_units - reduce_threads
         logging.info(
             f"{num_proc_units} processing units. Setting PyTorch to use {final_num_threads} threads"
