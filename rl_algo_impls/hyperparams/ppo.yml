@@ -903,8 +903,8 @@ _Microrts-tweaks-base: &microrts-tweaks-base
     paper_planes_sizes: [16]
   policy_hyperparams:
     <<: *microrts-sp-dc-phases-policy-defaults
-    load_run_path: sgoodfriend/rl-algo-impls-benchmarks/tff7xk4b
-    load_run_path_best: false
+    load_run_path: sgoodfriend/rl-algo-impls-benchmarks/1ilo9yae
+    load_run_path_best: true
     gelu_pool_conv: true
   algo_hyperparams: &microrts-tweaks-base-algo-defaults
     <<: *microrts-sp-dc-phases-a6000-algo-defaults
@@ -1222,10 +1222,10 @@ Microrts-selfplay-dc-phases-final: &microrts-sp-dc-phases-final-defaults
       - 0.1
 
 Microrts-debug: &microrts-debug-defaults
-  <<: *microrts-finetuned-distantresources-shaped
+  <<: *microrts-finetuned-doublegame-shaped
   device: mps
   eval_hyperparams:
-    <<: *microrts-finetuned-distantresources-eval-defaults
+    <<: *microrts-finetuned-doublegame-eval-defaults
     step_freq: !!float 1e5
 
 Microrts-agent: &microrts-agent
