@@ -58,13 +58,13 @@ def main():
     logging.info("Log file start")
 
     if torch.backends.mkldnn.is_available():
-        print("MKL-DNN (oneDNN) is available in PyTorch")
+        logging.info("MKL-DNN (oneDNN) is available in PyTorch")
         if torch.backends.mkldnn.enabled:  # type: ignore
-            print("MKL-DNN (oneDNN) is enabled")
+            logging.info("MKL-DNN (oneDNN) is enabled")
         else:
-            print("MKL-DNN (oneDNN) is disabled")
+            logging.info("MKL-DNN (oneDNN) is disabled")
     else:
-        print("MKL-DNN (oneDNN) is not available in PyTorch")
+        logging.info("MKL-DNN (oneDNN) is not available in PyTorch")
 
     MAX_TORCH_THREADS = 16
     num_proc_units = torch.get_num_threads()
