@@ -74,6 +74,7 @@ def main():
             override_hparams={
                 "valid_sizes": [sz],
                 "paper_planes_sizes": [sz] if p_args.use_paper_obs else [],
+                "fixed_size": True,
             },
         )
         for sz, p_args in AGENT_ARGS_BY_MAP_SIZE.items()

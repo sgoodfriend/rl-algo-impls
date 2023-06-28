@@ -59,6 +59,7 @@ def make_microrts_env(
         is_agent,
         valid_sizes,
         paper_planes_sizes,
+        fixed_size,
     ) = astuple(hparams)
 
     seed = config.seed(training=training)
@@ -153,7 +154,10 @@ def make_microrts_env(
     else:
         envs = MicroRTSSocketEnv.singleton()
     envs = MicroRTSSpaceTransform(
-        envs, valid_sizes=valid_sizes, paper_planes_sizes=paper_planes_sizes
+        envs,
+        valid_sizes=valid_sizes,
+        paper_planes_sizes=paper_planes_sizes,
+        fixed_size=fixed_size,
     )
     envs = HwcToChwObservation(envs)
     envs = IsVectorEnv(envs)

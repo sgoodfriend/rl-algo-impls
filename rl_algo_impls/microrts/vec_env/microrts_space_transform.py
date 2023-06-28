@@ -50,6 +50,7 @@ class MicroRTSSpaceTransform(gym.vector.VectorEnv, MicroRTSInterfaceListener):
         interface: MicroRTSInterface,
         valid_sizes: Optional[List[int]] = None,
         paper_planes_sizes: Optional[List[int]] = None,
+        fixed_size: bool = False,
     ) -> None:
         self.interface = interface
         self.valid_sizes = list(sorted(valid_sizes)) if valid_sizes else None
@@ -119,7 +120,9 @@ class MicroRTSSpaceTransform(gym.vector.VectorEnv, MicroRTSInterfaceListener):
 
         super().__init__(self.interface.num_envs, observation_space, action_space)
 
-        self.interface.add_listener(self)
+        self.fixed_size = fixed_size
+        if not self.fixed_size:
+            self.interface.add_listener(self)
 
     def _update_spaces(
         self, is_init: bool = False
@@ -217,7 +220,8 @@ class MicroRTSSpaceTransform(gym.vector.VectorEnv, MicroRTSInterfaceListener):
         return self.interface.render(mode)
 
     def close_extras(self, **kwargs):
-        self.interface.remove_listener(self)
+        if not self.fixed_size:
+            self.interface.remove_listener(self)
         self.interface.close(**kwargs)
 
     def _translate_actions(

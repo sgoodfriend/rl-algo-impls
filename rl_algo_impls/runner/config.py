@@ -59,6 +59,7 @@ class EnvHyperparams:
     is_agent: bool = False
     valid_sizes: Optional[List[int]] = None
     paper_planes_sizes: Optional[List[int]] = None
+    fixed_size: bool = False
 
 
 HyperparamsSelf = TypeVar("HyperparamsSelf", bound="Hyperparams")
