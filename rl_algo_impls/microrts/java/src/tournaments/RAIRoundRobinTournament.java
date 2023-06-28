@@ -27,9 +27,10 @@ public class RAIRoundRobinTournament extends Tournament {
     }
 
     public static void main(String args[]) throws Exception {
+        final int timeBudget = 100;
         final UnitTypeTable utt = new UnitTypeTable(UnitTypeTable.VERSION_ORIGINAL_FINETUNED);
         final AI[] AIs = {
-                new RAISocketAI(utt),
+                new RAISocketAI(timeBudget, -1, utt),
                 new POWorkerRush(utt),
                 new POLightRush(utt),
                 new CoacAI(utt),
@@ -68,13 +69,12 @@ public class RAIRoundRobinTournament extends Tournament {
 
         final int playOnlyGamesInvolvingThisAI = 0;
         final int iterations = 10;
-        final int timeBudget = 100;
         final int iterationsBudget = -1;
         final int preAnalysisBudgetFirstTimeInAMap = 1000;
         final int preAnalysisBudgetRestOfTimes = 1000;
         final boolean fullObservability = true;
         final boolean selfMatches = false;
-        final boolean timeoutCheck = false;
+        final boolean timeoutCheck = true;
         final boolean runGC = true;
         final boolean preAnalysis = preAnalysisBudgetFirstTimeInAMap > 0;
         final Writer out = new FileWriter(fileToUse);
@@ -132,6 +132,9 @@ public class RAIRoundRobinTournament extends Tournament {
                                     ai2_idx != playOnlyGamesInvolvingThisAI)
                                 continue;
                         }
+                        progress.write("Starting iteration " + iteration +
+                                " on " + map.m_a + "\n");
+                        progress.flush();
                         tournament.playSingleGame(map.m_b, timeBudget, iterationsBudget,
                                 preAnalysisBudgetFirstTimeInAMap, preAnalysisBudgetRestOfTimes, fullObservability,
                                 timeoutCheck, runGC, preAnalysis, utt, traceOutputFolder, out, progress,

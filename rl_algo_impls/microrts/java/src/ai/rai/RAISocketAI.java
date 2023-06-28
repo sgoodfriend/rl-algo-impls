@@ -10,6 +10,13 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -31,6 +38,8 @@ public class RAISocketAI extends AIWithComputationBudget {
     static Process pythonProcess;
     static BufferedReader inPipe;
     static DataOutputStream outPipe;
+    static ThreadPoolExecutor executor;
+    static Future<String> pendingRequestHandler;
 
     boolean sentInitialMapInformation;
 
@@ -70,6 +79,11 @@ public class RAISocketAI extends AIWithComputationBudget {
         inPipe = new BufferedReader(new InputStreamReader(pythonProcess.getInputStream()));
         outPipe = new DataOutputStream(pythonProcess.getOutputStream());
 
+        executor = new ThreadPoolExecutor(
+                2, 4,
+                5000, TimeUnit.MILLISECONDS,
+                new LinkedBlockingDeque<Runnable>());
+
         reset();
     }
 
@@ -93,6 +107,75 @@ public class RAISocketAI extends AIWithComputationBudget {
         outPipe.flush();
     }
 
+    public String request(RAISocketMessageType messageType, byte[][] bs) throws Exception {
+        return request(messageType, bs, null);
+    }
+
+    public String request(RAISocketMessageType messageType, byte[][] bs, Long timeoutMillis) throws Exception {
+        long startTime = System.currentTimeMillis();
+        if (pendingRequestHandler != null) {
+            try {
+                if (timeoutMillis != null) {
+                    pendingRequestHandler.get(timeoutMillis, TimeUnit.MILLISECONDS);
+                } else {
+                    pendingRequestHandler.get();
+                }
+                pendingRequestHandler = null;
+            } catch (TimeoutException e) {
+                if (DEBUG >= 1) {
+                    System.out.println("RAISocketAI: Prior request exceeded new timeout!");
+                }
+                return null;
+            } catch (InterruptedException | ExecutionException e) {
+                if (DEBUG >= 1) {
+                    System.out.println("RAISocketAI: Prior request errored:");
+                    e.printStackTrace();
+                }
+            }
+            if (timeoutMillis != null) {
+                timeoutMillis -= System.currentTimeMillis() - startTime;
+                if (DEBUG >= 1) {
+                    System.out.println("RAISocketAI: Time remaining " + timeoutMillis);
+                }
+                if (timeoutMillis <= 0) {
+                    return null;
+                }
+            }
+        }
+        send(messageType, bs);
+        if (DEBUG >= 2) {
+            System.out.println("RAISocketAI: sent " + messageType.name());
+        }
+        Callable<String> task = () -> {
+            var response = inPipe.readLine();
+            if (DEBUG >= 2) {
+                System.out.println("RAISocketAI: received response to " + messageType.name());
+            }
+            return response;
+        };
+        if (timeoutMillis == null) {
+            return task.call();
+        }
+        pendingRequestHandler = executor.submit(task);
+        try {
+            var response = pendingRequestHandler.get(timeoutMillis, TimeUnit.MILLISECONDS);
+            pendingRequestHandler = null;
+            return response;
+        } catch (TimeoutException e) {
+            if (DEBUG >= 1) {
+                System.out.println("RAISocketAI: Request timed out");
+            }
+            return null;
+        } catch (InterruptedException | ExecutionException e) {
+            if (DEBUG >= 1) {
+                System.out.println("RAISocketAI: Exception thrown");
+                e.printStackTrace();
+            }
+            pendingRequestHandler = null;
+            return null;
+        }
+    }
+
     @Override
     public void reset() {
         try {
@@ -100,19 +183,7 @@ public class RAISocketAI extends AIWithComputationBudget {
 
             StringWriter sw = new StringWriter();
             utt.toJSON(sw);
-            send(RAISocketMessageType.UTT, new byte[][] { sw.toString().getBytes(StandardCharsets.UTF_8) });
-
-            if (DEBUG >= 1)
-                System.out.println("RAISocketAI: UTT sent, waiting for ack");
-
-            // wait for ack:
-            inPipe.readLine();
-
-            // read any extra left-over lines
-            while (inPipe.ready())
-                inPipe.readLine();
-            if (DEBUG >= 1)
-                System.out.println("RAISocketAI: ack received");
+            request(RAISocketMessageType.UTT, new byte[][] { sw.toString().getBytes(StandardCharsets.UTF_8) });
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -123,9 +194,6 @@ public class RAISocketAI extends AIWithComputationBudget {
         GameStateWrapper gsw = new GameStateWrapper(gs, DEBUG);
 
         Gson gson = new Gson();
-
-        if (DEBUG >= 1)
-            System.out.println("RAISocketAI: getAction sending");
 
         ArrayList<byte[]> obs = new ArrayList<>(Arrays.asList(
                 gsw.getArrayObservation(player),
@@ -142,20 +210,19 @@ public class RAISocketAI extends AIWithComputationBudget {
             }
         }
 
-        send(RAISocketMessageType.GET_ACTION, obs.toArray(new byte[0][]));
-
-        if (DEBUG >= 1)
-            System.out.println("RAISocketAI: getAction sent, waiting for actions");
-
-        String actionString = inPipe.readLine();
-        Type int2d = new TypeToken<int[][]>() {
-        }.getType();
-        int[][] actionVector = gson.fromJson(actionString, int2d);
-        PlayerAction pa = PlayerAction.fromVectorAction(actionVector, gs, utt, player, maxAttackDiameter);
+        var response = request(RAISocketMessageType.GET_ACTION, obs.toArray(new byte[0][]),
+                Long.valueOf(TIME_BUDGET));
+        PlayerAction pa;
+        if (response != null) {
+            Type int2d = new TypeToken<int[][]>() {
+            }.getType();
+            int[][] actionVector = gson.fromJson(response, int2d);
+            pa = PlayerAction.fromVectorAction(actionVector, gs, utt, player, maxAttackDiameter);
+        } else {
+            System.out.println("RAISocketAI: Empty getAction response (likely timeout). Returning empty action");
+            pa = new PlayerAction();
+        }
         pa.fillWithNones(gs, player, 1);
-
-        if (DEBUG >= 1)
-            System.out.println("RAISocketAI: actions received");
 
         return pa;
     }
@@ -164,9 +231,6 @@ public class RAISocketAI extends AIWithComputationBudget {
     public void preGameAnalysis(GameState gs, long milliseconds, String readWriteFolder) throws Exception {
         GameStateWrapper gsw = new GameStateWrapper(gs, DEBUG);
         PhysicalGameState pgs = gs.getPhysicalGameState();
-
-        if (DEBUG >= 1)
-            System.out.println("RAISocketAI: preGameAnalysis sending");
 
         ArrayList<byte[]> obs = new ArrayList<>(Arrays.asList(
                 gsw.getArrayObservation(0),
@@ -180,18 +244,13 @@ public class RAISocketAI extends AIWithComputationBudget {
             obs.add(gson.toJson(gsw.getMasks(0)).getBytes(StandardCharsets.UTF_8));
         }
 
-        send(RAISocketMessageType.PRE_GAME_ANALYSIS, obs.toArray(new byte[0][]));
+        request(RAISocketMessageType.PRE_GAME_ANALYSIS, obs.toArray(new byte[0][]));
         sentInitialMapInformation = true;
-
-        inPipe.readLine();
     }
 
     @Override
     public void gameOver(int winner) throws Exception {
-        send(RAISocketMessageType.GAME_OVER, new byte[][] { new byte[] { (byte) winner } });
-
-        // wait for ack:
-        inPipe.readLine();
+        request(RAISocketMessageType.GAME_OVER, new byte[][] { new byte[] { (byte) winner } });
     }
 
     @Override
