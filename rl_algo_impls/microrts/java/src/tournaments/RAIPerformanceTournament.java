@@ -27,9 +27,10 @@ public class RAIPerformanceTournament extends Tournament {
     }
 
     public static void main(String args[]) throws Exception {
+        final int timeBudget = 100;
         final UnitTypeTable utt = new UnitTypeTable(UnitTypeTable.VERSION_ORIGINAL_FINETUNED);
         final AI[] AIs = {
-                new RAISocketAI(utt),
+                new RAISocketAI(timeBudget, -1, utt),
                 new POWorkerRush(utt),
                 new CoacAI(utt),
         };
@@ -61,7 +62,6 @@ public class RAIPerformanceTournament extends Tournament {
 
         final int playOnlyGamesInvolvingThisAI = 0;
         final int iterations = 1;
-        final int timeBudget = 100;
         final int iterationsBudget = -1;
         final int preAnalysisBudgetFirstTimeInAMap = 1000;
         final int preAnalysisBudgetRestOfTimes = 1000;

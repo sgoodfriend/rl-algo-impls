@@ -56,11 +56,21 @@ def main():
     logging.info("Log file start")
 
     MAX_TORCH_THREADS = 16
-    if torch.get_num_threads() > MAX_TORCH_THREADS:
+    num_proc_units = torch.get_num_threads()
+    if num_proc_units > MAX_TORCH_THREADS:
         logging.info(
-            f"Reducing torch num_threads from {torch.get_num_threads()} to {MAX_TORCH_THREADS}"
+            f"Reducing torch num_threads from {num_proc_units} to {MAX_TORCH_THREADS}"
         )
         torch.set_num_threads(MAX_TORCH_THREADS)
+    elif num_proc_units > 1:
+        reduce_threads = 2 if num_proc_units > 4 else 1
+        final_num_threads = num_proc_units - reduce_threads
+        logging.info(
+            f"{num_proc_units} processing units. Setting PyTorch to use {final_num_threads} threads"
+        )
+        torch.set_num_threads(final_num_threads)
+    else:
+        logging.info("Only 1 processing unit. Single threading.")
 
     run_args = RunArgs(algo="ppo", env="Microrts-agent", seed=1)
     hyperparams = load_hyperparams(run_args.algo, run_args.env)
