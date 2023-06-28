@@ -901,7 +901,7 @@ _Microrts-tweaks-base: &microrts-tweaks-base
     <<: *microrts-sp-dc-phases-env-defaults
     valid_sizes: [16]
     paper_planes_sizes: [16]
-  policy_hyperparams:
+  policy_hyperparams: &microrts-tweaks-base-policy-defaults
     <<: *microrts-sp-dc-phases-policy-defaults
     load_run_path: sgoodfriend/rl-algo-impls-benchmarks/1ilo9yae
     load_run_path_best: true
@@ -988,6 +988,10 @@ Microrts-A6000-finetuned-coac-mayari: &microrts-a6000-finetuned-coac-mayari
 Microrts-finetuned-NoWhereToRun: &microrts-finetuned-nowheretorun
   <<: *microrts-a6000-finetuned-coac-mayari
   env_id: Microrts-finetuned-NoWhereToRun
+  policy_hyperparams:
+    <<: *microrts-tweaks-base-policy-defaults
+    load_run_path: sgoodfriend/rl-algo-impls-benchmarks/hpp5pffx
+    load_run_path_best: true
   env_hyperparams:
     <<: *microrts-a6000-finetuned-coac-mayari-env-defaults
     map_paths:
