@@ -43,6 +43,7 @@ class MicroRTSSocketEnv(MicroRTSInterface):
         self._steps_since_reset = 0
         self._get_action_response_times = []
         self.listeners = []
+        self._initialized = False
 
         self._logger = logging.getLogger("RTSServer")
 
@@ -72,6 +73,9 @@ class MicroRTSSocketEnv(MicroRTSInterface):
         return self._wait_for_obs()
 
     def reset(self):
+        if not self._initialized:
+            self._ack()
+            self._initialized = True
         if self.obs is not None:
             return self.obs, self.action_mask
         return self._wait_for_obs()[:2]
@@ -245,7 +249,9 @@ class MicroRTSSocketEnv(MicroRTSInterface):
         return message_type, parts
 
     def _start(self):
-        self._wait_for_obs()
+        self.command, args = self._wait_for_message()
+        assert self.command == MessageType.UTT
+        self._utt = json.loads(args[0].decode("utf-8"))
 
     def debug_matrix_obs(self, env_idx: int) -> Optional[np.ndarray]:
         assert env_idx == 0
