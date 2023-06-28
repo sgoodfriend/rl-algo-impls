@@ -63,17 +63,11 @@ def main():
         )
         torch.set_num_threads(MAX_TORCH_THREADS)
     elif num_proc_units > 1:
-        if num_proc_units > 8:
-            reduce_threads = 4
-        elif num_proc_units > 4:
-            reduce_threads = 2
-        else:
-            reduce_threads = 1
-        final_num_threads = num_proc_units - reduce_threads
+        next_lower_pow_2 = 2 ** ((num_proc_units - 1).bit_length() - 1)
         logging.info(
-            f"{num_proc_units} processing units. Setting PyTorch to use {final_num_threads} threads"
+            f"{num_proc_units} processing units. Setting PyTorch to use {next_lower_pow_2} threads"
         )
-        torch.set_num_threads(final_num_threads)
+        torch.set_num_threads(next_lower_pow_2)
     else:
         logging.info("Only 1 processing unit. Single threading.")
 
