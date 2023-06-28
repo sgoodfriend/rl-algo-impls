@@ -1,10 +1,12 @@
 import logging
+import multiprocessing
 import os
 import sys
 import time
 from pathlib import Path
 
 import torch
+import torch.backends.mkldnn
 
 file_path = os.path.abspath(Path(__file__))
 root_dir = str(Path(file_path).parent.parent.parent.absolute())
@@ -55,9 +57,23 @@ def main():
     )
     logging.info("Log file start")
 
+    if torch.backends.mkldnn.is_available():
+        print("MKL-DNN (oneDNN) is available in PyTorch")
+        if torch.backends.mkldnn.enabled:  # type: ignore
+            print("MKL-DNN (oneDNN) is enabled")
+        else:
+            print("MKL-DNN (oneDNN) is disabled")
+    else:
+        print("MKL-DNN (oneDNN) is not available in PyTorch")
+
     MAX_TORCH_THREADS = 16
     num_proc_units = torch.get_num_threads()
-    if num_proc_units > MAX_TORCH_THREADS:
+    num_cpus = multiprocessing.cpu_count()
+    if num_cpus != num_proc_units:
+        logging.info(
+            f"Number of CPUs {num_cpus} different from PyTorch {num_proc_units}. Not changing"
+        )
+    elif num_proc_units > MAX_TORCH_THREADS:
         logging.info(
             f"Reducing torch num_threads from {num_proc_units} to {MAX_TORCH_THREADS}"
         )
