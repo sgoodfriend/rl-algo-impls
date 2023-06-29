@@ -63,6 +63,22 @@ def make_eval_env(
             hparams_kwargs[k] = v
             if k == "n_envs" and v == 1:
                 hparams_kwargs["vec_env_class"] = "sync"
+                MAP_PATHS_KEY = "map_paths"
+                if hparams_kwargs.get(MAP_PATHS_KEY, []):
+                    if len(hparams_kwargs[MAP_PATHS_KEY]) > 1:
+                        hparams_kwargs[MAP_PATHS_KEY] = hparams_kwargs[MAP_PATHS_KEY][
+                            :1
+                        ]
+                elif len(hparams_kwargs["make_kwargs"].get(MAP_PATHS_KEY, [])) > 1:
+                    hparams_kwargs["make_kwargs"][MAP_PATHS_KEY] = hparams_kwargs[
+                        "make_kwargs"
+                    ][MAP_PATHS_KEY][:1]
+                if hparams_kwargs.get("bots"):
+                    one_bot_dict = {}
+                    for b, n in hparams_kwargs["bots"].items():
+                        one_bot_dict[b] = 1
+                        break
+                    hparams_kwargs["bots"] = one_bot_dict
         hparams = EnvHyperparams(**hparams_kwargs)
     env = make_env(config, hparams, **kwargs)
 

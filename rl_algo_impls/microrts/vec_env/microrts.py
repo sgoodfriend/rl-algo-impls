@@ -137,16 +137,24 @@ def make_microrts_env(
                 mp = map_paths[i % len(map_paths)]
                 _map_paths.extend([mp] * 2)
 
-            n_bot_envs = make_kwargs["num_bot_envs"]
-            assert (
-                n_bot_envs % len(map_paths) == 0
-            ), "Expect num_bot_envs %d to be a multiple of len(map_paths) (%d)" % (
-                n_bot_envs,
-                len(map_paths),
-            )
-            for i in range(n_bot_envs):
-                mp = map_paths[i % len(map_paths)]
-                _map_paths.extend([mp])
+            if bots:
+                for ai_name, n in bots.items():
+                    assert (
+                        n % len(map_paths) == 0
+                    ), f"Expect number of {ai_name} bots ({n}) to be a multiple of len(map_paths) ({len(map_paths)})"
+                    for mp in map_paths:
+                        _map_paths.extend([mp] * (n // len(map_paths)))
+            else:
+                n_bot_envs = make_kwargs["num_bot_envs"]
+                assert (
+                    n_bot_envs % len(map_paths) == 0
+                ), "Expect num_bot_envs %d to be a multiple of len(map_paths) (%d)" % (
+                    n_bot_envs,
+                    len(map_paths),
+                )
+                for mp in map_paths:
+                    _map_paths.extend([mp] * (n_bot_envs // len(map_paths)))
+
             make_kwargs["map_paths"] = _map_paths
         make_kwargs["ai2s"] = ai2s
 
@@ -175,7 +183,10 @@ def make_microrts_env(
     envs = gym.wrappers.RecordEpisodeStatistics(envs)
     if not is_agent:
         envs = MicrortsStatsRecorder(
-            envs, config.algo_hyperparams.get("gamma", 0.99), bots
+            envs,
+            config.algo_hyperparams.get("gamma", 0.99),
+            bots,
+            make_kwargs.get("map_paths"),
         )
     if training:
         assert tb_writer

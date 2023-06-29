@@ -932,20 +932,20 @@ Microrts-finetuned: &microrts-finetuned
 Microrts-A6000-finetuned-shaped: &microrts-a6000-finetuned-shaped
   <<: *microrts-tweaks-base
   n_timesteps: !!float 100e6
-  hyperparam_transitions_kwargs:
+  hyperparam_transitions_kwargs: &shaped-finetuning-hyperparam-transitions
     phases:
       - multi_reward_weights: [0, 0.99, 0.01] # Win-loss sparse rewards
-        vf_coef: [0, 0.4, 0.2]
-        ent_coef: 0.01
-        learning_rate: !!float 1e-5
-      - multi_reward_weights: [0, 0.5, 0.5] # Win-loss + Score delta
-        vf_coef: [0, 0.4, 0.4]
+        vf_coef: [0.2, 0.4, 0.2]
         ent_coef: 0.01
         learning_rate: !!float 5e-5
+      - multi_reward_weights: [0.4, 0.5, 0.1] # Sparse + Shaped rewards
+        vf_coef: [0.3, 0.4, 0.1]
+        ent_coef: 0.01
+        learning_rate: !!float 7e-5
       - multi_reward_weights: [0, 0.99, 0.01] # Win-loss sparse rewards
         vf_coef: [0, 0.5, 0.1]
-        ent_coef: 0.001
-        learning_rate: !!float 5e-5
+        ent_coef: 0.0001
+        learning_rate: !!float 1e-5
     durations:
       - 0
       - 0.05
@@ -1028,6 +1028,41 @@ Microrts-finetuned-NoWhereToRun-shaped: &microrts-finetuned-nowheretorun-shaped
       - 0.3
       - 0.2
       - 0.45
+
+Microrts-finetuned-map16-from-NtR: &microrts-finetuned-map16-from-ntr
+  <<: *microrts-a6000-finetuned-coac-mayari
+  policy_hyperparams:
+    <<: *microrts-tweaks-base-policy-defaults
+    load_run_path: sgoodfriend/rl-algo-impls-benchmarks/hpp5pffx
+    load_run_path_best: true
+  env_hyperparams:
+    <<: *microrts-a6000-finetuned-coac-mayari-env-defaults
+    map_paths:
+      - maps/8x8/basesWorkers8x8A.xml
+      - maps/8x8/FourBasesWorkers8x8.xml
+      - maps/NoWhereToRun9x8.xml
+      - maps/16x16/basesWorkers16x16A.xml
+      - maps/16x16/TwoBasesBarracks16x16.xml
+      - maps/NoWhereToRun9x8.xml
+    valid_sizes: [16]
+    paper_planes_sizes: [16]
+  hyperparam_transitions_kwargs:
+    <<: *shaped-finetuning-hyperparam-transitions
+  eval_hyperparams: &microrts-finetuned-map16-from-ntr-eval-defaults
+    <<: *microrts-a6000-finetuned-coac-mayari-eval-defaults
+    env_overrides:
+      <<: *microrts-a6000-finetuned-coac-mayari-eval-env-overrides
+      map_paths:
+        - maps/16x16/basesWorkers16x16A.xml
+        - maps/NoWhereToRun9x8.xml
+      bots:
+        coacAI: 4
+        mayari: 4
+        workerRushAI: 4
+        lightRushAI: 4
+        mixedBot: 4
+        izanagi: 4
+        tiamat: 4
 
 Microrts-finetuned-DoubleGame24x24: &microrts-finetuned-doublegame
   <<: *microrts-a6000-finetuned-coac-mayari

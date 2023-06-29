@@ -11,7 +11,11 @@ from rl_algo_impls.wrappers.vectorable_wrapper import (
 
 class MicrortsStatsRecorder(VectorableWrapper):
     def __init__(
-        self, env, gamma: float, bots: Optional[Dict[str, int]] = None
+        self,
+        env,
+        gamma: float,
+        bots: Optional[Dict[str, int]] = None,
+        map_paths: Optional[List[str]] = None,
     ) -> None:
         super().__init__(env)
         self.gamma = gamma
@@ -23,6 +27,10 @@ class MicrortsStatsRecorder(VectorableWrapper):
                 self.bot_at_index.extend([b] * n)
         else:
             self.bot_at_index = [None] * env.num_envs
+        if map_paths and len(map_paths) > 1:
+            self.map_names = [mp.split("/")[-1] for mp in map_paths]
+        else:
+            self.map_names = [None] * self.num_envs
 
     def reset(self) -> VecEnvObs:
         obs = super().reset()
@@ -55,9 +63,16 @@ class MicrortsStatsRecorder(VectorableWrapper):
                     "loss": int(winloss == -1),
                 }
                 bot = self.bot_at_index[idx]
-                if bot:
+                map_name = self.map_names[idx]
+                if bot or map_name:
+                    paired_name = "_".join(s for s in [bot, map_name] if s)
+                    suffixes = {s for s in [bot, map_name, paired_name] if s}
                     microrts_results.update(
-                        {f"{k}_{bot}": v for k, v in microrts_results.items()}
+                        {
+                            f"{k}_{suffix}": v
+                            for k, v in microrts_results.items()
+                            for suffix in suffixes
+                        }
                     )
 
                 info["microrts_results"] = microrts_results
