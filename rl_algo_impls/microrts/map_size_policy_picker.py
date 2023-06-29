@@ -4,7 +4,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Optional, Set
 
-import gym.spaces
 import numpy as np
 import torch
 import torch.nn as nn
@@ -13,11 +12,7 @@ from rl_algo_impls.runner.config import Config, RunArgs
 from rl_algo_impls.runner.running_utils import load_hyperparams, make_policy
 from rl_algo_impls.shared.policy.policy import Policy
 from rl_algo_impls.shared.tensor_utils import NumpyOrDict
-from rl_algo_impls.wrappers.vectorable_wrapper import (
-    VecEnv,
-    VecEnvObs,
-    single_observation_space,
-)
+from rl_algo_impls.wrappers.vectorable_wrapper import VecEnv, VecEnvObs
 
 MODEL_ROOT_PATH = "rai_microrts_saved_models"
 
