@@ -26,6 +26,7 @@ dependencies = [
     "gym >= 0.21.0, < 0.22",
     "wandb == 0.13.10",
     "pyvirtualdisplay",
+    "psutil",
     "PyYAML",
 ]
 

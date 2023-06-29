@@ -8,6 +8,8 @@ from pathlib import Path
 import torch
 import torch.backends.mkldnn
 
+from rl_algo_impls.utils.system_info import log_cpu_info, log_installed_libraries_info, log_memory_info
+
 file_path = os.path.abspath(Path(__file__))
 root_dir = str(Path(file_path).parent.parent.parent.absolute())
 sys.path.append(root_dir)
@@ -56,6 +58,10 @@ def main():
         level=logging.INFO,
     )
     logging.info("Log file start")
+
+    log_cpu_info()
+    log_memory_info()
+    log_installed_libraries_info()
 
     if torch.backends.mkldnn.is_available():
         logging.info("MKL-DNN (oneDNN) is available in PyTorch")
