@@ -57,7 +57,7 @@ class MicroRTSGridModeVecEnv(MicroRTSInterface):
         frame_skip=0,
         ai2s=[],
         map_paths=["maps/10x10/basesTwoWorkers10x10.xml"],
-        reward_weight=np.array([0.0, 1.0, 0.0, 0.0, 0.0, 5.0]),
+        reward_weight=np.array([10.0, 1.0, 1.0, 0.2, 1.0, 4.0, 5.25, 6.0, 0]),
         cycle_maps=[],
         bot_envs_alternate_player: bool = False,
     ):
