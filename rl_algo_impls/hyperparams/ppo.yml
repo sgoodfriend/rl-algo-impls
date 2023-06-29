@@ -502,6 +502,7 @@ _Microrts-squnet-map8: &microrts-squnet-map8
     bots:
       coacAI: 8
       mayari: 8
+    valid_sizes: [8]
   eval_hyperparams: &microrts-squnet-map8-eval-defaults
     <<: *microrts-squnet-eval-defaults
     env_overrides:
@@ -577,7 +578,7 @@ _Microrts-squnet-map12: &microrts-squnet-map12
     bots:
       coacAI: 4
       mayari: 4
-    valid_sizes: [12, 16, 32, 64]
+    valid_sizes: [12]
   eval_hyperparams: &microrts-squnet-map12-eval-defaults
     <<: *microrts-squnet-eval-defaults
     env_overrides:
@@ -647,6 +648,7 @@ _Microrts-squnet-map16: &microrts-squnet-map16
     bots:
       coacAI: 3
       mayari: 3
+    valid_sizes: [16]
   eval_hyperparams: &microrts-squnet-map16-eval-defaults
     <<: *microrts-squnet-eval-defaults
     env_overrides:
@@ -711,6 +713,7 @@ _Microrts-squnet-map32: &microrts-squnet-map32
     bots:
       coacAI: 3
       mayari: 3
+    valid_sizes: [32]
   eval_hyperparams: &microrts-squnet-map32-eval-defaults
     <<: *microrts-squnet-eval-defaults
     step_freq: !!float 5e6
@@ -768,6 +771,7 @@ _Microrts-squnet-map64: &microrts-squnet-map64
     bots:
       coacAI: 4
       mayari: 4
+    valid_sizes: [64]
   eval_hyperparams: &microrts-squnet-map64-eval-defaults
     <<: *microrts-squnet-eval-defaults
     step_freq: !!float 10e6
