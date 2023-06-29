@@ -1072,6 +1072,13 @@ Microrts-finetuned-DoubleGame-shaped: &microrts-finetuned-doublegame-shaped
       - 0.2
       - 0.45
 
+Microrts-finetuned-DoubleGame-from-NtR: &microrts-finetuned-doublegame-from-ntr
+  <<: *microrts-finetuned-doublegame-shaped
+  policy_hyperparams:
+    <<: *microrts-tweaks-base-policy-defaults
+    load_run_path: sgoodfriend/rl-algo-impls-benchmarks/hpp5pffx
+    load_run_path_best: true
+
 Microrts-finetuned-DistantResources: &microrts-finetuned-distantresources
   <<: *microrts-a6000-finetuned-coac-mayari
   env_id: Microrts-finetuned-distantresources
@@ -1226,7 +1233,7 @@ Microrts-selfplay-dc-phases-final: &microrts-sp-dc-phases-final-defaults
       - 0.1
 
 Microrts-debug: &microrts-debug-defaults
-  <<: *microrts-finetuned-doublegame-shaped
+  <<: *microrts-finetuned-doublegame-from-ntr
   device: mps
   eval_hyperparams:
     <<: *microrts-finetuned-doublegame-eval-defaults
