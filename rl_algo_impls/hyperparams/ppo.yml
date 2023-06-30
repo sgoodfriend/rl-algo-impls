@@ -673,6 +673,24 @@ Microrts-squnet-map16-selfplay: &microrts-squnet-map16-selfplay
   hyperparam_transitions_kwargs:
     <<: *microrts-squnet-map12-selfplay-phases
 
+_Microrts-squnet-deep8: &microrts-squnet-deep8
+  <<: *microrts-squnet-map16
+  policy_hyperparams: &microrts-squnet-deep8-policy-defaults
+    <<: *microrts-squnet-map16-policy-defaults
+    channels_per_level: [128, 128, 128, 128]
+    strides_per_level: [2, 2, 2]
+    encoder_residual_blocks_per_level: [3, 1, 1, 3]
+    decoder_residual_blocks_per_level: [1, 1, 3]
+  algo_hyperparams: &microrts-squnet-deep8-algo-defaults
+    <<: *microrts-squnet-map16-algo-defaults
+    batch_size: 4096
+
+Microrts-squnet-deep8-selfplay: &microrts-squnet-deep8-selfplay
+  <<: *microrts-squnet-deep8
+  n_timesteps: !!float 200e6
+  hyperparam_transitions_kwargs:
+    <<: *microrts-squnet-map12-selfplay-phases
+
 _Microrts-dc-repro-map16: &microrts-dc-repro-map16
   <<: *microrts-squnet-map16
   policy_hyperparams: &microrts-dc-repro-policy-defaults
@@ -1272,10 +1290,10 @@ Microrts-selfplay-dc-phases-final: &microrts-sp-dc-phases-final-defaults
       - 0.1
 
 Microrts-debug: &microrts-debug-defaults
-  <<: *microrts-finetuned-doublegame-from-ntr
+  <<: *microrts-squnet-deep8-selfplay
   device: mps
   eval_hyperparams:
-    <<: *microrts-finetuned-doublegame-eval-defaults
+    <<: *microrts-squnet-map16-eval-defaults
     step_freq: !!float 1e5
 
 Microrts-agent: &microrts-agent
