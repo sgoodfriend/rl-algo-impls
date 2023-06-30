@@ -84,6 +84,7 @@ def make_vec_env(
         _,  # valid_sizes,
         _,  # paper_planes_sizes,
         _,  # fixed_size,
+        _,  # terrain_overrides,
     ) = astuple(hparams)
 
     import_for_env_id(config.env_id)

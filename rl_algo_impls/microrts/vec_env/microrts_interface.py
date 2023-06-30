@@ -8,8 +8,12 @@ ByteArray = np.ndarray  # [Any, np.dtype[np.int8]] (Requires Python 3.9)
 
 class MicroRTSInterfaceListener(ABC):
     @abstractmethod
-    def map_size_change(
-        self, old_heights: List[int], old_widths: List[int], indexes_changed: int
+    def map_change(
+        self,
+        old_heights: List[int],
+        old_widths: List[int],
+        old_terrains: List[Optional[np.ndarray]],
+        indexes_changed: int,
     ) -> None:
         ...
 
@@ -57,6 +61,10 @@ class MicroRTSInterface(ABC):
 
     @abstractmethod
     def terrain(self, env_idx: int) -> np.ndarray:
+        ...
+
+    @abstractmethod
+    def terrain_md5(self, env_idx: int) -> Optional[str]:
         ...
 
     @abstractmethod

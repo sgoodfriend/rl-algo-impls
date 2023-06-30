@@ -1,5 +1,6 @@
 import logging
-from typing import Any, List, Optional, Tuple
+from dataclasses import dataclass
+from typing import Any, Dict, List, Optional, Tuple
 
 import gym
 import gym.spaces
@@ -44,17 +45,40 @@ PAPER_PLANES = [
 ]
 
 
+@dataclass
+class TerrainOverride:
+    name: str
+    md5_hash: str
+    size: int
+    use_paper_obs: bool
+
+
 class MicroRTSSpaceTransform(gym.vector.VectorEnv, MicroRTSInterfaceListener):
+    logger = logging.getLogger("MicroRTSSpaceTransform")
+
     def __init__(
         self,
         interface: MicroRTSInterface,
         valid_sizes: Optional[List[int]] = None,
         paper_planes_sizes: Optional[List[int]] = None,
         fixed_size: bool = False,
+        terrain_overrides: Optional[Dict[str, Dict]] = None,
     ) -> None:
         self.interface = interface
         self.valid_sizes = list(sorted(valid_sizes)) if valid_sizes else None
         self.paper_planes_sizes = set(paper_planes_sizes if paper_planes_sizes else [])
+        self.fixed_size = fixed_size
+        self.terrain_overrides = (
+            {
+                st.md5_hash: st
+                for st in [
+                    TerrainOverride(name=k, **st_dict)
+                    for k, st_dict in terrain_overrides.items()
+                ]
+            }
+            if terrain_overrides
+            else {}
+        )
 
         # computed properties
         # [hp, resources, resources_non_zero, num_planes_player(5),
@@ -92,7 +116,9 @@ class MicroRTSSpaceTransform(gym.vector.VectorEnv, MicroRTSInterfaceListener):
         if self.interface.partial_obs:
             self.planes.append(Planes("observable", [OneHotPlane(2)]))
 
-        if self.paper_planes_sizes:
+        if self.paper_planes_sizes or any(
+            t_override.use_paper_obs for t_override in self.terrain_overrides.values()
+        ):
             self.paper_planes = ObservationTransform(PAPER_PLANES, self.planes)
 
         self.resources_planes = ObservationTransform(
@@ -113,20 +139,46 @@ class MicroRTSSpaceTransform(gym.vector.VectorEnv, MicroRTSInterfaceListener):
             ]
         )
 
-        self.height, self.width = 0, 0
+        self.height, self.width, self.num_features = 0, 0, 0
+        self.use_paper_obs = False
         spaces = self._update_spaces(is_init=True)
         assert spaces is not None
         observation_space, action_space = spaces
 
         super().__init__(self.interface.num_envs, observation_space, action_space)
 
-        self.fixed_size = fixed_size
         if not self.fixed_size:
             self.interface.add_listener(self)
 
-    def _update_spaces(
-        self, is_init: bool = False
-    ) -> Optional[Tuple[gym.spaces.Box, gym.spaces.MultiDiscrete]]:
+    def _update_dimensions(self):
+        if self.terrain_overrides:
+            if len(self.terrain_overrides) == 1 and not self.valid_sizes:
+                matching_terrain_overrides = list(self.terrain_overrides.values())
+            else:
+                terrain_md5s = set(self.terrain_md5())
+                matching_terrain_overrides = [
+                    terrain_override
+                    for terrain_override_md5, terrain_override in self.terrain_overrides.items()
+                    if terrain_override_md5 in terrain_md5s
+                ]
+            if matching_terrain_overrides:
+                assert all(
+                    terrain_override.size == matching_terrain_overrides[0].size
+                    for terrain_override in matching_terrain_overrides
+                )
+                assert all(
+                    terrain_override.use_paper_obs
+                    == matching_terrain_overrides[0].use_paper_obs
+                    for terrain_override in matching_terrain_overrides
+                )
+                self.height = matching_terrain_overrides[0].size
+                self.width = matching_terrain_overrides[0].size
+                self.use_paper_obs = matching_terrain_overrides[0].use_paper_obs
+                if self.use_paper_obs:
+                    self.num_features = self.paper_planes.n_dim
+                else:
+                    self.num_features = self.planes.n_dim + self.resources_planes.n_dim
+                return
         # Set height and width to next factor of 4 if not factor of 4 already
         next_factor_of_4 = lambda n: n + 4 - n % 4 if n % 4 else n
         height = next_factor_of_4(np.max(self.interface.heights))
@@ -140,19 +192,26 @@ class MicroRTSSpaceTransform(gym.vector.VectorEnv, MicroRTSInterfaceListener):
                     sz = valid_sz
                     break
             else:
-                logging.warning(
+                self.logger.warning(
                     f"Map size {sz} larger than all valid sizes {self.valid_sizes}"
                 )
-        if not is_init and sz == self.height and sz == self.width:
-            return None
 
         self.height = sz
         self.width = sz
-
-        if sz in self.paper_planes_sizes:
-            num_features = self.paper_planes.n_dim
+        self.use_paper_obs = sz in self.paper_planes_sizes
+        if self.use_paper_obs:
+            self.num_features = self.paper_planes.n_dim
         else:
-            num_features = self.planes.n_dim + self.resources_planes.n_dim
+            self.num_features = self.planes.n_dim + self.resources_planes.n_dim
+
+    def _update_spaces(
+        self, is_init: bool = False
+    ) -> Optional[Tuple[gym.spaces.Box, gym.spaces.MultiDiscrete]]:
+        get_dim = lambda: (self.height, self.width, self.num_features)
+        old_dim = get_dim()
+        self._update_dimensions()
+        if not is_init and get_dim() == old_dim:
+            return None
 
         observation_space = gym.spaces.Box(
             low=0.0,
@@ -160,7 +219,7 @@ class MicroRTSSpaceTransform(gym.vector.VectorEnv, MicroRTSInterfaceListener):
             shape=(
                 self.height,
                 self.width,
-                num_features,
+                self.num_features,
             ),
             dtype=np.float32,
         )
@@ -191,8 +250,12 @@ class MicroRTSSpaceTransform(gym.vector.VectorEnv, MicroRTSInterfaceListener):
                 (action_space,) * self.interface.num_envs
             )
 
-    def map_size_change(
-        self, old_heights: List[int], old_widths: List[int], indexes_changed: int
+    def map_change(
+        self,
+        old_heights: List[int],
+        old_widths: List[int],
+        old_terrains: List[Optional[np.ndarray]],
+        indexes_changed: int,
     ) -> None:
         self._update_spaces(is_init=False)
 
@@ -246,13 +309,13 @@ class MicroRTSSpaceTransform(gym.vector.VectorEnv, MicroRTSInterfaceListener):
         env_w = self.interface.widths[env_idx]
 
         if len(actions) != np.sum(matrix_mask[:, :, 0]):
-            logging.error(
+            self.logger.error(
                 f"# Actions mismatch: Env {env_idx}, # Actions {len(actions)} (Should be {np.sum(matrix_mask[:, :, 0])})"
             )
         for a in actions:
             m = matrix_mask[a[0] // env_w, a[0] % env_w]
             if m[0] == 0:
-                logging.error(f"No action allowed: Env {env_idx}, loc {a[0]}")
+                self.logger.error(f"No action allowed: Env {env_idx}, loc {a[0]}")
             offset = 1
             for idx, sz in enumerate(self.action_plane_space.nvec):
                 valid = m[offset : offset + sz]
@@ -261,7 +324,7 @@ class MicroRTSSpaceTransform(gym.vector.VectorEnv, MicroRTSInterfaceListener):
                     continue
                 if not valid[a[idx + 1]]:
                     if idx == 0 or idx in ACTION_TYPE_TO_ACTION_INDEXES[a[1]]:
-                        logging.error(
+                        self.logger.error(
                             f"Invalid action in env {env_idx}, loc {a[0]}, action {a[1:]}, idx {idx+1}, valid {valid}"
                         )
 
@@ -324,16 +387,14 @@ class MicroRTSSpaceTransform(gym.vector.VectorEnv, MicroRTSInterfaceListener):
             )
         )
         if len(diffs):
-            logging.error(f"Observation differences in env {env_idx}: {diffs}")
+            self.logger.error(f"Observation differences in env {env_idx}: {diffs}")
 
     def _encode_obs(self, obs_bytes: ByteArray, env_idx: int) -> np.ndarray:
         obs = self._get_matrix_obs(obs_bytes, env_idx)
         self._verify_matrix_obs(obs, env_idx)
         obs = obs.reshape(-1, obs.shape[-1])
 
-        use_paper_planes = self.height in self.paper_planes_sizes
-
-        obs_transform = self.planes if not use_paper_planes else self.paper_planes
+        obs_transform = self.planes if not self.use_paper_obs else self.paper_planes
         obs_planes = np.zeros(
             (self.height * self.width, obs_transform.n_dim), dtype=np.float32
         )
@@ -345,7 +406,7 @@ class MicroRTSSpaceTransform(gym.vector.VectorEnv, MicroRTSInterfaceListener):
 
         obs_out = obs_planes.reshape(self.height, self.width, -1)
 
-        if use_paper_planes:
+        if self.use_paper_obs:
             return obs_out
 
         resources = np.expand_dims(self.interface.resources(env_idx), 0)
@@ -418,4 +479,7 @@ class MicroRTSSpaceTransform(gym.vector.VectorEnv, MicroRTSInterfaceListener):
                 )
             )
             if len(diffs):
-                logging.error(f"Mask differences in env {env_idx}: {diffs}")
+                self.logger.error(f"Mask differences in env {env_idx}: {diffs}")
+
+    def terrain_md5(self) -> List[Optional[str]]:
+        return [self.interface.terrain_md5(env_idx) for env_idx in range(self.num_envs)]

@@ -2,7 +2,7 @@ import logging
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Optional, Set
+from typing import Dict, Optional, Set, Union
 
 import numpy as np
 import torch
@@ -47,33 +47,48 @@ errored_on_sizes: Set[int] = set()
 
 
 class MapSizePolicyPicker(Policy):
+    logger = logging.getLogger("MapSizePolicyPicker")
+
     def __init__(
         self,
         picker_args_by_size: Dict[int, PickerArgs],
+        picker_args_by_terrain_md5: Dict[str, PickerArgs],
         env: VecEnv,
         device: torch.device,
         envs_per_size: Dict[int, VecEnv],
+        envs_by_terrain_md5: Dict[str, VecEnv],
     ) -> None:
         super().__init__(env)
         self.to(device)
-        self.policies_by_size = {}
-        for sz, args in picker_args_by_size.items():
+
+        def load_policy(args: PickerArgs, vec_env: VecEnv) -> Policy:
             policy_hyperparams = args.config.policy_hyperparams
             if "load_run_path" in policy_hyperparams:
                 del policy_hyperparams["load_run_path"]
             if "load_run_path_best" in policy_hyperparams:
                 del policy_hyperparams["load_run_path_best"]
-            self.policies_by_size[sz] = make_policy(
+            return make_policy(
                 args.config,
-                envs_per_size[sz],
+                vec_env,
                 device,
                 args.model_path,
                 **policy_hyperparams,
             )
 
+        self.policies_by_size = {}
+        for sz, args in picker_args_by_size.items():
+            self.policies_by_size[sz] = load_policy(args, envs_per_size[sz])
         self.policies_by_size_name = nn.ModuleDict(
             {str(sz): p for sz, p in self.policies_by_size.items()}
         )
+
+        policies_by_terrain_md5 = {}
+        for terrain_md5, args in picker_args_by_terrain_md5.items():
+            policies_by_terrain_md5[terrain_md5] = load_policy(
+                args, envs_by_terrain_md5[terrain_md5]
+            )
+        self.policies_by_terrain_md5 = nn.ModuleDict(policies_by_terrain_md5)
+        self.last_used = None
 
     def act(
         self,
@@ -82,33 +97,48 @@ class MapSizePolicyPicker(Policy):
         action_masks: Optional[NumpyOrDict] = None,
     ) -> np.ndarray:
         global errored_on_sizes
+
+        get_terrain_md5 = getattr(self.env, "terrain_md5", None)
+        if get_terrain_md5:
+            terrain_md5s = get_terrain_md5()
+            if terrain_md5s:
+                t_md5 = terrain_md5s[0]
+                if t_md5 in self.policies_by_terrain_md5:
+                    p: Policy = self.policies_by_terrain_md5[t_md5]  # type: ignore
+                    return self.use_policy(p, t_md5, obs, deterministic, action_masks)
+
         assert isinstance(obs, np.ndarray)
         obs_size = obs.shape[-1]
-
         for sz in self.policies_by_size:
             if sz >= obs_size:
                 if sz > obs_size and sz not in errored_on_sizes:
-                    logging.warn(
+                    self.logger.warn(
                         f"Observation size {obs_size} has no matches. Using next largest: {sz}"
                     )
                     errored_on_sizes.add(obs_size)
-                return self.use_policy(sz, obs, deterministic, action_masks)
+                return self.use_policy(
+                    self.policies_by_size[sz], sz, obs, deterministic, action_masks
+                )
         else:
             sz = max(self.policies_by_size)
             if obs_size not in errored_on_sizes:
-                logging.error(
+                self.logger.error(
                     f"Obseration size {obs_size} exceeded {sz}, using biggest model"
                 )
                 errored_on_sizes.add(obs_size)
-            return self.use_policy(sz, obs, deterministic, action_masks)
+            return self.use_policy(
+                self.policies_by_size[sz], sz, obs, deterministic, action_masks
+            )
 
     def use_policy(
         self,
-        sz: int,
+        policy: Policy,
+        policy_name: Union[str, int],
         obs: VecEnvObs,
         deterministic: bool,
         action_masks: Optional[NumpyOrDict],
     ) -> np.ndarray:
-        return self.policies_by_size[sz].act(
-            obs, deterministic=deterministic, action_masks=action_masks
-        )
+        if self.last_used != policy_name:
+            self.logger.info(f"Using policy {policy_name}")
+            self.last_used = policy_name
+        return policy.act(obs, deterministic=deterministic, action_masks=action_masks)

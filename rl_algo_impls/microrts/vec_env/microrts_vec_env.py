@@ -324,6 +324,13 @@ class MicroRTSGridModeVecEnv(MicroRTSInterface):
             (self._heights[env_idx], self._widths[env_idx])
         )
 
+    def terrain_md5(self, env_idx: int) -> str:
+        import hashlib
+
+        hash_obj = hashlib.md5()
+        hash_obj.update(self.terrain(env_idx).tobytes())
+        return hash_obj.hexdigest()
+
     def resources(self, env_idx: int) -> np.ndarray:
         return self._resources[env_idx]
 

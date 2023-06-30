@@ -8,7 +8,11 @@ from pathlib import Path
 import torch
 import torch.backends.mkldnn
 
-from rl_algo_impls.utils.system_info import log_cpu_info, log_installed_libraries_info, log_memory_info
+from rl_algo_impls.utils.system_info import (
+    log_cpu_info,
+    log_installed_libraries_info,
+    log_memory_info,
+)
 
 file_path = os.path.abspath(Path(__file__))
 root_dir = str(Path(file_path).parent.parent.parent.absolute())
@@ -23,6 +27,37 @@ from rl_algo_impls.runner.config import Config, EnvHyperparams, RunArgs
 from rl_algo_impls.runner.running_utils import get_device, load_hyperparams
 from rl_algo_impls.shared.vec_env.make_env import make_eval_env
 from rl_algo_impls.utils.timing import measure_time
+
+AGENT_ARGS_BY_TERRAIN_MD5 = {
+    "ac3b5a19643ee5816a1df17f2fadaae3": PickerArgs(  # maps/NoWhereToRun9x8.xml
+        algo="ppo",
+        env="Microrts-finetuned-NoWhereToRun",
+        seed=1,
+        best=True,
+        use_paper_obs=True,
+    ),
+    "f112aaf99e09861a5d6c6ec195130fa7": PickerArgs(  # maps/DoubleGame24x24.xml
+        algo="ppo",
+        env="Microrts-finetuned-DoubleGame-shaped",
+        seed=1,
+        best=True,
+        use_paper_obs=True,
+    ),
+    "ee6e75dae5051fe746a68b39112921c4": PickerArgs(  # maps/BWDistantResources32x32.xml
+        algo="ppo",
+        env="Microrts-finetuned-DistantResources-shaped",
+        seed=1,
+        best=True,
+        use_paper_obs=True,
+    ),
+    # "686eb7e687e50729cb134d3958d7814d": PickerArgs(  # maps/BroodWar/(4)BloodBath.scmB.xml
+    #     algo="ppo",
+    #     env="Microrts-finetuned-BloodBath-shaped",
+    #     seed=1,
+    #     best=True,
+    #     use_paper_obs=True,
+    # ),
+}
 
 AGENT_ARGS_BY_MAP_SIZE = {
     16: PickerArgs(
@@ -110,9 +145,34 @@ def main():
         )
         for sz, p_args in AGENT_ARGS_BY_MAP_SIZE.items()
     }
+    terrain_overrides = env_config.eval_hyperparams["env_overrides"].get(
+        "terrain_overrides", {}
+    )
+    envs_by_terrain_md5 = {
+        terrain_md5: make_eval_env(
+            env_config,
+            EnvHyperparams(**env_config.env_hyperparams),
+            override_hparams={
+                "valid_sizes": None,
+                "paper_planes_sizes": None,
+                "fixed_size": True,
+                "terrain_overrides": {
+                    n: t_override
+                    for n, t_override in terrain_overrides.items()
+                    if t_override["md5_hash"] == terrain_md5
+                },
+            },
+        )
+        for terrain_md5 in AGENT_ARGS_BY_TERRAIN_MD5
+    }
     device = get_device(env_config, env)
     policy = MapSizePolicyPicker(
-        AGENT_ARGS_BY_MAP_SIZE, env, device, envs_per_size
+        AGENT_ARGS_BY_MAP_SIZE,
+        AGENT_ARGS_BY_TERRAIN_MD5,
+        env,
+        device,
+        envs_per_size,
+        envs_by_terrain_md5,
     ).eval()
 
     get_action_mask = getattr(env, "get_action_mask")

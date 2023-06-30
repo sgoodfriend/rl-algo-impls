@@ -1292,6 +1292,23 @@ Microrts-agent: &microrts-agent
       is_agent: true
       valid_sizes: [16, 32, 64]
       paper_planes_sizes: [16]
+      terrain_overrides:
+        maps/NoWhereToRun9x8.xml:
+          md5_hash: ac3b5a19643ee5816a1df17f2fadaae3
+          size: 12
+          use_paper_obs: true
+        maps/DoubleGame24x24.xml:
+          md5_hash: f112aaf99e09861a5d6c6ec195130fa7
+          size: 24
+          use_paper_obs: true
+        maps/BWDistantResources32x32.xml:
+          md5_hash: ee6e75dae5051fe746a68b39112921c4
+          size: 32
+          use_paper_obs: true
+        # maps/BroodWar/(4)BloodBath.scmB.xml:
+        #   md5_hash: 686eb7e687e50729cb134d3958d7814d
+        #   size: 64
+        #   use_paper_obs: true
 
 HalfCheetahBulletEnv-v0: &pybullet-defaults
   n_timesteps: !!float 2e6

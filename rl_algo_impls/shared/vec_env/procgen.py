@@ -50,6 +50,7 @@ def make_procgen_env(
         _, # valid_sizes,
         _, # paper_planes_sizes,
         _, # fixed_size,
+        _, # terrain_overrides,
     ) = astuple(hparams)
 
     seed = config.seed(training=training)

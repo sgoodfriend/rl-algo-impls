@@ -1,4 +1,5 @@
 import gc
+import hashlib
 import json
 import logging
 import struct
@@ -49,7 +50,9 @@ class MicroRTSSocketEnv(MicroRTSInterface):
 
         self.height = 0
         self.width = 0
+        self._utt = None
         self._terrain = None
+        self._terrain_md5 = None
         self._matrix_obs = None
         self._matrix_mask = None
         self.obs = None
@@ -94,6 +97,9 @@ class MicroRTSSocketEnv(MicroRTSInterface):
 
     @property
     def utt(self) -> Dict[str, Any]:
+        if not self._utt:
+            self._logger.warn("utt unset. BAD IF NOT DEBUG")
+            return {"unitTypes": [None] * 7}
         return self._utt
 
     @property
@@ -104,6 +110,10 @@ class MicroRTSSocketEnv(MicroRTSInterface):
         assert env_idx == 0
         assert self._terrain is not None
         return self._terrain
+
+    def terrain_md5(self, env_idx: int) -> Optional[str]:
+        assert env_idx == 0
+        return self._terrain_md5
 
     def resources(self, env_idx: int) -> np.ndarray:
         assert env_idx == 0
@@ -133,19 +143,28 @@ class MicroRTSSocketEnv(MicroRTSInterface):
                     self._steps_since_reset += 1
                     self._get_action_receive_time = time.perf_counter()
                 if len(args) >= 5:
-                    h, w = args[3]
-                    map_size_change = self.height != h or self.width != w
-                    self.height = h
-                    self.width = w
+                    old_h = self.height
+                    old_w = self.width
+                    old_terrain = self._terrain
+                    self.height, self.width = args[3]
                     self._terrain = np.frombuffer(args[4], dtype=np.int8).reshape(
                         (
                             self.height,
                             self.width,
                         )
                     )
-                    if map_size_change:
+                    hash_obj = hashlib.md5()
+                    hash_obj.update(self._terrain.tobytes())
+                    self._terrain_md5 = hash_obj.hexdigest()
+                    map_change = (
+                        self.height != old_h
+                        or self.width != old_w
+                        or old_terrain is None
+                        or not np.array_equal(self._terrain, old_terrain)
+                    )
+                    if map_change:
                         for listener in self.listeners:
-                            listener.map_size_change([h], [w], [0])
+                            listener.map_change([old_h], [old_w], [old_terrain], [0])
                 self.obs = [np.frombuffer(args[0], dtype=np.int8)]
                 self.action_mask = [np.frombuffer(args[1], dtype=np.int8)]
                 self._resources = np.frombuffer(args[2], dtype=np.int8)

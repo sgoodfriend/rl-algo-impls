@@ -51,9 +51,10 @@ def make_lux_env(
         _,  # map_paths,
         score_reward_kwargs,
         _,  # is_agent
-        _, # valid_sizes,
-        _, # paper_planes_sizes,
-        _, # fixed_size,
+        _,  # valid_sizes,
+        _,  # paper_planes_sizes,
+        _,  # fixed_size,
+        _,  # terrain_overrides,
     ) = astuple(hparams)
 
     seed = config.seed(training=training)

@@ -31,15 +31,16 @@ public class RAIPerformanceTournament extends Tournament {
         final UnitTypeTable utt = new UnitTypeTable(UnitTypeTable.VERSION_ORIGINAL_FINETUNED);
         final AI[] AIs = {
                 new RAISocketAI(timeBudget, -1, utt),
-                new POWorkerRush(utt),
-                new CoacAI(utt),
+                new mayari(utt),
         };
         var tournament = new RAIPerformanceTournament(Arrays.asList(AIs));
 
         final List<Pair<String, Integer>> maps = new ArrayList<Pair<String, Integer>>();
         maps.add(new Pair<>("maps/BroodWar/(4)BloodBath.scmB.xml", 1000));
         maps.add(new Pair<>("maps/BWDistantResources32x32.xml", 1000));
+        maps.add(new Pair<>("maps/DoubleGame24x24.xml", 1000));
         maps.add(new Pair<>("maps/16x16/TwoBasesBarracks16x16.xml", 1000));
+        maps.add(new Pair<>("maps/NoWhereToRun9x8.xml", 1000));
 
         String prefix = "tournament_";
         if (maps.size() == 1) {

@@ -60,6 +60,7 @@ def make_microrts_env(
         valid_sizes,
         paper_planes_sizes,
         fixed_size,
+        terrain_overrides,
     ) = astuple(hparams)
 
     seed = config.seed(training=training)
@@ -166,6 +167,7 @@ def make_microrts_env(
         valid_sizes=valid_sizes,
         paper_planes_sizes=paper_planes_sizes,
         fixed_size=fixed_size,
+        terrain_overrides=terrain_overrides,
     )
     envs = HwcToChwObservation(envs)
     envs = IsVectorEnv(envs)
