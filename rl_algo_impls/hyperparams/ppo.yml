@@ -1226,6 +1226,13 @@ Microrts-finetuned-BloodBath-shaped: &microrts-finetuned-bloodbath-shaped
       - 0.2
       - 0.45
 
+Microrts-finetuned-BloodBath-from-DR: &microrts-finetuned-bloodbath-from-dr
+  <<: *microrts-finetuned-bloodbath-shaped
+  policy_hyperparams:
+    <<: *microrts-tweaks-base-policy-defaults
+    load_run_path: sgoodfriend/rl-algo-impls-benchmarks/x4tg80vk
+    load_run_path_best: true
+
 Microrts-selfplay-dc-phases-maps24: &microrts-sp-dc-phases-m24-defaults
   <<: *microrts-sp-dc-phases-defaults
   env_hyperparams:
@@ -1290,10 +1297,10 @@ Microrts-selfplay-dc-phases-final: &microrts-sp-dc-phases-final-defaults
       - 0.1
 
 Microrts-debug: &microrts-debug-defaults
-  <<: *microrts-squnet-deep8-selfplay
+  <<: *microrts-finetuned-bloodbath-from-dr
   device: mps
   eval_hyperparams:
-    <<: *microrts-squnet-map16-eval-defaults
+    <<: *microrts-finetuned-bloodbath-eval-defaults
     step_freq: !!float 1e5
 
 Microrts-agent: &microrts-agent
