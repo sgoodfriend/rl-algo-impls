@@ -683,7 +683,7 @@ _Microrts-squnet-deep8: &microrts-squnet-deep8
     decoder_residual_blocks_per_level: [1, 1, 3]
   algo_hyperparams: &microrts-squnet-deep8-algo-defaults
     <<: *microrts-squnet-map16-algo-defaults
-    batch_size: 4096
+    batch_size: 6144
 
 Microrts-squnet-deep8-selfplay: &microrts-squnet-deep8-selfplay
   <<: *microrts-squnet-deep8
