@@ -27,7 +27,8 @@ public class RAIRoundRobinTournament extends Tournament {
     }
 
     public static void main(String args[]) throws Exception {
-        final int timeBudget = 100;
+        final int timeBudget = 1000;
+        final boolean timeoutCheck = false;
         final UnitTypeTable utt = new UnitTypeTable(UnitTypeTable.VERSION_ORIGINAL_FINETUNED);
         final AI[] AIs = {
                 new RAISocketAI(timeBudget, -1, utt),
@@ -74,7 +75,6 @@ public class RAIRoundRobinTournament extends Tournament {
         final int preAnalysisBudgetRestOfTimes = 1000;
         final boolean fullObservability = true;
         final boolean selfMatches = false;
-        final boolean timeoutCheck = true;
         final boolean runGC = true;
         final boolean preAnalysis = preAnalysisBudgetFirstTimeInAMap > 0;
         final Writer out = new FileWriter(fileToUse);
