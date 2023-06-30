@@ -196,5 +196,5 @@ cd rl-algo-impls-microrts-2023
 # git checkout BRANCH_NAME if running on non-main branch
 bash ./scripts/setup.sh
 wandb login
-bash ./scripts/benchmark.sh [-e ENVS]
+bash ./scripts/microrts.sh [-e ENVS]
 ```
