@@ -191,7 +191,7 @@ Requires Java SDK to also be installed.
 echo -e "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW\nQyNTUxOQAAACARvGjDA0uZV4JOh9Ztl724Bbc97U+ASCg/Z4jBh626UgAAAKA2QbvnNkG7\n5wAAAAtzc2gtZWQyNTUxOQAAACARvGjDA0uZV4JOh9Ztl724Bbc97U+ASCg/Z4jBh626Ug\nAAAEDoxMdC4s2NiJ4h8aihOJtxHAN+4jANtZo9GEnqs84zRhG8aMMDS5lXgk6H1m2XvbgF\ntz3tT4BIKD9niMGHrbpSAAAAGmdvb2RmcmllbmQuc2NvdHRAZ21haWwuY29tAQID\n-----END OPENSSH PRIVATE KEY-----\n" > ~/.ssh/id_ed25519
 ssh-keyscan -t ed25519 github.com >> ~/.ssh/known_hosts
 chmod go-rwx ~/.ssh/id_ed25519
-git clone https://github.com/sgoodfriend/rl-algo-impls-microrts-2023.git
+git clone git@github.com:sgoodfriend/rl-algo-impls-microrts-2023.git
 cd rl-algo-impls-microrts-2023
 # git checkout BRANCH_NAME if running on non-main branch
 bash ./scripts/setup.sh
