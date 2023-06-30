@@ -1136,6 +1136,16 @@ Microrts-finetuned-DoubleGame-from-NtR: &microrts-finetuned-doublegame-from-ntr
     load_run_path: sgoodfriend/rl-algo-impls-benchmarks/hpp5pffx
     load_run_path_best: true
 
+Microrts-squnet-map32-from-squnet16: &microrts-squnet-map32-from-squnet16
+  <<: *microrts-squnet-map32
+  n_timesteps: !!float 100e6
+  policy_hyperparams:
+    <<: *microrts-squnet-map16-policy-defaults
+    load_run_path: sgoodfriend/rl-algo-impls-benchmarks/4hp85363
+    load_run_path_best: true
+  hyperparam_transitions_kwargs:
+    <<: *shaped-finetuning-hyperparam-transitions
+
 Microrts-finetuned-DistantResources: &microrts-finetuned-distantresources
   <<: *microrts-a6000-finetuned-coac-mayari
   env_id: Microrts-finetuned-distantresources
@@ -1297,10 +1307,10 @@ Microrts-selfplay-dc-phases-final: &microrts-sp-dc-phases-final-defaults
       - 0.1
 
 Microrts-debug: &microrts-debug-defaults
-  <<: *microrts-finetuned-bloodbath-from-dr
+  <<: *microrts-squnet-map32-from-squnet16
   device: mps
   eval_hyperparams:
-    <<: *microrts-finetuned-bloodbath-eval-defaults
+    <<: *microrts-squnet-map32-eval-defaults
     step_freq: !!float 1e5
 
 Microrts-agent: &microrts-agent
