@@ -1068,8 +1068,6 @@ Microrts-finetuned-map16-from-NtR: &microrts-finetuned-map16-from-ntr
       - maps/NoWhereToRun9x8.xml
     valid_sizes: [16]
     paper_planes_sizes: [16]
-  hyperparam_transitions_kwargs:
-    <<: *shaped-finetuning-hyperparam-transitions
   eval_hyperparams: &microrts-finetuned-map16-from-ntr-eval-defaults
     <<: *microrts-a6000-finetuned-coac-mayari-eval-defaults
     env_overrides:
@@ -1085,6 +1083,12 @@ Microrts-finetuned-map16-from-NtR: &microrts-finetuned-map16-from-ntr
         mixedBot: 4
         izanagi: 4
         tiamat: 4
+
+Microrts-finetuned-map16-from-NtR-shaped:
+  &microrts-finetuned-map16-from-ntr-shaped
+  <<: *microrts-finetuned-map16-from-ntr
+  hyperparam_transitions_kwargs:
+    <<: *shaped-finetuning-hyperparam-transitions
 
 Microrts-finetuned-DoubleGame24x24: &microrts-finetuned-doublegame
   <<: *microrts-a6000-finetuned-coac-mayari
@@ -1307,10 +1311,10 @@ Microrts-selfplay-dc-phases-final: &microrts-sp-dc-phases-final-defaults
       - 0.1
 
 Microrts-debug: &microrts-debug-defaults
-  <<: *microrts-squnet-map32-from-squnet16
+  <<: *microrts-finetuned-map16-from-ntr
   device: mps
   eval_hyperparams:
-    <<: *microrts-squnet-map32-eval-defaults
+    <<: *microrts-finetuned-map16-from-ntr-eval-defaults
     step_freq: !!float 1e5
 
 Microrts-agent: &microrts-agent
