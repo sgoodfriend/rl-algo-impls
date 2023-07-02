@@ -1055,7 +1055,7 @@ Microrts-finetuned-map16-from-NtR: &microrts-finetuned-map16-from-ntr
   <<: *microrts-a6000-finetuned-coac-mayari
   policy_hyperparams:
     <<: *microrts-tweaks-base-policy-defaults
-    load_run_path: sgoodfriend/rl-algo-impls-benchmarks/hpp5pffx
+    load_run_path: sgoodfriend/rl-algo-impls-benchmarks/a9kqagdu
     load_run_path_best: true
   env_hyperparams:
     <<: *microrts-a6000-finetuned-coac-mayari-env-defaults
