@@ -1171,6 +1171,10 @@ Microrts-squnet-map32-from-squnet16: &microrts-squnet-map32-from-squnet16
 Microrts-finetuned-DistantResources: &microrts-finetuned-distantresources
   <<: *microrts-a6000-finetuned-coac-mayari
   env_id: Microrts-finetuned-distantresources
+  policy_hyperparams:
+    <<: *microrts-tweaks-base-policy-defaults
+    load_run_path: sgoodfriend/rl-algo-impls-benchmarks/x4tg80vk
+    load_run_path_best: true
   env_hyperparams:
     <<: *microrts-a6000-finetuned-coac-mayari-env-defaults
     map_paths:
