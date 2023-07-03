@@ -32,6 +32,7 @@ public class RAIPerformanceTournament extends RAITournament {
         final UnitTypeTable utt = new UnitTypeTable(UnitTypeTable.VERSION_ORIGINAL_FINETUNED);
         final AI[] AIs = {
                 new RAISocketAI(timeBudget, -1, utt),
+                new CoacAI(utt),
                 new mayari(utt),
         };
         var tournament = new RAIPerformanceTournament(Arrays.asList(AIs));
