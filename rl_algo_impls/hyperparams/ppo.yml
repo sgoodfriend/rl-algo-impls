@@ -954,7 +954,7 @@ _Microrts-tweaks-base: &microrts-tweaks-base
 Microrts-finetuned: &microrts-finetuned
   <<: *microrts-tweaks-base
   n_timesteps: !!float 100e6
-  hyperparam_transitions_kwargs:
+  hyperparam_transitions_kwargs: &finetuned-hyperparam-transitions
     phases:
       - multi_reward_weights: [0, 0.99, 0.01] # Win-loss sparse rewards
         vf_coef: [0, 0.5, 0.1]
@@ -1168,6 +1168,16 @@ Microrts-squnet-map32-from-squnet16: &microrts-squnet-map32-from-squnet16
   hyperparam_transitions_kwargs:
     <<: *shaped-finetuning-hyperparam-transitions
 
+Microrts-squnet-map32-128ch-finetuned: &microrts-squnet-map32-128ch-finetuned
+  <<: *microrts-squnet-map32-128ch
+  n_timesteps: !!float 100e6
+  policy_hyperparams:
+    <<: *microrts-squnet-map32-128ch-policy-defaults
+    load_run_path: sgoodfriend/rl-algo-impls-benchmarks/tga53t25
+    load_run_path_best: true
+  hyperparam_transitions_kwargs:
+    <<: *finetuned-hyperparam-transitions
+
 Microrts-finetuned-DistantResources: &microrts-finetuned-distantresources
   <<: *microrts-a6000-finetuned-coac-mayari
   env_id: Microrts-finetuned-distantresources
@@ -1333,10 +1343,10 @@ Microrts-selfplay-dc-phases-final: &microrts-sp-dc-phases-final-defaults
       - 0.1
 
 Microrts-debug: &microrts-debug-defaults
-  <<: *microrts-squnet-deep8-64-selfplay
+  <<: *microrts-squnet-map32-128ch-finetuned
   device: mps
   eval_hyperparams:
-    <<: *microrts-squnet-map16-eval-defaults
+    <<: *microrts-squnet-map32-eval-defaults
     step_freq: !!float 1e5
 
 Microrts-agent: &microrts-agent
