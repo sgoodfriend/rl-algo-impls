@@ -21,7 +21,7 @@ import rts.PhysicalGameState;
 import rts.units.UnitTypeTable;
 import util.Pair;
 
-public class RAIRoundRobinTournament extends Tournament {
+public class RAIRoundRobinTournament extends RAITournament {
     public RAIRoundRobinTournament(List<AI> AIs) {
         super(AIs);
     }
@@ -101,7 +101,8 @@ public class RAIRoundRobinTournament extends Tournament {
         out.write("fullObservability\t" + fullObservability + "\n");
         out.write("timeoutCheck\t" + timeoutCheck + "\n");
         out.write("runGC\t" + runGC + "\n");
-        out.write("iteration\tmap\tai1\tai2\ttime\twinner\tcrashed\ttimedout\n");
+        out.write(
+                "iteration\tmap\tai1\tai2\ttime\twinner\tcrashed\ttimedout\tai1time\tai2time\tai1over\tai2over\n");
         out.flush();
 
         // create all the read/write folders:
