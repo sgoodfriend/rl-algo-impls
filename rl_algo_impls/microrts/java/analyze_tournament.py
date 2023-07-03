@@ -39,14 +39,11 @@ def read_matches(cols: Sequence[str], row_iter: Iterator[Sequence[str]]) -> List
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("directory_name", nargs="?", default="tournament_1")
+    parser.add_argument("in_filepath", nargs="?", default="tournament_2/tournament.csv")
     parser.add_argument("out_filepath", nargs="?", default="~/Desktop/v28.csv")
     args = parser.parse_args()
 
-    filename = os.path.join(
-        os.path.dirname(__file__), args.directory_name, "tournament.csv"
-    )
-    with open(filename, "r") as f:
+    with open(args.in_filepath, "r") as f:
         reader = csv.reader(f, delimiter="\t")
         iterator = iter(reader)
         for r in iterator:
