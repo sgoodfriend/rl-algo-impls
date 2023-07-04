@@ -856,7 +856,7 @@ _Microrts-squnet-map64-64ch: &microrts-squnet-map64-64ch
   policy_hyperparams: &microrts-squnet-map64-64ch-policy-defaults
     <<: *microrts-squnet-map64-policy-defaults
     channels_per_level: [64, 64, 64, 64]
-  algo_hyperparams:
+  algo_hyperparams: &microrts-squnet-map64-64ch-algo-defaults
     <<: *microrts-squnet-map64-algo-defaults
     batch_size: 768
 
@@ -1292,16 +1292,19 @@ Microrts-squnet-BloodBath-64ch-finetuned:
   &microrts-squnet-bloodbath-64ch-finetuned
   <<: *microrts-squnet-map64-64ch
   n_timesteps: !!float 100e6
-  policy_hyperparams:
-    <<: *microrts-squnet-map64-64ch-policy-defaults
-    load_path: downloaded_models/ppo-Microrts-squnet-map64-64ch-selfplay-S1-best
-  hyperparam_transitions_kwargs:
-    <<: *shaped-finetuning-hyperparam-transitions
   env_hyperparams:
     <<: *microrts-squnet-map64-env-defaults
     map_paths:
       - maps/BroodWar/(4)BloodBath.scmB.xml
     valid_sizes: [64]
+  policy_hyperparams:
+    <<: *microrts-squnet-map64-64ch-policy-defaults
+    load_path: downloaded_models/ppo-Microrts-squnet-map64-64ch-selfplay-S1-best
+  hyperparam_transitions_kwargs:
+    <<: *shaped-finetuning-hyperparam-transitions
+  algo_hyperparams:
+    <<: *microrts-squnet-map64-64ch-algo-defaults
+    batch_size: 512
 
 Microrts-selfplay-dc-phases-maps24: &microrts-sp-dc-phases-m24-defaults
   <<: *microrts-sp-dc-phases-defaults
