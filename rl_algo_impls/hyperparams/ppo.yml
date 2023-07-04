@@ -753,7 +753,7 @@ _Microrts-squnet-map32: &microrts-squnet-map32
   eval_hyperparams: &microrts-squnet-map32-eval-defaults
     <<: *microrts-squnet-eval-defaults
     step_freq: !!float 5e6
-    env_overrides:
+    env_overrides: &microrts-squnet-map32-eval-env-overrides
       <<: *microrts-squnet-eval-env-overrides
       make_kwargs:
         <<: *microrts-ai-eval-env-make-kwargs-overrides
@@ -1178,6 +1178,15 @@ Microrts-squnet-map32-128ch-finetuned: &microrts-squnet-map32-128ch-finetuned
   hyperparam_transitions_kwargs:
     <<: *finetuned-hyperparam-transitions
 
+Microrts-squnet-DistantResources-128ch-finetuned:
+  &microrts-squnet-distantresources-128ch-finetuned
+  <<: *microrts-squnet-map32-128ch-finetuned
+  env_hyperparams:
+    <<: *microrts-squnet-map32-env-defaults
+    map_paths:
+      - maps/BWDistantResources32x32.xml
+    valid_sizes: [32]
+
 Microrts-finetuned-DistantResources: &microrts-finetuned-distantresources
   <<: *microrts-a6000-finetuned-coac-mayari
   env_id: Microrts-finetuned-distantresources
@@ -1343,7 +1352,7 @@ Microrts-selfplay-dc-phases-final: &microrts-sp-dc-phases-final-defaults
       - 0.1
 
 Microrts-debug: &microrts-debug-defaults
-  <<: *microrts-squnet-map32-128ch-finetuned
+  <<: *microrts-squnet-distantresources-128ch-finetuned
   device: mps
   eval_hyperparams:
     <<: *microrts-squnet-map32-eval-defaults
