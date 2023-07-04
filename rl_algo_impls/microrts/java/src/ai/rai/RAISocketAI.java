@@ -245,7 +245,8 @@ public class RAISocketAI extends AIWithComputationBudget {
                 gsw.getBinaryMask(0),
                 gsw.getPlayerResources(0),
                 new byte[] { (byte) pgs.getHeight(), (byte) pgs.getWidth() },
-                gsw.getTerrain()));
+                gsw.getTerrain(),
+                ByteBuffer.allocate(8).putLong(milliseconds).array()));
         if (DEBUG >= 1) {
             Gson gson = new Gson();
             obs.add(gson.toJson(gsw.getVectorObservation(0)).getBytes(StandardCharsets.UTF_8));

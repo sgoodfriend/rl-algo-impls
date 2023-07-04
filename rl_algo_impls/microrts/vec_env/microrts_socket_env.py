@@ -58,6 +58,8 @@ class MicroRTSSocketEnv(MicroRTSInterface):
         self.obs = None
         self.action_mask = None
         self._resources = None
+        self._is_pre_game_analysis = False
+        self._pre_game_analysis_milliseconds = 0
 
         self.in_pipe = sys.stdin.buffer
         self.out_pipe = sys.stdout.buffer
@@ -120,6 +122,14 @@ class MicroRTSSocketEnv(MicroRTSInterface):
         assert self._resources is not None
         return self._resources
 
+    @property
+    def is_pre_game_analysis(self) -> bool:
+        return self._is_pre_game_analysis
+
+    @property
+    def pre_game_analysis_milliseconds(self) -> int:
+        return self._pre_game_analysis_milliseconds
+
     def close(self, **kwargs):
         pass
 
@@ -168,12 +178,25 @@ class MicroRTSSocketEnv(MicroRTSInterface):
                 self.obs = [np.frombuffer(args[0], dtype=np.int8)]
                 self.action_mask = [np.frombuffer(args[1], dtype=np.int8)]
                 self._resources = np.frombuffer(args[2], dtype=np.int8)
-                if len(args) >= 7:
+                if self.command == MessageType.PRE_GAME_ANALYSIS:
+                    self._is_pre_game_analysis = True
+                    self._pre_game_analysis_milliseconds = int.from_bytes(
+                        args[5], byteorder="big"
+                    )
+                else:
+                    self._is_pre_game_analysis = False
+                    self._pre_game_analysis_milliseconds = 0
+                if len(args) >= 6:
+                    matrix_obs_idx = (
+                        6 if self.command == MessageType.PRE_GAME_ANALYSIS else 5
+                    )
+                    matrix_mask_idx = matrix_obs_idx + 1
                     self._matrix_obs = np.transpose(
-                        np.array(json.loads(args[5].decode("utf-8"))), (1, 2, 0)
+                        np.array(json.loads(args[matrix_obs_idx].decode("utf-8"))),
+                        (1, 2, 0),
                     )
                     self._matrix_mask = np.array(
-                        json.loads(args[6].decode("utf-8")),
+                        json.loads(args[matrix_mask_idx].decode("utf-8")),
                     )
                 return self.obs, self.action_mask, np.zeros(1), np.zeros(1), [{}]
             elif self.command == MessageType.GAME_OVER:

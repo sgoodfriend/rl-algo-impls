@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import numpy as np
 
 ByteArray = np.ndarray  # [Any, np.dtype[np.int8]] (Requires Python 3.9)
+MicroRTSObservation = Tuple[List[ByteArray], List[ByteArray]]
 
 
 class MicroRTSInterfaceListener(ABC):
@@ -28,7 +29,7 @@ class MicroRTSInterface(ABC):
         ...
 
     @abstractmethod
-    def reset(self) -> Tuple[List[ByteArray], List[ByteArray]]:
+    def reset(self) -> MicroRTSObservation:
         ...
 
     def render(self, mode: str = "human"):
@@ -70,6 +71,14 @@ class MicroRTSInterface(ABC):
     @abstractmethod
     def resources(self, env_idx: int) -> np.ndarray:
         ...
+
+    @property
+    def is_pre_game_analysis(self) -> bool:
+        return False
+
+    @property
+    def pre_game_analysis_milliseconds(self) -> int:
+        return 0
 
     @abstractmethod
     def close(self, **kwargs):

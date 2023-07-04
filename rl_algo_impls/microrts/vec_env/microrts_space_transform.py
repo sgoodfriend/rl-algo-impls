@@ -483,3 +483,11 @@ class MicroRTSSpaceTransform(gym.vector.VectorEnv, MicroRTSInterfaceListener):
 
     def terrain_md5(self) -> List[Optional[str]]:
         return [self.interface.terrain_md5(env_idx) for env_idx in range(self.num_envs)]
+
+    @property
+    def is_pre_game_analysis(self) -> bool:
+        return self.interface.is_pre_game_analysis
+
+    @property
+    def pre_game_analysis_milliseconds(self) -> int:
+        return self.interface.pre_game_analysis_milliseconds
