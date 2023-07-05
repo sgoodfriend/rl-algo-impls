@@ -31,6 +31,8 @@ import rts.units.UnitTypeTable;
 
 public class RAISocketAI extends AIWithComputationBudget {
     public static int DEBUG;
+    public int PYTHON_VERBOSE_LEVEL = 1;
+    public int MAX_TORCH_THREADS = 16;
 
     UnitTypeTable utt;
     int maxAttackDiameter;
@@ -44,19 +46,18 @@ public class RAISocketAI extends AIWithComputationBudget {
     boolean sentInitialMapInformation;
 
     public RAISocketAI(UnitTypeTable a_utt) {
-        super(100, -1);
-        utt = a_utt;
-        maxAttackDiameter = utt.getMaxAttackRange() * 2 + 1;
-        try {
-            connectChildProcess();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        this(100, -1, a_utt, 16, 1);
     }
 
     public RAISocketAI(int mt, int mi, UnitTypeTable a_utt) {
+        this(mt, mi, a_utt, 16, 1);
+    }
+
+    public RAISocketAI(int mt, int mi, UnitTypeTable a_utt, int maxTorchThreads, int pythonVerboseLevel) {
         super(mt, mi);
         utt = a_utt;
+        MAX_TORCH_THREADS = maxTorchThreads;
+        PYTHON_VERBOSE_LEVEL = pythonVerboseLevel;
         maxAttackDiameter = utt.getMaxAttackRange() * 2 + 1;
         try {
             connectChildProcess();
@@ -69,7 +70,14 @@ public class RAISocketAI extends AIWithComputationBudget {
         if (pythonProcess != null) {
             return;
         }
-        ProcessBuilder processBuilder = new ProcessBuilder("rai_microrts");
+        List<String> command = new ArrayList<>(Arrays.asList(
+                "rai_microrts",
+                String.valueOf(MAX_TORCH_THREADS)));
+        if (PYTHON_VERBOSE_LEVEL > 0) {
+            command.add("-" + "v".repeat(PYTHON_VERBOSE_LEVEL));
+        }
+        ProcessBuilder processBuilder = new ProcessBuilder();
+        processBuilder.command(command);
         pythonProcess = processBuilder.start();
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -257,7 +265,7 @@ public class RAISocketAI extends AIWithComputationBudget {
     public AI clone() {
         if (DEBUG >= 1)
             System.out.println("RAISocketAI: cloning");
-        return new RAISocketAI(TIME_BUDGET, ITERATIONS_BUDGET, utt);
+        return new RAISocketAI(TIME_BUDGET, ITERATIONS_BUDGET, utt, MAX_TORCH_THREADS, PYTHON_VERBOSE_LEVEL);
     }
 
     @Override

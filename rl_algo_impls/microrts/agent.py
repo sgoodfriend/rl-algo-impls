@@ -1,3 +1,4 @@
+import argparse
 import logging
 import multiprocessing
 import os
@@ -85,48 +86,64 @@ AGENT_ARGS_BY_MAP_SIZE = {
 
 
 def main():
-    sys.stderr = open("microrts_python_error.log", "w")
-    logging.basicConfig(
-        filename="microrts_python.log",
-        filemode="w",
-        format="%(name)s - %(levelname)s - %(message)s",
-        level=logging.INFO,
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "max_torch_threads",
+        help="Limit torch threads. Torch threads could be lower",
+        type=int,
+        nargs="?",
+        default=16,
     )
-    logging.info("Log file start")
+    parser.add_argument("-v", "--verbose", action="count", default=0)
+    args = parser.parse_args()
+
+    if args.verbose >= 1:
+        sys.stderr = open("microrts_python_error.log", "w")
+        logging.basicConfig(
+            filename="microrts_python.log",
+            filemode="w",
+            format="%(name)s - %(levelname)s - %(message)s",
+            level=logging.INFO if args.verbose == 1 else logging.DEBUG,
+        )
+        logging.info("Log file start")
+    else:
+        logging.basicConfig(stream=sys.stderr, level=logging.ERROR)
+
+    logger = logging.getLogger("Agent")
+    logger.info("Command line arguments: %s", args)
 
     log_cpu_info()
     log_memory_info()
     log_installed_libraries_info()
 
     if torch.backends.mkldnn.is_available():
-        logging.info("MKL-DNN (oneDNN) is available in PyTorch")
+        logger.info("MKL-DNN (oneDNN) is available in PyTorch")
         if torch.backends.mkldnn.enabled:  # type: ignore
-            logging.info("MKL-DNN (oneDNN) is enabled")
+            logger.info("MKL-DNN (oneDNN) is enabled")
         else:
-            logging.info("MKL-DNN (oneDNN) is disabled")
+            logger.info("MKL-DNN (oneDNN) is disabled")
     else:
-        logging.info("MKL-DNN (oneDNN) is not available in PyTorch")
+        logger.info("MKL-DNN (oneDNN) is not available in PyTorch")
 
-    MAX_TORCH_THREADS = 16
-    num_proc_units = torch.get_num_threads()
+    cur_torch_threads = torch.get_num_threads()
     num_cpus = multiprocessing.cpu_count()
-    if num_cpus != num_proc_units:
-        logging.info(
-            f"Number of CPUs {num_cpus} different from PyTorch {num_proc_units}. Not changing"
+    if cur_torch_threads > args.max_torch_threads:
+        logger.info(
+            f"Reducing torch num_threads from {cur_torch_threads} to {args.max_torch_threads}"
         )
-    elif num_proc_units > MAX_TORCH_THREADS:
-        logging.info(
-            f"Reducing torch num_threads from {num_proc_units} to {MAX_TORCH_THREADS}"
+        torch.set_num_threads(args.max_torch_threads)
+    elif num_cpus != cur_torch_threads:
+        logger.info(
+            f"Number of CPUs {num_cpus} different from PyTorch {cur_torch_threads}. Not changing"
         )
-        torch.set_num_threads(MAX_TORCH_THREADS)
-    elif num_proc_units > 1:
-        next_lower_pow_2 = 2 ** ((num_proc_units - 1).bit_length() - 1)
-        logging.info(
-            f"{num_proc_units} processing units. Setting PyTorch to use {next_lower_pow_2} threads"
+    elif cur_torch_threads > 1:
+        next_lower_pow_2 = 2 ** ((cur_torch_threads - 1).bit_length() - 1)
+        logger.info(
+            f"{cur_torch_threads} processing units. Setting PyTorch to use {next_lower_pow_2} threads"
         )
         torch.set_num_threads(next_lower_pow_2)
     else:
-        logging.info("Only 1 processing unit. Single threading.")
+        logger.info("Only 1 processing unit. Single threading.")
 
     run_args = RunArgs(algo="ppo", env="Microrts-agent", seed=1)
     hyperparams = load_hyperparams(run_args.algo, run_args.env)
@@ -187,7 +204,7 @@ def main():
 
         act_duration = (time.perf_counter() - act_start) * 1000
         if act_duration >= TIME_BUDGET_MS:
-            logging.warn(f"act took too long: {int(act_duration)}ms")
+            logger.warn(f"act took too long: {int(act_duration)}ms")
         obs, _, _, _ = env.step(act)
 
         action_mask = get_action_mask()
