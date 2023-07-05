@@ -1073,7 +1073,7 @@ Microrts-finetuned-map16-from-NtR: &microrts-finetuned-map16-from-ntr
   <<: *microrts-a6000-finetuned-coac-mayari
   policy_hyperparams:
     <<: *microrts-tweaks-base-policy-defaults
-    load_run_path: sgoodfriend/rl-algo-impls-benchmarks/a9kqagdu
+    load_run_path: sgoodfriend/rl-algo-impls-microrts-2023/tt8wlx1i
     load_run_path_best: true
   env_hyperparams:
     <<: *microrts-a6000-finetuned-coac-mayari-env-defaults
@@ -1370,10 +1370,10 @@ Microrts-selfplay-dc-phases-final: &microrts-sp-dc-phases-final-defaults
       - 0.1
 
 Microrts-debug: &microrts-debug-defaults
-  <<: *microrts-squnet-bloodbath-64ch-finetuned
+  <<: *microrts-finetuned-map16-from-ntr
   device: mps
   eval_hyperparams:
-    <<: *microrts-squnet-map64-eval-defaults
+    <<: *microrts-finetuned-map16-from-ntr-eval-defaults
     step_freq: !!float 1e5
 
 Microrts-agent: &microrts-agent
