@@ -71,7 +71,7 @@ public class RAIRoundRobinTournament extends RAITournament {
         final int playOnlyGamesInvolvingThisAI = 0;
         final int iterations = 10;
         final int iterationsBudget = -1;
-        final int preAnalysisBudgetFirstTimeInAMap = 1000;
+        final int preAnalysisBudgetFirstTimeInAMap = 10000;
         final int preAnalysisBudgetRestOfTimes = 1000;
         final boolean fullObservability = true;
         final boolean selfMatches = false;
