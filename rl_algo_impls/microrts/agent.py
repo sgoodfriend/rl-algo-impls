@@ -200,13 +200,17 @@ def main():
     action_mask = get_action_mask()
     # Runs forever. Java process expected to terminate on own.
     while True:
-        act_start = time.perf_counter()
-        with measure_time("policy.act"):
-            act = policy.act(obs, deterministic=False, action_masks=action_mask)
-
-        act_duration = (time.perf_counter() - act_start) * 1000
-        if act_duration >= TIME_BUDGET_MS:
-            logger.warn(f"act took too long: {int(act_duration)}ms")
+        if getattr(env, "is_pre_game_analysis", False):
+            act = policy.pre_game_analysis(
+                obs, deterministic=False, action_masks=action_mask
+            )
+        else:
+            act_start = time.perf_counter()
+            with measure_time("policy.act"):
+                act = policy.act(obs, deterministic=False, action_masks=action_mask)
+            act_duration = (time.perf_counter() - act_start) * 1000
+            if act_duration >= TIME_BUDGET_MS:
+                logger.warn(f"act took too long: {int(act_duration)}ms")
         obs, _, _, _ = env.step(act)
 
         action_mask = get_action_mask()

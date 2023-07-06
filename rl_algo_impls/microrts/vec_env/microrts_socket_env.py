@@ -59,7 +59,7 @@ class MicroRTSSocketEnv(MicroRTSInterface):
         self.action_mask = None
         self._resources = None
         self._is_pre_game_analysis = False
-        self._pre_game_analysis_milliseconds = 0
+        self._pre_game_analysis_expiration_ms = 0
 
         self.in_pipe = sys.stdin.buffer
         self.out_pipe = sys.stdout.buffer
@@ -79,6 +79,8 @@ class MicroRTSSocketEnv(MicroRTSInterface):
 
     def reset(self):
         if not self._initialized:
+            gc.disable()
+            gc.collect()
             self._ack()
             self._initialized = True
         if self.obs is not None:
@@ -127,8 +129,8 @@ class MicroRTSSocketEnv(MicroRTSInterface):
         return self._is_pre_game_analysis
 
     @property
-    def pre_game_analysis_milliseconds(self) -> int:
-        return self._pre_game_analysis_milliseconds
+    def pre_game_analysis_expiration_ms(self) -> int:
+        return self._pre_game_analysis_expiration_ms
 
     def close(self, **kwargs):
         pass
@@ -180,13 +182,16 @@ class MicroRTSSocketEnv(MicroRTSInterface):
                 self._resources = np.frombuffer(args[2], dtype=np.int8)
                 if self.command == MessageType.PRE_GAME_ANALYSIS:
                     self._is_pre_game_analysis = True
-                    self._pre_game_analysis_milliseconds = int.from_bytes(
-                        args[5], byteorder="big"
+                    self._pre_game_analysis_expiration_ms = (
+                        time.perf_counter() * 1000
+                        + int.from_bytes(args[5], byteorder="big")
                     )
+                    gc.disable()
+                    gc.collect()
                 else:
                     self._is_pre_game_analysis = False
-                    self._pre_game_analysis_milliseconds = 0
-                if len(args) >= 6:
+                    self._pre_game_analysis_expiration_ms = 0
+                if len(args) >= 7:
                     matrix_obs_idx = (
                         6 if self.command == MessageType.PRE_GAME_ANALYSIS else 5
                     )
@@ -245,10 +250,6 @@ class MicroRTSSocketEnv(MicroRTSInterface):
             data_string = json.dumps(data)
         else:
             data_string = ""
-
-        if self.command == MessageType.PRE_GAME_ANALYSIS:
-            gc.disable()
-            gc.collect()
         self.out_pipe.write(("%s\n" % data_string).encode("utf-8"))
         self.out_pipe.flush()
 

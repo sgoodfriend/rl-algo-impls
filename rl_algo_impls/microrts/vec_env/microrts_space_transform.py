@@ -171,13 +171,9 @@ class MicroRTSSpaceTransform(gym.vector.VectorEnv, MicroRTSInterfaceListener):
                     == matching_terrain_overrides[0].use_paper_obs
                     for terrain_override in matching_terrain_overrides
                 )
-                self.height = matching_terrain_overrides[0].size
-                self.width = matching_terrain_overrides[0].size
-                self.use_paper_obs = matching_terrain_overrides[0].use_paper_obs
-                if self.use_paper_obs:
-                    self.num_features = self.paper_planes.n_dim
-                else:
-                    self.num_features = self.planes.n_dim + self.resources_planes.n_dim
+                self.set_space_transform(
+                    terrain_md5=matching_terrain_overrides[0].md5_hash
+                )
                 return
         # Set height and width to next factor of 4 if not factor of 4 already
         next_factor_of_4 = lambda n: n + 4 - n % 4 if n % 4 else n
@@ -195,14 +191,7 @@ class MicroRTSSpaceTransform(gym.vector.VectorEnv, MicroRTSInterfaceListener):
                 self.logger.warning(
                     f"Map size {sz} larger than all valid sizes {self.valid_sizes}"
                 )
-
-        self.height = sz
-        self.width = sz
-        self.use_paper_obs = sz in self.paper_planes_sizes
-        if self.use_paper_obs:
-            self.num_features = self.paper_planes.n_dim
-        else:
-            self.num_features = self.planes.n_dim + self.resources_planes.n_dim
+        self.set_space_transform(sz=sz)
 
     def _update_spaces(
         self, is_init: bool = False
@@ -489,5 +478,31 @@ class MicroRTSSpaceTransform(gym.vector.VectorEnv, MicroRTSInterfaceListener):
         return self.interface.is_pre_game_analysis
 
     @property
-    def pre_game_analysis_milliseconds(self) -> int:
-        return self.interface.pre_game_analysis_milliseconds
+    def pre_game_analysis_expiration_ms(self) -> int:
+        return self.interface.pre_game_analysis_expiration_ms
+
+    def set_space_transform(
+        self, sz: Optional[int] = None, terrain_md5: Optional[str] = None
+    ) -> None:
+        assert (sz is not None) != (
+            terrain_md5 is not None
+        ), f"Only one of sz ({sz}) or terrain_md5 ({terrain_md5}) may be set"
+
+        if sz is not None:
+            self.height = sz
+            self.width = sz
+            self.use_paper_obs = sz in self.paper_planes_sizes
+        elif terrain_md5 is not None:
+            terrain_override = self.terrain_overrides[terrain_md5]
+            self.height = terrain_override.size
+            self.width = terrain_override.size
+            self.use_paper_obs = terrain_override.use_paper_obs
+        else:
+            raise RuntimeError(
+                "Shouldn't be reached. Should have been handled by sz or terrain_md5 cases"
+            )
+
+        if self.use_paper_obs:
+            self.num_features = self.paper_planes.n_dim
+        else:
+            self.num_features = self.planes.n_dim + self.resources_planes.n_dim

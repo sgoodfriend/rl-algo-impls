@@ -77,7 +77,7 @@ class MicroRTSInterface(ABC):
         return False
 
     @property
-    def pre_game_analysis_milliseconds(self) -> int:
+    def pre_game_analysis_expiration_ms(self) -> int:
         return 0
 
     @abstractmethod
