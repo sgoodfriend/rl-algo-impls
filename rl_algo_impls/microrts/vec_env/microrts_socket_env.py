@@ -186,8 +186,6 @@ class MicroRTSSocketEnv(MicroRTSInterface):
                         time.perf_counter() * 1000
                         + int.from_bytes(args[5], byteorder="big")
                     )
-                    gc.disable()
-                    gc.collect()
                 else:
                     self._is_pre_game_analysis = False
                     self._pre_game_analysis_expiration_ms = 0
@@ -228,6 +226,9 @@ class MicroRTSSocketEnv(MicroRTSInterface):
 
                 self.obs = None
                 self.action_mask = None
+
+                gc.disable()
+                gc.collect()
 
                 self._ack()
 
