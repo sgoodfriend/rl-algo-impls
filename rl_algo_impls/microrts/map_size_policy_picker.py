@@ -4,7 +4,17 @@ import time
 from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
-from typing import DefaultDict, Dict, List, Optional, Set, Tuple, Union
+from typing import (
+    DefaultDict,
+    Dict,
+    List,
+    Optional,
+    Sequence,
+    Set,
+    Tuple,
+    TypeVar,
+    Union,
+)
 
 import numpy as np
 import torch
@@ -17,7 +27,8 @@ from rl_algo_impls.shared.tensor_utils import NumpyOrDict
 from rl_algo_impls.wrappers.vectorable_wrapper import VecEnv, VecEnvObs
 
 MODEL_ROOT_PATH = "rai_microrts_saved_models"
-PRE_GAME_ANALYSIS_BUFFER_MILLISECONDS = 250
+EXPONENTIAL_MOVING_AVERAGE_SPAN = 100
+PRE_GAME_ANALYSIS_BUFFER_MILLISECONDS = 200
 MAX_MILLISECONDS = 75
 
 file_path = os.path.abspath(Path(__file__))
@@ -51,8 +62,54 @@ errored_on_sizes: Set[int] = set()
 PolicyName = Union[str, int]
 
 
+class ExponentialMovingAverage:
+    average: float
+    span: int
+
+    def __init__(self, initial_values: Sequence[float], span: int) -> None:
+        self.average = np.mean(initial_values[-span:]).item()
+        self.span = span
+
+    def add_values(self, values: Sequence[float]) -> float:
+        alpha = 2 / (self.span + 1)
+        avg = self.average
+        for v in values:
+            avg = (v * alpha) + (avg * (1 - alpha))
+        self.average = avg
+        return avg
+
+
+T = TypeVar("T")
+
+
+class ExponentialMovingAverages:
+    ema_by_key: Dict[PolicyName, ExponentialMovingAverage] = {}
+    span: int
+
+    def __init__(self, span: int) -> None:
+        self.span = span
+
+    def add(self, key: PolicyName, values: Sequence[float]) -> float:
+        if key not in self.ema_by_key:
+            self.ema_by_key[key] = ExponentialMovingAverage(values, self.span)
+        else:
+            self.ema_by_key[key].add_values(values)
+        return self.ema_by_key[key].average
+
+    def get(self, key: PolicyName, default_value: T = None) -> Union[float, T]:
+        if key in self.ema_by_key:
+            return self.ema_by_key[key].average
+        else:
+            return default_value
+
+
 class MapSizePolicyPicker(Policy):
     logger = logging.getLogger("MapSizePolicyPicker")
+    avg_ms_by_terrain_md5: DefaultDict[str, ExponentialMovingAverages] = defaultdict(
+        lambda: ExponentialMovingAverages(EXPONENTIAL_MOVING_AVERAGE_SPAN)
+    )
+    selected_policy_for_terrain_md5: Dict[str, PolicyName] = {}
+    last_used: Optional[PolicyName] = None
 
     def __init__(
         self,
@@ -94,11 +151,11 @@ class MapSizePolicyPicker(Policy):
             )
         self.policies_by_terrain_md5 = nn.ModuleDict(policies_by_terrain_md5)
 
+        self.policies_by_policy_name = {
+            **self.policies_by_size,
+            **policies_by_terrain_md5,
+        }
         self.envs_by_policy_name = {**envs_per_size, **envs_by_terrain_md5}
-
-        self.selected_policy_for_terrain_md5: Dict[str, Policy] = {}
-
-        self.last_used: Optional[PolicyName] = None
 
     def terrain_md5(self) -> str:
         get_terrain_md5 = getattr(self.env, "terrain_md5")
@@ -142,15 +199,14 @@ class MapSizePolicyPicker(Policy):
     ) -> np.ndarray:
         terrain_md5 = self.terrain_md5()
         if terrain_md5 in self.selected_policy_for_terrain_md5:
-            return self.selected_policy_for_terrain_md5[terrain_md5].act(
-                obs, deterministic=deterministic, action_masks=action_masks
-            )
+            policy_name = self.selected_policy_for_terrain_md5[terrain_md5]
+            policy = self.policies_by_policy_name[policy_name]
         else:
             valid_policies = self._valid_policies(obs)
             policy_name, policy = valid_policies[0]
-            return self.use_policy(
-                policy, policy_name, obs, deterministic, action_masks
-            )
+        return self.use_policy(
+            policy, policy_name, terrain_md5, obs, deterministic, action_masks
+        )
 
     def pre_game_analysis(
         self,
@@ -158,6 +214,7 @@ class MapSizePolicyPicker(Policy):
         deterministic: bool = True,
         action_masks: Optional[NumpyOrDict] = None,
     ) -> np.ndarray:
+        terrain_md5 = self.terrain_md5()
         valid_policies = self._valid_policies(obs)
         pga_expiration = getattr(self.env, "pre_game_analysis_expiration_ms")
         observation_by_policy_name: Dict[
@@ -177,7 +234,10 @@ class MapSizePolicyPicker(Policy):
         # Run each model at least once
         while len(ms_by_policy_name) != len(valid_policies) or (
             start_ms + PRE_GAME_ANALYSIS_BUFFER_MILLISECONDS < pga_expiration
-            and any(len(ms) < 100 for ms in ms_by_policy_name.values())
+            and any(
+                len(ms) < EXPONENTIAL_MOVING_AVERAGE_SPAN + 10
+                for ms in ms_by_policy_name.values()
+            )
         ):
             p_name, p = valid_policies[idx % len(valid_policies)]
             p_obs, p_action_mask = observation_by_policy_name[p_name]
@@ -188,37 +248,50 @@ class MapSizePolicyPicker(Policy):
             ms_by_policy_name[p_name].append(end_ms - start_ms)
             start_ms = end_ms
             idx += 1
+        for policy_name, execution_times in ms_by_policy_name.items():
+            self.avg_ms_by_terrain_md5[terrain_md5].add(policy_name, execution_times)
+        for p_name, _ in valid_policies:
+            if (
+                self.avg_ms_by_terrain_md5[terrain_md5].get(p_name, 0)
+                < MAX_MILLISECONDS
+            ):
+                selected_policy_name = p_name
+                break
+        else:
+            selected_policy_name, _ = valid_policies[
+                np.argmin(
+                    [
+                        self.avg_ms_by_terrain_md5[terrain_md5].get(p_name, 0)
+                        for (p_name, _) in valid_policies
+                    ]
+                )
+            ]
         avg_ms_by_policy_name = [
             np.median(ms_by_policy_name[p_name]) for p_name, _ in valid_policies
         ]
-        for (p_name, p), avg_ms in zip(valid_policies, avg_ms_by_policy_name):
-            if avg_ms < MAX_MILLISECONDS:
-                policy_name = p_name
-                policy = p
-                break
-        else:
-            policy_name, policy = valid_policies[np.argmin(avg_ms_by_policy_name)]
-        self.logger.info(f"Pre-game Analysis: Selected {policy_name}")
+        self.logger.info(f"Pre-game Analysis: Selected {selected_policy_name}")
         for (p_name, p), avg_ms in zip(valid_policies, avg_ms_by_policy_name):
             self.logger.info(
-                f"{p_name}: {avg_ms:.1f} ms ({len(ms_by_policy_name[p_name])})"
+                f"{p_name}: {self.avg_ms_by_terrain_md5[terrain_md5].get(p_name, 0):.1f} ms "
+                f"(updated by {avg_ms:.1f} [{len(ms_by_policy_name[p_name])}])"
             )
-        self.selected_policy_for_terrain_md5[self.terrain_md5()] = policy
+        self.selected_policy_for_terrain_md5[terrain_md5] = selected_policy_name
         set_space_transform = getattr(self.env, "set_space_transform")
-        if isinstance(policy_name, int):
-            set_space_transform(sz=policy_name)
-        elif isinstance(policy_name, str):
-            set_space_transform(terrain_md5=policy_name)
+        if isinstance(selected_policy_name, int):
+            set_space_transform(sz=selected_policy_name)
+        elif isinstance(selected_policy_name, str):
+            set_space_transform(terrain_md5=selected_policy_name)
         else:
             raise ValueError(
-                f"Policy name {policy_name} is neither size or terrain_md5"
+                f"Policy name {selected_policy_name} is neither size or terrain_md5"
             )
-        return actions_by_policy_name[policy_name]
+        return actions_by_policy_name[selected_policy_name]
 
     def use_policy(
         self,
         policy: Policy,
         policy_name: PolicyName,
+        terrain_md5: str,
         obs: VecEnvObs,
         deterministic: bool,
         action_masks: Optional[NumpyOrDict],
@@ -226,4 +299,12 @@ class MapSizePolicyPicker(Policy):
         if self.last_used != policy_name:
             self.logger.info(f"Using policy {policy_name}")
             self.last_used = policy_name
-        return policy.act(obs, deterministic=deterministic, action_masks=action_masks)
+        start_s = time.perf_counter()
+        actions = policy.act(
+            obs, deterministic=deterministic, action_masks=action_masks
+        )
+        end_s = time.perf_counter()
+        self.avg_ms_by_terrain_md5[terrain_md5].add(
+            policy_name, [(end_s - start_s) * 1000]
+        )
+        return actions
