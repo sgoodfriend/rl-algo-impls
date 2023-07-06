@@ -132,6 +132,7 @@ def main():
             f"Reducing torch num_threads from {cur_torch_threads} to {args.max_torch_threads}"
         )
         torch.set_num_threads(args.max_torch_threads)
+        assert torch.get_num_threads() == args.max_torch_threads
     elif num_cpus != cur_torch_threads:
         logger.info(
             f"Number of CPUs {num_cpus} different from PyTorch {cur_torch_threads}. Not changing"
@@ -142,6 +143,7 @@ def main():
             f"{cur_torch_threads} processing units. Setting PyTorch to use {next_lower_pow_2} threads"
         )
         torch.set_num_threads(next_lower_pow_2)
+        assert torch.get_num_threads() == next_lower_pow_2
     else:
         logger.info("Only 1 processing unit. Single threading.")
 
