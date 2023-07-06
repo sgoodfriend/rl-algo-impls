@@ -60,6 +60,7 @@ class MicroRTSSocketEnv(MicroRTSInterface):
         self._resources = None
         self._is_pre_game_analysis = False
         self._pre_game_analysis_expiration_ms = 0
+        self._pre_game_analysis_folder: Optional[str] = None
 
         self.in_pipe = sys.stdin.buffer
         self.out_pipe = sys.stdout.buffer
@@ -132,6 +133,10 @@ class MicroRTSSocketEnv(MicroRTSInterface):
     def pre_game_analysis_expiration_ms(self) -> int:
         return self._pre_game_analysis_expiration_ms
 
+    @property
+    def pre_game_analysis_folder(self) -> Optional[str]:
+        return self._pre_game_analysis_folder
+
     def close(self, **kwargs):
         pass
 
@@ -182,18 +187,18 @@ class MicroRTSSocketEnv(MicroRTSInterface):
                 self._resources = np.frombuffer(args[2], dtype=np.int8)
                 if self.command == MessageType.PRE_GAME_ANALYSIS:
                     self._is_pre_game_analysis = True
-                    self._pre_game_analysis_expiration_ms = (
+                    self._pre_game_analysis_expiration_ms = int(
                         time.perf_counter() * 1000
-                        + int.from_bytes(args[5], byteorder="big")
-                    )
+                    ) + int.from_bytes(args[5], byteorder="big")
+                    self._pre_game_analysis_folder = args[6].decode("utf-8")
                 else:
                     self._is_pre_game_analysis = False
                     self._pre_game_analysis_expiration_ms = 0
-                if len(args) >= 7:
-                    matrix_obs_idx = (
-                        6 if self.command == MessageType.PRE_GAME_ANALYSIS else 5
-                    )
-                    matrix_mask_idx = matrix_obs_idx + 1
+                matrix_obs_idx = (
+                    7 if self.command == MessageType.PRE_GAME_ANALYSIS else 5
+                )
+                matrix_mask_idx = matrix_obs_idx + 1
+                if len(args) >= matrix_mask_idx:
                     self._matrix_obs = np.transpose(
                         np.array(json.loads(args[matrix_obs_idx].decode("utf-8"))),
                         (1, 2, 0),

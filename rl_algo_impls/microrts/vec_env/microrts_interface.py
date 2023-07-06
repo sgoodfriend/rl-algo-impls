@@ -80,6 +80,10 @@ class MicroRTSInterface(ABC):
     def pre_game_analysis_expiration_ms(self) -> int:
         return 0
 
+    @property
+    def pre_game_analysis_folder(self) -> Optional[str]:
+        return None
+
     @abstractmethod
     def close(self, **kwargs):
         ...

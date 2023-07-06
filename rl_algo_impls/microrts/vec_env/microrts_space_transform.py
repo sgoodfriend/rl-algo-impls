@@ -481,6 +481,10 @@ class MicroRTSSpaceTransform(gym.vector.VectorEnv, MicroRTSInterfaceListener):
     def pre_game_analysis_expiration_ms(self) -> int:
         return self.interface.pre_game_analysis_expiration_ms
 
+    @property
+    def pre_game_analysis_folder(self) -> Optional[str]:
+        return self.interface.pre_game_analysis_folder
+
     def set_space_transform(
         self, sz: Optional[int] = None, terrain_md5: Optional[str] = None
     ) -> None:

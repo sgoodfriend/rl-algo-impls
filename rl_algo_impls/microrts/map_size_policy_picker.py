@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import time
@@ -78,16 +79,29 @@ class ExponentialMovingAverage:
         self.average = avg
         return avg
 
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}: {self.average:.1f} ({self.span})"
+
 
 T = TypeVar("T")
 
 
 class ExponentialMovingAverages:
-    ema_by_key: Dict[PolicyName, ExponentialMovingAverage] = {}
+    ema_by_key: Dict[PolicyName, ExponentialMovingAverage]
     span: int
 
-    def __init__(self, span: int) -> None:
+    def __init__(
+        self, span: int, initial_ema_by_key: Optional[Dict[str, float]] = None
+    ) -> None:
+        self.ema_by_key = {}
         self.span = span
+        if initial_ema_by_key:
+            for key, initial_ema in initial_ema_by_key.items():
+                try:
+                    key = int(key)
+                except ValueError:
+                    pass
+                self.ema_by_key[key] = ExponentialMovingAverage([initial_ema], span)
 
     def add(self, key: PolicyName, values: Sequence[float]) -> float:
         if key not in self.ema_by_key:
@@ -102,13 +116,17 @@ class ExponentialMovingAverages:
         else:
             return default_value
 
+    def to_dict(self) -> Dict[PolicyName, float]:
+        return {key: ema.average for key, ema in self.ema_by_key.items()}
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}: {json.dumps(self.ema_by_key)}"
+
 
 class MapSizePolicyPicker(Policy):
     logger = logging.getLogger("MapSizePolicyPicker")
-    avg_ms_by_terrain_md5: DefaultDict[str, ExponentialMovingAverages] = defaultdict(
-        lambda: ExponentialMovingAverages(EXPONENTIAL_MOVING_AVERAGE_SPAN)
-    )
-    selected_policy_for_terrain_md5: Dict[str, PolicyName] = {}
+    avg_ms_by_terrain_md5: DefaultDict[str, ExponentialMovingAverages]
+    selected_policy_for_terrain_md5: Dict[str, PolicyName]
     last_used: Optional[PolicyName] = None
 
     def __init__(
@@ -122,6 +140,10 @@ class MapSizePolicyPicker(Policy):
     ) -> None:
         super().__init__(env)
         self.to(device)
+        self.avg_ms_by_terrain_md5 = defaultdict(
+            lambda: ExponentialMovingAverages(EXPONENTIAL_MOVING_AVERAGE_SPAN)
+        )
+        self.selected_policy_for_terrain_md5 = {}
 
         def load_policy(args: PickerArgs, vec_env: VecEnv) -> Policy:
             policy_hyperparams = args.config.policy_hyperparams
@@ -215,6 +237,27 @@ class MapSizePolicyPicker(Policy):
         action_masks: Optional[NumpyOrDict] = None,
     ) -> np.ndarray:
         terrain_md5 = self.terrain_md5()
+        pre_game_analysis_folder = getattr(self.env, "pre_game_analysis_folder")
+        pre_game_analysis_filepath = None
+        if pre_game_analysis_folder:
+            pre_game_analysis_filepath = os.path.join(
+                pre_game_analysis_folder, "avg_ms_by_terrain_policy.json"
+            )
+            if os.path.exists(pre_game_analysis_filepath):
+                with open(pre_game_analysis_filepath) as f:
+                    avg_ms_by_terrain_policy = json.loads(f.read())
+                    if (
+                        terrain_md5 in avg_ms_by_terrain_policy
+                        and terrain_md5 not in self.avg_ms_by_terrain_md5
+                    ):
+                        self.logger.info(f"Loading EMA for {terrain_md5}")
+                        self.avg_ms_by_terrain_md5[
+                            terrain_md5
+                        ] = ExponentialMovingAverages(
+                            EXPONENTIAL_MOVING_AVERAGE_SPAN,
+                            avg_ms_by_terrain_policy[terrain_md5],
+                        )
+
         valid_policies = self._valid_policies(obs)
         pga_expiration = getattr(self.env, "pre_game_analysis_expiration_ms")
         observation_by_policy_name: Dict[
@@ -231,6 +274,7 @@ class MapSizePolicyPicker(Policy):
         ms_by_policy_name: DefaultDict[PolicyName, List[float]] = defaultdict(list)
         start_ms = time.perf_counter() * 1000
         actions_by_policy_name: Dict[PolicyName, np.ndarray] = {}
+        is_first_analysis_for_map = pga_expiration - start_ms > 1000
         # Run each model at least once
         while len(ms_by_policy_name) != len(valid_policies) or (
             start_ms + PRE_GAME_ANALYSIS_BUFFER_MILLISECONDS < pga_expiration
@@ -285,6 +329,18 @@ class MapSizePolicyPicker(Policy):
             raise ValueError(
                 f"Policy name {selected_policy_name} is neither size or terrain_md5"
             )
+
+        if is_first_analysis_for_map and pre_game_analysis_filepath:
+            with open(pre_game_analysis_filepath, "w") as f:
+                f.write(
+                    json.dumps(
+                        {
+                            t_md5: ema.to_dict()
+                            for t_md5, ema in self.avg_ms_by_terrain_md5.items()
+                        }
+                    )
+                )
+
         return actions_by_policy_name[selected_policy_name]
 
     def use_policy(
