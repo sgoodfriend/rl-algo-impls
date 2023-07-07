@@ -60,15 +60,6 @@ AGENT_ARGS_BY_TERRAIN_MD5 = {
     "ee6e75dae5051fe746a68b39112921c4": [
         PickerArgs(
             algo="ppo",
-            env="Microrts-finetuned-DistantResources-shaped",
-            seed=1,
-            best=True,
-            use_paper_obs=True,
-            size=32,
-            map_name="maps/BWDistantResources32x32.xml",
-        ),
-        PickerArgs(
-            algo="ppo",
             env="Microrts-squnet-DistantResources-128ch-finetuned",
             seed=1,
             best=True,
