@@ -2,6 +2,7 @@ package ai.rai;
 
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.StringWriter;
 import java.lang.reflect.Type;
@@ -98,6 +99,38 @@ public class RAISocketAI extends AIWithComputationBudget {
         reset();
     }
 
+    private void pauseChildProcess() {
+        if (pythonProcess == null) {
+            return;
+        }
+        if (DEBUG >= 1) {
+            System.out.println("RAISocketAI: Pausing Python process");
+        }
+        try {
+            new ProcessBuilder("kill", "-STOP", String.valueOf(pythonProcess.pid())).start();
+        } catch (IOException e) {
+            if (DEBUG >= 1) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private void resumeChildProcess() {
+        if (pythonProcess == null) {
+            return;
+        }
+        if (DEBUG >= 1) {
+            System.out.println("RAISocketAI: Resuming Python process");
+        }
+        try {
+            new ProcessBuilder("kill", "-CONT", String.valueOf(pythonProcess.pid())).start();
+        } catch (IOException e) {
+            if (DEBUG >= 1) {
+                e.printStackTrace();
+            }
+        }
+    }
+
     public void send(RAISocketMessageType messageType, byte[][] bs) throws Exception {
         int sz = (2 + bs.length) * 4 + Arrays.stream(bs).mapToInt(b -> b.length).sum();
         ByteBuffer bb = ByteBuffer.allocate(sz);
@@ -125,6 +158,7 @@ public class RAISocketAI extends AIWithComputationBudget {
     public String request(RAISocketMessageType messageType, byte[][] bs, Long timeoutMillis) throws Exception {
         long startTime = System.currentTimeMillis();
         if (pendingRequestHandler != null) {
+            resumeChildProcess();
             try {
                 if (timeoutMillis != null) {
                     pendingRequestHandler.get(timeoutMillis, TimeUnit.MILLISECONDS);
@@ -136,12 +170,14 @@ public class RAISocketAI extends AIWithComputationBudget {
                 if (DEBUG >= 1) {
                     System.out.println("RAISocketAI: Prior request exceeded new timeout!");
                 }
+                pauseChildProcess();
                 return null;
             } catch (InterruptedException | ExecutionException e) {
                 if (DEBUG >= 1) {
                     System.out.println("RAISocketAI: Prior request errored:");
                     e.printStackTrace();
                 }
+                pendingRequestHandler = null;
             }
             if (timeoutMillis != null) {
                 timeoutMillis -= System.currentTimeMillis() - startTime;
@@ -176,6 +212,7 @@ public class RAISocketAI extends AIWithComputationBudget {
             if (DEBUG >= 1) {
                 System.out.println("RAISocketAI: Request timed out");
             }
+            pauseChildProcess();
             return null;
         } catch (InterruptedException | ExecutionException e) {
             if (DEBUG >= 1) {
