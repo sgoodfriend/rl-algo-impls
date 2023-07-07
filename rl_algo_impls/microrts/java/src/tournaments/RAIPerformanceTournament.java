@@ -29,12 +29,13 @@ public class RAIPerformanceTournament extends RAITournament {
     public static void main(String args[]) throws Exception {
         int overrideTorchThreads = (args.length > 0) ? Integer.parseInt(args[0]) : 0;
         int pythonVerboseLevel = (args.length > 1) ? Integer.parseInt(args[1]) : 1;
+        boolean useBestModels = (args.length > 2) ? args[2].equals("--use_best_models") : false;
 
         final int timeBudget = 100;
         final boolean timeoutCheck = true;
         final UnitTypeTable utt = new UnitTypeTable(UnitTypeTable.VERSION_ORIGINAL_FINETUNED);
         final AI[] AIs = {
-                new RAISocketAI(timeBudget, -1, utt, overrideTorchThreads, pythonVerboseLevel),
+                new RAISocketAI(timeBudget, -1, utt, overrideTorchThreads, pythonVerboseLevel, useBestModels),
                 new CoacAI(utt),
                 new mayari(utt),
         };
@@ -81,8 +82,11 @@ public class RAIPerformanceTournament extends RAITournament {
         if (progress != null) {
             progress.write(tournament.getClass().getName() + ": Starting tournament\n");
             progress.write(
-                    "overrideTorchThreads: " + overrideTorchThreads + "; pythonVerboseLevel: " + pythonVerboseLevel
-                            + "\n");
+                    "overrideTorchThreads: " + overrideTorchThreads + "; pythonVerboseLevel: " + pythonVerboseLevel);
+            if (useBestModels) {
+                progress.write("; Use best models");
+            }
+            progress.write("\n");
         }
         out.write(tournament.getClass().getName() + "\n");
         out.write("AIs\n");

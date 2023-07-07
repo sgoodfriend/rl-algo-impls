@@ -164,17 +164,18 @@ class MicroRTSSpaceTransform(gym.vector.VectorEnv, MicroRTSInterfaceListener):
                     if terrain_override_md5 in terrain_md5s
                 ]
             if matching_terrain_overrides:
+                sz = matching_terrain_overrides[0].size
                 assert all(
-                    terrain_override.size == matching_terrain_overrides[0].size
+                    terrain_override.size == sz
                     for terrain_override in matching_terrain_overrides
                 )
+                use_paper_obs = matching_terrain_overrides[0].use_paper_obs
                 assert all(
-                    terrain_override.use_paper_obs
-                    == matching_terrain_overrides[0].use_paper_obs
+                    terrain_override.use_paper_obs == use_paper_obs
                     for terrain_override in matching_terrain_overrides
                 )
                 return self._set_spaces(
-                    is_init=is_init, terrain_md5=matching_terrain_overrides[0].md5_hash
+                    is_init=is_init, sz=sz, use_paper_obs=use_paper_obs
                 )
         # Set height and width to next factor of 4 if not factor of 4 already
         next_factor_of_4 = lambda n: n + 4 - n % 4 if n % 4 else n
@@ -192,7 +193,9 @@ class MicroRTSSpaceTransform(gym.vector.VectorEnv, MicroRTSInterfaceListener):
                 self.logger.warning(
                     f"Map size {sz} larger than all valid sizes {self.valid_sizes}"
                 )
-        return self._set_spaces(is_init=is_init, sz=sz)
+        return self._set_spaces(
+            is_init=is_init, sz=sz, use_paper_obs=sz in self.paper_planes_sizes
+        )
 
     def map_change(
         self,
@@ -443,29 +446,15 @@ class MicroRTSSpaceTransform(gym.vector.VectorEnv, MicroRTSInterfaceListener):
     def _set_spaces(
         self,
         is_init: bool,
-        sz: Optional[int] = None,
-        terrain_md5: Optional[str] = None,
+        sz: int,
+        use_paper_obs: bool,
     ) -> Optional[Tuple[gym.spaces.Box, gym.spaces.MultiDiscrete]]:
-        assert (sz is not None) != (
-            terrain_md5 is not None
-        ), f"Only one of sz ({sz}) or terrain_md5 ({terrain_md5}) may be set"
-
         get_dim = lambda: (self.height, self.width, self.num_features)
         old_dim = get_dim()
 
-        if sz is not None:
-            self.height = sz
-            self.width = sz
-            self.use_paper_obs = sz in self.paper_planes_sizes
-        elif terrain_md5 is not None:
-            terrain_override = self.terrain_overrides[terrain_md5]
-            self.height = terrain_override.size
-            self.width = terrain_override.size
-            self.use_paper_obs = terrain_override.use_paper_obs
-        else:
-            raise RuntimeError(
-                "Shouldn't be reached. Should have been handled by sz or terrain_md5 cases"
-            )
+        self.height = sz
+        self.width = sz
+        self.use_paper_obs = use_paper_obs
 
         if self.use_paper_obs:
             self.num_features = self.paper_planes.n_dim
@@ -513,9 +502,5 @@ class MicroRTSSpaceTransform(gym.vector.VectorEnv, MicroRTSInterfaceListener):
             )
         return None
 
-    def set_space_transform(
-        self,
-        sz: Optional[int] = None,
-        terrain_md5: Optional[str] = None,
-    ) -> None:
-        self._set_spaces(False, sz=sz, terrain_md5=terrain_md5)
+    def set_space_transform(self, sz: int, use_paper_obs: bool) -> None:
+        self._set_spaces(False, sz=sz, use_paper_obs=use_paper_obs)

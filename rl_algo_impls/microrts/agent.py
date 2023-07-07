@@ -5,6 +5,7 @@ import os
 import sys
 import time
 from pathlib import Path
+from typing import Dict
 
 import torch
 import torch.backends.mkldnn
@@ -14,6 +15,7 @@ from rl_algo_impls.utils.system_info import (
     log_installed_libraries_info,
     log_memory_info,
 )
+from rl_algo_impls.wrappers.vectorable_wrapper import VecEnv
 
 file_path = os.path.abspath(Path(__file__))
 root_dir = str(Path(file_path).parent.parent.parent.absolute())
@@ -31,58 +33,85 @@ from rl_algo_impls.utils.timing import measure_time
 MAX_TORCH_THREADS = 8
 
 AGENT_ARGS_BY_TERRAIN_MD5 = {
-    "ac3b5a19643ee5816a1df17f2fadaae3": PickerArgs(  # maps/NoWhereToRun9x8.xml
-        algo="ppo",
-        env="Microrts-finetuned-NoWhereToRun",
-        seed=1,
-        best=True,
-        use_paper_obs=True,
-    ),
-    "f112aaf99e09861a5d6c6ec195130fa7": PickerArgs(  # maps/DoubleGame24x24.xml
-        algo="ppo",
-        env="Microrts-finetuned-DoubleGame-shaped",
-        seed=1,
-        best=True,
-        use_paper_obs=True,
-    ),
-    "ee6e75dae5051fe746a68b39112921c4": PickerArgs(  # maps/BWDistantResources32x32.xml
-        algo="ppo",
-        env="Microrts-finetuned-DistantResources-shaped",
-        seed=1,
-        best=True,
-        use_paper_obs=True,
-    ),
-    # "686eb7e687e50729cb134d3958d7814d": PickerArgs(  # maps/BroodWar/(4)BloodBath.scmB.xml
-    #     algo="ppo",
-    #     env="Microrts-finetuned-BloodBath-shaped",
-    #     seed=1,
-    #     best=True,
-    #     use_paper_obs=True,
-    # ),
+    "ac3b5a19643ee5816a1df17f2fadaae3": [
+        PickerArgs(
+            algo="ppo",
+            env="Microrts-finetuned-NoWhereToRun",
+            seed=1,
+            best=True,
+            use_paper_obs=True,
+            size=12,
+            map_name="maps/NoWhereToRun9x8.xml",
+            is_final_valid_model=True,
+        )
+    ],
+    "f112aaf99e09861a5d6c6ec195130fa7": [
+        PickerArgs(
+            algo="ppo",
+            env="Microrts-finetuned-DoubleGame-shaped",
+            seed=1,
+            best=True,
+            use_paper_obs=True,
+            size=24,
+            map_name="maps/DoubleGame24x24.xml",
+            is_final_valid_model=True,
+        )
+    ],
+    "ee6e75dae5051fe746a68b39112921c4": [
+        PickerArgs(
+            algo="ppo",
+            env="Microrts-finetuned-DistantResources-shaped",
+            seed=1,
+            best=True,
+            use_paper_obs=True,
+            size=32,
+            map_name="maps/BWDistantResources32x32.xml",
+        ),
+        PickerArgs(
+            algo="ppo",
+            env="Microrts-squnet-DistantResources-128ch-finetuned",
+            seed=1,
+            best=True,
+            use_paper_obs=False,
+            size=32,
+            map_name="maps/BWDistantResources32x32.xml",
+            is_final_valid_model=True,
+        ),
+    ],
+    # "686eb7e687e50729cb134d3958d7814d": [],  # maps/BroodWar/(4)BloodBath.scmB.xml
 }
 
 AGENT_ARGS_BY_MAP_SIZE = {
-    16: PickerArgs(
-        algo="ppo",
-        env="Microrts-A6000-finetuned-coac-mayari",
-        seed=1,
-        best=True,
-        use_paper_obs=True,
-    ),
-    32: PickerArgs(
-        algo="ppo",
-        env="Microrts-squnet-map32-128ch-selfplay",
-        seed=1,
-        best=True,
-        use_paper_obs=False,
-    ),
-    64: PickerArgs(
-        algo="ppo",
-        env="Microrts-squnet-map64-64ch-selfplay",
-        seed=1,
-        best=True,
-        use_paper_obs=False,
-    ),
+    16: [
+        PickerArgs(
+            algo="ppo",
+            env="Microrts-A6000-finetuned-coac-mayari",
+            seed=1,
+            best=True,
+            use_paper_obs=True,
+            size=16,
+        )
+    ],
+    32: [
+        PickerArgs(
+            algo="ppo",
+            env="Microrts-squnet-map32-128ch-selfplay",
+            seed=1,
+            best=True,
+            use_paper_obs=False,
+            size=32,
+        )
+    ],
+    64: [
+        PickerArgs(
+            algo="ppo",
+            env="Microrts-squnet-map64-64ch-selfplay",
+            seed=1,
+            best=True,
+            use_paper_obs=False,
+            size=64,
+        )
+    ],
 }
 
 
@@ -99,6 +128,11 @@ def main():
         help="Override torch threads to this value. Ignoring other logic.",
         type=int,
         default=0,
+    )
+    parser.add_argument(
+        "--use_best_models",
+        help="Disable performance-based model selection. Always pick highest precedence model.",
+        action="store_true",
     )
     parser.add_argument("-v", "--verbose", action="count", default=0)
     args = parser.parse_args()
@@ -170,47 +204,47 @@ def main():
             "time_budget_ms": args.time_budget_ms,
         },
     )
-    envs_per_size = {
-        sz: make_eval_env(
-            env_config,
-            EnvHyperparams(**env_config.env_hyperparams),
-            override_hparams={
-                "valid_sizes": [sz],
-                "paper_planes_sizes": [sz] if p_args.use_paper_obs else [],
-                "fixed_size": True,
-            },
-        )
-        for sz, p_args in AGENT_ARGS_BY_MAP_SIZE.items()
-    }
-    terrain_overrides = env_config.eval_hyperparams["env_overrides"].get(
-        "terrain_overrides", {}
-    )
-    envs_by_terrain_md5 = {
-        terrain_md5: make_eval_env(
-            env_config,
-            EnvHyperparams(**env_config.env_hyperparams),
-            override_hparams={
-                "valid_sizes": None,
-                "paper_planes_sizes": None,
-                "fixed_size": True,
-                "terrain_overrides": {
-                    n: t_override
-                    for n, t_override in terrain_overrides.items()
-                    if t_override["md5_hash"] == terrain_md5
+
+    envs_by_name: Dict[str, VecEnv] = {}
+    for sz, picker_args in AGENT_ARGS_BY_MAP_SIZE.items():
+        for p_arg in picker_args:
+            envs_by_name[p_arg.env] = make_eval_env(
+                env_config,
+                EnvHyperparams(**env_config.env_hyperparams),
+                override_hparams={
+                    "valid_sizes": [sz],
+                    "paper_planes_sizes": [sz] if p_arg.use_paper_obs else [],
+                    "fixed_size": True,
                 },
-            },
-        )
-        for terrain_md5 in AGENT_ARGS_BY_TERRAIN_MD5
-    }
+            )
+    for terrain_md5, picker_args in AGENT_ARGS_BY_TERRAIN_MD5.items():
+        for p_arg in picker_args:
+            envs_by_name[p_arg.env] = make_eval_env(
+                env_config,
+                EnvHyperparams(**env_config.env_hyperparams),
+                override_hparams={
+                    "valid_sizes": None,
+                    "paper_planes_sizes": None,
+                    "fixed_size": True,
+                    "terrain_overrides": {
+                        p_arg.map_name: {
+                            "md5_hash": terrain_md5,
+                            "size": p_arg.size,
+                            "use_paper_obs": p_arg.use_paper_obs,
+                        }
+                    },
+                },
+            )
+
     device = get_device(env_config, env)
     policy = MapSizePolicyPicker(
         AGENT_ARGS_BY_MAP_SIZE,
         AGENT_ARGS_BY_TERRAIN_MD5,
         env,
         device,
-        envs_per_size,
-        envs_by_terrain_md5,
+        envs_by_name,
         args.time_budget_ms,
+        args.use_best_models,
     ).eval()
 
     get_action_mask = getattr(env, "get_action_mask")

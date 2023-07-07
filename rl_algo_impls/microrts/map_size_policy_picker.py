@@ -40,6 +40,9 @@ root_dir = str(Path(file_path).parent.parent.parent.absolute())
 class PickerArgs(RunArgs):
     best: bool = True
     use_paper_obs: bool = False
+    size: Optional[int] = None
+    map_name: Optional[str] = None
+    is_final_valid_model: bool = False
 
     def __post_init__(self):
         self._config = None
@@ -60,7 +63,6 @@ class PickerArgs(RunArgs):
 
 
 errored_on_sizes: Set[int] = set()
-PolicyName = Union[str, int]
 
 
 class ExponentialMovingAverage:
@@ -87,7 +89,7 @@ T = TypeVar("T")
 
 
 class ExponentialMovingAverages:
-    ema_by_key: Dict[PolicyName, ExponentialMovingAverage]
+    ema_by_key: Dict[str, ExponentialMovingAverage]
     span: int
 
     def __init__(
@@ -97,26 +99,22 @@ class ExponentialMovingAverages:
         self.span = span
         if initial_ema_by_key:
             for key, initial_ema in initial_ema_by_key.items():
-                try:
-                    key = int(key)
-                except ValueError:
-                    pass
                 self.ema_by_key[key] = ExponentialMovingAverage([initial_ema], span)
 
-    def add(self, key: PolicyName, values: Sequence[float]) -> float:
+    def add(self, key: str, values: Sequence[float]) -> float:
         if key not in self.ema_by_key:
             self.ema_by_key[key] = ExponentialMovingAverage(values, self.span)
         else:
             self.ema_by_key[key].add_values(values)
         return self.ema_by_key[key].average
 
-    def get(self, key: PolicyName, default_value: T = None) -> Union[float, T]:
+    def get(self, key: str, default_value: T = None) -> Union[float, T]:
         if key in self.ema_by_key:
             return self.ema_by_key[key].average
         else:
             return default_value
 
-    def to_dict(self) -> Dict[PolicyName, float]:
+    def to_dict(self) -> Dict[str, float]:
         return {key: ema.average for key, ema in self.ema_by_key.items()}
 
     def __repr__(self) -> str:
@@ -126,26 +124,29 @@ class ExponentialMovingAverages:
 class MapSizePolicyPicker(Policy):
     logger = logging.getLogger("MapSizePolicyPicker")
     avg_ms_by_terrain_md5: DefaultDict[str, ExponentialMovingAverages]
-    selected_policy_for_terrain_md5: Dict[str, PolicyName]
-    last_used: Optional[PolicyName] = None
+    selected_policy_for_terrain_md5: Dict[str, str]
+    last_used: Optional[str] = None
 
     def __init__(
         self,
-        picker_args_by_size: Dict[int, PickerArgs],
-        picker_args_by_terrain_md5: Dict[str, PickerArgs],
+        picker_args_by_size: Dict[int, List[PickerArgs]],
+        picker_args_by_terrain_md5: Dict[str, List[PickerArgs]],
         env: VecEnv,
         device: torch.device,
-        envs_per_size: Dict[int, VecEnv],
-        envs_by_terrain_md5: Dict[str, VecEnv],
+        envs_by_name: Dict[str, VecEnv],
         time_budget_ms: int,
+        use_best_models: bool,
     ) -> None:
         super().__init__(env)
         self.to(device)
+        self.envs_by_name = envs_by_name
+        self.time_budget_ms = time_budget_ms
+        self.use_best_models = use_best_models
+
         self.avg_ms_by_terrain_md5 = defaultdict(
             lambda: ExponentialMovingAverages(EXPONENTIAL_MOVING_AVERAGE_SPAN)
         )
         self.selected_policy_for_terrain_md5 = {}
-        self.time_budget_ms = time_budget_ms
 
         def load_policy(args: PickerArgs, vec_env: VecEnv) -> Policy:
             policy_hyperparams = args.config.policy_hyperparams
@@ -153,6 +154,7 @@ class MapSizePolicyPicker(Policy):
                 del policy_hyperparams["load_run_path"]
             if "load_run_path_best" in policy_hyperparams:
                 del policy_hyperparams["load_run_path_best"]
+            self.logger.debug(f"Loading policy {args.env}")
             return make_policy(
                 args.config,
                 vec_env,
@@ -161,56 +163,72 @@ class MapSizePolicyPicker(Policy):
                 **policy_hyperparams,
             )
 
-        self.policies_by_size = {}
-        for sz, args in picker_args_by_size.items():
-            self.policies_by_size[sz] = load_policy(args, envs_per_size[sz])
-        self.policies_by_size_name = nn.ModuleDict(
-            {str(sz): p for sz, p in self.policies_by_size.items()}
-        )
-
-        policies_by_terrain_md5 = {}
-        for terrain_md5, args in picker_args_by_terrain_md5.items():
-            policies_by_terrain_md5[terrain_md5] = load_policy(
-                args, envs_by_terrain_md5[terrain_md5]
-            )
-        self.policies_by_terrain_md5 = nn.ModuleDict(policies_by_terrain_md5)
-
-        self.policies_by_policy_name = {
-            **self.policies_by_size,
-            **policies_by_terrain_md5,
-        }
-        self.envs_by_policy_name = {**envs_per_size, **envs_by_terrain_md5}
+        self.args_by_name: Dict[str, PickerArgs] = {}
+        policies_by_name: Dict[str, Policy] = {}
+        self.policy_names_by_size: Dict[int, List[str]] = {}
+        for sz, picker_args in picker_args_by_size.items():
+            self.policy_names_by_size[sz] = []
+            for p_arg in picker_args:
+                p_name = p_arg.env
+                self.args_by_name[p_name] = p_arg
+                self.policy_names_by_size[sz].append(p_name)
+                policies_by_name[p_name] = load_policy(p_arg, envs_by_name[p_name])
+        self.policy_names_by_terrain_md5 = {}
+        for terrain_md5, picker_args in picker_args_by_terrain_md5.items():
+            self.policy_names_by_terrain_md5[terrain_md5] = []
+            for p_arg in picker_args:
+                p_name = p_arg.env
+                self.args_by_name[p_name] = p_arg
+                self.policy_names_by_terrain_md5[terrain_md5].append(p_name)
+                policies_by_name[p_name] = load_policy(p_arg, envs_by_name[p_name])
+        self.policies_by_name = nn.ModuleDict(policies_by_name)
 
     def terrain_md5(self) -> str:
         get_terrain_md5 = getattr(self.env, "terrain_md5")
         terrain_md5s = get_terrain_md5()
         return terrain_md5s[0]
 
-    def _valid_policies(self, obs: VecEnvObs) -> List[Tuple[PolicyName, Policy]]:
+    def get_policy_by_name(self, name: str) -> Policy:
+        p = self.policies_by_name[name]
+        assert isinstance(p, Policy)
+        return p
+
+    def _valid_policies(self, obs: VecEnvObs) -> List[Tuple[str, Policy]]:
         global errored_on_sizes
 
-        valid_policies: List[Tuple[PolicyName, Policy]] = []
+        valid_policies: List[Tuple[str, Policy]] = []
+
+        # Returns whether to continue adding policies.
+        def add_policies(policy_names: List[str]) -> bool:
+            for p_name in policy_names:
+                valid_policies.append((p_name, self.get_policy_by_name(p_name)))
+                if (
+                    self.use_best_models
+                    or self.args_by_name[p_name].is_final_valid_model
+                ):
+                    return False
+            return True
 
         terrain_md5 = self.terrain_md5()
-        if terrain_md5 in self.policies_by_terrain_md5:
-            p = self.policies_by_terrain_md5[terrain_md5]
-            assert isinstance(p, Policy)
-            valid_policies.append((terrain_md5, p))
+        if not add_policies(self.policy_names_by_terrain_md5.get(terrain_md5, [])):
+            return valid_policies
 
         assert isinstance(obs, np.ndarray)
         obs_size = obs.shape[-1]
-        for sz in self.policies_by_size:
+        for sz in self.policy_names_by_size:
             if sz >= obs_size:
-                valid_policies.append((sz, self.policies_by_size[sz]))
+                if not add_policies(self.policy_names_by_size[sz]):
+                    return valid_policies
                 break
         else:
-            sz = max(self.policies_by_size)
+            sz = max(self.policy_names_by_size)
             if obs_size not in errored_on_sizes:
                 self.logger.error(
                     f"Obseration size {obs_size} exceeded {sz}, using biggest model"
                 )
                 errored_on_sizes.add(obs_size)
-            valid_policies.append((sz, self.policies_by_size[sz]))
+            if not add_policies(self.policy_names_by_size[sz]):
+                return valid_policies
 
         assert valid_policies, f"Found no valid policies for map size {obs_size}"
         return valid_policies
@@ -224,7 +242,7 @@ class MapSizePolicyPicker(Policy):
         terrain_md5 = self.terrain_md5()
         if terrain_md5 in self.selected_policy_for_terrain_md5:
             policy_name = self.selected_policy_for_terrain_md5[terrain_md5]
-            policy = self.policies_by_policy_name[policy_name]
+            policy = self.get_policy_by_name(policy_name)
         else:
             valid_policies = self._valid_policies(obs)
             policy_name, policy = valid_policies[0]
@@ -263,19 +281,19 @@ class MapSizePolicyPicker(Policy):
         valid_policies = self._valid_policies(obs)
         pga_expiration = getattr(self.env, "pre_game_analysis_expiration_ms")
         observation_by_policy_name: Dict[
-            PolicyName, Tuple[VecEnvObs, Optional[NumpyOrDict]]
+            str, Tuple[VecEnvObs, Optional[NumpyOrDict]]
         ] = {}
         for p_name, p in valid_policies:
-            p_env = self.envs_by_policy_name[p_name]
+            p_env = self.envs_by_name[p_name]
             observation_by_policy_name[p_name] = (
                 p_env.reset(),
                 getattr(p_env, "get_action_mask")(),
             )
 
         idx = 0
-        ms_by_policy_name: DefaultDict[PolicyName, List[float]] = defaultdict(list)
+        ms_by_policy_name: DefaultDict[str, List[float]] = defaultdict(list)
         start_ms = time.perf_counter() * 1000
-        actions_by_policy_name: Dict[PolicyName, np.ndarray] = {}
+        actions_by_policy_name: Dict[str, np.ndarray] = {}
         is_first_analysis_for_map = pga_expiration - start_ms > 1000
         # Run each model at least once
         while len(ms_by_policy_name) != len(valid_policies) or (
@@ -311,24 +329,19 @@ class MapSizePolicyPicker(Policy):
                     ]
                 )
             ]
-        avg_ms_by_policy_name = [
-            np.median(ms_by_policy_name[p_name]) for p_name, _ in valid_policies
-        ]
+        self.selected_policy_for_terrain_md5[terrain_md5] = selected_policy_name
+
+        set_space_transform = getattr(self.env, "set_space_transform")
+        picker_args = self.args_by_name[selected_policy_name]
+        set_space_transform(picker_args.size, picker_args.use_paper_obs)
+
         self.logger.info(f"Pre-game Analysis: Selected {selected_policy_name}")
-        for (p_name, p), avg_ms in zip(valid_policies, avg_ms_by_policy_name):
+        for p_name, p in valid_policies:
+            avg_ms = np.mean(ms_by_policy_name[p_name])
+            num_runs = len(ms_by_policy_name[p_name])
             self.logger.info(
                 f"{p_name}: {self.avg_ms_by_terrain_md5[terrain_md5].get(p_name, 0):.1f} ms "
-                f"(updated by {avg_ms:.1f} [{len(ms_by_policy_name[p_name])}])"
-            )
-        self.selected_policy_for_terrain_md5[terrain_md5] = selected_policy_name
-        set_space_transform = getattr(self.env, "set_space_transform")
-        if isinstance(selected_policy_name, int):
-            set_space_transform(sz=selected_policy_name)
-        elif isinstance(selected_policy_name, str):
-            set_space_transform(terrain_md5=selected_policy_name)
-        else:
-            raise ValueError(
-                f"Policy name {selected_policy_name} is neither size or terrain_md5"
+                f"(updated by {avg_ms:.1f} [{num_runs}])"
             )
 
         if is_first_analysis_for_map and pre_game_analysis_filepath:
@@ -347,7 +360,7 @@ class MapSizePolicyPicker(Policy):
     def use_policy(
         self,
         policy: Policy,
-        policy_name: PolicyName,
+        policy_name: str,
         terrain_md5: str,
         obs: VecEnvObs,
         deterministic: bool,
