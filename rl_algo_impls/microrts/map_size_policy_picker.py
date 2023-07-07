@@ -333,7 +333,11 @@ class MapSizePolicyPicker(Policy):
 
         set_space_transform = getattr(self.env, "set_space_transform")
         picker_args = self.args_by_name[selected_policy_name]
-        set_space_transform(picker_args.size, picker_args.use_paper_obs)
+        set_space_transform(
+            picker_args.size,
+            picker_args.use_paper_obs,
+            int(self.avg_ms_by_terrain_md5[terrain_md5].get(selected_policy_name, 0)),
+        )
 
         self.logger.info(f"Pre-game Analysis: Selected {selected_policy_name}")
         for p_name, p in valid_policies:

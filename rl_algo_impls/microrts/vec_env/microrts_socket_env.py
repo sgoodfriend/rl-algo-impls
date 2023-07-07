@@ -62,21 +62,25 @@ class MicroRTSSocketEnv(MicroRTSInterface):
         self._is_pre_game_analysis = False
         self._pre_game_analysis_expiration_ms = 0
         self._pre_game_analysis_folder: Optional[str] = None
+        self._expected_step_ms = 0
 
         self.in_pipe = sys.stdin.buffer
         self.out_pipe = sys.stdout.buffer
         self._start()
 
     def step(self, action):
-        if self.command == MessageType.GET_ACTION:
-            res_t = (time.perf_counter() - self._get_action_receive_time) * 1000
-            self._get_action_response_times.append(res_t)
-            if res_t >= self.time_budget_ms:
-                self._logger.warn(
-                    f"Step: {self._steps_since_reset}: "
-                    f"getAction response exceed threshold {int(res_t)}"
-                )
-        self._send(action[0])
+        if self.command == MessageType.PRE_GAME_ANALYSIS:
+            self._send({"e": self._expected_step_ms, "a": action[0]})
+        else:
+            if self.command == MessageType.GET_ACTION:
+                res_t = (time.perf_counter() - self._get_action_receive_time) * 1000
+                self._get_action_response_times.append(res_t)
+                if res_t >= self.time_budget_ms:
+                    self._logger.warn(
+                        f"Step: {self._steps_since_reset}: "
+                        f"getAction response exceed threshold {int(res_t)}"
+                    )
+            self._send(action[0])
         return self._wait_for_obs()
 
     def reset(self):
@@ -138,6 +142,9 @@ class MicroRTSSocketEnv(MicroRTSInterface):
     def pre_game_analysis_folder(self) -> Optional[str]:
         return self._pre_game_analysis_folder
 
+    def set_expected_step_ms(self, expected_step_ms: int) -> None:
+        self._expected_step_ms = expected_step_ms
+
     def close(self, **kwargs):
         pass
 
@@ -192,6 +199,7 @@ class MicroRTSSocketEnv(MicroRTSInterface):
                         time.perf_counter() * 1000
                     ) + int.from_bytes(args[5], byteorder="big")
                     self._pre_game_analysis_folder = args[6].decode("utf-8")
+                    self._expected_step_ms = 0
                 else:
                     self._is_pre_game_analysis = False
                     self._pre_game_analysis_expiration_ms = 0

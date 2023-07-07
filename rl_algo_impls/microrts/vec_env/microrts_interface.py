@@ -84,6 +84,9 @@ class MicroRTSInterface(ABC):
     def pre_game_analysis_folder(self) -> Optional[str]:
         return None
 
+    def set_expected_step_ms(self, expected_step_ms: int) -> None:
+        pass
+
     @abstractmethod
     def close(self, **kwargs):
         ...

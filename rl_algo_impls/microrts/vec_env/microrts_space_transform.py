@@ -502,5 +502,8 @@ class MicroRTSSpaceTransform(gym.vector.VectorEnv, MicroRTSInterfaceListener):
             )
         return None
 
-    def set_space_transform(self, sz: int, use_paper_obs: bool) -> None:
+    def set_space_transform(
+        self, sz: int, use_paper_obs: bool, expected_step_ms: int
+    ) -> None:
         self._set_spaces(False, sz=sz, use_paper_obs=use_paper_obs)
+        self.interface.set_expected_step_ms(expected_step_ms)

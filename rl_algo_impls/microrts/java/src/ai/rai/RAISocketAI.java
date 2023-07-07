@@ -30,6 +30,11 @@ import rts.PhysicalGameState;
 import rts.PlayerAction;
 import rts.units.UnitTypeTable;
 
+class PreGameAnalysisResponse {
+    int e;
+    int[][] a;
+}
+
 public class RAISocketAI extends AIWithComputationBudget {
     public static int DEBUG = 0;
     public int PYTHON_VERBOSE_LEVEL = 1;
@@ -38,6 +43,7 @@ public class RAISocketAI extends AIWithComputationBudget {
 
     UnitTypeTable utt;
     int maxAttackDiameter;
+    int expectedStepMilliseconds = 0;
 
     static Process pythonProcess;
     static BufferedReader inPipe;
@@ -188,9 +194,15 @@ public class RAISocketAI extends AIWithComputationBudget {
             if (timeoutMillis != null) {
                 timeoutMillis -= System.currentTimeMillis() - startTime;
                 if (DEBUG >= 1) {
-                    System.out.println("RAISocketAI: Time remaining " + timeoutMillis);
+                    System.out.println("RAISocketAI: Time remaining " + timeoutMillis + " ms");
                 }
                 if (timeoutMillis <= 0) {
+                    return null;
+                } else if (expectedStepMilliseconds > 0 && timeoutMillis < (expectedStepMilliseconds * 1.1)) {
+                    System.out.println(
+                            "RAISocketAI: Time remaining " + timeoutMillis
+                                    + " ms is not enough larger than expected time "
+                                    + expectedStepMilliseconds + " ms. Skipping turn.");
                     return null;
                 }
             }
@@ -304,7 +316,17 @@ public class RAISocketAI extends AIWithComputationBudget {
             obs.add(gson.toJson(gsw.getMasks(0)).getBytes(StandardCharsets.UTF_8));
         }
 
-        request(RAISocketMessageType.PRE_GAME_ANALYSIS, obs.toArray(new byte[0][]));
+        var response = request(RAISocketMessageType.PRE_GAME_ANALYSIS, obs.toArray(new byte[0][]));
+        if (response != null) {
+            Gson gson = new Gson();
+            PreGameAnalysisResponse responseData = gson.fromJson(response, PreGameAnalysisResponse.class);
+            expectedStepMilliseconds = responseData.e;
+            if (DEBUG >= 1) {
+                System.out.println("RAISocketAI: Expected step time: " + expectedStepMilliseconds + " ms");
+            }
+        } else {
+            expectedStepMilliseconds = 0;
+        }
         sentInitialMapInformation = true;
     }
 
