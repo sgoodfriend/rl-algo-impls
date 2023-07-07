@@ -30,7 +30,7 @@ from rl_algo_impls.wrappers.vectorable_wrapper import VecEnv, VecEnvObs
 MODEL_ROOT_PATH = "rai_microrts_saved_models"
 EXPONENTIAL_MOVING_AVERAGE_SPAN = 100
 PRE_GAME_ANALYSIS_BUFFER_MILLISECONDS = 200
-MAX_MILLISECONDS = 75
+TIME_BUDGET_FACTOR = 0.75
 
 file_path = os.path.abspath(Path(__file__))
 root_dir = str(Path(file_path).parent.parent.parent.absolute())
@@ -137,6 +137,7 @@ class MapSizePolicyPicker(Policy):
         device: torch.device,
         envs_per_size: Dict[int, VecEnv],
         envs_by_terrain_md5: Dict[str, VecEnv],
+        time_budget_ms: int,
     ) -> None:
         super().__init__(env)
         self.to(device)
@@ -144,6 +145,7 @@ class MapSizePolicyPicker(Policy):
             lambda: ExponentialMovingAverages(EXPONENTIAL_MOVING_AVERAGE_SPAN)
         )
         self.selected_policy_for_terrain_md5 = {}
+        self.time_budget_ms = time_budget_ms
 
         def load_policy(args: PickerArgs, vec_env: VecEnv) -> Policy:
             policy_hyperparams = args.config.policy_hyperparams
@@ -295,9 +297,8 @@ class MapSizePolicyPicker(Policy):
         for policy_name, execution_times in ms_by_policy_name.items():
             self.avg_ms_by_terrain_md5[terrain_md5].add(policy_name, execution_times)
         for p_name, _ in valid_policies:
-            if (
-                self.avg_ms_by_terrain_md5[terrain_md5].get(p_name, 0)
-                < MAX_MILLISECONDS
+            if self.avg_ms_by_terrain_md5[terrain_md5].get(p_name, 0) < (
+                self.time_budget_ms * TIME_BUDGET_FACTOR
             ):
                 selected_policy_name = p_name
                 break

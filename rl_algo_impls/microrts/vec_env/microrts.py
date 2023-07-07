@@ -61,6 +61,7 @@ def make_microrts_env(
         paper_planes_sizes,
         fixed_size,
         terrain_overrides,
+        time_budget_ms,
     ) = astuple(hparams)
 
     seed = config.seed(training=training)
@@ -161,7 +162,7 @@ def make_microrts_env(
 
         envs = MicroRTSGridModeVecEnv(**make_kwargs)
     else:
-        envs = MicroRTSSocketEnv.singleton()
+        envs = MicroRTSSocketEnv.singleton(time_budget_ms=time_budget_ms)
     envs = MicroRTSSpaceTransform(
         envs,
         valid_sizes=valid_sizes,

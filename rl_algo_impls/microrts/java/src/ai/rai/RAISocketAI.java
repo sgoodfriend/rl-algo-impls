@@ -32,7 +32,7 @@ import rts.units.UnitTypeTable;
 public class RAISocketAI extends AIWithComputationBudget {
     public static int DEBUG;
     public int PYTHON_VERBOSE_LEVEL = 1;
-    public int MAX_TORCH_THREADS = 16;
+    public int OVERRIDE_TORCH_THREADS = 0;
 
     UnitTypeTable utt;
     int maxAttackDiameter;
@@ -46,17 +46,17 @@ public class RAISocketAI extends AIWithComputationBudget {
     boolean sentInitialMapInformation;
 
     public RAISocketAI(UnitTypeTable a_utt) {
-        this(100, -1, a_utt, 16, 1);
+        this(100, -1, a_utt, 0, 1);
     }
 
     public RAISocketAI(int mt, int mi, UnitTypeTable a_utt) {
-        this(mt, mi, a_utt, 16, 1);
+        this(mt, mi, a_utt, 0, 1);
     }
 
-    public RAISocketAI(int mt, int mi, UnitTypeTable a_utt, int maxTorchThreads, int pythonVerboseLevel) {
+    public RAISocketAI(int mt, int mi, UnitTypeTable a_utt, int overrideTorchThreads, int pythonVerboseLevel) {
         super(mt, mi);
         utt = a_utt;
-        MAX_TORCH_THREADS = maxTorchThreads;
+        OVERRIDE_TORCH_THREADS = overrideTorchThreads;
         PYTHON_VERBOSE_LEVEL = pythonVerboseLevel;
         maxAttackDiameter = utt.getMaxAttackRange() * 2 + 1;
         try {
@@ -72,7 +72,10 @@ public class RAISocketAI extends AIWithComputationBudget {
         }
         List<String> command = new ArrayList<>(Arrays.asList(
                 "rai_microrts",
-                String.valueOf(MAX_TORCH_THREADS)));
+                "--time_budget_ms",
+                String.valueOf(TIME_BUDGET),
+                "--override_torch_threads",
+                String.valueOf(OVERRIDE_TORCH_THREADS)));
         if (PYTHON_VERBOSE_LEVEL > 0) {
             command.add("-" + "v".repeat(PYTHON_VERBOSE_LEVEL));
         }
@@ -199,6 +202,7 @@ public class RAISocketAI extends AIWithComputationBudget {
 
     @Override
     public PlayerAction getAction(int player, GameState gs) throws Exception {
+        long startTime = System.currentTimeMillis();
         GameStateWrapper gsw = new GameStateWrapper(gs, DEBUG);
 
         Gson gson = new Gson();
@@ -217,9 +221,12 @@ public class RAISocketAI extends AIWithComputationBudget {
                 obs.add(gson.toJson(gsw.getMasks(player)).getBytes(StandardCharsets.UTF_8));
             }
         }
-
+        long timeoutMillis = TIME_BUDGET - (System.currentTimeMillis() - startTime);
+        if (DEBUG >= 2) {
+            System.out.println("RAISocketAI: Remaining time budget: " + timeoutMillis);
+        }
         var response = request(RAISocketMessageType.GET_ACTION, obs.toArray(new byte[0][]),
-                Long.valueOf(TIME_BUDGET));
+                Long.valueOf(timeoutMillis));
         PlayerAction pa;
         if (response != null) {
             Type int2d = new TypeToken<int[][]>() {
@@ -267,7 +274,7 @@ public class RAISocketAI extends AIWithComputationBudget {
     public AI clone() {
         if (DEBUG >= 1)
             System.out.println("RAISocketAI: cloning");
-        return new RAISocketAI(TIME_BUDGET, ITERATIONS_BUDGET, utt, MAX_TORCH_THREADS, PYTHON_VERBOSE_LEVEL);
+        return new RAISocketAI(TIME_BUDGET, ITERATIONS_BUDGET, utt, OVERRIDE_TORCH_THREADS, PYTHON_VERBOSE_LEVEL);
     }
 
     @Override

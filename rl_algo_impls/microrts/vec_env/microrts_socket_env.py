@@ -15,8 +15,6 @@ from rl_algo_impls.microrts.vec_env.microrts_interface import (
     MicroRTSInterfaceListener,
 )
 
-TIME_BUDGET_MS = 100
-
 
 class MessageType(Enum):
     UTT = 0
@@ -34,13 +32,16 @@ _singleton = None
 
 class MicroRTSSocketEnv(MicroRTSInterface):
     @classmethod
-    def singleton(cls: Type[MicroRTSSocketEnvSelf]) -> MicroRTSSocketEnvSelf:
+    def singleton(
+        cls: Type[MicroRTSSocketEnvSelf], time_budget_ms: Optional[int] = None
+    ) -> MicroRTSSocketEnvSelf:
         global _singleton
         if _singleton is None:
-            _singleton = cls()
+            _singleton = cls(time_budget_ms=time_budget_ms)
         return _singleton
 
-    def __init__(self):
+    def __init__(self, time_budget_ms: Optional[int] = None):
+        self.time_budget_ms = time_budget_ms if time_budget_ms else 100
         self._steps_since_reset = 0
         self._get_action_response_times = []
         self.listeners = []
@@ -70,7 +71,7 @@ class MicroRTSSocketEnv(MicroRTSInterface):
         if self.command == MessageType.GET_ACTION:
             res_t = (time.perf_counter() - self._get_action_receive_time) * 1000
             self._get_action_response_times.append(res_t)
-            if res_t >= TIME_BUDGET_MS:
+            if res_t >= self.time_budget_ms:
                 self._logger.warn(
                     f"Step: {self._steps_since_reset}: "
                     f"getAction response exceed threshold {int(res_t)}"
@@ -222,7 +223,7 @@ class MicroRTSSocketEnv(MicroRTSInterface):
                         f"Steps: {self._steps_since_reset} - "
                         f"Average Response Time: {int(np.mean(res_times))}ms (std: {int(np.std(res_times))}ms) - "
                         f"Max Response Time: {int(np.max(res_times))}ms (Step: {np.argmax(res_times)}) - "
-                        f"# Over {TIME_BUDGET_MS}ms: {np.sum(res_times >= TIME_BUDGET_MS)}"
+                        f"# Over {self.time_budget_ms}ms: {np.sum(res_times >= self.time_budget_ms)}"
                     )
                     self._get_action_response_times.clear()
                     self._steps_since_reset = 0

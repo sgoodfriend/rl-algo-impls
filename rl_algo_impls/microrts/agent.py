@@ -23,11 +23,12 @@ from rl_algo_impls.microrts.map_size_policy_picker import (
     MapSizePolicyPicker,
     PickerArgs,
 )
-from rl_algo_impls.microrts.vec_env.microrts_socket_env import TIME_BUDGET_MS
 from rl_algo_impls.runner.config import Config, EnvHyperparams, RunArgs
 from rl_algo_impls.runner.running_utils import get_device, load_hyperparams
 from rl_algo_impls.shared.vec_env.make_env import make_eval_env
 from rl_algo_impls.utils.timing import measure_time
+
+MAX_TORCH_THREADS = 8
 
 AGENT_ARGS_BY_TERRAIN_MD5 = {
     "ac3b5a19643ee5816a1df17f2fadaae3": PickerArgs(  # maps/NoWhereToRun9x8.xml
@@ -88,11 +89,16 @@ AGENT_ARGS_BY_MAP_SIZE = {
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "max_torch_threads",
-        help="Limit torch threads. Torch threads could be lower",
+        "--time_budget_ms",
+        help="Milliseconds every turn is allowed to take",
         type=int,
-        nargs="?",
-        default=16,
+        default=100,
+    )
+    parser.add_argument(
+        "--override_torch_threads",
+        help="Override torch threads to this value. Ignoring other logic.",
+        type=int,
+        default=0,
     )
     parser.add_argument("-v", "--verbose", action="count", default=0)
     args = parser.parse_args()
@@ -127,12 +133,18 @@ def main():
 
     cur_torch_threads = torch.get_num_threads()
     num_cpus = multiprocessing.cpu_count()
-    if cur_torch_threads > args.max_torch_threads:
+    if args.override_torch_threads > 0:
         logger.info(
-            f"Reducing torch num_threads from {cur_torch_threads} to {args.max_torch_threads}"
+            f"Overriding torch num_threads from {cur_torch_threads} to {args.override_torch_threads}"
         )
-        torch.set_num_threads(args.max_torch_threads)
-        assert torch.get_num_threads() == args.max_torch_threads
+        torch.set_num_threads(args.override_torch_threads)
+        assert torch.get_num_threads() == args.override_torch_threads
+    if cur_torch_threads > MAX_TORCH_THREADS:
+        logger.info(
+            f"Reducing torch num_threads from {cur_torch_threads} to {MAX_TORCH_THREADS}"
+        )
+        torch.set_num_threads(MAX_TORCH_THREADS)
+        assert torch.get_num_threads() == MAX_TORCH_THREADS
     elif num_cpus != cur_torch_threads:
         logger.info(
             f"Number of CPUs {num_cpus} different from PyTorch {cur_torch_threads}. Not changing"
@@ -151,7 +163,13 @@ def main():
     hyperparams = load_hyperparams(run_args.algo, run_args.env)
     env_config = Config(run_args, hyperparams, root_dir)
 
-    env = make_eval_env(env_config, EnvHyperparams(**env_config.env_hyperparams))
+    env = make_eval_env(
+        env_config,
+        EnvHyperparams(**env_config.env_hyperparams),
+        override_hparams={
+            "time_budget_ms": args.time_budget_ms,
+        },
+    )
     envs_per_size = {
         sz: make_eval_env(
             env_config,
@@ -192,6 +210,7 @@ def main():
         device,
         envs_per_size,
         envs_by_terrain_md5,
+        args.time_budget_ms,
     ).eval()
 
     get_action_mask = getattr(env, "get_action_mask")
@@ -206,10 +225,10 @@ def main():
             )
         else:
             act_start = time.perf_counter()
-            with measure_time("policy.act"):
+            with measure_time("policy.act", threshold_ms=args.time_budget_ms):
                 act = policy.act(obs, deterministic=False, action_masks=action_mask)
             act_duration = (time.perf_counter() - act_start) * 1000
-            if act_duration >= TIME_BUDGET_MS:
+            if act_duration >= args.time_budget_ms:
                 logger.warn(f"act took too long: {int(act_duration)}ms")
         obs, _, _, _ = env.step(act)
 

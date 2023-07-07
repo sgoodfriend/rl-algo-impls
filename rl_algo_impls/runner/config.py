@@ -61,6 +61,7 @@ class EnvHyperparams:
     paper_planes_sizes: Optional[List[int]] = None
     fixed_size: bool = False
     terrain_overrides: Optional[Dict[str, Any]] = None
+    time_budget_ms: Optional[int] = None
 
 
 HyperparamsSelf = TypeVar("HyperparamsSelf", bound="Hyperparams")
