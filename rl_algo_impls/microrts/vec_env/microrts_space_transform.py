@@ -150,7 +150,9 @@ class MicroRTSSpaceTransform(gym.vector.VectorEnv, MicroRTSInterfaceListener):
         if not self.fixed_size:
             self.interface.add_listener(self)
 
-    def _update_dimensions(self):
+    def _update_spaces(
+        self, is_init: bool
+    ) -> Optional[Tuple[gym.spaces.Box, gym.spaces.MultiDiscrete]]:
         if self.terrain_overrides:
             if len(self.terrain_overrides) == 1 and not self.valid_sizes:
                 matching_terrain_overrides = list(self.terrain_overrides.values())
@@ -171,14 +173,9 @@ class MicroRTSSpaceTransform(gym.vector.VectorEnv, MicroRTSInterfaceListener):
                     == matching_terrain_overrides[0].use_paper_obs
                     for terrain_override in matching_terrain_overrides
                 )
-                self.height = matching_terrain_overrides[0].size
-                self.width = matching_terrain_overrides[0].size
-                self.use_paper_obs = matching_terrain_overrides[0].use_paper_obs
-                if self.use_paper_obs:
-                    self.num_features = self.paper_planes.n_dim
-                else:
-                    self.num_features = self.planes.n_dim + self.resources_planes.n_dim
-                return
+                return self._set_spaces(
+                    is_init=is_init, terrain_md5=matching_terrain_overrides[0].md5_hash
+                )
         # Set height and width to next factor of 4 if not factor of 4 already
         next_factor_of_4 = lambda n: n + 4 - n % 4 if n % 4 else n
         height = next_factor_of_4(np.max(self.interface.heights))
@@ -195,60 +192,7 @@ class MicroRTSSpaceTransform(gym.vector.VectorEnv, MicroRTSInterfaceListener):
                 self.logger.warning(
                     f"Map size {sz} larger than all valid sizes {self.valid_sizes}"
                 )
-
-        self.height = sz
-        self.width = sz
-        self.use_paper_obs = sz in self.paper_planes_sizes
-        if self.use_paper_obs:
-            self.num_features = self.paper_planes.n_dim
-        else:
-            self.num_features = self.planes.n_dim + self.resources_planes.n_dim
-
-    def _update_spaces(
-        self, is_init: bool = False
-    ) -> Optional[Tuple[gym.spaces.Box, gym.spaces.MultiDiscrete]]:
-        get_dim = lambda: (self.height, self.width, self.num_features)
-        old_dim = get_dim()
-        self._update_dimensions()
-        if not is_init and get_dim() == old_dim:
-            return None
-
-        observation_space = gym.spaces.Box(
-            low=0.0,
-            high=1.0,
-            shape=(
-                self.height,
-                self.width,
-                self.num_features,
-            ),
-            dtype=np.float32,
-        )
-
-        action_space_dims = [6, 4, 4, 4, 4, len(self.interface.utt["unitTypes"]), 7 * 7]
-        action_space = gym.spaces.MultiDiscrete(
-            np.array([action_space_dims] * self.height * self.width).flatten().tolist()
-        )
-
-        self.action_plane_space = gym.spaces.MultiDiscrete(action_space_dims)
-
-        self.source_unit_idxs = np.tile(
-            np.arange(self.height * self.width), (self.num_envs, 1)
-        )
-        self.source_unit_idxs = self.source_unit_idxs.reshape(
-            (self.source_unit_idxs.shape + (1,))
-        )
-
-        if is_init:
-            return observation_space, action_space
-        else:
-            self.single_observation_space = observation_space
-            self.observation_space = batch_space(
-                observation_space, n=self.interface.num_envs
-            )
-            self.single_action_space = action_space
-            self.action_space = gym.spaces.Tuple(
-                (action_space,) * self.interface.num_envs
-            )
+        return self._set_spaces(is_init=is_init, sz=sz)
 
     def map_change(
         self,
@@ -483,3 +427,95 @@ class MicroRTSSpaceTransform(gym.vector.VectorEnv, MicroRTSInterfaceListener):
 
     def terrain_md5(self) -> List[Optional[str]]:
         return [self.interface.terrain_md5(env_idx) for env_idx in range(self.num_envs)]
+
+    @property
+    def is_pre_game_analysis(self) -> bool:
+        return self.interface.is_pre_game_analysis
+
+    @property
+    def pre_game_analysis_expiration_ms(self) -> int:
+        return self.interface.pre_game_analysis_expiration_ms
+
+    @property
+    def pre_game_analysis_folder(self) -> Optional[str]:
+        return self.interface.pre_game_analysis_folder
+
+    def _set_spaces(
+        self,
+        is_init: bool,
+        sz: Optional[int] = None,
+        terrain_md5: Optional[str] = None,
+    ) -> Optional[Tuple[gym.spaces.Box, gym.spaces.MultiDiscrete]]:
+        assert (sz is not None) != (
+            terrain_md5 is not None
+        ), f"Only one of sz ({sz}) or terrain_md5 ({terrain_md5}) may be set"
+
+        get_dim = lambda: (self.height, self.width, self.num_features)
+        old_dim = get_dim()
+
+        if sz is not None:
+            self.height = sz
+            self.width = sz
+            self.use_paper_obs = sz in self.paper_planes_sizes
+        elif terrain_md5 is not None:
+            terrain_override = self.terrain_overrides[terrain_md5]
+            self.height = terrain_override.size
+            self.width = terrain_override.size
+            self.use_paper_obs = terrain_override.use_paper_obs
+        else:
+            raise RuntimeError(
+                "Shouldn't be reached. Should have been handled by sz or terrain_md5 cases"
+            )
+
+        if self.use_paper_obs:
+            self.num_features = self.paper_planes.n_dim
+        else:
+            self.num_features = self.planes.n_dim + self.resources_planes.n_dim
+
+        if not is_init and get_dim() == old_dim:
+            return None
+
+        observation_space = gym.spaces.Box(
+            low=0.0,
+            high=1.0,
+            shape=(
+                self.height,
+                self.width,
+                self.num_features,
+            ),
+            dtype=np.float32,
+        )
+
+        action_space_dims = [6, 4, 4, 4, 4, len(self.interface.utt["unitTypes"]), 7 * 7]
+        action_space = gym.spaces.MultiDiscrete(
+            np.array([action_space_dims] * self.height * self.width).flatten().tolist()
+        )
+
+        self.action_plane_space = gym.spaces.MultiDiscrete(action_space_dims)
+
+        self.source_unit_idxs = np.tile(
+            np.arange(self.height * self.width), (self.num_envs, 1)
+        )
+        self.source_unit_idxs = self.source_unit_idxs.reshape(
+            (self.source_unit_idxs.shape + (1,))
+        )
+
+        if is_init:
+            return observation_space, action_space
+        else:
+            self.single_observation_space = observation_space
+            self.observation_space = batch_space(
+                observation_space, n=self.interface.num_envs
+            )
+            self.single_action_space = action_space
+            self.action_space = gym.spaces.Tuple(
+                (action_space,) * self.interface.num_envs
+            )
+        return None
+
+    def set_space_transform(
+        self,
+        sz: Optional[int] = None,
+        terrain_md5: Optional[str] = None,
+    ) -> None:
+        self._set_spaces(False, sz=sz, terrain_md5=terrain_md5)

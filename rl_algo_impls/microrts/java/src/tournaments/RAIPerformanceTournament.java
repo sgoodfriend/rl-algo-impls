@@ -27,14 +27,14 @@ public class RAIPerformanceTournament extends RAITournament {
     }
 
     public static void main(String args[]) throws Exception {
-        int maxTorchThreads = (args.length > 0) ? Integer.parseInt(args[0]) : 16;
+        int overrideTorchThreads = (args.length > 0) ? Integer.parseInt(args[0]) : 0;
         int pythonVerboseLevel = (args.length > 1) ? Integer.parseInt(args[1]) : 1;
 
         final int timeBudget = 100;
         final boolean timeoutCheck = true;
         final UnitTypeTable utt = new UnitTypeTable(UnitTypeTable.VERSION_ORIGINAL_FINETUNED);
         final AI[] AIs = {
-                new RAISocketAI(timeBudget, -1, utt, maxTorchThreads, pythonVerboseLevel),
+                new RAISocketAI(timeBudget, -1, utt, overrideTorchThreads, pythonVerboseLevel),
                 new CoacAI(utt),
                 new mayari(utt),
         };
@@ -69,7 +69,7 @@ public class RAIPerformanceTournament extends RAITournament {
         final int playOnlyGamesInvolvingThisAI = 0;
         final int iterations = 1;
         final int iterationsBudget = -1;
-        final int preAnalysisBudgetFirstTimeInAMap = 1000;
+        final int preAnalysisBudgetFirstTimeInAMap = 10000;
         final int preAnalysisBudgetRestOfTimes = 1000;
         final boolean fullObservability = true;
         final boolean selfMatches = false;
@@ -81,7 +81,8 @@ public class RAIPerformanceTournament extends RAITournament {
         if (progress != null) {
             progress.write(tournament.getClass().getName() + ": Starting tournament\n");
             progress.write(
-                    "maxTorchThreads: " + maxTorchThreads + "; pythonVerboseLevel: " + pythonVerboseLevel + "\n");
+                    "overrideTorchThreads: " + overrideTorchThreads + "; pythonVerboseLevel: " + pythonVerboseLevel
+                            + "\n");
         }
         out.write(tournament.getClass().getName() + "\n");
         out.write("AIs\n");

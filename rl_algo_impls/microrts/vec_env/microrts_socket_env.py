@@ -15,8 +15,6 @@ from rl_algo_impls.microrts.vec_env.microrts_interface import (
     MicroRTSInterfaceListener,
 )
 
-TIME_BUDGET_MS = 100
-
 
 class MessageType(Enum):
     UTT = 0
@@ -34,13 +32,16 @@ _singleton = None
 
 class MicroRTSSocketEnv(MicroRTSInterface):
     @classmethod
-    def singleton(cls: Type[MicroRTSSocketEnvSelf]) -> MicroRTSSocketEnvSelf:
+    def singleton(
+        cls: Type[MicroRTSSocketEnvSelf], time_budget_ms: Optional[int] = None
+    ) -> MicroRTSSocketEnvSelf:
         global _singleton
         if _singleton is None:
-            _singleton = cls()
+            _singleton = cls(time_budget_ms=time_budget_ms)
         return _singleton
 
-    def __init__(self):
+    def __init__(self, time_budget_ms: Optional[int] = None):
+        self.time_budget_ms = time_budget_ms if time_budget_ms else 100
         self._steps_since_reset = 0
         self._get_action_response_times = []
         self.listeners = []
@@ -58,6 +59,9 @@ class MicroRTSSocketEnv(MicroRTSInterface):
         self.obs = None
         self.action_mask = None
         self._resources = None
+        self._is_pre_game_analysis = False
+        self._pre_game_analysis_expiration_ms = 0
+        self._pre_game_analysis_folder: Optional[str] = None
 
         self.in_pipe = sys.stdin.buffer
         self.out_pipe = sys.stdout.buffer
@@ -67,7 +71,7 @@ class MicroRTSSocketEnv(MicroRTSInterface):
         if self.command == MessageType.GET_ACTION:
             res_t = (time.perf_counter() - self._get_action_receive_time) * 1000
             self._get_action_response_times.append(res_t)
-            if res_t >= TIME_BUDGET_MS:
+            if res_t >= self.time_budget_ms:
                 self._logger.warn(
                     f"Step: {self._steps_since_reset}: "
                     f"getAction response exceed threshold {int(res_t)}"
@@ -77,6 +81,8 @@ class MicroRTSSocketEnv(MicroRTSInterface):
 
     def reset(self):
         if not self._initialized:
+            gc.disable()
+            gc.collect()
             self._ack()
             self._initialized = True
         if self.obs is not None:
@@ -119,6 +125,18 @@ class MicroRTSSocketEnv(MicroRTSInterface):
         assert env_idx == 0
         assert self._resources is not None
         return self._resources
+
+    @property
+    def is_pre_game_analysis(self) -> bool:
+        return self._is_pre_game_analysis
+
+    @property
+    def pre_game_analysis_expiration_ms(self) -> int:
+        return self._pre_game_analysis_expiration_ms
+
+    @property
+    def pre_game_analysis_folder(self) -> Optional[str]:
+        return self._pre_game_analysis_folder
 
     def close(self, **kwargs):
         pass
@@ -168,12 +186,26 @@ class MicroRTSSocketEnv(MicroRTSInterface):
                 self.obs = [np.frombuffer(args[0], dtype=np.int8)]
                 self.action_mask = [np.frombuffer(args[1], dtype=np.int8)]
                 self._resources = np.frombuffer(args[2], dtype=np.int8)
-                if len(args) >= 7:
+                if self.command == MessageType.PRE_GAME_ANALYSIS:
+                    self._is_pre_game_analysis = True
+                    self._pre_game_analysis_expiration_ms = int(
+                        time.perf_counter() * 1000
+                    ) + int.from_bytes(args[5], byteorder="big")
+                    self._pre_game_analysis_folder = args[6].decode("utf-8")
+                else:
+                    self._is_pre_game_analysis = False
+                    self._pre_game_analysis_expiration_ms = 0
+                matrix_obs_idx = (
+                    7 if self.command == MessageType.PRE_GAME_ANALYSIS else 5
+                )
+                matrix_mask_idx = matrix_obs_idx + 1
+                if len(args) >= matrix_mask_idx:
                     self._matrix_obs = np.transpose(
-                        np.array(json.loads(args[5].decode("utf-8"))), (1, 2, 0)
+                        np.array(json.loads(args[matrix_obs_idx].decode("utf-8"))),
+                        (1, 2, 0),
                     )
                     self._matrix_mask = np.array(
-                        json.loads(args[6].decode("utf-8")),
+                        json.loads(args[matrix_mask_idx].decode("utf-8")),
                     )
                 return self.obs, self.action_mask, np.zeros(1), np.zeros(1), [{}]
             elif self.command == MessageType.GAME_OVER:
@@ -191,7 +223,7 @@ class MicroRTSSocketEnv(MicroRTSInterface):
                         f"Steps: {self._steps_since_reset} - "
                         f"Average Response Time: {int(np.mean(res_times))}ms (std: {int(np.std(res_times))}ms) - "
                         f"Max Response Time: {int(np.max(res_times))}ms (Step: {np.argmax(res_times)}) - "
-                        f"# Over {TIME_BUDGET_MS}ms: {np.sum(res_times >= TIME_BUDGET_MS)}"
+                        f"# Over {self.time_budget_ms}ms: {np.sum(res_times >= self.time_budget_ms)}"
                     )
                     self._get_action_response_times.clear()
                     self._steps_since_reset = 0
@@ -200,6 +232,9 @@ class MicroRTSSocketEnv(MicroRTSInterface):
 
                 self.obs = None
                 self.action_mask = None
+
+                gc.disable()
+                gc.collect()
 
                 self._ack()
 
@@ -222,10 +257,6 @@ class MicroRTSSocketEnv(MicroRTSInterface):
             data_string = json.dumps(data)
         else:
             data_string = ""
-
-        if self.command == MessageType.PRE_GAME_ANALYSIS:
-            gc.disable()
-            gc.collect()
         self.out_pipe.write(("%s\n" % data_string).encode("utf-8"))
         self.out_pipe.flush()
 
