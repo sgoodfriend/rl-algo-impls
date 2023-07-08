@@ -173,7 +173,7 @@ def main():
         )
         torch.set_num_threads(args.override_torch_threads)
         assert torch.get_num_threads() == args.override_torch_threads
-    if cur_torch_threads > MAX_TORCH_THREADS:
+    elif cur_torch_threads > MAX_TORCH_THREADS:
         logger.info(
             f"Reducing torch num_threads from {cur_torch_threads} to {MAX_TORCH_THREADS}"
         )
