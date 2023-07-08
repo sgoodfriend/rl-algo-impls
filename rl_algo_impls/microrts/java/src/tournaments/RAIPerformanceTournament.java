@@ -29,24 +29,28 @@ public class RAIPerformanceTournament extends RAITournament {
     public static void main(String args[]) throws Exception {
         int overrideTorchThreads = (args.length > 0) ? Integer.parseInt(args[0]) : 0;
         int pythonVerboseLevel = (args.length > 1) ? Integer.parseInt(args[1]) : 1;
-        boolean useBestModels = (args.length > 2) ? args[2].equals("--use_best_models") : false;
+
+        var argsList = Arrays.asList(args);
+        boolean useBestModels = argsList.contains("--use_best_models");
+        boolean deterministic = argsList.contains("--deterministic");
 
         final int timeBudget = 100;
         final boolean timeoutCheck = true;
         final UnitTypeTable utt = new UnitTypeTable(UnitTypeTable.VERSION_ORIGINAL_FINETUNED);
         final AI[] AIs = {
-                new RAISocketAI(timeBudget, -1, utt, overrideTorchThreads, pythonVerboseLevel, useBestModels),
+                new RAISocketAI(timeBudget, -1, utt, overrideTorchThreads, pythonVerboseLevel, useBestModels,
+                        deterministic),
                 new CoacAI(utt),
                 new mayari(utt),
         };
         var tournament = new RAIPerformanceTournament(Arrays.asList(AIs));
 
         final List<Pair<String, Integer>> maps = new ArrayList<Pair<String, Integer>>();
-        maps.add(new Pair<>("maps/BroodWar/(4)BloodBath.scmB.xml", 1000));
-        maps.add(new Pair<>("maps/BWDistantResources32x32.xml", 1000));
-        maps.add(new Pair<>("maps/DoubleGame24x24.xml", 1000));
-        maps.add(new Pair<>("maps/16x16/TwoBasesBarracks16x16.xml", 1000));
-        maps.add(new Pair<>("maps/NoWhereToRun9x8.xml", 1000));
+        maps.add(new Pair<>("maps/BroodWar/(4)BloodBath.scmB.xml", 8000));
+        maps.add(new Pair<>("maps/BWDistantResources32x32.xml", 6000));
+        maps.add(new Pair<>("maps/DoubleGame24x24.xml", 5000));
+        maps.add(new Pair<>("maps/16x16/basesWorkers16x16A.xml", 4000));
+        maps.add(new Pair<>("maps/NoWhereToRun9x8.xml", 4000));
 
         String prefix = "tournament_";
         if (maps.size() == 1) {
@@ -84,7 +88,10 @@ public class RAIPerformanceTournament extends RAITournament {
             progress.write(
                     "overrideTorchThreads: " + overrideTorchThreads + "; pythonVerboseLevel: " + pythonVerboseLevel);
             if (useBestModels) {
-                progress.write("; Use best models");
+                progress.write("; useBestModels");
+            }
+            if (deterministic) {
+                progress.write("; deterministic");
             }
             progress.write("\n");
         }
