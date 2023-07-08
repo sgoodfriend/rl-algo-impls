@@ -1,10 +1,10 @@
 import argparse
 import csv
 import os
-from dataclasses import asdict, dataclass
 from io import StringIO
 from typing import Iterator, List, Sequence
 
+import numpy as np
 import pandas as pd
 
 
@@ -39,8 +39,12 @@ def read_matches(cols: Sequence[str], row_iter: Iterator[Sequence[str]]) -> List
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("in_filepath", nargs="?", default="tournament_2/tournament.csv")
-    parser.add_argument("out_filepath", nargs="?", default="~/Desktop/v28.csv")
+    parser.add_argument(
+        "in_filepath",
+        nargs="?",
+        default=os.path.expanduser("~/Desktop/tournament.csv"),
+    )
+    parser.add_argument("out_filepath", nargs="?", default="~/Desktop/v35.csv")
     args = parser.parse_args()
 
     with open(args.in_filepath, "r") as f:
@@ -101,7 +105,34 @@ if __name__ == "__main__":
     execution_time.drop(["ai0over", "time"], axis=1, inplace=True)
     execution_time["ai0time"] = execution_time["ai0time"].round(1)
     execution_time["over%"] = execution_time["over%"].round(3)
+
+    timedout = (
+        df[
+            (df["ai1"] == 0) & (df["timedout"] == 0)
+            | (df["ai2"] == 0) & (df["timedout"] == 1)
+        ]
+        .groupby("map")
+        .size()
+    )
+    execution_time["timedout%"] = (
+        timedout.div(df.groupby("map").size()).replace(np.nan, 0) * 100
+    )
     print(execution_time.rename(index=maps_by_idx))
+
+    df["score"] = 0
+    df["opponent"] = 0
+    df.loc[(df["ai1"] == 0) & (df["winner"] == 0), "score"] = 1
+    df.loc[(df["ai1"] == 0) & (df["winner"] == 1), "score"] = -1
+    df.loc[(df["ai2"] == 0) & (df["winner"] == 1), "score"] = 1
+    df.loc[(df["ai2"] == 0) & (df["winner"] == 0), "score"] = -1
+    df.loc[df["ai1"] == 0, "opponent"] = df["ai2"]
+    df.loc[df["ai2"] == 0, "opponent"] = df["ai1"]
+    score_table = df.pivot_table(
+        index="map", columns="opponent", values="score", aggfunc="mean", fill_value=0
+    )
+    score_table.loc["AI Total"] = score_table.mean(axis=0)
+    score_table["Map Total"] = score_table.mean(axis=1)
+    print(score_table.rename(index=maps_by_idx, columns=ais_by_idx).round(2))
 
     if args.out_filepath:
         filepath = os.path.expanduser(args.out_filepath)
@@ -123,3 +154,8 @@ if __name__ == "__main__":
         with open(filepath, "a") as f:
             f.writelines("RAISocketAI Average Execution Time And Over 100ms\n")
         execution_time.rename(index=maps_by_idx).to_csv(filepath, mode="a")
+        with open(filepath, "a") as f:
+            f.writelines("RAISocketAI WinLoss\n")
+        score_table.rename(index=maps_by_idx, columns=ais_by_idx).round(2).to_csv(
+            filepath, mode="a"
+        )
