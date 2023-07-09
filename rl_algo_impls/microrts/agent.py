@@ -134,11 +134,6 @@ def main():
         help="Disable performance-based model selection. Always pick highest precedence model.",
         action="store_true",
     )
-    parser.add_argument(
-        "--deterministic",
-        help="Policies always take the best action",
-        action="store_true",
-    )
     parser.add_argument("-v", "--verbose", action="count", default=0)
     args = parser.parse_args()
 
@@ -260,14 +255,12 @@ def main():
     while True:
         if getattr(env, "is_pre_game_analysis", False):
             act = policy.pre_game_analysis(
-                obs, deterministic=args.deterministic, action_masks=action_mask
+                obs, deterministic=False, action_masks=action_mask
             )
         else:
             act_start = time.perf_counter()
             with measure_time("policy.act", threshold_ms=args.time_budget_ms):
-                act = policy.act(
-                    obs, deterministic=args.deterministic, action_masks=action_mask
-                )
+                act = policy.act(obs, deterministic=False, action_masks=action_mask)
             act_duration = (time.perf_counter() - act_start) * 1000
             if act_duration >= args.time_budget_ms:
                 logger.warn(f"act took too long: {int(act_duration)}ms")

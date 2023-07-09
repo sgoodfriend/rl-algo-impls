@@ -40,7 +40,6 @@ public class RAISocketAI extends AIWithComputationBudget {
     public int PYTHON_VERBOSE_LEVEL = 1;
     public int OVERRIDE_TORCH_THREADS = 0;
     public boolean USE_BEST_MODELS = false;
-    public boolean DETERMINISTIC = false;
 
     UnitTypeTable utt;
     int maxAttackDiameter;
@@ -55,21 +54,20 @@ public class RAISocketAI extends AIWithComputationBudget {
     boolean sentInitialMapInformation;
 
     public RAISocketAI(UnitTypeTable a_utt) {
-        this(100, -1, a_utt, 0, 1, false, false);
+        this(100, -1, a_utt, 0, 1, false);
     }
 
     public RAISocketAI(int mt, int mi, UnitTypeTable a_utt) {
-        this(mt, mi, a_utt, 0, 1, false, false);
+        this(mt, mi, a_utt, 0, 1, false);
     }
 
     public RAISocketAI(int mt, int mi, UnitTypeTable a_utt, int overrideTorchThreads, int pythonVerboseLevel,
-            boolean useBestModels, boolean deterministic) {
+            boolean useBestModels) {
         super(mt, mi);
         utt = a_utt;
         OVERRIDE_TORCH_THREADS = overrideTorchThreads;
         PYTHON_VERBOSE_LEVEL = pythonVerboseLevel;
         USE_BEST_MODELS = useBestModels;
-        DETERMINISTIC = deterministic;
         maxAttackDiameter = utt.getMaxAttackRange() * 2 + 1;
         try {
             connectChildProcess();
@@ -93,9 +91,6 @@ public class RAISocketAI extends AIWithComputationBudget {
         }
         if (USE_BEST_MODELS) {
             command.add("--use_best_models");
-        }
-        if (DETERMINISTIC) {
-            command.add("--deterministic");
         }
         ProcessBuilder processBuilder = new ProcessBuilder();
         processBuilder.command(command);
@@ -345,7 +340,7 @@ public class RAISocketAI extends AIWithComputationBudget {
         if (DEBUG >= 1)
             System.out.println("RAISocketAI: cloning");
         return new RAISocketAI(TIME_BUDGET, ITERATIONS_BUDGET, utt, OVERRIDE_TORCH_THREADS, PYTHON_VERBOSE_LEVEL,
-                USE_BEST_MODELS, DETERMINISTIC);
+                USE_BEST_MODELS);
     }
 
     @Override
