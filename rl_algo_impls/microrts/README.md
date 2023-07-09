@@ -26,7 +26,7 @@ The above steps makes `rai_microrts` callable within the terminal. `RAISocketAI.
 uses this to start a Python child process, which is used to compute actions.
 
 To see this demonstrated in Google Colab running a small command-line tournament, open
-[colab_microrts_demo.ipynb](https://github.com/sgoodfriend/rl-algo-impls/blob/80fa237c2ac166efb13d3cb5fff1eb0f52463193/rl_algo_impls/microrts/colab_microrts_demo.ipynb)
+[colab_microrts_demo.ipynb](https://github.com/sgoodfriend/rl-algo-impls/blob/v0.0.38/rl_algo_impls/microrts/colab_microrts_demo.ipynb)
 in Google Colab (ideally High-RAM Runtime shape, no Hardware accelator).
 
 ### Best models variant
