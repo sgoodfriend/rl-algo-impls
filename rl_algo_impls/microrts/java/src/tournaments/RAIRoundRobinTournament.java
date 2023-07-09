@@ -31,7 +31,7 @@ public class RAIRoundRobinTournament extends RAITournament {
         final boolean timeoutCheck = true;
         final UnitTypeTable utt = new UnitTypeTable(UnitTypeTable.VERSION_ORIGINAL_FINETUNED);
         final AI[] AIs = {
-                new RAISocketAI(timeBudget, -1, utt),
+                new RAISocketAI((int) (timeBudget * 0.9), -1, utt),
                 new POWorkerRush(utt),
                 new POLightRush(utt),
                 new CoacAI(utt),
