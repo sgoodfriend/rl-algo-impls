@@ -16,8 +16,6 @@ import ai.abstraction.partialobservability.POWorkerRush;
 import ai.coac.CoacAI;
 import ai.core.AI;
 import ai.rai.RAISocketAI;
-import ai.rai.RAISocketAIBestModels;
-import ai.rai.RAISocketAIDeterministic;
 import mayariBot.mayari;
 import rts.PhysicalGameState;
 import rts.units.UnitTypeTable;
@@ -32,19 +30,8 @@ public class RAIRoundRobinTournament extends RAITournament {
         final int timeBudget = 100;
         final boolean timeoutCheck = true;
         final UnitTypeTable utt = new UnitTypeTable(UnitTypeTable.VERSION_ORIGINAL_FINETUNED);
-
-        var argsList = Arrays.asList(args);
-        RAISocketAI raiAI;
-        if (argsList.contains("--deterministic")) {
-            raiAI = new RAISocketAIDeterministic(timeBudget, -1, utt);
-        } else if (argsList.contains("--use_best_models")) {
-            raiAI = new RAISocketAIBestModels(timeBudget, -1, utt);
-        } else {
-            raiAI = new RAISocketAI(timeBudget, -1, utt);
-        }
-
         final AI[] AIs = {
-                raiAI,
+                new RAISocketAI(timeBudget, -1, utt),
                 new POWorkerRush(utt),
                 new POLightRush(utt),
                 new CoacAI(utt),
