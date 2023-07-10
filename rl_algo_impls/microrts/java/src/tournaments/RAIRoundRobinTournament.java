@@ -11,6 +11,13 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
+
 import ai.abstraction.partialobservability.POLightRush;
 import ai.abstraction.partialobservability.POWorkerRush;
 import ai.coac.CoacAI;
@@ -27,11 +34,14 @@ public class RAIRoundRobinTournament extends RAITournament {
     }
 
     public static void main(String args[]) throws Exception {
-        final int timeBudget = 100;
-        final boolean timeoutCheck = true;
+        RAITournamentArguments raiArgs = new RAITournamentArguments(args);
+
+        final int timeBudget = raiArgs.getOptionInteger('t', 100);
+        final boolean timeoutCheck = !raiArgs.hasOption('T');
         final UnitTypeTable utt = new UnitTypeTable(UnitTypeTable.VERSION_ORIGINAL_FINETUNED);
         final AI[] AIs = {
-                new RAISocketAI(timeBudget, -1, utt),
+                new RAISocketAI(timeBudget, -1, utt, raiArgs.getOptionInteger('p', 0), raiArgs.pythonVerbosity,
+                        raiArgs.hasOption('b')),
                 new POWorkerRush(utt),
                 new POLightRush(utt),
                 new CoacAI(utt),
@@ -69,7 +79,7 @@ public class RAIRoundRobinTournament extends RAITournament {
         final String folderForReadWriteFolders = tournamentfolder;
 
         final int playOnlyGamesInvolvingThisAI = 0;
-        final int iterations = 10;
+        final int iterations = raiArgs.getOptionInteger('n', 10);
         final int iterationsBudget = -1;
         final int preAnalysisBudgetFirstTimeInAMap = 10000;
         final int preAnalysisBudgetRestOfTimes = 1000;

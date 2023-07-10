@@ -27,12 +27,13 @@ public class RAIPerformanceTournament extends RAITournament {
     }
 
     public static void main(String args[]) throws Exception {
-        int overrideTorchThreads = (args.length > 0) ? Integer.parseInt(args[0]) : 0;
-        int pythonVerboseLevel = (args.length > 1) ? Integer.parseInt(args[1]) : 1;
-        boolean useBestModels = (args.length > 2) ? args[2].equals("--use_best_models") : false;
+        RAITournamentArguments raiArgs = new RAITournamentArguments(args);
+        int overrideTorchThreads = raiArgs.getOptionInteger('p', 0);
+        int pythonVerboseLevel = raiArgs.pythonVerbosity;
+        boolean useBestModels = raiArgs.hasOption('b');
 
-        final int timeBudget = 100;
-        final boolean timeoutCheck = true;
+        final int timeBudget = raiArgs.getOptionInteger('t', 100);
+        final boolean timeoutCheck = !raiArgs.hasOption('T');
         final UnitTypeTable utt = new UnitTypeTable(UnitTypeTable.VERSION_ORIGINAL_FINETUNED);
         final AI[] AIs = {
                 new RAISocketAI(timeBudget, -1, utt, overrideTorchThreads, pythonVerboseLevel, useBestModels),
@@ -68,7 +69,7 @@ public class RAIPerformanceTournament extends RAITournament {
         final String folderForReadWriteFolders = tournamentfolder;
 
         final int playOnlyGamesInvolvingThisAI = 0;
-        final int iterations = 1;
+        final int iterations = raiArgs.getOptionInteger('n', 1);
         final int iterationsBudget = -1;
         final int preAnalysisBudgetFirstTimeInAMap = 10000;
         final int preAnalysisBudgetRestOfTimes = 1000;
