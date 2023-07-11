@@ -99,7 +99,7 @@ public class RAIGridnetClient {
 
     public byte[] render(boolean returnPixels) throws Exception {
         if (w == null) {
-            w = PhysicalGameStatePanel.newVisualizer(gs, 640, 640, partialObs, null, renderTheme);
+            w = PhysicalGameStatePanel.newVisualizer(gs, 640, 640, partialObs, renderTheme);
         }
         w.setStateCloning(gs);
         w.repaint();
