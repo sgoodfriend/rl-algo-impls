@@ -1,4 +1,5 @@
 # Support for PyTorch mps mode (https://pytorch.org/docs/stable/notes/mps.html)
+import json
 import os
 
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
@@ -19,13 +20,24 @@ def enjoy() -> None:
     )
     # wandb-run-path overrides base RunArgs
     parser.add_argument("--wandb-run-path", default=None, type=str)
+    parser.add_argument(
+        "--video-path", type=str, help="Path to save video of all plays"
+    )
+    parser.add_argument("--override-hparams", default=None, type=str)
     parser.set_defaults(
         algo=["ppo"],
-        wandb_run_path="sgoodfriend/rl-algo-impls/m5c1t7g5",
+        wandb_run_path="sgoodfriend/rl-algo-impls-benchmarks/vmns9sbe",
+        n_episodes=1,
+        # render=False,
+        # override_hparams='{"bots":{"mayari":1}}',
+        # video_path=os.path.expanduser("~/Desktop/NoWhereToRun-RAISocketAI-Mayari"),
     )
     args = parser.parse_args()
     args.algo = args.algo[0]
     args.env = args.env[0]
+    args.override_hparams = (
+        json.loads(args.override_hparams) if args.override_hparams else None
+    )
     args = EvalArgs(**vars(args))
 
     evaluate_model(args, os.getcwd())

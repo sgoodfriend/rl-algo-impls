@@ -1,7 +1,7 @@
 import os
 import shutil
 from dataclasses import dataclass
-from typing import NamedTuple, Optional
+from typing import Any, Dict, NamedTuple, Optional
 
 from rl_algo_impls.runner.config import Config, EnvHyperparams, Hyperparams, RunArgs
 from rl_algo_impls.runner.running_utils import (
@@ -14,6 +14,7 @@ from rl_algo_impls.shared.callbacks.eval_callback import evaluate
 from rl_algo_impls.shared.policy.policy import Policy
 from rl_algo_impls.shared.stats import EpisodesStats
 from rl_algo_impls.shared.vec_env import make_eval_env
+from rl_algo_impls.wrappers.vec_episode_recorder import VecEpisodeRecorder
 
 
 @dataclass
@@ -25,6 +26,8 @@ class EvalArgs(RunArgs):
     deterministic_eval: Optional[bool] = None
     no_print_returns: bool = False
     wandb_run_path: Optional[str] = None
+    video_path: Optional[str] = None
+    override_hparams: Optional[Dict[str, Any]] = None
 
 
 class Evaluation(NamedTuple):
@@ -67,13 +70,20 @@ def evaluate_model(args: EvalArgs, root_dir: str) -> Evaluation:
 
     set_seeds(args.seed, args.use_deterministic_algorithms)
 
+    override_hparams = args.override_hparams or {}
+    if args.n_envs:
+        override_hparams["n_envs"] = args.n_envs
     env = make_eval_env(
         config,
         EnvHyperparams(**config.env_hyperparams),
-        override_hparams={"n_envs": args.n_envs} if args.n_envs else None,
+        override_hparams=override_hparams,
         render=args.render,
         normalize_load_path=model_path,
     )
+    if args.video_path:
+        env = VecEpisodeRecorder(
+            env, args.video_path, max_video_length=18000, num_episodes=args.n_episodes
+        )
     device = get_device(config, env)
     policy = make_policy(
         config,
