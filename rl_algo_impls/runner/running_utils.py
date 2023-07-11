@@ -142,7 +142,7 @@ def make_policy(
     **kwargs,
 ) -> Policy:
     policy = POLICIES[config.algo](env, **kwargs).to(device)
-    if load_run_path:
+    if not load_path and load_run_path:
         import wandb
 
         api = wandb.Api()
