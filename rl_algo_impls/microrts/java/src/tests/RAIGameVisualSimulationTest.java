@@ -63,6 +63,8 @@ public class RAIGameVisualSimulationTest {
         ai1.gameOver(gs.winner());
         ai2.gameOver(gs.winner());
 
+        w.dispose();
+
         System.out.println("Game Over");
     }
 }
