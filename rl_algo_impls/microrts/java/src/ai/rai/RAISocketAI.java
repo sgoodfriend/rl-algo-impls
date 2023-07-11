@@ -104,7 +104,7 @@ public class RAISocketAI extends AIWithComputationBudget {
         outPipe = new DataOutputStream(pythonProcess.getOutputStream());
 
         executor = new ThreadPoolExecutor(
-                2, 4,
+                0, 2,
                 5000, TimeUnit.MILLISECONDS,
                 new LinkedBlockingDeque<Runnable>());
 
@@ -220,6 +220,9 @@ public class RAISocketAI extends AIWithComputationBudget {
         };
         if (timeoutMillis == null) {
             return task.call();
+        }
+        if (DEBUG >= 1 && executor.getPoolSize() == 0) {
+            System.out.println("No active threads in executor. Creating thread.");
         }
         pendingRequestHandler = executor.submit(task);
         try {
