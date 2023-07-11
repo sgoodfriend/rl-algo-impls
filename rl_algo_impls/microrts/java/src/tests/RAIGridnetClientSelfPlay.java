@@ -160,9 +160,9 @@ public class RAIGridnetClientSelfPlay {
     }
 
     public String sendUTT() throws Exception {
-        Writer w = new StringWriter();
-        utt.toJSON(w);
-        return w.toString(); // now it works fine
+        Writer writer = new StringWriter();
+        utt.toJSON(writer);
+        return writer.toString(); // now it works fine
     }
 
     public void reset() throws Exception {
