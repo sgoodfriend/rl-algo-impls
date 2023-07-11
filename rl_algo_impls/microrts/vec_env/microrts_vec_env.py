@@ -1,3 +1,4 @@
+import atexit
 import json
 import logging
 import os
@@ -119,6 +120,7 @@ class MicroRTSGridModeVecEnv(MicroRTSInterface):
             for jar in jars:
                 jpype.addClassPath(os.path.join(self.microrts_path, jar))
             jpype.startJVM(convertStrings=False)
+            atexit.register(jpype.shutdownJVM)
 
         # start microrts client
         from rts.units import UnitTypeTable
@@ -348,7 +350,6 @@ class MicroRTSGridModeVecEnv(MicroRTSInterface):
     def close(self, **kwargs):
         if jpype._jpype.isStarted():
             self.vec_client.close()
-            jpype.shutdownJVM()
 
     def add_listener(self, listener: MicroRTSInterfaceListener) -> None:
         pass

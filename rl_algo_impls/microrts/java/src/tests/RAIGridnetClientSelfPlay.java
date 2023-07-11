@@ -200,7 +200,8 @@ public class RAIGridnetClientSelfPlay {
 
     public void close() throws Exception {
         if (w != null) {
-            w.dispose();
+            System.out.println(this.getClass().getSimpleName() + ": Not disposing frame. Resource Leak!");
+            // w.dispose();
         }
     }
 }
