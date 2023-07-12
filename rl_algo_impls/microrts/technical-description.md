@@ -30,9 +30,9 @@ per turn, which no agents ever exceeded.
 
 | map                     | Video |
 | :---------------------- | :---: |
-| basesWorkers8x8A        |       |
-| FourBasesWorkers8x8     |       |
-| NoWhereToRun9x8         |       |
+| basesWorkers8x8A        | https://github.com/sgoodfriend/rl-algo-impls/assets/1751100/931661d0-003b-4c1a-a3f9-c09c18bfcff9 |
+| FourBasesWorkers8x8     | https://github.com/sgoodfriend/rl-algo-impls/assets/1751100/d7d2469f-8a0f-4007-adc8-800112205e5b |
+| NoWhereToRun9x8         | https://github.com/sgoodfriend/rl-algo-impls/assets/1751100/cc22ad8f-bd5d-4521-a673-337806c58764 |
 | basesWorkers16x16A      |       |
 | TwoBasesBarracks16x16   |       |
 | DoubleGame24x24         |       |
