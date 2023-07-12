@@ -6,8 +6,8 @@
 
 1. Java (tested 11+) and Python 3.8+ must be installed
 2. Download the RAISocketAI archive. For the CoG2023 MicroRTS competition this can be
-   downloaded from https://github.com/sgoodfriend/rl-algo-impls/releases/download/v0.0.38/RAISocketAI-0.0.38.zip
-3. Unzip the archive: `unzip -j RAISocketAI-0.0.38.zip`
+   downloaded from https://github.com/sgoodfriend/rl-algo-impls/releases/download/v0.0.38-bugfix/RAISocketAI-0.0.38-bugfix.zip
+3. Unzip the archive: `unzip -j RAISocketAI-0.0.38-bugfix.zip`
 4. Upgrade and install Python depdendencies:
 
 ```
@@ -26,8 +26,21 @@ The above steps makes `rai_microrts` callable within the terminal. `RAISocketAI.
 uses this to start a Python child process, which is used to compute actions.
 
 To see this demonstrated in Google Colab running a small command-line tournament, open
-[colab_microrts_demo.ipynb](https://github.com/sgoodfriend/rl-algo-impls/blob/v0.0.38/rl_algo_impls/microrts/colab_microrts_demo.ipynb)
+[colab_microrts_demo.ipynb](https://github.com/sgoodfriend/rl-algo-impls/blob/v0.0.38-bugfix/rl_algo_impls/microrts/colab_microrts_demo.ipynb)
 in Google Colab (ideally High-RAM Runtime shape, no Hardware accelator).
+
+### v0.0.38 vs v0.0.38-bugfix
+
+The bugfix build only has a change in the Java-side RAISocketAI where the thread pool is
+allowed to empty to 0 threads. This fixes an issue where scripts would not terminate
+because of threads awaiting tasks in RAISocketAI. The bug does not affect gameplay at all.
+The fix only changes the program end behavior. The Python `.whl` file is exactly the same
+between v0.0.38 and v0.0.38-bugfix.
+
+If you want to continue using
+[v0.0.38](https://github.com/sgoodfriend/rl-algo-impls/releases/download/v0.0.38/RAISocketAI-0.0.38.zip)
+and want to fix the script termination behavior, add `System.exit(0);` at the end of the
+`main` function.
 
 ### Best models variant
 
