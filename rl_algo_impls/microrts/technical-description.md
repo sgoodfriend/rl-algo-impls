@@ -1,0 +1,44 @@
+# Technical Description of IEEE-CoG2023 MicroRTS Submission
+
+## Win-Loss Against Prior Competitors on Public Maps
+
+RAISocketAI regularly beets prior competition winners and baselines on 7 of 8 public
+maps. The exception is the largest map (64x64). Each cell represents the average result
+of RAISocketAI against the opponent AI for 20 matches (10 each as player 1 and player
+2). A win is +1, loss is -1, and draw is 0. Even wins and losses would average to a
+score of 0. A score of 0.9 corresponds to winning 95% of games (assuming no draws).
+
+| map                     | POWorkerRush | POLightRush | CoacAI | mayari | Map Total |
+| :---------------------- | -----------: | ----------: | -----: | -----: | --------: |
+| basesWorkers8x8A        |         0.95 |           1 |      1 |      1 |      0.99 |
+| FourBasesWorkers8x8     |            1 |           1 |    0.9 |      1 |      0.98 |
+| NoWhereToRun9x8         |            1 |           1 |    0.7 |   0.95 |      0.91 |
+| basesWorkers16x16A      |            1 |           1 |    0.9 |    0.8 |      0.92 |
+| TwoBasesBarracks16x16   |            1 |        0.65 |      1 |      1 |      0.91 |
+| DoubleGame24x24         |            1 |        0.95 |    0.9 |      1 |      0.96 |
+| BWDistantResources32x32 |            1 |         0.8 |    0.7 |      1 |      0.88 |
+| (4)BloodBath.scmB       |          0.9 |          -1 |     -1 |     -1 |     -0.52 |
+| AI Total                |         0.98 |        0.68 |   0.64 |   0.72 |      0.75 |
+
+POWorkerRush, POLightRush, and CoacAI use the default AStarPathFinding. The round-robin
+tournamnet was run on an Intel Xeon 8358 with PyTorch limited to 8 threads. The avearge
+execution time per turn varied by map-size with the shortest being NoWhereToRun9x8 (9
+milliseconds) and longest BloodBath (17 milliseconds). The tournament enforced 100 ms
+per turn, which no agents ever exceeded.
+
+## Videos Against Mayari (2021 COG winner)
+
+| map                     | Video |
+| :---------------------- | :---: |
+| basesWorkers8x8A        |       |
+| FourBasesWorkers8x8     |       |
+| NoWhereToRun9x8         |       |
+| basesWorkers16x16A      |       |
+| TwoBasesBarracks16x16   |       |
+| DoubleGame24x24         |       |
+| BWDistantResources32x32 |       |
+| (4)BloodBath.scmB       |       |
+
+## References
+
+<a name="Huang2021">[1]</a> Huang, S., Ontañón, S., Bamford, C., & Grela, L. (2021). Gym-μRTS: Toward Affordable Full Game Real-time Strategy Games Research with Deep Reinforcement Learning. arXiv preprint [arXiv:2105.13807](https://arxiv.org/abs/2105.13807).

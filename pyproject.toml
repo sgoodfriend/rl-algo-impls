@@ -52,7 +52,6 @@ extra = [
     "pybullet",
     "scikit-learn",
     "matplotlib >= 3.7.1",
-    "tabulate",
     "huggingface-hub",
     "pandas",
 ]

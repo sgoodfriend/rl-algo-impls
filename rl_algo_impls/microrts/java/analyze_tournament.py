@@ -1,6 +1,7 @@
 import argparse
 import csv
 import os
+import re
 from io import StringIO
 from typing import Iterator, List, Sequence
 
@@ -44,7 +45,8 @@ if __name__ == "__main__":
         nargs="?",
         default=os.path.expanduser("~/Desktop/tournament.csv"),
     )
-    parser.add_argument("out_filepath", nargs="?", default="~/Desktop/v35.csv")
+    parser.add_argument("out_filepath", nargs="?")
+    parser.add_argument("-m", "--markdown", action="store_true")
     args = parser.parse_args()
 
     with open(args.in_filepath, "r") as f:
@@ -57,8 +59,10 @@ if __name__ == "__main__":
             if r[0] == "iteration":
                 matches = read_matches(r, iterator)
 
-    maps_by_idx = {idx: m for idx, m in enumerate(maps)}
-    ais_by_idx = {idx: ai for idx, ai in enumerate(ais)}
+    maps_by_idx = {
+        idx: os.path.splitext(os.path.basename(m))[0] for idx, m in enumerate(maps)
+    }
+    ais_by_idx = {idx: re.sub(r"\(.*\)", "", ai) for idx, ai in enumerate(ais)}
     df = pd.read_csv(StringIO("\n".join(matches)), delimiter="\t")
 
     ai1_wins = df[(df["ai1"] == 0) & (df["winner"] == 0)]
@@ -136,26 +140,23 @@ if __name__ == "__main__":
 
     if args.out_filepath:
         filepath = os.path.expanduser(args.out_filepath)
+        to_file = (
+            lambda df: df.to_markdown(filepath, mode="a")
+            if args.markdown
+            else df.to_csv(filepath, mode="a")
+        )
         with open(filepath, "w") as f:
             f.write("RAISocketAI Player 1 Wins\n")
-        player_1_points.rename(index=maps_by_idx, columns=ais_by_idx).to_csv(
-            filepath, mode="a"
-        )
+        to_file(player_1_points.rename(index=maps_by_idx, columns=ais_by_idx))
         with open(filepath, "a") as f:
             f.write("RAISocketAI Player 2 Losses\n")
-        player_2_points.rename(index=maps_by_idx, columns=ais_by_idx).to_csv(
-            filepath, mode="a"
-        )
+        to_file(player_2_points.rename(index=maps_by_idx, columns=ais_by_idx))
         with open(filepath, "a") as f:
             f.writelines("RAISocketAI Point Differential\n")
-        points_table.rename(index=maps_by_idx, columns=ais_by_idx).to_csv(
-            filepath, mode="a"
-        )
+        to_file(points_table.rename(index=maps_by_idx, columns=ais_by_idx))
         with open(filepath, "a") as f:
             f.writelines("RAISocketAI Average Execution Time And Over 100ms\n")
-        execution_time.rename(index=maps_by_idx).to_csv(filepath, mode="a")
+        to_file(execution_time.rename(index=maps_by_idx))
         with open(filepath, "a") as f:
             f.writelines("RAISocketAI WinLoss\n")
-        score_table.rename(index=maps_by_idx, columns=ais_by_idx).round(2).to_csv(
-            filepath, mode="a"
-        )
+        to_file(score_table.rename(index=maps_by_idx, columns=ais_by_idx).round(2))
