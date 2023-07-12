@@ -168,11 +168,14 @@ class SqueezeUnetBackbone(nn.Module):
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        e_outs = [self.encoders[0](x)]
-        for encoder in self.encoders[1:]:
-            e_outs.append(encoder(e_outs[-1]))
-        d_out = self.decoders[0](e_outs[-1])
-        for e_out, decoder in zip(reversed(e_outs[:-1]), self.decoders[1:]):
+        e_outs = []
+        for idx, encoder in enumerate(self.encoders):
+            if idx == 0:
+                e_outs.append(encoder(x))
+            else:
+                e_outs.append(encoder(e_outs[-1]))
+        d_out = torch.zeros_like(e_outs[-1])
+        for e_out, decoder in zip(reversed(e_outs), self.decoders):
             d_out = decoder(e_out + d_out)
         return d_out
 
