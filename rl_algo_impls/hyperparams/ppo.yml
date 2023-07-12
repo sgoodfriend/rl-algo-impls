@@ -542,21 +542,6 @@ Microrts-squnet-map8-selfplay: &microrts-squnet-map8-selfplay
       - 0.3
       - 0.2
 
-_Microrts-squnet-map8-kernel-tweaks: &microrts-squnet-map8-kernel-tweaks
-  <<: *microrts-squnet-map8
-  policy_hyperparams:
-    <<: *microrts-squnet-map8-policy-defaults
-    increment_kernel_size_on_down_conv: true
-    conv_transpose_split_large_strides: true
-    conv_transpose_extra_padding: true
-
-Microrts-squnet-map8-kernel-tweaks-selfplay:
-  &microrts-squnet-map8-kernel-tweaks-selfplay
-  <<: *microrts-squnet-map8-kernel-tweaks
-  n_timesteps: !!float 200e6
-  hyperparam_transitions_kwargs:
-    <<: *microrts-squnet-map8-selfplay-phases
-
 _Microrts-squnet-map12: &microrts-squnet-map12
   <<: *microrts-squnet
   env_id: Microrts-squnet-map12
@@ -715,9 +700,9 @@ _Microrts-squnet-deep16-128: &microrts-squnet-deep16-128
     <<: *microrts-squnet-map16-policy-defaults
     channels_per_level: [128, 128, 128]
     strides_per_level: [4, 4]
+    conv_strides_per_level: [[2, 2], [2, 2]]
     encoder_residual_blocks_per_level: [3, 2, 4]
     decoder_residual_blocks_per_level: [2, 3]
-    conv_transpose_split_large_strides: true
   algo_hyperparams: &microrts-squnet-deep16-128-algo-defaults
     <<: *microrts-squnet-map16-algo-defaults
     batch_size: 6144
@@ -734,9 +719,9 @@ _Microrts-dc-repro-map16: &microrts-dc-repro-map16
     <<: *microrts-squnet-map16-policy-defaults
     channels_per_level: [128, 128]
     strides_per_level: [4]
+    conv_strides_per_level: [[2, 2]]
     encoder_residual_blocks_per_level: [4, 6]
     decoder_residual_blocks_per_level: [4]
-    conv_transpose_split_large_strides: true
   algo_hyperparams: &microrts-dc-repro-map16-algo-defaults
     <<: *microrts-squnet-map16-algo-defaults
     batch_size: 4096

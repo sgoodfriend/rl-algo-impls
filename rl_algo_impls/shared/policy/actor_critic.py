@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from typing import List, NamedTuple, Optional, Sequence, Tuple, TypeVar
+from typing import List, NamedTuple, Optional, Sequence, Tuple, TypeVar, Union
 
 import gym
 import numpy as np
@@ -124,12 +124,11 @@ class ActorCritic(OnPolicy):
         additional_critic_activation_functions: Optional[List[str]] = None,
         gelu_pool_conv: bool = True,
         channels_per_level: Optional[List[int]] = None,
-        strides_per_level: Optional[List[int]] = None,
+        strides_per_level: Optional[List[Union[int, List[int]]]] = None,
+        conv_strides_per_level: Optional[List[Union[int, List[int]]]] = None,
         encoder_residual_blocks_per_level: Optional[List[int]] = None,
         decoder_residual_blocks_per_level: Optional[List[int]] = None,
         increment_kernel_size_on_down_conv: bool = False,
-        conv_transpose_split_large_strides: bool = False,
-        conv_transpose_extra_padding: bool = False,
         **kwargs,
     ) -> None:
         super().__init__(env, **kwargs)
@@ -184,11 +183,10 @@ class ActorCritic(OnPolicy):
                 critic_channels=critic_channels,
                 channels_per_level=channels_per_level,
                 strides_per_level=strides_per_level,
+                conv_strides_per_level=conv_strides_per_level,
                 encoder_residual_blocks_per_level=encoder_residual_blocks_per_level,
                 decoder_residual_blocks_per_level=decoder_residual_blocks_per_level,
                 increment_kernel_size_on_down_conv=increment_kernel_size_on_down_conv,
-                conv_transpose_split_large_strides=conv_transpose_split_large_strides,
-                conv_transpose_extra_padding=conv_transpose_extra_padding,
             )
         elif share_features_extractor:
             self.network = ConnectedTrioActorCriticNetwork(

@@ -32,7 +32,7 @@ class BackboneActorCritic(ActorCriticNetwork):
         critic_channels: int = 64,
         init_layers_orthogonal: bool = True,
         cnn_layers_init_orthogonal: bool = False,
-        strides: Sequence[int] = (2, 2),
+        strides: Sequence[Union[int, Sequence[int]]] = (2, 2),
     ):
         if num_additional_critics and not additional_critic_activation_functions:
             additional_critic_activation_functions = [
@@ -95,8 +95,17 @@ class BackboneActorCritic(ActorCriticNetwork):
                     nn.GELU(),
                 ]
 
-            down_convs = down_conv(backbone_out_channels, critic_channels, strides[0])
-            for s in strides[1:]:
+            flattened_strides = []
+            for s in strides:
+                if isinstance(s, list):
+                    flattened_strides.extend(s)
+                else:
+                    flattened_strides.append(s)
+
+            down_convs = down_conv(
+                backbone_out_channels, critic_channels, flattened_strides[0]
+            )
+            for s in flattened_strides[1:]:
                 down_convs.extend(down_conv(critic_channels, critic_channels, s))
             return nn.Sequential(
                 *(
