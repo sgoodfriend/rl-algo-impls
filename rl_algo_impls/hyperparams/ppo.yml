@@ -717,6 +717,7 @@ _Microrts-squnet-deep16-128: &microrts-squnet-deep16-128
     strides_per_level: [4, 4]
     encoder_residual_blocks_per_level: [3, 2, 4]
     decoder_residual_blocks_per_level: [2, 3]
+    conv_transpose_split_large_strides: true
   algo_hyperparams: &microrts-squnet-deep16-128-algo-defaults
     <<: *microrts-squnet-map16-algo-defaults
     batch_size: 6144
