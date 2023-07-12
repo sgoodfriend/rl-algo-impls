@@ -62,6 +62,7 @@ def make_microrts_env(
         fixed_size,
         terrain_overrides,
         time_budget_ms,
+        video_frames_per_second,
     ) = astuple(hparams)
 
     seed = config.seed(training=training)
@@ -160,7 +161,9 @@ def make_microrts_env(
             make_kwargs["map_paths"] = _map_paths
         make_kwargs["ai2s"] = ai2s
 
-        envs = MicroRTSGridModeVecEnv(**make_kwargs)
+        envs = MicroRTSGridModeVecEnv(
+            **make_kwargs, video_frames_per_second=video_frames_per_second
+        )
     else:
         envs = MicroRTSSocketEnv.singleton(time_budget_ms=time_budget_ms)
     envs = MicroRTSSpaceTransform(

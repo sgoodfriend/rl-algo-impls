@@ -8,6 +8,7 @@ from rl_algo_impls.runner.evaluate import EvalArgs, evaluate_model
 class VideoParams:
     wandb_run_path: str
     map_name: str
+    video_fps: int = 150
 
 
 MAP_NAME_TO_PATH = {
@@ -23,16 +24,40 @@ MAP_NAME_TO_PATH = {
 
 
 VIDEOS = [
-    VideoParams("sgoodfriend/rl-algo-impls-benchmarks/1ilo9yae", "basesWorkers8x8A"),
-    VideoParams("sgoodfriend/rl-algo-impls-benchmarks/1ilo9yae", "FourBasesWorkers8x8"),
-    VideoParams("sgoodfriend/rl-algo-impls-benchmarks/1ilo9yae", "basesWorkers16x16A"),
     VideoParams(
-        "sgoodfriend/rl-algo-impls-benchmarks/1ilo9yae", "TwoBasesBarracks16x16"
+        "sgoodfriend/rl-algo-impls-benchmarks/1ilo9yae",
+        "basesWorkers8x8A",
+        video_fps=30,
     ),
-    VideoParams("sgoodfriend/rl-algo-impls-benchmarks/vmns9sbe", "NoWhereToRun9x8"),
-    VideoParams("sgoodfriend/rl-algo-impls-benchmarks/unnxtprk", "DoubleGame24x24"),
     VideoParams(
-        "sgoodfriend/rl-algo-impls-benchmarks/x4tg80vk", "BWDistantResources32x32"
+        "sgoodfriend/rl-algo-impls-benchmarks/1ilo9yae",
+        "FourBasesWorkers8x8",
+        video_fps=30,
+    ),
+    VideoParams(
+        "sgoodfriend/rl-algo-impls-benchmarks/1ilo9yae",
+        "basesWorkers16x16A",
+        video_fps=30,
+    ),
+    VideoParams(
+        "sgoodfriend/rl-algo-impls-benchmarks/1ilo9yae",
+        "TwoBasesBarracks16x16",
+        video_fps=30,
+    ),
+    VideoParams(
+        "sgoodfriend/rl-algo-impls-benchmarks/vmns9sbe",
+        "NoWhereToRun9x8",
+        video_fps=30,
+    ),
+    VideoParams(
+        "sgoodfriend/rl-algo-impls-benchmarks/unnxtprk",
+        "DoubleGame24x24",
+        video_fps=30,
+    ),
+    VideoParams(
+        "sgoodfriend/rl-algo-impls-benchmarks/x4tg80vk",
+        "BWDistantResources32x32",
+        video_fps=30,
     ),
     VideoParams("sgoodfriend/rl-algo-impls-benchmarks/nh5pdv4o", "BloodBath"),
 ]
@@ -51,6 +76,7 @@ if __name__ == "__main__":
             override_hparams={
                 "bots": {"mayari": 1},
                 "map_paths": [MAP_NAME_TO_PATH[vp.map_name]],
+                "video_frames_per_second": vp.video_fps,
             },
         )
         evaluate_model(args, os.getcwd())

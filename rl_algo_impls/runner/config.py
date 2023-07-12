@@ -62,6 +62,7 @@ class EnvHyperparams:
     fixed_size: bool = False
     terrain_overrides: Optional[Dict[str, Any]] = None
     time_budget_ms: Optional[int] = None
+    video_frames_per_second: Optional[int] = None
 
 
 HyperparamsSelf = TypeVar("HyperparamsSelf", bound="Hyperparams")

@@ -38,7 +38,6 @@ UTT_VERSION_ORIGINAL_FINETUNED = 2
 
 
 class MicroRTSGridModeVecEnv(MicroRTSInterface):
-    metadata = {"render.modes": ["human", "rgb_array"], "video.frames_per_second": 150}
     DEBUG_VERIFY = False
     """
     [[0]x_coordinate*y_coordinate(x*y), [1]a_t(6), [2]p_move(4), [3]p_harvest(4), 
@@ -61,6 +60,7 @@ class MicroRTSGridModeVecEnv(MicroRTSInterface):
         reward_weight=np.array([10.0, 1.0, 1.0, 0.2, 1.0, 4.0, 5.25, 6.0, 0]),
         cycle_maps=[],
         bot_envs_alternate_player: bool = False,
+        video_frames_per_second: Optional[int] = None,
     ):
         self.num_selfplay_envs = num_selfplay_envs
         self.num_bot_envs = num_bot_envs
@@ -83,6 +83,12 @@ class MicroRTSGridModeVecEnv(MicroRTSInterface):
                 len(map_paths) == self.num_envs
             ), "if multiple maps are provided, they should be provided for each environment"
         self.reward_weight = reward_weight
+        self.metadata = {
+            "render.modes": ["human", "rgb_array"],
+            "video.frames_per_second": video_frames_per_second
+            if video_frames_per_second is not None
+            else 150,
+        }
 
         self.microrts_path = os.path.join(Path(__file__).parent.parent, "java")
 
