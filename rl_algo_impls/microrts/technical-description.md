@@ -28,17 +28,16 @@ per turn, which no agents ever exceeded.
 
 ## Videos Against Mayari (2021 COG winner)
 
-
-| map                     | Video |
-| :---------------------- | :---: |
-| basesWorkers8x8A        | <video src="https://github.com/sgoodfriend/rl-algo-impls/assets/1751100/931661d0-003b-4c1a-a3f9-c09c18bfcff9" />  |
-| FourBasesWorkers8x8     | https://github.com/sgoodfriend/rl-algo-impls/assets/1751100/d7d2469f-8a0f-4007-adc8-800112205e5b |
-| NoWhereToRun9x8         | https://github.com/sgoodfriend/rl-algo-impls/assets/1751100/cc22ad8f-bd5d-4521-a673-337806c58764 |
-| basesWorkers16x16A      | https://github.com/sgoodfriend/rl-algo-impls/assets/1751100/72934fdc-5d49-438e-91a3-13b79130fd91 |
-| TwoBasesBarracks16x16   | https://github.com/sgoodfriend/rl-algo-impls/assets/1751100/5fb19b95-7353-4a03-a09c-ea55a9795eac |
-| DoubleGame24x24         | https://github.com/sgoodfriend/rl-algo-impls/assets/1751100/d9579fa6-8eb8-4eab-acf7-39b09f0bcd55 |
-| BWDistantResources32x32 | https://github.com/sgoodfriend/rl-algo-impls/assets/1751100/62f04c88-3d58-43c5-94ab-7705d6abe886 |
-| (4)BloodBath.scmB       | https://github.com/sgoodfriend/rl-algo-impls/assets/1751100/0de8632e-a147-403d-b650-486fc3f703b3 |
+| map                     |                                                      Video                                                       |
+| :---------------------- | :--------------------------------------------------------------------------------------------------------------: |
+| basesWorkers8x8A        | <video src="https://github.com/sgoodfriend/rl-algo-impls/assets/1751100/931661d0-003b-4c1a-a3f9-c09c18bfcff9" /> |
+| FourBasesWorkers8x8     | <video src="https://github.com/sgoodfriend/rl-algo-impls/assets/1751100/d7d2469f-8a0f-4007-adc8-800112205e5b" /> |
+| NoWhereToRun9x8         | <video src="https://github.com/sgoodfriend/rl-algo-impls/assets/1751100/cc22ad8f-bd5d-4521-a673-337806c58764" /> |
+| basesWorkers16x16A      | <video src="https://github.com/sgoodfriend/rl-algo-impls/assets/1751100/72934fdc-5d49-438e-91a3-13b79130fd91" /> |
+| TwoBasesBarracks16x16   | <video src="https://github.com/sgoodfriend/rl-algo-impls/assets/1751100/5fb19b95-7353-4a03-a09c-ea55a9795eac" /> |
+| DoubleGame24x24         | <video src="https://github.com/sgoodfriend/rl-algo-impls/assets/1751100/d9579fa6-8eb8-4eab-acf7-39b09f0bcd55" /> |
+| BWDistantResources32x32 | <video src="https://github.com/sgoodfriend/rl-algo-impls/assets/1751100/62f04c88-3d58-43c5-94ab-7705d6abe886" /> |
+| (4)BloodBath.scmB       | <video src="https://github.com/sgoodfriend/rl-algo-impls/assets/1751100/0de8632e-a147-403d-b650-486fc3f703b3" /> |
 
 ## References
 
