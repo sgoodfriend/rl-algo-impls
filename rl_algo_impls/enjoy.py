@@ -35,7 +35,7 @@ def enjoy() -> None:
         render=False,
         override_hparams='{"bots":{"mayari":1}}',
         video_path=os.path.expanduser("~/Desktop/NoWhereToRun-RAISocketAI-Mayari"),
-        tensorboard_folder="visualize_model",
+        # tensorboard_folder="visualize_model",
         thop=True,
     )
     args = parser.parse_args()
