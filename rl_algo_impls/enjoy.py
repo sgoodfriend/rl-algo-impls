@@ -24,13 +24,19 @@ def enjoy() -> None:
         "--video-path", type=str, help="Path to save video of all plays"
     )
     parser.add_argument("--override-hparams", default=None, type=str)
+    parser.add_argument("--visualize-model-path", default=None, type=str)
+    parser.add_argument(
+        "--thop", action="store_true", help="Output MACs and num parameters"
+    )
     parser.set_defaults(
         algo=["ppo"],
         wandb_run_path="sgoodfriend/rl-algo-impls-benchmarks/vmns9sbe",
         n_episodes=1,
-        # render=False,
-        # override_hparams='{"bots":{"mayari":1}}',
-        # video_path=os.path.expanduser("~/Desktop/NoWhereToRun-RAISocketAI-Mayari"),
+        render=False,
+        override_hparams='{"bots":{"mayari":1}}',
+        video_path=os.path.expanduser("~/Desktop/NoWhereToRun-RAISocketAI-Mayari"),
+        visualize_model_path=os.path.expanduser("~/Desktop/model"),
+        thop=True,
     )
     args = parser.parse_args()
     args.algo = args.algo[0]

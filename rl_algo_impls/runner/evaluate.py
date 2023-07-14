@@ -3,6 +3,9 @@ import shutil
 from dataclasses import dataclass
 from typing import Any, Dict, NamedTuple, Optional
 
+import numpy as np
+
+from rl_algo_impls.ppo.rollout import flatten_actions_to_tensor, flatten_to_tensor
 from rl_algo_impls.runner.config import Config, EnvHyperparams, Hyperparams, RunArgs
 from rl_algo_impls.runner.running_utils import (
     get_device,
@@ -13,6 +16,7 @@ from rl_algo_impls.runner.running_utils import (
 from rl_algo_impls.shared.callbacks.eval_callback import evaluate
 from rl_algo_impls.shared.policy.policy import Policy
 from rl_algo_impls.shared.stats import EpisodesStats
+from rl_algo_impls.shared.tensor_utils import batch_dict_keys
 from rl_algo_impls.shared.vec_env import make_eval_env
 from rl_algo_impls.wrappers.vec_episode_recorder import VecEpisodeRecorder
 
@@ -28,6 +32,8 @@ class EvalArgs(RunArgs):
     wandb_run_path: Optional[str] = None
     video_path: Optional[str] = None
     override_hparams: Optional[Dict[str, Any]] = None
+    visualize_model_path: Optional[str] = None
+    thop: bool = False
 
 
 class Evaluation(NamedTuple):
@@ -98,6 +104,38 @@ def evaluate_model(args: EvalArgs, root_dir: str) -> Evaluation:
         if args.deterministic_eval is not None
         else config.eval_hyperparams.get("deterministic", True)
     )
+    if args.visualize_model_path or args.thop:
+        obs = env.reset()
+        get_action_mask = getattr(env, "get_action_mask", None)
+        action_masks = batch_dict_keys(get_action_mask()) if get_action_mask else None
+        act = policy.act(
+            obs,
+            deterministic=deterministic,
+            action_masks=action_masks,
+        )
+        assert isinstance(obs, np.ndarray)
+        t_obs = flatten_to_tensor(obs, device)
+        t_act = flatten_actions_to_tensor(act, device)
+        t_action_mask = (
+            flatten_actions_to_tensor(action_masks, device)
+            if action_masks is not None
+            else None
+        )
+        inputs = (t_obs, t_act, t_action_mask)
+
+        if args.visualize_model_path:
+            import torchviz
+
+            logp_a, _, _ = policy(*inputs)
+            torchviz.make_dot(
+                logp_a.mean(), params=dict(policy.named_parameters())
+            ).render(args.visualize_model_path, format="png")
+        if args.thop:
+            import thop
+
+            thop_out = thop.profile(policy, inputs=inputs)
+            print(f"MACs: {thop_out[0] / 1e9:.2f}B. Params: {int(thop_out[1]):,}")
+
     return Evaluation(
         policy,
         evaluate(

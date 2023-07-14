@@ -9,6 +9,7 @@ class VideoParams:
     wandb_run_path: str
     map_name: str
     video_fps: int = 150
+    video_suffix: str = ""
 
 
 MAP_NAME_TO_PATH = {
@@ -60,6 +61,12 @@ VIDEOS = [
         video_fps=30,
     ),
     VideoParams("sgoodfriend/rl-algo-impls-benchmarks/nh5pdv4o", "BloodBath"),
+    VideoParams(
+        "sgoodfriend/rl-algo-impls-microrts-2023/jl8zkpfr",
+        "BWDistantResources32x32",
+        video_fps=60,
+        video_suffix="-squnet",
+    ),
 ]
 
 if __name__ == "__main__":
@@ -71,12 +78,13 @@ if __name__ == "__main__":
             n_episodes=1,
             wandb_run_path=vp.wandb_run_path,
             video_path=os.path.expanduser(
-                f"~/Desktop/{vp.map_name}-RAISocketAI-Mayari"
+                f"~/Desktop/{vp.map_name}-RAISocketAI-Mayari{vp.video_suffix}"
             ),
             override_hparams={
                 "bots": {"mayari": 1},
                 "map_paths": [MAP_NAME_TO_PATH[vp.map_name]],
                 "video_frames_per_second": vp.video_fps,
             },
+            thop=True,
         )
         evaluate_model(args, os.getcwd())

@@ -54,6 +54,8 @@ extra = [
     "matplotlib >= 3.7.1",
     "huggingface-hub",
     "pandas",
+    "torchviz",
+    "thop",
 ]
 optuna = [
     "optuna",
