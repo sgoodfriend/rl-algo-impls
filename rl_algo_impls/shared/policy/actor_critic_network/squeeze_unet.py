@@ -20,7 +20,7 @@ class SqueezeUnetBackbone(nn.Module):
         strides_per_level: List[Union[int, List[int]]],
         encoder_residual_blocks_per_level: List[int],
         decoder_residual_blocks_per_level: List[int],
-        conv_strides_per_level: Optional[List[Union[int, List[int]]]] = None,
+        deconv_strides_per_level: Optional[List[Union[int, List[int]]]] = None,
         init_layers_orthogonal: bool = False,
         increment_kernel_size_on_down_conv: bool = False,
     ) -> None:
@@ -123,14 +123,14 @@ class SqueezeUnetBackbone(nn.Module):
                 layers.append(nn.GELU())
             return layers
 
-        conv_strides_per_level = conv_strides_per_level or strides_per_level
+        deconv_strides_per_level = deconv_strides_per_level or strides_per_level
         self.decoders = nn.ModuleList(
             [
                 nn.Sequential(
                     *conv_transpose_2d(
                         channels_per_level[-1],
                         channels_per_level[-2],
-                        conv_strides_per_level[-1],
+                        deconv_strides_per_level[-1],
                     )
                 )
             ]
@@ -138,7 +138,7 @@ class SqueezeUnetBackbone(nn.Module):
         for channels, out_channels, stride, num_residual_blocks in zip(
             reversed(channels_per_level[1:-1]),
             reversed(channels_per_level[:-2]),
-            reversed(conv_strides_per_level[:-1]),
+            reversed(deconv_strides_per_level[:-1]),
             reversed(decoder_residual_blocks_per_level[:-1]),
         ):
             self.decoders.append(
@@ -190,7 +190,7 @@ class SqueezeUnetActorCriticNetwork(BackboneActorCritic):
         cnn_layers_init_orthogonal: Optional[bool] = None,
         channels_per_level: Optional[List[int]] = None,
         strides_per_level: Optional[List[Union[int, List[int]]]] = None,
-        conv_strides_per_level: Optional[List[Union[int, List[int]]]] = None,
+        deconv_strides_per_level: Optional[List[Union[int, List[int]]]] = None,
         encoder_residual_blocks_per_level: Optional[List[int]] = None,
         decoder_residual_blocks_per_level: Optional[List[int]] = None,
         num_additional_critics: int = 0,
@@ -223,7 +223,7 @@ class SqueezeUnetActorCriticNetwork(BackboneActorCritic):
             strides_per_level,
             encoder_residual_blocks_per_level,
             decoder_residual_blocks_per_level,
-            conv_strides_per_level=conv_strides_per_level,
+            deconv_strides_per_level=deconv_strides_per_level,
             init_layers_orthogonal=cnn_layers_init_orthogonal,
             increment_kernel_size_on_down_conv=increment_kernel_size_on_down_conv,
         )

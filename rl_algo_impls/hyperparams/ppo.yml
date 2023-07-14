@@ -700,7 +700,7 @@ _Microrts-squnet-deep16-128: &microrts-squnet-deep16-128
     <<: *microrts-squnet-map16-policy-defaults
     channels_per_level: [128, 128, 128]
     strides_per_level: [4, 4]
-    conv_strides_per_level: [[2, 2], [2, 2]]
+    deconv_strides_per_level: [[2, 2], [2, 2]]
     encoder_residual_blocks_per_level: [3, 2, 4]
     decoder_residual_blocks_per_level: [2, 3]
   algo_hyperparams: &microrts-squnet-deep16-128-algo-defaults
@@ -735,7 +735,7 @@ _Microrts-dc-repro-map16: &microrts-dc-repro-map16
     <<: *microrts-squnet-map16-policy-defaults
     channels_per_level: [128, 128]
     strides_per_level: [4]
-    conv_strides_per_level: [[2, 2]]
+    deconv_strides_per_level: [[2, 2]]
     encoder_residual_blocks_per_level: [4, 6]
     decoder_residual_blocks_per_level: [4]
   algo_hyperparams: &microrts-dc-repro-map16-algo-defaults
