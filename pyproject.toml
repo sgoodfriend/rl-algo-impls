@@ -56,6 +56,7 @@ extra = [
     "pandas",
     "torchviz",
     "thop",
+    "onnx",
 ]
 optuna = [
     "optuna",

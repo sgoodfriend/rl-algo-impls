@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Any, Dict, NamedTuple, Optional
 
 import numpy as np
+from torch.utils.tensorboard.writer import SummaryWriter
 
 from rl_algo_impls.ppo.rollout import flatten_actions_to_tensor, flatten_to_tensor
 from rl_algo_impls.runner.config import Config, EnvHyperparams, Hyperparams, RunArgs
@@ -34,6 +35,7 @@ class EvalArgs(RunArgs):
     override_hparams: Optional[Dict[str, Any]] = None
     visualize_model_path: Optional[str] = None
     thop: bool = False
+    tensorboard_folder: Optional[str] = None
 
 
 class Evaluation(NamedTuple):
@@ -104,7 +106,7 @@ def evaluate_model(args: EvalArgs, root_dir: str) -> Evaluation:
         if args.deterministic_eval is not None
         else config.eval_hyperparams.get("deterministic", True)
     )
-    if args.visualize_model_path or args.thop:
+    if args.visualize_model_path or args.thop or args.tensorboard_folder:
         obs = env.reset()
         get_action_mask = getattr(env, "get_action_mask", None)
         action_masks = batch_dict_keys(get_action_mask()) if get_action_mask else None
@@ -123,6 +125,10 @@ def evaluate_model(args: EvalArgs, root_dir: str) -> Evaluation:
         )
         inputs = (t_obs, t_act, t_action_mask)
 
+        if args.tensorboard_folder:
+            writer = SummaryWriter(args.tensorboard_folder)
+            writer.add_graph(policy, inputs)
+            writer.close()
         if args.visualize_model_path:
             import torchviz
 
