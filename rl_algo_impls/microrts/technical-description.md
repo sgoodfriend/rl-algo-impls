@@ -1,51 +1,12 @@
 # Technical Description of IEEE-CoG2023 MicroRTS Submission
 
-## Win-Loss Against Prior Competitors on Public Maps
-
-RAISocketAI regularly beets prior competition winners and baselines on 7 of 8 public
-maps. The exception is the largest map (64x64). Each cell represents the average result
-of RAISocketAI against the opponent AI for 20 matches (10 each as player 1 and player
-2). A win is +1, loss is -1, and draw is 0. Even wins and losses would average to a
-score of 0. A score of 0.9 corresponds to winning 95% of games (assuming no draws).
-
-| map                     | POWorkerRush | POLightRush | CoacAI | Mayari | Map Total |
-| :---------------------- | -----------: | ----------: | -----: | -----: | --------: |
-| basesWorkers8x8A        |         0.95 |           1 |      1 |      1 |      0.99 |
-| FourBasesWorkers8x8     |            1 |           1 |    0.9 |      1 |      0.98 |
-| NoWhereToRun9x8         |            1 |           1 |    0.7 |   0.95 |      0.91 |
-| basesWorkers16x16A      |            1 |           1 |    0.9 |    0.8 |      0.92 |
-| TwoBasesBarracks16x16   |            1 |        0.65 |      1 |      1 |      0.91 |
-| DoubleGame24x24         |            1 |        0.95 |    0.9 |      1 |      0.96 |
-| BWDistantResources32x32 |            1 |         0.8 |    0.7 |      1 |      0.88 |
-| (4)BloodBath.scmB       |          0.9 |          -1 |     -1 |     -1 |     -0.52 |
-| AI Total                |         0.98 |        0.68 |   0.64 |   0.72 |      0.75 |
-
-POWorkerRush, POLightRush, and CoacAI use the default AStarPathFinding. The round-robin
-tournamnet was run on an Intel Xeon 8358 with PyTorch limited to 8 threads. The avearge
-execution time per turn varied by map-size with the shortest being NoWhereToRun9x8 (9
-milliseconds) and longest BloodBath (17 milliseconds). The tournament enforces 100 ms
-per turn, which no agents ever exceeded.
-
-## Videos Against Mayari (2021 COG winner)
-
-| map                     |                                                      Video                                                       |
-| :---------------------- | :--------------------------------------------------------------------------------------------------------------: |
-| basesWorkers8x8A        | <video src="https://github.com/sgoodfriend/rl-algo-impls/assets/1751100/931661d0-003b-4c1a-a3f9-c09c18bfcff9" /> |
-| FourBasesWorkers8x8     | <video src="https://github.com/sgoodfriend/rl-algo-impls/assets/1751100/d7d2469f-8a0f-4007-adc8-800112205e5b" /> |
-| NoWhereToRun9x8         | <video src="https://github.com/sgoodfriend/rl-algo-impls/assets/1751100/cc22ad8f-bd5d-4521-a673-337806c58764" /> |
-| basesWorkers16x16A      | <video src="https://github.com/sgoodfriend/rl-algo-impls/assets/1751100/72934fdc-5d49-438e-91a3-13b79130fd91" /> |
-| TwoBasesBarracks16x16   | <video src="https://github.com/sgoodfriend/rl-algo-impls/assets/1751100/5fb19b95-7353-4a03-a09c-ea55a9795eac" /> |
-| DoubleGame24x24         | <video src="https://github.com/sgoodfriend/rl-algo-impls/assets/1751100/d9579fa6-8eb8-4eab-acf7-39b09f0bcd55" /> |
-| BWDistantResources32x32 | <video src="https://github.com/sgoodfriend/rl-algo-impls/assets/1751100/62f04c88-3d58-43c5-94ab-7705d6abe886" /> |
-| (4)BloodBath.scmB       | <video src="https://github.com/sgoodfriend/rl-algo-impls/assets/1751100/0de8632e-a147-403d-b650-486fc3f703b3" /> |
-
 ## Agent Overview
 
 RAISocketAI is a Java class that communicates with a Python process to determine
 actions. RAISocketAI launches the Python process and uses pipes for write and read to
 the process.
 
-The Python process loads up 7 different models. During a game, only one model
+The Python process loads up 7 different models. During a match, only one model
 is used based on the map:
 
 - ppo-Microrts-finetuned-NoWhereToRun-S1-best: NoWhereToRun9x8
@@ -61,14 +22,13 @@ is used based on the map:
 - ppo-Microrts-squnet-map64-64ch-selfplay-S1-best: Maps where the longest dimension is
   over 32
 
-For the tournament above that used public maps on a fast computer, only the first 4
+For the tournament in the [README](https://github.com/sgoodfriend/rl-algo-impls/blob/main/rl_algo_impls/microrts/README.md#win-loss-against-prior-competitors-on-public-maps), which used public maps on a fast computer, only the first 4
 models are used (none of the "squnet" models). The first 4 models (non-squnet) use the
 same model architecture. ppo-Microrts-A6000-finetuned-coac-mayari-S1-best (**DoubleCone**) was initially
 trained as a base model. The other 3 models were finetuned from the base model training
 on their specific maps.
 
-The "DoubleCone" models is a reimplementation of LUX Season 2 4th place
-winner's model [[3]](#FLG2023):
+The DoubleCone models is a reimplementation of LUX Season 2 4th place winner's model [[3]](#FLG2023):
 
 1. 4 residual blocks
 2. A block with a stride-4 convolution, 6 residual blocks, and 2 stride-2 transpose
@@ -76,14 +36,139 @@ winner's model [[3]](#FLG2023):
 3. 4 residual blocks
 4. Actor and critic heads.
 
+```mermaid
+graph TD
+	Obs[/"Observation, 22×L×L"/]
+	InConv["Conv 3×3, GELU, 128"]
+	EncRes1["ResBlock×4, 128"]
+	subgraph DoubleConeBlock["<b>DoubleConeBlock</b>"]
+	Split1((" "))
+	Add1(("+"))
+	Down1["Conv 4×4, stride=4, GELU, 128"]
+	EncRes2["ResBlock×6, 128"]
+	Up1["ConvTranspose 2×2, stride=2, GELU, ×2"]
+	end
+	DecRes1["ResBlock×4, 128"]
+	SplitHead((" "))
+	subgraph ActorHead["<b>Actor Head</b>&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"]
+	ActorConv["Conv 3×3, GELU, 78"]
+	ActorLogits[/"Logits, L×L×78"/]
+	Action[/"Action, L<sup>2</sup>×7"/]
+	end
+	ValueHeads["3×Value Heads"]
+	Value[/"Value, 3"/]
+
+  Obs --> InConv
+	InConv --> EncRes1
+	EncRes1 --> Split1
+	Add1 --> DecRes1
+	Split1 --> Down1
+	Down1 --> EncRes2
+	EncRes2 --> Up1
+	Up1 --> Add1
+	Split1 ---> Add1
+	DecRes1 --> SplitHead
+	SplitHead --> ActorConv
+	ActorConv -- Transpose --> ActorLogits
+	ActorLogits -- GridnetDistribution --> Action
+	SplitHead --> ValueHeads
+	ValueHeads --> Value
+```
+
 Each residual block includes a SqueezeAndExcitation layer.
+
+```mermaid
+graph TD
+  Input[/"Input, C×L×L"/]
+	Split1((" "))
+	Conv1["Conv 3×3, GELU, C"]
+	Conv2["Conv 3×3, C"]
+	subgraph SqueezeExcitation["SqueezeAndExcitation&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"]
+		Split2((" "))
+		Linear1["Linear, GELU, C/r"]
+		Linear2["Linear, Sigmoid, C"]
+		Mult(("×"))
+	end
+	Add(("+"))
+	Output[/"Output, C×L×L"/]
+
+	Input --> Split1
+	Split1 --> Conv1
+	Conv1 --> Conv2
+	Conv2 --> Split2
+	Split2 -- "AdaptiveAvgPool2d(1)" --> Linear1
+	Linear1 --> Linear2
+	Linear2 --> Mult
+	Split2 --> Mult
+	Mult --> Add
+	Split1 --> Add
+	Add -- GELU --> Output
+```
 
 The "squnet" models are similar to "DoubleCone" in the use of residual blocks with
 squeeze-and-excitation and residual connections across convolution-deconvolution blocks.
 However, squnet more mimics a U-net architecture in that there are multiple strided
-convolution layers to increase receptive field. The table below shows the number of
-levels, residual blocks, strides, and other statistics between the DoubleCone and squnet
-models:
+convolution layers to increase receptive field.
+
+```mermaid
+graph TD
+	Obs[/"Observation, 74×64×64"/]
+	InConv["Conv 3×3, GELU, 64"]
+	EncRes1["ResBlock×1, 64"]
+	subgraph DC32["<b>32×32</b>"]
+		Split1((" "))
+		Add1(("+"))
+		Down1["Conv 2×2, stride=2, GELU, 64"]
+		EncRes2["ResBlock×1, 64"]
+		subgraph DC8["<b>8×8</b>"]
+			Split2((" "))
+			Add2(("+"))
+			Down2["Conv 4×4, stride=4, GELU, 64"]
+			EncRes3["ResBlock×1, 64"]
+			subgraph DC2["<b>2×2</b>"]
+				Split3((" "))
+				Add3(("+"))
+				Down3["Conv 4×4, stride=4, GELU, 64"]
+				EncRes4["ResBlock×1, 64"]
+				Up3["ConvTranspose 4×4, stride=4, GELU", 64]
+			end
+			DecRes3["ResBlock×1, 64"]
+			Up2["ConvTranspose 4×4, stride=4, GELU, 64"]
+		end
+		DecRes2["ResBlock×1, 64"]
+	Up1["ConvTranspose 2×2, stride=2, GELU, 64"]
+	end
+	DecRes1["ResBlock×1, 64"]
+	Heads["Actor Head, 3×Value Heads"]
+
+  Obs --> InConv
+	InConv --> EncRes1
+	EncRes1 --> Split1
+		Split1 --> Down1
+		Down1 --> EncRes2
+		EncRes2 --> Split2
+			Split2 --> Down2
+			Down2 --> EncRes3
+			EncRes3 --> Split3
+				Split3 --> Down3
+				Down3 --> EncRes4
+				EncRes4 --> Up3
+				Up3 --> Add3
+				Split3 --> Add3
+				Add3 --> DecRes3
+			DecRes3 --> Up2
+			Up2 --> Add2
+			Split2 --> Add2
+			Add2 --> DecRes2
+			DecRes2 --> Up1
+			Up1 --> Add1
+			Split1 ---> Add1
+		Add1 --> DecRes1
+	DecRes1 --> Heads
+```
+
+The table below shows the number of levels, residual blocks, strides, and other
+statistics between the DoubleCone and squnet models:
 
 |                               | DoubleCone                                                                               | squnet-map32         | squnet-map64     |
 | ----------------------------- | ---------------------------------------------------------------------------------------- | -------------------- | ---------------- |
@@ -109,11 +194,219 @@ functions:
 1. Dense reward similar to [[1]](#Huang2021Gym), except reward for building combat units
    is split by combat unit type scaled by build-time. Linear activation.
 2. Win-loss sparse reward ranging from +1 for win and -1 for loss. Tanh activation.
-3. Cost-based unit score similar to [[4]](#Clemens2021)
+3. Difference in units based on cost similar to [[4]](#Clemens2021). Linear activation
 
 These 3 value heads are used to mix-and-match rewards over the course of training,
 generally starting with dense rewards using 1 and 3 and finishing with only win-loss
-sparse rewards by the end.
+sparse rewards by the end. The value heads are strided convolutions (the number and
+strides differ between DoubleCone and the squnet models) followed by a global average
+pool and a couple of densely connected layers:
+
+```mermaid
+graph TD
+	subgraph squnet64Value["squnet64 Value Head"]
+		Backbone_64[/"Backbone, 128×L×L"/]
+		Conv1_64["Conv 3×3, stride=2, GELU, 64"]
+		Conv2_64["Conv 4×4, stride=4, GELU, 64"]
+		Conv3_64["Conv 4×4, stride=4, GELU, 64"]
+		Linear1_64["Linear, GELU, 64×64"]
+		Linear2_64["Linear, 64×1"]
+		Value_64[/"Value prediction, Scalar"/]
+
+		Backbone_64 --> Conv1_64
+		Conv1_64 --> Conv2_64
+		Conv2_64 --> Conv3_64
+		Conv3_64 -- "AdaptiveAvgPool2d(1), Flatten" --> Linear1_64
+		Linear1_64 --> Linear2_64
+		Linear2_64 -- Activation Function --> Value_64
+	end
+
+	subgraph squnet32Value["squnet32 Value Head"]
+		Backbone_32[/"Backbone, 128×L×L"/]
+		Conv1_32["Conv 3×3, stride=2, GELU, 64"]
+		Conv2_32["Conv 3×3, stride=2, GELU, 64"]
+		Conv3_32["Conv 4×4, stride=4, GELU, 64"]
+		Linear1_32["Linear, GELU, 64×64"]
+		Linear2_32["Linear, 64×1"]
+		Value_32[/"Value prediction, Scalar"/]
+
+		Backbone_32 --> Conv1_32
+		Conv1_32 --> Conv2_32
+		Conv2_32 --> Conv3_32
+		Conv3_32 -- "AdaptiveAvgPool2d(1), Flatten" --> Linear1_32
+		Linear1_32 --> Linear2_32
+		Linear2_32 -- Activation Function --> Value_32
+	end
+
+	subgraph DoubleConeValue["Double Cone Value Head"]
+		Backbone[/"Backbone, 128×L×L"/]
+		Conv1["Conv 3×3, stride=2, GELU, 64"]
+		Conv2["Conv 3×3, stride=2, GELU, 64"]
+		Linear1["Linear, GELU, 64×64"]
+		Linear2["Linear, 64×1"]
+		Value[/"Value prediction, Scalar"/]
+
+		Backbone --> Conv1
+		Conv1 --> Conv2
+		Conv2 -- "AdaptiveAvgPool2d(1), Flatten" --> Linear1
+		Linear1 --> Linear2
+		Linear2 -- Activation Function --> Value
+	end
+```
+
+## PPO training
+
+The Gym-μRTS paper [[1]](#Huang2021Gym) was used as a starting point, using GridNet and self-play. The
+major differences from the paper:
+
+- using the sparse win-loss reward at the end of training;
+- schedule to control reward and value weights, entropy, and learning rate;
+- support training on different map sizes by padding with walls;
+- various fixes for player 2 handling (critical for self-play);
+- self-play could include training against older versions of own model;
+- mask out additional actions caused by position being "reserved" by another unit either
+  moving into or being created at the position;
+- trained on multiple maps;
+- fine-tuned the trained model on other maps.
+
+While training starts with the dense reward function, a sparse win-loss reward is used
+by the end of training. The weights of rewards, value head weighing, entropy, and
+learning rate was controlled through a schedule. The schedule specified phases where
+these values are set. Transitions between phases occur linearly over a number of steps
+
+The DoubleCone model used by ppo-Microrts-A6000-finetuned-coac-mayari-S1-best was
+trained once and then fine-tuned repeatidly as improvements and fixes were made to the
+model, environment representation, and training:
+
+| Parameter             |                                                                                                                                 Initial Training |     Shaped Fine-Tuning | Sparse Fine-Tuning |
+| --------------------- | -----------------------------------------------------------------------------------------------------------------------------------------------: | ---------------------: | -----------------: |
+| Steps                 |                                                                                                                                             300M |                   100M |               100M |
+| n_envs                |                                                                                                                                               24 |                      ″ |                  ″ |
+| Rollout Steps Per Env |                                                                                                                                              512 |                      ″ |                  ″ |
+| Minibatch Size        |                                                                                                                                             4096 |                      ″ |                  ″ |
+| Epochs Per Rollout    |                                                                                                                                                2 |                      ″ |                  ″ |
+| Gamma                 |                                                                                                                             [0.99, 0.999, 0.999] |                      ″ |                  ″ |
+| gae_lambda            |                                                                                                                               [0.95, 0.99, 0.99] |                      ″ |                  ″ |
+| Clip Range            |                                                                                                                                              0.1 |                      ″ |                  ″ |
+| Clip Range VF         |                                                                                                                                              0.1 |                      ″ |                  ″ |
+| VF Coef Halving       |                                                                                                                                             True |                      ″ |                  ″ |
+| Max Grad Norm         |                                                                                                                                              0.5 |                      ″ |                  ″ |
+| Latest Selfplay Envs  |                                                                                                                                               12 |                      ″ |                  ″ |
+| Old Selfplay Envs     |                                                                                                                                               12 |                      0 |                  ″ |
+| Bots                  |                                                                                                                                             none | coacAI: 6<br>mayari: 6 |                  ″ |
+| Maps                  | basesWorkers16x16A<br>TwoBasesBarracks16x16<br>basesWorkers8x8A<br>FourBasesWorkers8x8<br>NoWhereToRun9x8<br>EightBasesWorkers16x16<sup>\*</sup> |                      ″ |                  ″ |
+
+″ Same value as cell to left.
+<sup>\*</sup> Map not used in competition.
+
+The initial training started from a randomly initialized model and trained with the
+following schedule:
+
+|                |           Phase 1 | Transition 1→2<sup>\*</sup> |       Phase 2 | Transition 2→3<sup>\*</sup> |         Phase 3 |
+| -------------- | ----------------: | --------------------------: | ------------: | --------------------------: | --------------: |
+| Steps          |               90M |                         60M |           30M |                         60M |             60M |
+| reward_weights | [0.8, 0.01, 0.19] |                             | [0, 0.5, 0.5] |                             | [0, 0.99, 0.01] |
+| vf_coef        |   [0.5, 0.1, 0.2] |                             | [0, 0.4, 0.4] |                             |   [0, 0.5, 0.1] |
+| ent_coef       |              0.01 |                             |          0.01 |                             |           0.001 |
+| learning_rate  |              1e-4 |                             |          1e-4 |                             |            5e-5 |
+
+<sup>\*</sup> Values are linearly interpolated between phases based on step count.
+
+[The model outputted by initial training won 91%](https://wandb.ai/sgoodfriend/rl-algo-impls-benchmarks/runs/df4flrs4) of games on basesWorkers16x16A against
+the same collection of opponents as [[1]](#Huang2021Gym). However, it only beat CoacAI
+in less than 20% of games.
+
+Additional trainings were done with each model using the prior model as the starting
+point:
+
+1. [Train against CoacAI using the following schedule that included shaped rewards](https://wandb.ai/sgoodfriend/rl-algo-impls-benchmarks/runs/9bz7wsuv/overview)
+
+|                |           Start | Transition →1<sup>\*</sup> |       Phase 1 | Transition 1→2<sup>\*</sup> |         Phase 2 |
+| -------------- | --------------: | -------------------------: | ------------: | --------------------------: | --------------: |
+| Steps          |                 |                         5M |           30M |                         20M |             45M |
+| reward_weights | [0, 0.99, 0.01] |                            | [0, 0.5, 0.5] |                             | [0, 0.99, 0.01] |
+| vf_coef        |   [0, 0.4, 0.2] |                            | [0, 0.4, 0.4] |                             |   [0, 0.5, 0.1] |
+| ent_coef       |            0.01 |                            |          0.01 |                             |           0.001 |
+| learning_rate  |            1e-5 |                            |          5e-5 |                             |            5e-5 |
+
+2. [Train against CoacAI and Mayari using only sparse
+   rewards](https://wandb.ai/sgoodfriend/rl-algo-impls-benchmarks/runs/tff7xk4b/overview)
+
+|                |         Phase 1 | Transition 1→2<sup>\*</sup> |         Phase 2 |
+| -------------- | --------------: | --------------------------: | --------------: |
+| Steps          |             30M |                         40M |             30M |
+| reward_weights | [0, 0.99, 0.01] |                             | [0, 0.99, 0.01] |
+| vf_coef        |   [0, 0.5, 0.1] |                             |   [0, 0.5, 0.1] |
+| ent_coef       |           0.001 |                             |          0.0001 |
+| learning_rate  |            5e-5 |                             |            1e-5 |
+
+3. [Finetune against CoacAI and Mayari to capture action mask improvements and adding a
+   GELU activation after the stride-4
+   convolution](https://wandb.ai/sgoodfriend/rl-algo-impls-benchmarks/runs/1ilo9yae).
+   Used same schedule as above.
+
+By the end of the fine-tuning, the model would win 98% of games on basesWorkers16x16A
+including about 90% against each of CoacAI and Mayari.
+
+### Map-specific fine-tuning
+
+Using the final model as a starting point, 3 additional model weights were trained for 3
+maps:
+
+- [NoWhereToRun9x8](https://wandb.ai/sgoodfriend/rl-algo-impls-benchmarks/runs/vmns9sbe/overview): Was one of the training maps, but the model performed poorly on this
+  map against advanced scripts like CoacAI and Mayari. The resources in the middle
+  created a wall separating opponents, which the model wasn't able to figure out.
+- [DoubleGame24x24](https://wandb.ai/sgoodfriend/rl-algo-impls-benchmarks/runs/unnxtprk/overview): Larger map with a wall through the middle, though a base for each
+  player is on each side of the wall.
+- [BWDistantResources32x32](https://wandb.ai/sgoodfriend/rl-algo-impls-benchmarks/runs/x4tg80vk/overview): Even larger map where resources are located far from the
+  bases.
+
+These would only train on the one map and tweaked minibatch size to fill available
+GPU memory. The schedule was similar to the shaped reward schedule with more emphasis on
+the original shaped reward vs the cost-based different in units because cost-based
+difference in units did not appear to be as effective a reward function:
+
+|                | Start           | Transition →1<sup>\*</sup> |         Phase 1 | Transition 1→2<sup>\*</sup> |         Phase 2 |
+| -------------- | --------------- | -------------------------: | --------------: | --------------------------: | --------------: |
+| Steps          | 5M              |                            |             30M |                         20M |             45M |
+| reward_weights | [0, 0.99, 0.01] |                            | [0.4, 0.5, 0.1] |                             | [0, 0.99, 0.01] |
+| vf_coef        | [0.2, 0.4, 0.2] |                            | [0.3, 0.4, 0.1] |                             |   [0, 0.5, 0.1] |
+| ent_coef       | 0.01            |                            |            0.01 |                             |          0.0001 |
+| learning_rate  | 5e-5            |                            |            7e-5 |                             |            1e-5 |
+
+### squnet PPO training
+
+The squnet models were trained because I was afraid DoubleCone would be too slow on
+larger maps. For the submission, separate models were trained for maps up to 32 length (squnet-map32)
+and up to 64 length (squnet-map64). The squnet-DistantResources model was a finetuning of the best
+model from squnet-map32:
+
+|                       |                                                       map32 |  map32-DistantResources |                            map64 |
+| --------------------- | ----------------------------------------------------------: | ----------------------: | -------------------------------: |
+| steps                 |                                                        200M |                    100M |                             200M |
+| n_envs                |                                                          24 |                       ″ |                                ″ |
+| rollout steps per env |                                                         512 |                       ″ |                              256 |
+| minibatch size        |                                                        2048 |                       ″ |                              258 |
+| clip_range            |                                                         0.1 |                       ″ |                                ″ |
+| clip_range_vf         |                                                        none |                       ″ |                                ″ |
+| latest selfplay envs  |                                                          12 |                       ″ |                               12 |
+| old selfplay envs     |                                                           6 |                       ″ |                                4 |
+| bots                  |                                      coacAI: 3<br>mayari: 3 |                       ″ |           coacAI: 4<br>mayari: 4 |
+| maps                  | DoubleGame24x24<br>BWDistantResources32x32<br>chambers32x32 | BWDistantResources32x32 | BloodBath.scmB<br>BloodBath.scmE |
+
+[map32](https://wandb.ai/sgoodfriend/rl-algo-impls-benchmarks/runs/tga53t25) and [map64](https://wandb.ai/sgoodfriend/rl-algo-impls-benchmarks/runs/nh5pdv4o/overview) used a simplified training schedule to meet the deadline for the
+competition and because the middle phase from prior training didn't seem helpful.
+
+|                |           Phase 1 | Transition 1→2<sup>\*</sup> |         Phase 2 |
+| -------------- | ----------------: | --------------------------: | --------------: |
+| Steps          |              100M |                         60M |             40M |
+| reward_weights | [0.8, 0.01, 0.19] |                             | [0, 0.99, 0.01] |
+| vf_coef        |   [0.5, 0.1, 0.2] |                             |   [0, 0.5, 0.1] |
+| ent_coef       |              0.01 |                             |           0.001 |
+| learning_rate  |              1e-4 |                             |            5e-5 |
+
+[squnet-DistantResources](https://wandb.ai/sgoodfriend/rl-algo-impls-microrts-2023/runs/jl8zkpfr/overview)
+used the same schedule as map-specific fine-tuning.
 
 ## References
 
