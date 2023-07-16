@@ -140,23 +140,37 @@ if __name__ == "__main__":
 
     if args.out_filepath:
         filepath = os.path.expanduser(args.out_filepath)
-        to_file = (
-            lambda df: df.to_markdown(filepath, mode="a")
-            if args.markdown
-            else df.to_csv(filepath, mode="a")
+        format_df = (
+            lambda df: df.to_markdown(None) if args.markdown else df.to_csv(None)
         )
         with open(filepath, "w") as f:
-            f.write("RAISocketAI Player 1 Wins\n")
-        to_file(player_1_points.rename(index=maps_by_idx, columns=ais_by_idx))
-        with open(filepath, "a") as f:
-            f.write("RAISocketAI Player 2 Losses\n")
-        to_file(player_2_points.rename(index=maps_by_idx, columns=ais_by_idx))
-        with open(filepath, "a") as f:
-            f.writelines("RAISocketAI Point Differential\n")
-        to_file(points_table.rename(index=maps_by_idx, columns=ais_by_idx))
-        with open(filepath, "a") as f:
-            f.writelines("RAISocketAI Average Execution Time And Over 100ms\n")
-        to_file(execution_time.rename(index=maps_by_idx))
-        with open(filepath, "a") as f:
-            f.writelines("RAISocketAI WinLoss\n")
-        to_file(score_table.rename(index=maps_by_idx, columns=ais_by_idx).round(2))
+            f.write(
+                "\n".join(
+                    [
+                        "RAISocketAI Player 1 Wins",
+                        format_df(
+                            player_1_points.rename(
+                                index=maps_by_idx, columns=ais_by_idx
+                            )
+                        ),
+                        "RAISocketAI Player 2 Losses",
+                        format_df(
+                            player_2_points.rename(
+                                index=maps_by_idx, columns=ais_by_idx
+                            )
+                        ),
+                        "RAISocketAI Point Differential",
+                        format_df(
+                            points_table.rename(index=maps_by_idx, columns=ais_by_idx)
+                        ),
+                        "RAISocketAI Average Execution Time And Over 100ms",
+                        format_df(execution_time.rename(index=maps_by_idx)),
+                        "RAISocketAI WinLoss",
+                        format_df(
+                            score_table.rename(
+                                index=maps_by_idx, columns=ais_by_idx
+                            ).round(2)
+                        ),
+                    ]
+                )
+            )
