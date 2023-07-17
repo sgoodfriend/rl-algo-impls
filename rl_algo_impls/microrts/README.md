@@ -2,7 +2,7 @@
 
 ## IEEE-CoG2023 MicroRTS competition
 
-Technical details in [technical-description.md](https://github.com/sgoodfriend/rl-algo-impls/blob/main/rl_algo_impls/microrts/technical-description.md)
+*Technical details in [technical-description.md](https://github.com/sgoodfriend/rl-algo-impls/blob/main/rl_algo_impls/microrts/technical-description.md)*
 
 ### Agent installation instructions
 
