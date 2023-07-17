@@ -35,7 +35,7 @@ on their specific maps (NoWhereToRun9x8, DoubleGame24x24, BWDistantResources32x3
 
 ### DNN Architecture
 
-The DoubleCone model is a reimplementation of the LUX Season 2 4th place winner's model [[3]](#FLG2023):
+The DoubleCone model is a reimplementation of the LUX Season 2 4th place winner's model [[1]](#FLG2023):
 
 1. 4 residual blocks
 2. A block with a stride-4 convolution, 6 residual blocks, and 2 stride-2 transpose
@@ -196,15 +196,15 @@ to 16x16.
 <sup>§</sup>NoWhereToRun9x8 is padded with walls up to 12x12.
 
 All models have one actor head, which outputs an action for every location
-(GridNet in [[1]](#Huang2021Gym)). Invalid action masking sets logits to a very large
+(GridNet in [[2]](#Huang2021Gym)). Invalid action masking sets logits to a very large
 negative number (thus zeroing probabilities) for actions that are illegal or would
 accomplish nothing. All models have 3 value heads for 3 different value
 functions:
 
-1. Dense reward similar to [[1]](#Huang2021Gym), except reward for building combat units
+1. Dense reward similar to [[2]](#Huang2021Gym), except reward for building combat units
    is split by combat unit type scaled by build-time. Identity activation.
 2. Win-loss sparse reward at end of game. +1 for win, -1 for loss, 0 for draw. Tanh activation.
-3. Difference in units based on cost, similar to [[4]](#Clemens2021). Identity activation.
+3. Difference in units based on cost, similar to [[3]](#Clemens2021). Identity activation.
 
 These 3 value heads are used to mix-and-match rewards over the course of training,
 generally starting with dense rewards using 1 and 3 and finishing with only win-loss
@@ -266,7 +266,7 @@ graph TD
 
 ## PPO training
 
-The Gym-μRTS paper [[1]](#Huang2021Gym) was used as a starting point, using GridNet and self-play. The
+The Gym-μRTS paper [[2]](#Huang2021Gym) was used as a starting point, using GridNet and self-play. The
 major differences from the paper:
 
 - DoubleCone and squnet neural networks;
@@ -327,7 +327,7 @@ following schedule:
 <sup>†</sup> Value per value head (dense, sparse, cost-based).
 
 [The model outputted by initial training won 91%](https://wandb.ai/sgoodfriend/rl-algo-impls-benchmarks/runs/df4flrs4) of games on basesWorkers16x16A against
-the same collection of opponents as [[1]](#Huang2021Gym). However, it only beat CoacAI
+the same collection of opponents as [[2]](#Huang2021Gym). However, it only beat CoacAI
 in less than 20% of games.
 
 Additional trainings were done with each model using the prior model as the starting
@@ -433,13 +433,11 @@ used the same schedule as map-specific fine-tuning.
 
 ## References
 
-<a name="FLG2023">[3]</a> FLG. (2023). FLG's Approach - Deep Reinforcement Learning with a Focus on Performance - 4th place. Kaggle. Retrieved from https://www.kaggle.com/competitions/lux-ai-season-2/discussion/406702
+<a name="FLG2023">[1]</a> FLG. (2023). FLG's Approach - Deep Reinforcement Learning with a Focus on Performance - 4th place. Kaggle. Retrieved from https://www.kaggle.com/competitions/lux-ai-season-2/discussion/406702
 
-<a name="Huang2021Gym">[1]</a> Huang, S., Ontañón, S., Bamford, C., & Grela, L. (2021).
+<a name="Huang2021Gym">[2]</a> Huang, S., Ontañón, S., Bamford, C., & Grela, L. (2021).
 Gym-μRTS: Toward Affordable Full Game Real-time Strategy Games Research with Deep
 Reinforcement Learning. arXiv preprint
 [arXiv:2105.13807](https://arxiv.org/abs/2105.13807)
 
-<a name="Clemens2021">[4]</a> Winter, C. (2021, March 24). Mastering Real-Time Strategy Games with Deep Reinforcement Learning: Mere Mortal Edition. Clemens' Blog. Retrieved from https://clemenswinter.com/2021/03/24/mastering-real-time-strategy-games-with-deep-reinforcement-learning-mere-mortal-edition/
-
-<a name="Huang2021Generalize">[2]</a> Huang, S., & Ontañón, S. (2021). Measuring Generalization of Deep Reinforcement Learning Applied to Real-time Strategy Games. In Proceedings of the AAAI 2021 Reinforcement Learning in Games Workshop. Retrieved from http://aaai-rlg.mlanctot.info/papers/AAAI21-RLG_paper_33.pdf
+<a name="Clemens2021">[3]</a> Winter, C. (2021, March 24). Mastering Real-Time Strategy Games with Deep Reinforcement Learning: Mere Mortal Edition. Clemens' Blog. Retrieved from https://clemenswinter.com/2021/03/24/mastering-real-time-strategy-games-with-deep-reinforcement-learning-mere-mortal-edition/
