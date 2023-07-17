@@ -393,6 +393,8 @@ had an additional fine-tuning run using sparse rewards.
 | learning_rate  | 5e-5            |                            |            7e-5 |                             |            1e-5 |
 
 The resulting models exceeded 90% win-rate:
+<img width="1052" alt="Screenshot 2023-07-16 at 6 06 25 PM" src="https://github.com/sgoodfriend/rl-algo-impls/assets/1751100/e350f209-b660-4868-bedb-382c581a45a9">
+
 
 ### squnet PPO training
 
