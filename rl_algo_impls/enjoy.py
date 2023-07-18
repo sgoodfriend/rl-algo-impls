@@ -41,6 +41,7 @@ def enjoy() -> None:
     args = parser.parse_args()
     args.algo = args.algo[0]
     args.env = args.env[0]
+    args.seed = args.seed[0]
     args.override_hparams = (
         json.loads(args.override_hparams) if args.override_hparams else None
     )
