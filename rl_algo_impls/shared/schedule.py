@@ -4,13 +4,10 @@ import numpy as np
 from torch.optim import Optimizer
 
 from rl_algo_impls.shared.tensor_utils import NumOrArray
+from rl_algo_impls.utils.interpolate import lerp
 
 NT = TypeVar("NT", float, np.ndarray, NumOrArray)
 Schedule = Callable[[float], NT]
-
-
-def lerp(start, end, progress):
-    return start + (end - start) * progress
 
 
 def linear_schedule(start_val: NT, end_val: NT, end_progress: float = 1.0) -> Schedule:

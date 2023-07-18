@@ -6,8 +6,9 @@ from rl_algo_impls.lux.rewards import LuxRewardWeights
 from rl_algo_impls.runner.config import Config
 from rl_algo_impls.shared.algorithm import Algorithm
 from rl_algo_impls.shared.callbacks.callback import Callback
-from rl_algo_impls.shared.schedule import constant_schedule, lerp
+from rl_algo_impls.shared.schedule import constant_schedule
 from rl_algo_impls.shared.tensor_utils import num_or_array
+from rl_algo_impls.utils.interpolate import InterpolateMethod, interpolate
 from rl_algo_impls.wrappers.vectorable_wrapper import VecEnv
 
 ALGO_SET_NAMES = {"gae_lambda", "multi_reward_weights", "vf_coef"}
@@ -25,6 +26,7 @@ class HyperparamTransitions(Callback):
         phases: List[Dict[str, Any]],
         durations: List[float],
         start_timesteps: int = 0,
+        interpolate_method: str = "linear",
     ) -> None:
         super().__init__()
         self.env = env
@@ -39,6 +41,7 @@ class HyperparamTransitions(Callback):
 
         self.total_train_timesteps = config.n_timesteps
         self.timesteps_elapsed = start_timesteps
+        self.interpolate_method = InterpolateMethod[interpolate_method.upper()]
         self.current_phase_idx: Optional[int] = None
 
         self.update()
@@ -109,10 +112,11 @@ class HyperparamTransitions(Callback):
                     self.algo,
                     name,
                     constant_schedule(
-                        lerp(
+                        interpolate(
                             num_or_array(old_v),
                             num_or_array(next_v),
                             transition_progress,
+                            self.interpolate_method,
                         )
                     ),
                 )
@@ -121,8 +125,11 @@ class HyperparamTransitions(Callback):
                 setattr(
                     self.algo,
                     k,
-                    lerp(
-                        num_or_array(old_v), num_or_array(next_v), transition_progress
+                    interpolate(
+                        num_or_array(old_v),
+                        num_or_array(next_v),
+                        transition_progress,
+                        self.interpolate_method,
                     ),
                 )
             elif k == LUX_REWARD_WEIGHTS_NAME:
@@ -130,7 +137,9 @@ class HyperparamTransitions(Callback):
                 setattr(
                     self.env.unwrapped,
                     k,
-                    LuxRewardWeights.lerp(old_v, next_v, transition_progress),
+                    LuxRewardWeights.interpolate(
+                        old_v, next_v, transition_progress, self.interpolate_method
+                    ),
                 )
             else:
                 raise ValueError(f"{k} not supported in {self.__class__.__name__}")

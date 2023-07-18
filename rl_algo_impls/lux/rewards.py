@@ -2,7 +2,7 @@ from typing import Dict, NamedTuple, Type, TypeVar
 
 import numpy as np
 
-from rl_algo_impls.shared.schedule import lerp
+from rl_algo_impls.utils.interpolate import InterpolateMethod, interpolate
 
 LuxRewardWeightsSelf = TypeVar("LuxRewardWeightsSelf", bound="LuxRewardWeights")
 
@@ -49,10 +49,13 @@ class LuxRewardWeights(NamedTuple):
         )
 
     @classmethod
-    def lerp(
+    def interpolate(
         cls: Type[LuxRewardWeightsSelf],
         start: Dict[str, float],
         end: Dict[str, float],
         progress: float,
+        method: InterpolateMethod,
     ) -> LuxRewardWeightsSelf:
-        return cls(*lerp(np.array(cls(**start)), np.array(cls(**end)), progress))
+        return cls(
+            *interpolate(np.array(cls(**start)), np.array(cls(**end)), progress, method)
+        )
