@@ -431,6 +431,67 @@ used a simplified training schedule to meet the competition deadline and because
 [squnet-DistantResources](https://wandb.ai/sgoodfriend/rl-algo-impls-microrts-2023/runs/jl8zkpfr/overview)
 used the same schedule as map-specific fine-tuning.
 
+## Discussion: Large Maps
+
+Given the 100 ms time limit and uncertainty of available hardware, I trained the squnet
+models as smaller, quicker neural networks than DoubleCone. On limited hardware, such as 2 threads at 2.2 GHz (Google
+Colab), DoubleCone took ~50 ms on a 16×16 map and ~450 ms on a 64×64 map. squnet-map32 has 30% fewer
+parameters and makes 60% fewer multiply-accumulates on 32×32 maps compared to
+DoubleCone. squnet-map64 has 60% fewer parameters and makes 90% fewer mulitply-accumulates
+on 64×64 maps. squnet-map64 averages 70 ms per turn on Google Colab CPUs.
+
+These speed gains came at the cost of model capacity. DoubleCone has 18 convolutional
+layers at full map resolution (8 residual blocks plus input and output convolutions).
+squnet has 6 (2 residual blocks). In total, DoubleCone has 16 residual blocks. squnet has 7.
+squnet-64 uses only 64 channels instead of 128 used by DoubleCone and squnet-32.
+
+While squnet-16 (not used in the competition) did learn to beat advanced scripts with 200
+million steps of training, squnet-32 and squnet-64 managed only a 40% win-rate, never
+beating CoacAI or Mayari.
+
+squnet-DistantResources was able to learn better by fine-tuning from squnet-32's best
+model and training on only one map. It achieved 85% win-rate, beating Mayari half the
+time. It never beat CoacAI. In a similar round-robin tournament playing each of
+WorkerRush, LightRush, CoacAI, and Mayari 20 times on
+BWDistantResources32x32, the squnet model beat WorkerRush, LightRush, and Mayari better
+than even, but not CoacAI:
+
+| Architecture | POWorkerRush | POLightRush | CoacAI | Mayari | Map Total |
+| ------------ | ------------ | ----------- | ------ | ------ | --------- |
+| DoubleCone   | 1            | 0.85        | 0.95   | 1      | 0.95      |
+| squnet-32    | 0.85         | 0.45        | -0.55  | 0.15   | 0.22      |
+
+On the largest 64x64 map, DoubleCone also couldn't win. One issue
+is that DoubleCone has a 48×48 receptive field (DoubleConeBlock has 12 3×3 convolutions
+at 4x down-scaled resolution).
+
+Given the above, my next model architecture has more residual blocks than DoubleCone,
+but does a second 4x down-scaling to get a 128×128 receptive field:
+
+|                                 | deep16-128      |
+| ------------------------------- | --------------- |
+| Levels                          | 3               |
+| Encoder residual blocks/level   | [3,2,4]         |
+| Decoder residual blocks/level   | [3,2]           |
+| Stride per level                | [4,4]           |
+| Deconvolution strides per level | [[2,2],[2,2]]   |
+| Channels per level              | [128, 128, 128] |
+| Trainable parameters            | 5,429,201       |
+| MACs<sup>†</sup> (16x16)        | 0.48B           |
+| MACs<sup>†</sup> (64x64)        | 7.61B           |
+
+<sup>†</sup>Multiply-Accumulates for computing actions for a single observation.
+
+Despite 7.61B MACs being 40% less than DoubleCone, this is 4x squnet-64, which itself
+was borderline performance-wise. However, this is an ideal testbed to see if PPO can
+reasonably train on 64×64 (and possibly 128×128) maps.
+
+Since DoubleCone successfully fine-tuned on DistantResources32x32 from 16×16 training,
+my plan is to first train a model on 16×16 maps, where it can learn tactical small-scale
+strategies. Next, fine-tuning on larger maps where it can transfer the micro to then
+focus on learning long-distance strategies. So far, training with the above 200M step
+schedule on 16×16 maps has over 90% win-rate with over 80% win-rates against CoacAI and Mayari.
+
 ## References
 
 <a name="FLG2023">[1]</a> FLG. (2023). FLG's Approach - Deep Reinforcement Learning with a Focus on Performance - 4th place. Kaggle. Retrieved from https://www.kaggle.com/competitions/lux-ai-season-2/discussion/406702

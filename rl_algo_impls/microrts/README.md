@@ -2,7 +2,7 @@
 
 ## IEEE-CoG2023 MicroRTS competition
 
-*Technical details in [technical-description.md](https://github.com/sgoodfriend/rl-algo-impls/blob/main/rl_algo_impls/microrts/technical-description.md)*
+_Technical details in [technical-description.md](https://github.com/sgoodfriend/rl-algo-impls/blob/main/rl_algo_impls/microrts/technical-description.md)_
 
 ### Agent installation instructions
 
@@ -39,7 +39,7 @@ of RAISocketAI against the opponent AI for 100 matches (50 each as player 1 and 
 2). A win is +1, loss is -1, and draw is 0. Same number of wins and losses would average to a
 score of 0. A score of 0.9 corresponds to winning 95% of games (assuming no draws).
 
-| map                     | POWorkerRush | POLightRush | CoacAI | mayari | Map Total |
+| map                     | POWorkerRush | POLightRush | CoacAI | Mayari | Map Total |
 | :---------------------- | -----------: | ----------: | -----: | -----: | --------: |
 | basesWorkers8x8A        |         0.91 |           1 |   0.98 |      1 |      0.97 |
 | FourBasesWorkers8x8     |            1 |           1 |      1 |   0.97 |      0.99 |
