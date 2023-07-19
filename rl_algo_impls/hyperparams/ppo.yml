@@ -739,9 +739,16 @@ Microrts-squnet-deep16-sc-128-cosine-selfplay:
 Microrts-squnet-d16-128-sc-cos-ga-selfplay:
   &microrts-squnet-d16-128-sc-cos-ga-selfplay
   <<: *microrts-squnet-deep16-sc-128-cosine-selfplay
-  algo_hyperparams:
+  algo_hyperparams: &microrts-squnet-d16-128-sc-cos-ga-selfplay-algo-defaults
     <<: *microrts-squnet-deep16-sc-128-algo-defaults
     gradient_accumulation: true
+
+Microrts-squnet-d16-128-sc-cos-ga-selfplay-a10:
+  &microrts-squnet-d16-128-sc-cos-ga-selfplay-a10
+  <<: *microrts-squnet-d16-128-sc-cos-ga-selfplay
+  algo_hyperparams:
+    <<: *microrts-squnet-d16-128-sc-cos-ga-selfplay-algo-defaults
+    batch_size: 3072
 
 _Microrts-dc-repro-map16: &microrts-dc-repro-map16
   <<: *microrts-squnet-map16
@@ -1404,11 +1411,8 @@ Microrts-selfplay-dc-phases-final: &microrts-sp-dc-phases-final-defaults
       - 0.1
 
 Microrts-debug: &microrts-debug-defaults
-  <<: *microrts-squnet-d16-128-sc-cos-ga-selfplay
+  <<: *microrts-squnet-d16-128-sc-cos-ga-selfplay-a10
   device: mps
-  eval_hyperparams:
-    <<: *microrts-squnet-map16-eval-defaults
-    step_freq: !!float 1e5
 
 Microrts-agent: &microrts-agent
   <<: *microrts-sp-dc-phases-defaults
