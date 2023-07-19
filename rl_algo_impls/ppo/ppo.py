@@ -123,6 +123,7 @@ class PPO(Algorithm):
         update_returns_between_epochs: bool = False,
         gamma_end: Optional[NL] = None,
         multi_reward_weights: Optional[List[int]] = None,
+        gradient_accumulation: bool = False,
     ) -> None:
         super().__init__(policy, device, tb_writer)
         self.policy = policy
@@ -156,6 +157,7 @@ class PPO(Algorithm):
         self.multi_reward_weights = (
             np.array(multi_reward_weights) if multi_reward_weights else None
         )
+        self.gradient_accumulation = gradient_accumulation
 
     def learn(
         self: PPOSelf,
@@ -261,12 +263,11 @@ class PPO(Algorithm):
 
                     loss = pi_loss + ent_coef * entropy_loss + (vf_coef * v_loss).sum()
 
-                    self.optimizer.zero_grad()
+                    if self.gradient_accumulation:
+                        loss /= r.num_minibatches(self.batch_size)
                     loss.backward()
-                    nn.utils.clip_grad_norm_(
-                        self.policy.parameters(), self.max_grad_norm
-                    )
-                    self.optimizer.step()
+                    if not self.gradient_accumulation:
+                        self.optimizer_step()
 
                     with torch.no_grad():
                         approx_kl = ((ratio - 1) - logratio).mean().cpu().numpy().item()
@@ -299,6 +300,8 @@ class PPO(Algorithm):
                             val_clipped_frac,
                         )
                     )
+                if self.gradient_accumulation:
+                    self.optimizer_step()
 
             var_y = np.var(r.y_true).item()
             explained_var = (
@@ -326,3 +329,8 @@ class PPO(Algorithm):
                     break
 
         return self
+
+    def optimizer_step(self) -> None:
+        nn.utils.clip_grad_norm_(self.policy.parameters(), self.max_grad_norm)
+        self.optimizer.step()
+        self.optimizer.zero_grad()

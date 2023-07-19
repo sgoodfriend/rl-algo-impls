@@ -115,6 +115,11 @@ class Rollout:
     def total_steps(self) -> int:
         return int(np.prod(self.rewards.shape[:2]))
 
+    def num_minibatches(self, batch_size: int) -> int:
+        return self.total_steps // batch_size + (
+            1 if self.total_steps % batch_size else 0
+        )
+
     def minibatches(self, batch_size: int, device: torch.device) -> Iterator[Batch]:
         if self._batch is None:
             b_obs = flatten_to_tensor(self.obs, device)

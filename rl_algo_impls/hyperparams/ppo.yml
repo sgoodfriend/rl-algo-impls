@@ -736,6 +736,13 @@ Microrts-squnet-deep16-sc-128-cosine-selfplay:
     <<: *microrts-squnet-deep16-sc-128-selfplay-phases
     interpolate_method: cosine
 
+Microrts-squnet-d16-128-sc-cos-ga-selfplay:
+  &microrts-squnet-d16-128-sc-cos-ga-selfplay
+  <<: *microrts-squnet-deep16-sc-128-cosine-selfplay
+  algo_hyperparams:
+    <<: *microrts-squnet-deep16-sc-128-algo-defaults
+    gradient_accumulation: true
+
 _Microrts-dc-repro-map16: &microrts-dc-repro-map16
   <<: *microrts-squnet-map16
   policy_hyperparams: &microrts-dc-repro-policy-defaults
@@ -1397,7 +1404,7 @@ Microrts-selfplay-dc-phases-final: &microrts-sp-dc-phases-final-defaults
       - 0.1
 
 Microrts-debug: &microrts-debug-defaults
-  <<: *microrts-squnet-deep16-sc-128-cosine-selfplay
+  <<: *microrts-squnet-d16-128-sc-cos-ga-selfplay
   device: mps
   eval_hyperparams:
     <<: *microrts-squnet-map16-eval-defaults
