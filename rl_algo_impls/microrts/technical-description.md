@@ -1,6 +1,6 @@
 # Technical Description of IEEE-CoG2023 MicroRTS Submission
 
-_Videos of the agent in action in [README](https://github.com/sgoodfriend/rl-algo-impls/tree/main/rl_algo_impls/microrts#videos-against-mayari-2021-cog-winner)._
+_Videos of the agent in action in [README](https://github.com/sgoodfriend/rl-algo-impls/tree/main/rl_algo_impls/microrts/README.md#videos-against-mayari-2021-cog-winner)._
 
 ## Agent Overview
 
@@ -394,7 +394,6 @@ had an additional fine-tuning run using sparse rewards.
 
 The resulting models exceeded 90% win-rate:
 <img width="1052" alt="Screenshot 2023-07-16 at 6 06 25 PM" src="https://github.com/sgoodfriend/rl-algo-impls/assets/1751100/e350f209-b660-4868-bedb-382c581a45a9">
-
 
 ### squnet PPO training
 
