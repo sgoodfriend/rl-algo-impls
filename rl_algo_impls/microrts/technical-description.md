@@ -470,18 +470,18 @@ but does a second 4x down-scaling to get a 128×128 receptive field:
 |                                 | deep16-128      |
 | ------------------------------- | --------------- |
 | Levels                          | 3               |
-| Encoder residual blocks/level   | [3,2,4]         |
-| Decoder residual blocks/level   | [3,2]           |
-| Stride per level                | [4,4]           |
-| Deconvolution strides per level | [[2,2],[2,2]]   |
+| Encoder residual blocks/level   | [3, 2, 4]       |
+| Decoder residual blocks/level   | [3, 2]          |
+| Stride per level                | [4, 4]          |
+| Deconvolution strides per level | [4, 4]          |
 | Channels per level              | [128, 128, 128] |
-| Trainable parameters            | 5,429,201       |
-| MACs<sup>†</sup> (16x16)        | 0.48B           |
-| MACs<sup>†</sup> (64x64)        | 7.61B           |
+| Trainable parameters            | 5,691,089       |
+| MACs<sup>†</sup> (16x16)        | 0.52B           |
+| MACs<sup>†</sup> (64x64)        | 8.40B           |
 
 <sup>†</sup>Multiply-Accumulates for computing actions for a single observation.
 
-Despite 7.61B MACs being 40% less than DoubleCone, this is 4x squnet-64, which itself
+Despite 8.40B MACs being 25% less than DoubleCone, this is 6x squnet-64, which itself
 was borderline performance-wise. However, this is an ideal testbed to see if PPO can
 reasonably train on 64×64 (and possibly 128×128) maps.
 

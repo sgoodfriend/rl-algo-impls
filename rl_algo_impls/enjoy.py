@@ -28,16 +28,16 @@ def enjoy() -> None:
     parser.add_argument(
         "--thop", action="store_true", help="Output MACs and num parameters"
     )
-    parser.set_defaults(
-        algo=["ppo"],
-        wandb_run_path="sgoodfriend/rl-algo-impls-benchmarks/vmns9sbe",
-        n_episodes=1,
-        render=False,
-        override_hparams='{"bots":{"mayari":1}}',
-        video_path=os.path.expanduser("~/Desktop/NoWhereToRun-RAISocketAI-Mayari"),
-        # tensorboard_folder="visualize_model",
-        thop=True,
-    )
+    # parser.set_defaults(
+    #     algo=["ppo"],
+    #     wandb_run_path="sgoodfriend/rl-algo-impls-microrts-2023/wwmiqpwg",
+    #     n_episodes=1,
+    #     render=False,
+    #     override_hparams='{"bots":{"mayari":1}, "map_paths": ["maps/BroodWar/(4)BloodBath.scmB.xml"]}',
+    #     video_path=os.path.expanduser("~/Desktop/NoWhereToRun-RAISocketAI-Mayari"),
+    #     tensorboard_folder="visualize_model",
+    #     thop=True,
+    # )
     args = parser.parse_args()
     args.algo = args.algo[0]
     args.env = args.env[0]
