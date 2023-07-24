@@ -1522,6 +1522,7 @@ Microrts-squnet-d16-128-iMayari: &microrts-squnet-d16-128-imayari
     vf_coef: 0.5
     ent_coef: 0.01
     clip_range_vf: 0.1
+    normalize_advantage: false
   eval_hyperparams:
     <<: *microrts-squnet-map16-eval-defaults
     env_overrides:
