@@ -33,6 +33,7 @@ class BackboneActorCritic(ActorCriticNetwork):
         init_layers_orthogonal: bool = True,
         cnn_layers_init_orthogonal: bool = False,
         strides: Sequence[Union[int, Sequence[int]]] = (2, 2),
+        output_activation_fn: str = "identity",
     ):
         if num_additional_critics and not additional_critic_activation_functions:
             additional_critic_activation_functions = [
@@ -131,7 +132,7 @@ class BackboneActorCritic(ActorCriticNetwork):
         self.critic_heads = HStack(
             [
                 critic_head(act_fn_name)
-                for act_fn_name in ["identity"]
+                for act_fn_name in [output_activation_fn]
                 + (additional_critic_activation_functions or [])
             ]
         )
