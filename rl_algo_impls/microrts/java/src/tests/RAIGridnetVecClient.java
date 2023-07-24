@@ -122,9 +122,9 @@ public class RAIGridnetVecClient {
             selfPlayClients[i].reset();
             for (int p = 0; p < 2; ++p) {
                 rs[i * 2 + p] = selfPlayClients[i].getResponse(p);
-                envSteps[i * 2 + p] = 0;
             }
         }
+        Arrays.fill(envSteps, 0);
         for (int i = selfPlayClients.length * 2; i < players.length; i++) {
             rs[i] = clients[i - selfPlayClients.length * 2].reset(players[i]);
         }
