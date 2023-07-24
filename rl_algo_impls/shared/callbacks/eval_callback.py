@@ -171,7 +171,7 @@ class EvalCallback(Callback):
         desired_num_stats = self.timesteps_elapsed // self.step_freq
         if not self.skip_evaluate_at_start:
             desired_num_stats += 1
-        if desired_num_stats >= len(self.stats):
+        if desired_num_stats > len(self.stats):
             self.evaluate()
         return True
 
