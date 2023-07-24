@@ -39,13 +39,6 @@ UTT_VERSION_ORIGINAL_FINETUNED = 2
 
 class MicroRTSGridModeVecEnv(MicroRTSInterface):
     DEBUG_VERIFY = False
-    """
-    [[0]x_coordinate*y_coordinate(x*y), [1]a_t(6), [2]p_move(4), [3]p_harvest(4), 
-    [4]p_return(4), [5]p_produce_direction(4), [6]p_produce_unit_type(z), 
-    [7]x_coordinate*y_coordinate(x*y)]
-    Create a baselines VecEnv environment from a gym3 environment.
-    :param env: gym3 environment to adapt
-    """
 
     def __init__(
         self,
