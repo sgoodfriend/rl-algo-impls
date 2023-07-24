@@ -194,6 +194,7 @@ def make_microrts_env(
             bots,
             make_kwargs.get("map_paths"),
         )
+    envs = ActionMaskStatsRecorder(envs)
     if training:
         assert tb_writer
         envs = EpisodeStatsWriter(
