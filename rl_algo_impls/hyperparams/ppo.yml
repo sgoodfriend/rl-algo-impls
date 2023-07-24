@@ -260,7 +260,8 @@ MicrortsRandomEnemyShapedReward3-v1-NoMask:
 _microrts_ai: &microrts-ai-defaults
   <<: *microrts-defaults
   n_timesteps: !!float 100e6
-  additional_keys_to_log: ["microrts_stats", "microrts_results", "results"]
+  additional_keys_to_log:
+    [microrts_stats, microrts_results, results, action_mask_stats]
   env_hyperparams: &microrts-ai-env-defaults
     n_envs: 24
     env_type: microrts
