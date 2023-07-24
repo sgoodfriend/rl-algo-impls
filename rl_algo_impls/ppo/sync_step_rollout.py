@@ -1,7 +1,6 @@
 from typing import Dict, TypeVar
 
 import numpy as np
-from gym.spaces import Dict as DictSpace
 
 from rl_algo_impls.ppo.rollout import Rollout, RolloutGenerator
 from rl_algo_impls.shared.policy.actor_critic import ActorCritic
