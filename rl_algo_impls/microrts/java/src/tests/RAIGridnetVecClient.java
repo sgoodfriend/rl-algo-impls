@@ -120,8 +120,10 @@ public class RAIGridnetVecClient {
     public RAIResponses reset(int[] players) throws Exception {
         for (int i = 0; i < selfPlayClients.length; i++) {
             selfPlayClients[i].reset();
-            rs[i * 2] = selfPlayClients[i].getResponse(0);
-            rs[i * 2 + 1] = selfPlayClients[i].getResponse(1);
+            for (int p = 0; p < 2; ++p) {
+                rs[i * 2 + p] = selfPlayClients[i].getResponse(p);
+                envSteps[i * 2 + p] = 0;
+            }
         }
         for (int i = selfPlayClients.length * 2; i < players.length; i++) {
             rs[i] = clients[i - selfPlayClients.length * 2].reset(players[i]);
