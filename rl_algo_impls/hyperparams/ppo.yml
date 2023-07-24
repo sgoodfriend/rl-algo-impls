@@ -1529,7 +1529,7 @@ Microrts-squnet-d16-128-iMayari: &microrts-squnet-d16-128-imayari
 
 Microrts-debug: &microrts-debug-defaults
   <<: *microrts-squnet-d16-128-imayari
-  device: mps
+  device: cpu
 
 Microrts-agent: &microrts-agent
   <<: *microrts-sp-dc-phases-defaults
