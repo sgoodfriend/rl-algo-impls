@@ -1528,6 +1528,7 @@ Microrts-squnet-d16-128-iMayari: &microrts-squnet-d16-128-imayari
     env_overrides:
       <<: *microrts-squnet-map16-eval-env-overrides
       env_type: microrts
+    skip_evaluate_at_start: true
 
 Microrts-debug: &microrts-debug-defaults
   <<: *microrts-squnet-d16-128-imayari
