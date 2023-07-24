@@ -160,7 +160,7 @@ class BackboneActorCritic(ActorCriticNetwork):
 
         v = self.critic_heads(x)
         if v.shape[-1] == 1:
-            v.squeeze(-1)
+            v = v.squeeze(-1)
 
         return ACNForward(pi_forward(pi, action), v)
 
@@ -169,7 +169,7 @@ class BackboneActorCritic(ActorCriticNetwork):
         x = self.backbone(o)
         v = self.critic_heads(x)
         if v.shape[-1] == 1:
-            v.squeeze(-1)
+            v = v.squeeze(-1)
         return v
 
     def reset_noise(self, batch_size: Optional[int] = None) -> None:
