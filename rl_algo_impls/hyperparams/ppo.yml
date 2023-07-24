@@ -1520,7 +1520,7 @@ Microrts-squnet-d16-128-iMayari: &microrts-squnet-d16-128-imayari
     gae_lambda: 0.99
     learning_rate: !!float 1e-4
     vf_coef: 0.5
-    ent_coef: 0.01
+    ent_coef: 0.001
     clip_range_vf: 0.1
     normalize_advantage: false
   eval_hyperparams:
