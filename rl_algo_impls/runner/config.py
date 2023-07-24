@@ -63,6 +63,7 @@ class EnvHyperparams:
     terrain_overrides: Optional[Dict[str, Any]] = None
     time_budget_ms: Optional[int] = None
     video_frames_per_second: Optional[int] = None
+    reference_bot: Optional[str] = None
 
 
 HyperparamsSelf = TypeVar("HyperparamsSelf", bound="Hyperparams")
@@ -86,6 +87,7 @@ class Hyperparams:
         default_factory=dict
     )
     rollout_hyperparams: Dict[str, Any] = dataclasses.field(default_factory=dict)
+    rollout_type: Optional[str] = None
 
     @classmethod
     def from_dict_with_extra_fields(
@@ -136,6 +138,10 @@ class Config:
     @property
     def rollout_hyperparams(self) -> Dict[str, Any]:
         return self.hyperparams.rollout_hyperparams
+
+    @property
+    def rollout_type(self) -> Optional[str]:
+        return self.hyperparams.rollout_type
 
     def eval_callback_params(self) -> Dict[str, Any]:
         eval_hyperparams = self.eval_hyperparams.copy()

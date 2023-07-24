@@ -57,6 +57,7 @@ def make_lux_env(
         _,  # terrain_overrides,
         _,  # time_budget_ms,
         _,  # video_frames_per_second,
+        _,  # reference_bot,
     ) = astuple(hparams)
 
     seed = config.seed(training=training)

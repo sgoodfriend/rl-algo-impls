@@ -216,6 +216,46 @@ class MicroRTSSpaceTransform(gym.vector.VectorEnv, MicroRTSInterfaceListener):
     def step(self, actions) -> VecEnvStepReturn:
         microrts_action = self._to_microrts_action(actions)
         microrts_obs, microrts_mask, r, d, i = self.interface.step(microrts_action)
+
+        env_last_action = self.interface.last_action
+        if env_last_action:
+            self._last_action = np.zeros(
+                (
+                    self.num_envs,
+                    len(self.single_action_space) // len(self.action_plane_space),
+                    len(self.action_plane_space),
+                ),
+                dtype=np.int32,
+            )
+            for env_idx, m_a_in_env in enumerate(env_last_action):
+                env_h = self.interface.heights[env_idx]
+                env_w = self.interface.widths[env_idx]
+                pad_h = (self.height - env_h) // 2
+                pad_w = (self.width - env_w) // 2
+                for m_a in m_a_in_env:
+                    pos = m_a[0]
+                    x = pos % env_w
+                    y = pos // env_w
+                    new_pos = (x + pad_w) + (y + pad_h) * self.width
+                    self._last_action[env_idx, new_pos] = m_a[1:]
+            if getattr(self.interface, "DEBUG_VERIFY", False):
+                last_action_microrts_action = self._to_microrts_action(
+                    self._last_action
+                )
+                for env_idx, (ela, lama) in enumerate(
+                    zip(env_last_action, last_action_microrts_action)
+                ):
+                    ela_set = set(tuple(a) for a in ela)
+                    lama_set = set(tuple(a) for a in lama)
+                    if ela_set - lama_set:
+                        self.logger.error(
+                            f"{env_idx}: Transform missing actions: {ela_set - lama_set}"
+                        )
+                    if lama_set - ela_set:
+                        self.logger.error(
+                            f"{env_idx}: Transform has extra actions: {lama_set - ela_set}"
+                        )
+
         self._update_action_mask(microrts_mask)
 
         obs = self._from_microrts_obs(microrts_obs)
@@ -250,7 +290,7 @@ class MicroRTSSpaceTransform(gym.vector.VectorEnv, MicroRTSInterfaceListener):
         return actions
 
     def _verify_actions(self, actions: List[List[int]], env_idx: int):
-        matrix_mask = self.interface.debug_matrix_mask(env_idx)
+        matrix_mask = self._matrix_masks[env_idx]
         if matrix_mask is None:
             return
         env_w = self.interface.widths[env_idx]
@@ -291,6 +331,10 @@ class MicroRTSSpaceTransform(gym.vector.VectorEnv, MicroRTSInterfaceListener):
             actions_per_env.append(self._translate_actions(actions_in_env, idx))
             self._verify_actions(actions_per_env[-1], idx)
         return actions_per_env
+
+    @property
+    def last_action(self) -> np.ndarray:
+        return self._last_action
 
     def _from_microrts_obs(self, microrts_obs: List[ByteArray]) -> np.ndarray:
         return np.array(
@@ -401,6 +445,10 @@ class MicroRTSSpaceTransform(gym.vector.VectorEnv, MicroRTSInterfaceListener):
             new_m[pad_h : pad_h + env_h, pad_w : pad_w + env_w] = m
             masks.append(new_m)
         action_mask = np.array(masks)
+        self._matrix_masks = [
+            self.interface.debug_matrix_mask(env_idx)
+            for env_idx in range(self.num_envs)
+        ]
         self._verify_action_mask(action_mask)
         self.source_unit_mask = action_mask[:, :, :, 0].reshape(self.num_envs, -1)
         self._action_mask = action_mask[:, :, :, 1:].reshape(
@@ -409,7 +457,7 @@ class MicroRTSSpaceTransform(gym.vector.VectorEnv, MicroRTSInterfaceListener):
 
     def _verify_action_mask(self, masks: np.ndarray) -> None:
         for env_idx, mask in enumerate(masks):
-            matrix_mask = self.interface.debug_matrix_mask(env_idx)
+            matrix_mask = self._matrix_masks[env_idx]
             if matrix_mask is None:
                 continue
 

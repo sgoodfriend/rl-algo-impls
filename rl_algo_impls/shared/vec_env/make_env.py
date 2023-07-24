@@ -27,6 +27,10 @@ def make_env(
         from rl_algo_impls.microrts.vec_env.microrts import make_microrts_env
 
         make_env_fn = make_microrts_env
+    elif hparams.env_type == "microrts_bots":
+        from rl_algo_impls.microrts.vec_env.microrts_bots import make_microrts_bots_env
+
+        make_env_fn = make_microrts_bots_env
     elif hparams.env_type == "lux":
         from rl_algo_impls.lux.vec_env.lux import make_lux_env
 

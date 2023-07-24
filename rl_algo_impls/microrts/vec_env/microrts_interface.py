@@ -87,6 +87,10 @@ class MicroRTSInterface(ABC):
     def set_expected_step_ms(self, expected_step_ms: int) -> None:
         pass
 
+    @property
+    def last_action(self) -> Optional[List[List[List[int]]]]:
+        return None
+
     @abstractmethod
     def close(self, **kwargs):
         ...
