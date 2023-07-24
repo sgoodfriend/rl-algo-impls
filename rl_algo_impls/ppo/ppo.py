@@ -241,7 +241,7 @@ class PPO(Algorithm):
                     logratio = new_logprobs - mb_logprobs
                     ratio = torch.exp(logratio)
                     clipped_ratio = torch.clamp(ratio, min=1 - pi_clip, max=1 + pi_clip)
-                    pi_loss = torch.max(-ratio * mb_adv, -clipped_ratio * mb_adv).mean()
+                    pi_loss = -torch.min(ratio * mb_adv, clipped_ratio * mb_adv).mean()
 
                     v_loss_unclipped = (new_values - mb_returns) ** 2
                     if v_clip:
