@@ -190,7 +190,6 @@ def make_microrts_env(
     if not is_agent:
         envs = MicrortsStatsRecorder(
             envs,
-            config.algo_hyperparams.get("gamma", 0.99),
             bots,
             make_kwargs.get("map_paths"),
         )
