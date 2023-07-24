@@ -21,6 +21,7 @@ class GridnetDistribution(Distribution):
         logits: torch.Tensor,
         masks: TensorOrDict,
         validate_args: Optional[bool] = None,
+        subaction_mask: Optional[torch.Tensor] = None,
     ) -> None:
         self.map_size = map_size
         self.action_vec = action_vec
@@ -40,6 +41,7 @@ class GridnetDistribution(Distribution):
             MaskedCategorical(logits=lg, validate_args=validate_args, mask=m)
             for lg, m in zip(split_logits_per_position, split_masks_per_position)
         ]
+        self.subaction_mask = subaction_mask
 
         if isinstance(masks, dict) and "pick_position" in masks:
             masks_pick_position = masks["pick_position"]
@@ -79,12 +81,26 @@ class GridnetDistribution(Distribution):
         action_per_position = (
             action["per_position"] if isinstance(action, dict) else action
         )
+        action_per_position = action_per_position.view(
+            -1, action_per_position.shape[-1]
+        ).T
+
         prob_stack_per_position = torch.stack(
             [
-                c.log_prob(a)
-                for a, c in zip(
-                    action_per_position.view(-1, action_per_position.shape[-1]).T,
-                    self.categoricals_per_position,
+                (
+                    torch.where(
+                        action_per_position[0] == self.subaction_mask[idx - 1],
+                        c.log_prob(a),
+                        0,
+                    )
+                    if idx > 0 and self.subaction_mask is not None
+                    else c.log_prob(a)
+                )
+                for idx, (a, c) in enumerate(
+                    zip(
+                        action_per_position,
+                        self.categoricals_per_position,
+                    )
                 )
             ],
             dim=-1,

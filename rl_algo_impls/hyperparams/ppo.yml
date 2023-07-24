@@ -275,6 +275,7 @@ _microrts_ai: &microrts-ai-defaults
     <<: *microrts-policy-defaults
     cnn_flatten_dim: 256
     actor_head_style: gridnet
+    subaction_mask: [1, 2, 3, 4, 4, 5]
   rollout_hyperparams: &microrts-ai-rollout-defaults
     n_steps: 512
   algo_hyperparams: &microrts-ai-algo-defaults
@@ -1527,7 +1528,7 @@ Microrts-squnet-d16-128-iMayari: &microrts-squnet-d16-128-imayari
       env_type: microrts
 
 Microrts-debug: &microrts-debug-defaults
-  <<: *microrts-squnet-d16-128-map64-finetune
+  <<: *microrts-squnet-d16-128-imayari
   device: mps
 
 Microrts-agent: &microrts-agent

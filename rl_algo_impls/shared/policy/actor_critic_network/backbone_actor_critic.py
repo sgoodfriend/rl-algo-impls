@@ -34,6 +34,7 @@ class BackboneActorCritic(ActorCriticNetwork):
         cnn_layers_init_orthogonal: bool = False,
         strides: Sequence[Union[int, Sequence[int]]] = (2, 2),
         output_activation_fn: str = "identity",
+        subaction_mask: Optional[List[int]] = None,
     ):
         if num_additional_critics and not additional_critic_activation_functions:
             additional_critic_activation_functions = [
@@ -57,6 +58,7 @@ class BackboneActorCritic(ActorCriticNetwork):
             raise ValueError(
                 f"action_space {action_space.__class__.__name__} must be MultiDiscrete or gym Dict of MultiDiscrete"
             )
+        self.subaction_mask = subaction_mask
 
         self.map_size = len(action_space_per_position.nvec) // len(action_plane_space.nvec)  # type: ignore
 
@@ -156,7 +158,13 @@ class BackboneActorCritic(ActorCriticNetwork):
         x = self.backbone(o)
         logits = self.actor_head(x)
         pi = GridnetDistribution(
-            int(np.prod(o.shape[-2:])), self.action_vec, logits, action_masks
+            int(np.prod(o.shape[-2:])),
+            self.action_vec,
+            logits,
+            action_masks,
+            subaction_mask=torch.tensor(self.subaction_mask).to(obs.device)
+            if self.subaction_mask
+            else None,
         )
 
         v = self.critic_heads(x)

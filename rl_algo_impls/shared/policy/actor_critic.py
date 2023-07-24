@@ -130,6 +130,7 @@ class ActorCritic(OnPolicy):
         decoder_residual_blocks_per_level: Optional[List[int]] = None,
         increment_kernel_size_on_down_conv: bool = False,
         output_activation_fn: str = "identity",
+        subaction_mask: Optional[List[int]] = None,
         **kwargs,
     ) -> None:
         super().__init__(env, **kwargs)
@@ -189,6 +190,7 @@ class ActorCritic(OnPolicy):
                 decoder_residual_blocks_per_level=decoder_residual_blocks_per_level,
                 increment_kernel_size_on_down_conv=increment_kernel_size_on_down_conv,
                 output_activation_fn=output_activation_fn,
+                subaction_mask=subaction_mask,
             )
         elif share_features_extractor:
             self.network = ConnectedTrioActorCriticNetwork(
