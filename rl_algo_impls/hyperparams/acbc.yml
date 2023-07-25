@@ -1,0 +1,136 @@
+Microrts-squnet-d16-128-iMayari: &microrts-squnet-d16-128-imayari
+  additional_keys_to_log:
+    - microrts_stats
+    - microrts_results
+    - results
+    - action_mask_stats
+  algo_hyperparams:
+    learning_rate: 1.0e-05
+    batch_size: 3072
+    n_epochs: 2
+    gamma: 0.999
+    gae_lambda: 0.99
+    vf_coef: 0.25
+    max_grad_norm: 0.5
+    update_returns_between_epochs: true
+    gradient_accumulation: false
+  env_hyperparams:
+    additional_win_loss_reward: false
+    bots:
+      coacAI: 12
+      lightRushAI: 12
+      mayari: 6
+    env_type: microrts_bots
+    make_kwargs:
+      max_steps: 4000
+      reward_weight:
+        - 1.0
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+    map_paths:
+      - maps/16x16/basesWorkers16x16A.xml
+      - maps/16x16/TwoBasesBarracks16x16.xml
+      - maps/8x8/basesWorkers8x8A.xml
+      - maps/8x8/FourBasesWorkers8x8.xml
+      - maps/NoWhereToRun9x8.xml
+      - maps/16x16/EightBasesWorkers16x16.xml
+    n_envs: 36
+    reference_bot: mayari
+    score_reward_kwargs: null
+    self_play_kwargs: null
+    valid_sizes:
+      - 16
+  env_id: Microrts-squnet-map16
+  eval_hyperparams:
+    deterministic: false
+    env_overrides:
+      additional_win_loss_reward: false
+      bots:
+        coacAI: 2
+        droplet: 2
+        guidedRojoA3N: 2
+        izanagi: 2
+        lightRushAI: 2
+        mayari: 2
+        mixedBot: 2
+        naiveMCTSAI: 2
+        passiveAI: 2
+        randomAI: 2
+        randomBiasedAI: 2
+        rojo: 2
+        tiamat: 2
+        workerRushAI: 2
+      env_type: microrts
+      make_kwargs:
+        bot_envs_alternate_player: false
+        map_paths:
+          - maps/16x16/basesWorkers16x16A.xml
+        max_steps: 4000
+        num_selfplay_envs: 0
+        render_theme: 2
+        reward_weight:
+          - 1.0
+          - 0
+          - 0
+          - 0
+          - 0
+          - 0
+          - 0
+          - 0
+          - 0
+      map_paths: []
+      n_envs: 28
+      score_reward_kwargs: {}
+      self_play_kwargs: {}
+    max_video_length: 4000
+    n_episodes: 28
+    score_function: mean
+    skip_evaluate_at_start: true
+    step_freq: 1000000.0
+  n_timesteps: 300000000.0
+  policy_hyperparams:
+    activation_fn: relu
+    actor_head_style: squeeze_unet
+    additional_critic_activation_functions: []
+    channels_per_level:
+      - 128
+      - 128
+      - 128
+    cnn_flatten_dim: 256
+    cnn_style: microrts
+    decoder_residual_blocks_per_level:
+      - 2
+      - 3
+    deconv_strides_per_level:
+      - - 2
+        - 2
+      - - 2
+        - 2
+    encoder_residual_blocks_per_level:
+      - 3
+      - 2
+      - 4
+    output_activation_fn: tanh
+    strides_per_level:
+      - 4
+      - 4
+    subaction_mask:
+      - 1
+      - 2
+      - 3
+      - 4
+      - 4
+      - 5
+  rollout_hyperparams:
+    n_steps: 512
+  rollout_type: reference
+
+Microrts-debug: &microrts-debug-defaults
+  <<: *microrts-squnet-d16-128-imayari
+  device: mps
