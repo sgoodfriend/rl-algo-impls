@@ -622,7 +622,7 @@ _Microrts-squnet-map16: &microrts-squnet-map16
       - maps/16x16/basesWorkers16x16A.xml
       - maps/16x16/TwoBasesBarracks16x16.xml
       - maps/16x16/melee16x16Mixed12.xml
-    make_kwargs:
+    make_kwargs: &microrts-squnet-map16-env-make-kwargs-defaults
       <<: *microrts-selfplay-env-make-kwargs-defaults
       num_selfplay_envs: 24
       max_steps: 4000
@@ -1410,8 +1410,38 @@ Microrts-selfplay-dc-phases-final: &microrts-sp-dc-phases-final-defaults
       - 0.4
       - 0.1
 
+Microrts-squnet-d16-128-map16-finetune: &microrts-squnet-d16-128-map16-finetune
+  <<: *microrts-squnet-deep16-128
+  n_timesteps: !!float 200e6
+  env_hyperparams:
+    <<: *microrts-squnet-map16-env-defaults
+    n_envs: 36
+    map_paths:
+      - maps/16x16/basesWorkers16x16A.xml
+      - maps/16x16/TwoBasesBarracks16x16.xml
+      - maps/8x8/basesWorkers8x8A.xml
+      - maps/8x8/FourBasesWorkers8x8.xml
+      - maps/NoWhereToRun9x8.xml
+      - maps/16x16/EightBasesWorkers16x16.xml
+    bots:
+      coacAI: 6
+      mayari: 6
+    self_play_kwargs:
+      <<: *microrts-selfplay-self-play-kwargs-defaults
+      save_steps: !!float 1e6
+      window: 50
+    make_kwargs:
+      <<: *microrts-squnet-map16-env-make-kwargs-defaults
+      num_selfplay_envs: 36
+  policy_hyperparams:
+    <<: *microrts-squnet-deep16-128-policy-defaults
+    load_run_path: sgoodfriend/rl-algo-impls-microrts-2023/v1pqohx9
+    load_run_path_best: true
+  hyperparam_transitions_kwargs:
+    <<: *shaped-finetuning-hyperparam-transitions
+
 Microrts-debug: &microrts-debug-defaults
-  <<: *microrts-squnet-d16-128-sc-cos-ga-selfplay-a10
+  <<: *microrts-squnet-d16-128-map16-finetune
   device: mps
 
 Microrts-agent: &microrts-agent
