@@ -122,6 +122,7 @@ class PPO(Algorithm):
         gamma_end: Optional[NL] = None,
         multi_reward_weights: Optional[List[int]] = None,
         gradient_accumulation: bool = False,
+        kl_cutoff: Optional[float] = None,
     ) -> None:
         super().__init__(policy, device, tb_writer)
         self.policy = policy
@@ -156,6 +157,7 @@ class PPO(Algorithm):
             np.array(multi_reward_weights) if multi_reward_weights else None
         )
         self.gradient_accumulation = gradient_accumulation
+        self.kl_cutoff = kl_cutoff
 
     def learn(
         self: PPOSelf,
@@ -206,6 +208,7 @@ class PPO(Algorithm):
                 else None
             )
             vf_coef = torch.Tensor(np.array(self.vf_coef)).to(self.device)
+            pi_coef = 1
             for e in range(self.n_epochs):
                 if e == 0 or self.update_advantage_between_epochs:
                     r.update_advantages(
@@ -258,8 +261,16 @@ class PPO(Algorithm):
                         v_loss *= 0.5
 
                     entropy_loss = -entropy.mean()
+                    with torch.no_grad():
+                        approx_kl = ((ratio - 1) - logratio).mean().cpu().numpy().item()
+                    if self.kl_cutoff is not None and approx_kl > self.kl_cutoff:
+                        pi_coef = 0
 
-                    loss = pi_loss + ent_coef * entropy_loss + (vf_coef * v_loss).sum()
+                    loss = (
+                        pi_coef * pi_loss
+                        + ent_coef * entropy_loss
+                        + (vf_coef * v_loss).sum()
+                    )
 
                     if self.gradient_accumulation:
                         loss /= r.num_minibatches(self.batch_size)
@@ -268,7 +279,6 @@ class PPO(Algorithm):
                         self.optimizer_step()
 
                     with torch.no_grad():
-                        approx_kl = ((ratio - 1) - logratio).mean().cpu().numpy().item()
                         clipped_frac = (
                             ((ratio - 1).abs() > pi_clip)
                             .float()
