@@ -1458,7 +1458,7 @@ Microrts-squnet-d16-128-map64-finetune: &microrts-squnet-d16-128-map64-finetune
     <<: *microrts-squnet-map64-eval-defaults
   algo_hyperparams:
     <<: *microrts-squnet-deep16-128-algo-defaults
-    batch_size: 96
+    batch_size: 64
     gradient_accumulation: true
 
 Microrts-debug: &microrts-debug-defaults
