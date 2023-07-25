@@ -1440,8 +1440,18 @@ Microrts-squnet-d16-128-map16-finetune: &microrts-squnet-d16-128-map16-finetune
   hyperparam_transitions_kwargs:
     <<: *shaped-finetuning-hyperparam-transitions
 
-Microrts-debug: &microrts-debug-defaults
+Microrts-squnet-d16-128-map32-finetune: &microrts-squnet-d16-128-map32-finetune
   <<: *microrts-squnet-d16-128-map16-finetune
+  env_hyperparams:
+    <<: *microrts-squnet-map32-env-defaults
+  eval_hyperparams:
+    <<: *microrts-squnet-map32-eval-defaults
+  algo_hyperparams:
+    <<: *microrts-squnet-deep16-128-algo-defaults
+    batch_size: 2048
+
+Microrts-debug: &microrts-debug-defaults
+  <<: *microrts-squnet-d16-128-map32-finetune
   device: mps
 
 Microrts-agent: &microrts-agent
