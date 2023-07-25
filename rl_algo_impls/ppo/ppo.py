@@ -10,10 +10,8 @@ from torch.optim import Adam
 from torch.utils.tensorboard.writer import SummaryWriter
 
 from rl_algo_impls.ppo.rollout import RolloutGenerator
-from rl_algo_impls.ppo.sync_step_rollout import SyncStepRolloutGenerator
 from rl_algo_impls.shared.algorithm import Algorithm
 from rl_algo_impls.shared.callbacks import Callback
-from rl_algo_impls.shared.gae import compute_advantages
 from rl_algo_impls.shared.policy.actor_critic import ActorCritic
 from rl_algo_impls.shared.schedule import (
     constant_schedule,
