@@ -20,12 +20,7 @@ from rl_algo_impls.shared.schedule import (
     update_learning_rate,
 )
 from rl_algo_impls.shared.stats import log_scalars
-from rl_algo_impls.shared.tensor_utils import (
-    NumOrList,
-    num_or_array,
-    unqueeze_dims_to_match,
-)
-from rl_algo_impls.wrappers.vectorable_wrapper import VecEnv
+from rl_algo_impls.shared.tensor_utils import NumOrList, num_or_array
 
 
 class TrainStepStats(NamedTuple):
