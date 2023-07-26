@@ -1508,6 +1508,9 @@ Microrts-squnet-d16-128-iMayari: &microrts-squnet-d16-128-imayari
       lightRushAI: 12
     additional_win_loss_reward: false
     score_reward_kwargs: null
+  rollout_hyperparams:
+    <<: *microrts-ai-rollout-defaults
+    scale_advantage_by_values_accuracy: true
   policy_hyperparams:
     <<: *microrts-squnet-deep16-128-policy-defaults
     additional_critic_activation_functions: []

@@ -62,6 +62,7 @@ class Rollout:
         values: np.ndarray,
         logprobs: np.ndarray,
         action_masks: Optional[NumpyOrDict],
+        scale_advantage_by_values_accuracy: bool = False,
     ) -> None:
         self.next_obs = next_obs
         self.next_episode_starts = next_episode_starts
@@ -73,6 +74,7 @@ class Rollout:
         self.values = values
         self.logprobs = logprobs
         self.action_masks = action_masks
+        self.scale_advantage_by_values_accuracy = scale_advantage_by_values_accuracy
 
     def update_advantages(
         self,
@@ -91,16 +93,21 @@ class Rollout:
             gamma,
             gae_lambda,
         )
-        if self._batch:
-            self._batch.advantages = flatten_to_tensor(
-                self.advantages, self._batch.device
-            )
 
         if self.returns is None or update_returns:
             self.returns = self.advantages + self.values
             self._y_true = self.returns.reshape((-1,) + self.returns.shape[2:])
             if self._batch:
                 self._batch.returns = torch.tensor(self._y_true).to(self._batch.device)
+
+        if self.scale_advantage_by_values_accuracy:
+            self.advantages *= np.exp(
+                -np.abs(self.values - self.returns) / self.returns.ptp()
+            )
+        if self._batch:
+            self._batch.advantages = flatten_to_tensor(
+                self.advantages, self._batch.device
+            )
 
     @property
     def y_pred(self) -> np.ndarray:
@@ -170,10 +177,16 @@ class Rollout:
 
 
 class RolloutGenerator(ABC):
-    def __init__(self, n_steps: int, sde_sample_freq: int) -> None:
+    def __init__(
+        self,
+        n_steps: int,
+        sde_sample_freq: int,
+        scale_advantage_by_values_accuracy: bool = False,
+    ) -> None:
         super().__init__()
         self.n_steps = n_steps
         self.sde_sample_freq = sde_sample_freq
+        self.scale_advantage_by_values_accuracy = scale_advantage_by_values_accuracy
 
     @abstractmethod
     def rollout(self) -> Rollout:

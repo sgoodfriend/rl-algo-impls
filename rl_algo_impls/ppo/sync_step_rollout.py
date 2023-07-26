@@ -19,8 +19,13 @@ class SyncStepRolloutGenerator(RolloutGenerator):
         vec_env: VecEnv,
         n_steps: int = 2048,
         sde_sample_freq: int = -1,
+        scale_advantage_by_values_accuracy: bool = False,
     ) -> None:
-        super().__init__(n_steps, sde_sample_freq)
+        super().__init__(
+            n_steps,
+            sde_sample_freq,
+            scale_advantage_by_values_accuracy=scale_advantage_by_values_accuracy,
+        )
         self.policy = policy
         self.vec_env = vec_env
         self.get_action_mask = getattr(vec_env, "get_action_mask", None)
@@ -115,6 +120,7 @@ class SyncStepRolloutGenerator(RolloutGenerator):
             values=self.values,
             logprobs=self.logprobs,
             action_masks=self.action_masks,
+            scale_advantage_by_values_accuracy=self.scale_advantage_by_values_accuracy,
         )
 
 
