@@ -1,10 +1,11 @@
 Microrts-squnet-d16-128-iMayari: &microrts-squnet-d16-128-imayari
+  n_timesteps: !!float 100e6
   additional_keys_to_log:
     - microrts_stats
     - microrts_results
     - results
     - action_mask_stats
-  algo_hyperparams:
+  algo_hyperparams: &microrts-squnet-d16-128-imayari-algo-hyperparams
     learning_rate: 1.0e-05
     batch_size: 3072
     n_epochs: 2
@@ -94,7 +95,6 @@ Microrts-squnet-d16-128-iMayari: &microrts-squnet-d16-128-imayari
     score_function: mean
     skip_evaluate_at_start: true
     step_freq: 1000000.0
-  n_timesteps: 300000000.0
   policy_hyperparams:
     activation_fn: relu
     actor_head_style: squeeze_unet
@@ -132,6 +132,13 @@ Microrts-squnet-d16-128-iMayari: &microrts-squnet-d16-128-imayari
     n_steps: 512
   rollout_type: reference
 
-Microrts-debug: &microrts-debug-defaults
+Microrts-squnet-d16-128-iMayari-linear-lr:
+  &microrts-squnet-d16-128-imayari-linear-lr
   <<: *microrts-squnet-d16-128-imayari
-  device: mps
+  algo_hyperparams:
+    <<: *microrts-squnet-d16-128-imayari-algo-hyperparams
+    learning_rate_decay: linear
+
+Microrts-debug: &microrts-debug-defaults
+  <<: *microrts-squnet-d16-128-imayari-linear-lr
+  device: cpu
