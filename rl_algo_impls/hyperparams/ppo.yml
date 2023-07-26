@@ -1525,6 +1525,7 @@ Microrts-squnet-d16-128-iMayari: &microrts-squnet-d16-128-imayari
     normalize_advantage: false
     update_returns_between_epochs: true
     kl_cutoff: 0.01
+    scale_loss_by_num_actions: true
   eval_hyperparams:
     <<: *microrts-squnet-map16-eval-defaults
     env_overrides:

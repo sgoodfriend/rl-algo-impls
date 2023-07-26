@@ -118,6 +118,7 @@ class PPO(Algorithm):
         multi_reward_weights: Optional[List[int]] = None,
         gradient_accumulation: bool = False,
         kl_cutoff: Optional[float] = None,
+        scale_loss_by_num_actions: bool = False,
     ) -> None:
         super().__init__(policy, device, tb_writer)
         self.policy = policy
@@ -153,6 +154,7 @@ class PPO(Algorithm):
         )
         self.gradient_accumulation = gradient_accumulation
         self.kl_cutoff = kl_cutoff
+        self.scale_loss_by_num_actions = scale_loss_by_num_actions
 
     def learn(
         self: PPOSelf,
@@ -239,7 +241,12 @@ class PPO(Algorithm):
                     logratio = new_logprobs - mb_logprobs
                     ratio = torch.exp(logratio)
                     clipped_ratio = torch.clamp(ratio, min=1 - pi_clip, max=1 + pi_clip)
-                    pi_loss = -torch.min(ratio * mb_adv, clipped_ratio * mb_adv).mean()
+                    pi_loss = -torch.min(ratio * mb_adv, clipped_ratio * mb_adv)
+                    if self.scale_loss_by_num_actions:
+                        with torch.no_grad():
+                            num_actions = mb_action_masks.any(2).sum(1)
+                        pi_loss = torch.where(num_actions > 0, pi_loss / num_actions, 0)
+                    pi_loss = pi_loss.mean()
 
                     v_loss_unclipped = (new_values - mb_returns) ** 2
                     if v_clip:
