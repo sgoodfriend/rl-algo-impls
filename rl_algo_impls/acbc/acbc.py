@@ -40,6 +40,7 @@ class ACBC(Algorithm):
         max_grad_norm: float = 0.5,
         update_returns_between_epochs: bool = False,
         gradient_accumulation: bool = False,
+        scale_loss_by_num_actions: bool = False,
     ) -> None:
         super().__init__(policy, device, tb_writer)
         self.policy = policy
@@ -53,6 +54,7 @@ class ACBC(Algorithm):
         self.max_grad_norm = max_grad_norm
         self.update_returns_between_epochs = update_returns_between_epochs
         self.gradient_accumulation = gradient_accumulation
+        self.scale_loss_by_num_actions = scale_loss_by_num_actions
 
     def learn(
         self: ACBCSelf,
@@ -115,8 +117,14 @@ class ACBC(Algorithm):
                     new_logprobs, _, new_values = self.policy(
                         mb_obs, mb_actions, action_masks=mb_action_masks
                     )
-
-                    pi_loss = -new_logprobs.mean()
+                    if self.scale_loss_by_num_actions:
+                        with torch.no_grad():
+                            num_actions = mb_action_masks.any(2).sum(1)
+                        pi_loss = -torch.where(
+                            num_actions > 0, new_logprobs / num_actions, 0
+                        ).mean()
+                    else:
+                        pi_loss = -new_logprobs.mean()
                     v_loss = ((new_values - mb_returns) ** 2).mean(0)
                     loss = pi_loss + self.vf_coef * v_loss
 
