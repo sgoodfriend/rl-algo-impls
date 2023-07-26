@@ -11,7 +11,7 @@ Microrts-squnet-d16-128-iMayari: &microrts-squnet-d16-128-imayari
     n_epochs: 2
     gamma: 0.999
     gae_lambda: 0.99
-    vf_coef: 0.25
+    vf_coef: 0.5
     max_grad_norm: 0.5
     update_returns_between_epochs: true
     gradient_accumulation: false
