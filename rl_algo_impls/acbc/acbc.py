@@ -149,32 +149,30 @@ class ACBC(Algorithm):
                 if self.gradient_accumulation:
                     self.optimizer_step(optimizer)
 
-                var_y = np.var(r.y_true).item()
-                explained_var = (
-                    np.nan
-                    if var_y == 0
-                    else 1 - np.var(r.y_true - r.y_pred).item() / var_y
-                )
-                TrainStats(step_stats, explained_var).write_to_tensorboard(
-                    self.tb_writer, timesteps_elapsed
-                )
+            var_y = np.var(r.y_true).item()
+            explained_var = (
+                np.nan if var_y == 0 else 1 - np.var(r.y_true - r.y_pred).item() / var_y
+            )
+            TrainStats(step_stats, explained_var).write_to_tensorboard(
+                self.tb_writer, timesteps_elapsed
+            )
 
-                end_time = perf_counter()
-                rollout_steps = r.total_steps
-                self.tb_writer.add_scalar(
-                    "train/steps_per_second",
-                    rollout_steps / (end_time - start_time),
-                    timesteps_elapsed,
-                )
+            end_time = perf_counter()
+            rollout_steps = r.total_steps
+            self.tb_writer.add_scalar(
+                "train/steps_per_second",
+                rollout_steps / (end_time - start_time),
+                timesteps_elapsed,
+            )
 
-                if callbacks:
-                    if not all(
-                        c.on_step(timesteps_elapsed=rollout_steps) for c in callbacks
-                    ):
-                        logging.info(
-                            f"Callback terminated training at {timesteps_elapsed} timesteps"
-                        )
-                        break
+            if callbacks:
+                if not all(
+                    c.on_step(timesteps_elapsed=rollout_steps) for c in callbacks
+                ):
+                    logging.info(
+                        f"Callback terminated training at {timesteps_elapsed} timesteps"
+                    )
+                    break
         return self
 
     def optimizer_step(self, optimizer: Optimizer) -> None:
