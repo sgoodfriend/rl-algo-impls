@@ -5,7 +5,7 @@ Microrts-squnet-d16-128-iMayari: &microrts-squnet-d16-128-imayari
     - microrts_results
     - results
     - action_mask_stats
-  algo_hyperparams: &microrts-squnet-d16-128-imayari-algo-hyperparams
+  algo_hyperparams: &microrts-squnet-d16-128-imayari-algo
     learning_rate: 2.0e-05
     batch_size: 3072
     n_epochs: 2
@@ -15,14 +15,14 @@ Microrts-squnet-d16-128-iMayari: &microrts-squnet-d16-128-imayari
     max_grad_norm: 0.5
     gradient_accumulation: false
     scale_loss_by_num_actions: true
-  env_hyperparams:
+  env_hyperparams: &microrts-squnet-d16-128-imayari-env
     additional_win_loss_reward: false
     bots:
       coacAI: 12
       lightRushAI: 12
       mayari: 6
     env_type: microrts_bots
-    make_kwargs:
+    make_kwargs: &microrts-squnet-d16-128-imayari-env-make-kwargs
       max_steps: 4000
       reward_weight:
         - 1.0
@@ -48,9 +48,9 @@ Microrts-squnet-d16-128-iMayari: &microrts-squnet-d16-128-imayari
     valid_sizes:
       - 16
   env_id: Microrts-squnet-map16
-  eval_hyperparams:
+  eval_hyperparams: &microrts-squnet-d16-128-imayari-eval
     deterministic: false
-    env_overrides:
+    env_overrides: &microrts-squnet-d16-128-imayari-eval-env-overrides
       additional_win_loss_reward: false
       bots:
         coacAI: 2
@@ -68,7 +68,7 @@ Microrts-squnet-d16-128-iMayari: &microrts-squnet-d16-128-imayari
         tiamat: 2
         workerRushAI: 2
       env_type: microrts
-      make_kwargs:
+      make_kwargs: &microrts-squnet-d16-128-imayari-eval-env-make-kwargs
         bot_envs_alternate_player: false
         map_paths:
           - maps/16x16/basesWorkers16x16A.xml
@@ -94,7 +94,7 @@ Microrts-squnet-d16-128-iMayari: &microrts-squnet-d16-128-imayari
     score_function: mean
     skip_evaluate_at_start: true
     step_freq: 1000000.0
-  policy_hyperparams:
+  policy_hyperparams: &microrts-squnet-d16-128-imayari-policy
     activation_fn: relu
     actor_head_style: squeeze_unet
     additional_critic_activation_functions: []
@@ -134,10 +134,55 @@ Microrts-squnet-d16-128-iMayari: &microrts-squnet-d16-128-imayari
 Microrts-squnet-d16-128-iMayari-linear-lr:
   &microrts-squnet-d16-128-imayari-linear-lr
   <<: *microrts-squnet-d16-128-imayari
-  algo_hyperparams:
-    <<: *microrts-squnet-d16-128-imayari-algo-hyperparams
+  algo_hyperparams: &microrts-squnet-d16-128-imayari-linear-lr-algo
+    <<: *microrts-squnet-d16-128-imayari-algo
     learning_rate_decay: linear
 
-Microrts-debug: &microrts-debug-defaults
+Microrts-squnet-d16-128-iMayari-map32: &microrts-squnet-d16-128-imayari-map32
   <<: *microrts-squnet-d16-128-imayari-linear-lr
+  policy_hyperparams:
+    <<: *microrts-squnet-d16-128-imayari-policy
+    load_path: downloaded_models/acbc-Microrts-squnet-d16-128-iMayari-S1-best
+  env_hyperparams:
+    <<: *microrts-squnet-d16-128-imayari-env
+    n_envs: 24
+    map_paths:
+      - maps/DoubleGame24x24.xml
+      - maps/BWDistantResources32x32.xml
+      - maps/chambers32x32.xml
+    make_kwargs:
+      <<: *microrts-squnet-d16-128-imayari-env-make-kwargs
+      max_steps: 6000
+    bots:
+      mayari: 6
+      lightRushAI: 6
+      coacAI: 6
+    valid_sizes: [32]
+  eval_hyperparams:
+    <<: *microrts-squnet-d16-128-imayari-eval
+    step_freq: !!float 5e6
+    env_overrides:
+      <<: *microrts-squnet-d16-128-imayari-eval-env-overrides
+      make_kwargs:
+        <<: *microrts-squnet-d16-128-imayari-eval-env-make-kwargs
+        max_steps: 6000
+        map_paths: [maps/BWDistantResources32x32.xml]
+  algo_hyperparams:
+    <<: *microrts-squnet-d16-128-imayari-linear-lr-algo
+    batch_size: 1024
+  hyperparam_transitions_kwargs:
+    interpolate_method: cosine
+    phases:
+      - learning_rate: !!float 1e-5
+      - learning_rate: !!float 2e-5
+      - learning_rate: !!float 1e-6
+    durations:
+      - 0
+      - 0.05
+      - 0.3
+      - 0.2
+      - 0.45
+
+Microrts-debug: &microrts-debug-defaults
+  <<: *microrts-squnet-d16-128-imayari-map32
   device: cpu
