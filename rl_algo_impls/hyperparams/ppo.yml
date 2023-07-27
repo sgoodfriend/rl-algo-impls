@@ -1485,6 +1485,7 @@ Microrts-squnet-d16-128-map64-finetune: &microrts-squnet-d16-128-map64-finetune
 
 Microrts-squnet-d16-128-iMayari: &microrts-squnet-d16-128-imayari
   <<: *microrts-squnet-deep16-128
+  n_timesteps: !!float 100e6
   rollout_type: reference
   env_hyperparams: &microrts-squnet-d16-128-imayari-env
     <<: *microrts-squnet-map16-env-defaults
@@ -1536,13 +1537,16 @@ Microrts-squnet-d16-128-iMayari: &microrts-squnet-d16-128-imayari
       env_type: microrts
     skip_evaluate_at_start: true
 
-Microrts-squnet-d16-128-BC-finetune: &microrts-squnet-d16-128-bc-finetune
+Microrts-squnet-d16-128-BC-oppo: &microrts-squnet-d16-128-bc-oppo
   <<: *microrts-squnet-d16-128-imayari
-  n_timesteps: !!float 100e6
-  policy_hyperparams: &microrts-squnet-d16-128-bc-finetune-policy
+  policy_hyperparams: &microrts-squnet-d16-128-bc-oppo-policy
     <<: *microrts-squnet-d16-128-imayari-policy
     load_path: downloaded_models/acbc-Microrts-squnet-d16-128-iMayari-S1-best
-  rollout_type: sync
+
+Microrts-squnet-d16-128-BC-finetune: &microrts-squnet-d16-128-bc-finetune
+  <<: *microrts-squnet-deep16-128
+  policy_hyperparams:
+    <<: *microrts-squnet-d16-128-bc-oppo-policy
   env_hyperparams:
     <<: *microrts-squnet-d16-128-map16-env-defaults
     make_kwargs:
@@ -1578,8 +1582,8 @@ Microrts-squnet-d16-128-BC-finetune: &microrts-squnet-d16-128-bc-finetune
     <<: *microrts-squnet-map16-eval-defaults
 
 Microrts-debug: &microrts-debug-defaults
-  <<: *microrts-squnet-d16-128-bc-finetune
-  device: mps
+  <<: *microrts-squnet-d16-128-bc-oppo
+  device: cpu
 
 Microrts-agent: &microrts-agent
   <<: *microrts-sp-dc-phases-defaults
