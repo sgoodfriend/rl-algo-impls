@@ -134,12 +134,15 @@ def train(args: TrainArgs):
     if self_play_wrapper:
         callbacks.append(SelfPlayCallback(policy, policy_factory, self_play_wrapper))
 
-    rollout_generator_cls = SyncStepRolloutGenerator
     if config.rollout_type:
-        if config.rollout_type == "reference":
+        if config.rollout_type == "sync":
+            rollout_generator_cls = SyncStepRolloutGenerator
+        elif config.rollout_type == "reference":
             rollout_generator_cls = ReferenceAIRollout
         else:
             raise ValueError(f"{config.rollout_type} not recognized rollout_type")
+    else:
+        rollout_generator_cls = SyncStepRolloutGenerator
 
     rollout_generator = rollout_generator_cls(policy, env, **config.rollout_hyperparams)
     algo.learn(config.n_timesteps, rollout_generator, callbacks=callbacks)
