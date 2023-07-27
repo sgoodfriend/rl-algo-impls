@@ -143,14 +143,14 @@ Microrts-squnet-d16-128-iMayari-map32: &microrts-squnet-d16-128-imayari-map32
   policy_hyperparams:
     <<: *microrts-squnet-d16-128-imayari-policy
     load_path: downloaded_models/acbc-Microrts-squnet-d16-128-iMayari-S1-best
-  env_hyperparams:
+  env_hyperparams: &microrts-squnet-d16-128-imayari-map32-env
     <<: *microrts-squnet-d16-128-imayari-env
     n_envs: 24
     map_paths:
       - maps/DoubleGame24x24.xml
       - maps/BWDistantResources32x32.xml
       - maps/chambers32x32.xml
-    make_kwargs:
+    make_kwargs: &microrts-squnet-d16-128-imayari-map32-env-make-kwargs
       <<: *microrts-squnet-d16-128-imayari-env-make-kwargs
       max_steps: 6000
     bots:
@@ -158,16 +158,16 @@ Microrts-squnet-d16-128-iMayari-map32: &microrts-squnet-d16-128-imayari-map32
       lightRushAI: 6
       coacAI: 6
     valid_sizes: [32]
-  eval_hyperparams:
+  eval_hyperparams: &microrts-squnet-d16-128-imayari-map32-eval
     <<: *microrts-squnet-d16-128-imayari-eval
     step_freq: !!float 5e6
-    env_overrides:
+    env_overrides: &microrts-squnet-d16-128-imayari-map32-eval-env-overrides
       <<: *microrts-squnet-d16-128-imayari-eval-env-overrides
-      make_kwargs:
+      make_kwargs: &microrts-squnet-d16-128-imayari-map32-eval-env-make-kwargs
         <<: *microrts-squnet-d16-128-imayari-eval-env-make-kwargs
         max_steps: 6000
         map_paths: [maps/BWDistantResources32x32.xml]
-  algo_hyperparams:
+  algo_hyperparams: &microrts-squnet-d16-128-imayari-map32-algo
     <<: *microrts-squnet-d16-128-imayari-linear-lr-algo
     batch_size: 512
   hyperparam_transitions_kwargs:
@@ -183,6 +183,36 @@ Microrts-squnet-d16-128-iMayari-map32: &microrts-squnet-d16-128-imayari-map32
       - 0.85
       - 0.05
 
-Microrts-debug: &microrts-debug-defaults
+Microrts-squnet-d16-128-iMayari-map64: &microrts-squnet-d16-128-imayari-map64
   <<: *microrts-squnet-d16-128-imayari-map32
+  env_hyperparams:
+    <<: *microrts-squnet-d16-128-imayari-map32-env
+    n_envs: 24
+    map_paths:
+      - maps/BroodWar/(4)BloodBath.scmB.xml # 64x64
+      - maps/BroodWar/(4)BloodBath.scmE.xml # 64x64
+    make_kwargs:
+      <<: *microrts-squnet-d16-128-imayari-map32-env-make-kwargs
+      max_steps: 8000
+    bots:
+      mayari: 4
+      lightRushAI: 8
+      coacAI: 8
+    valid_sizes: [64]
+  eval_hyperparams:
+    <<: *microrts-squnet-d16-128-imayari-map32-eval
+    step_freq: !!float 10e6
+    env_overrides:
+      <<: *microrts-squnet-d16-128-imayari-map32-eval-env-overrides
+      make_kwargs:
+        <<: *microrts-squnet-d16-128-imayari-map32-eval-env-make-kwargs
+        max_steps: 8000
+        map_paths: [maps/BroodWar/(4)BloodBath.scmB.xml]
+  algo_hyperparams:
+    <<: *microrts-squnet-d16-128-imayari-map32-algo
+    batch_size: 48
+    gradient_accumulation: true
+
+Microrts-debug: &microrts-debug-defaults
+  <<: *microrts-squnet-d16-128-imayari-map64
   device: cpu
