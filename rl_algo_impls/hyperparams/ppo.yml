@@ -1467,7 +1467,7 @@ Microrts-squnet-d16-128-map64-finetune: &microrts-squnet-d16-128-map64-finetune
       - multi_reward_weights: [0, 0.99, 0.01] # Win-loss sparse rewards
         vf_coef: [0.2, 0.4, 0.2]
         ent_coef: 0.01
-        learning_rate: !!float 1e-4
+        learning_rate: !!float 5e-5
       - multi_reward_weights: [0.4, 0.5, 0.1] # Sparse + Shaped rewards
         vf_coef: [0.3, 0.4, 0.1]
         ent_coef: 0.01
@@ -1475,7 +1475,7 @@ Microrts-squnet-d16-128-map64-finetune: &microrts-squnet-d16-128-map64-finetune
       - multi_reward_weights: [0, 0.99, 0.01] # Win-loss sparse rewards
         vf_coef: [0, 0.5, 0.1]
         ent_coef: 0.0001
-        learning_rate: !!float 1e-5
+        learning_rate: !!float 2e-5
     durations:
       - 0
       - 0.05
