@@ -112,8 +112,6 @@ class PPO(Algorithm):
         vf_coef: NumOrList = 0.5,
         ppo2_vf_coef_halving: bool = False,
         max_grad_norm: float = 0.5,
-        update_advantage_between_epochs: bool = True,
-        update_returns_between_epochs: bool = False,
         gamma_end: Optional[NL] = None,
         multi_reward_weights: Optional[List[int]] = None,
         gradient_accumulation: bool = False,
@@ -146,8 +144,6 @@ class PPO(Algorithm):
         self.batch_size = batch_size
         self.n_epochs = n_epochs
 
-        self.update_advantage_between_epochs = update_advantage_between_epochs
-        self.update_returns_between_epochs = update_returns_between_epochs
 
         self.multi_reward_weights = (
             np.array(multi_reward_weights) if multi_reward_weights else None
@@ -195,7 +191,7 @@ class PPO(Algorithm):
                 chart_scalars["reward_weights"] = self.multi_reward_weights
             log_scalars(self.tb_writer, "charts", chart_scalars, timesteps_elapsed)
 
-            r = rollout_generator.rollout()
+            r = rollout_generator.rollout(gamma, self.gae_lambda)
             timesteps_elapsed += r.total_steps
 
             step_stats = []
@@ -207,13 +203,6 @@ class PPO(Algorithm):
             vf_coef = torch.Tensor(np.array(self.vf_coef)).to(self.device)
             pi_coef = 1
             for e in range(self.n_epochs):
-                if e == 0 or self.update_advantage_between_epochs:
-                    r.update_advantages(
-                        self.policy,
-                        gamma,
-                        self.gae_lambda,
-                        update_returns=self.update_returns_between_epochs,
-                    )
                 # Only record last epoch's stats
                 step_stats.clear()
                 for mb in r.minibatches(self.batch_size, self.device):

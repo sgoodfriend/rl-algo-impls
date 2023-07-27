@@ -72,13 +72,34 @@ def compute_rtg_and_advantage_from_trajectories(
     )
 
 
-def compute_advantages(
+def compute_advantages_from_policy(
     rewards: np.ndarray,
     values: np.ndarray,
     episode_starts: np.ndarray,
     next_episode_starts: np.ndarray,
     next_obs: VecEnvObs,
     policy: OnPolicy,
+    gamma: Union[float, np.ndarray],
+    gae_lambda: Union[float, np.ndarray],
+) -> np.ndarray:
+    next_values = policy.value(next_obs)
+    return compute_advantages(
+        rewards,
+        values,
+        episode_starts,
+        next_episode_starts,
+        next_values,
+        gamma,
+        gae_lambda,
+    )
+
+
+def compute_advantages(
+    rewards: np.ndarray,
+    values: np.ndarray,
+    episode_starts: np.ndarray,
+    next_episode_starts: np.ndarray,
+    next_values: np.ndarray,
     gamma: Union[float, np.ndarray],
     gae_lambda: Union[float, np.ndarray],
 ) -> np.ndarray:
@@ -92,7 +113,7 @@ def compute_advantages(
     for t in reversed(range(n_steps)):
         if t == n_steps - 1:
             next_nonterminal = 1.0 - next_episode_starts
-            next_value = policy.value(next_obs)
+            next_value = next_values
         else:
             next_nonterminal = 1.0 - episode_starts[t + 1]
             next_value = values[t + 1]

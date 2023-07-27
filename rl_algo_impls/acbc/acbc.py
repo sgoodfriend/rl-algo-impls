@@ -38,7 +38,6 @@ class ACBC(Algorithm):
         gae_lambda: float = 0.95,
         vf_coef: float = 0.25,
         max_grad_norm: float = 0.5,
-        update_returns_between_epochs: bool = False,
         gradient_accumulation: bool = False,
         scale_loss_by_num_actions: bool = False,
     ) -> None:
@@ -52,7 +51,6 @@ class ACBC(Algorithm):
         self.gae_lambda = gae_lambda
         self.vf_coef = vf_coef
         self.max_grad_norm = max_grad_norm
-        self.update_returns_between_epochs = update_returns_between_epochs
         self.gradient_accumulation = gradient_accumulation
         self.scale_loss_by_num_actions = scale_loss_by_num_actions
 
@@ -86,20 +84,11 @@ class ACBC(Algorithm):
             }
             log_scalars(self.tb_writer, "charts", chart_scalars, timesteps_elapsed)
 
-            r = rollout_generator.rollout()
+            r = rollout_generator.rollout(self.gamma, self.gae_lambda)
             timesteps_elapsed += r.total_steps
 
             step_stats: List[Dict[str, float]] = []
             for e in range(self.n_epochs):
-                if e == 0 or self.update_returns_between_epochs:
-                    # Using the same value head computation as PPO since the idea is
-                    # that the BC model will be the starting point for PPO.
-                    r.update_advantages(
-                        self.policy,
-                        self.gamma,
-                        self.gae_lambda,
-                        update_returns=self.update_returns_between_epochs,
-                    )
                 step_stats.clear()
                 for mb in r.minibatches(self.batch_size, self.device):
                     self.policy.reset_noise(self.batch_size)

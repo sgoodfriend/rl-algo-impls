@@ -1,13 +1,13 @@
 from abc import ABC, abstractmethod
 from dataclasses import astuple, dataclass
-from typing import Iterator, Optional, Union
+from typing import Iterator, Optional
 
 import numpy as np
 import torch
 
 from rl_algo_impls.shared.gae import compute_advantages
-from rl_algo_impls.shared.policy.actor_critic import ActorCritic
 from rl_algo_impls.shared.tensor_utils import (
+    NumOrArray,
     NumpyOrDict,
     TensorOrDict,
     tensor_by_indicies,
@@ -34,9 +34,6 @@ class Batch:
 
 
 class Rollout:
-    next_obs: np.ndarray
-    next_episode_starts: np.ndarray
-
     obs: np.ndarray
     actions: NumpyOrDict
     rewards: np.ndarray
@@ -46,17 +43,17 @@ class Rollout:
     action_masks: Optional[NumpyOrDict]
     num_actions: Optional[np.ndarray]
 
-    advantages: Optional[np.ndarray] = None
-    returns: Optional[np.ndarray] = None
+    advantages: np.ndarray
+    returns: np.ndarray
 
-    _y_true: Optional[np.ndarray] = None
+    y_true: np.ndarray
 
     _batch: Optional[Batch] = None
 
     def __init__(
         self,
-        next_obs: np.ndarray,
         next_episode_starts: np.ndarray,
+        next_values: np.ndarray,
         obs: np.ndarray,
         actions: NumpyOrDict,
         rewards: np.ndarray,
@@ -64,11 +61,10 @@ class Rollout:
         values: np.ndarray,
         logprobs: np.ndarray,
         action_masks: Optional[NumpyOrDict],
+        gamma: NumOrArray,
+        gae_lambda: NumOrArray,
         scale_advantage_by_values_accuracy: bool = False,
     ) -> None:
-        self.next_obs = next_obs
-        self.next_episode_starts = next_episode_starts
-
         self.obs = obs
         self.actions = actions
         self.rewards = rewards
@@ -92,29 +88,20 @@ class Rollout:
         else:
             self.num_actions = None
 
-    def update_advantages(
-        self,
-        policy: ActorCritic,
-        gamma: Union[float, np.ndarray],
-        gae_lambda: Union[float, np.ndarray],
-        update_returns: bool = False,
-    ):
         self.advantages = compute_advantages(
             self.rewards,
             self.values,
             self.episode_starts,
-            self.next_episode_starts,
-            self.next_obs,
-            policy,
+            next_episode_starts,
+            next_values,
             gamma,
             gae_lambda,
         )
 
-        if self.returns is None or update_returns:
-            self.returns = self.advantages + self.values
-            self._y_true = self.returns.reshape((-1,) + self.returns.shape[2:])
-            if self._batch:
-                self._batch.returns = torch.tensor(self._y_true).to(self._batch.device)
+        self.returns = self.advantages + self.values
+        self.y_true = self.returns.reshape((-1,) + self.returns.shape[2:])
+        if self._batch:
+            self._batch.returns = torch.tensor(self.y_true).to(self._batch.device)
 
         if self.scale_advantage_by_values_accuracy:
             self.advantages *= np.exp(
@@ -128,11 +115,6 @@ class Rollout:
     @property
     def y_pred(self) -> np.ndarray:
         return self.values.reshape((-1,) + self.values.shape[2:])
-
-    @property
-    def y_true(self) -> np.ndarray:
-        assert self._y_true is not None, "Must run update_advantages before y_true"
-        return self._y_true
 
     @property
     def total_steps(self) -> int:
@@ -166,7 +148,7 @@ class Rollout:
                 self.advantages is not None and self.returns is not None
             ), "Must call update_advantages before minibatches"
             b_advantages = flatten_to_tensor(self.advantages, device)
-            b_returns = torch.tensor(self._y_true).to(device)
+            b_returns = torch.tensor(self.y_true).to(device)
 
             self._batch = Batch(
                 b_obs,
@@ -219,7 +201,7 @@ class RolloutGenerator(ABC):
         self.scale_advantage_by_values_accuracy = scale_advantage_by_values_accuracy
 
     @abstractmethod
-    def rollout(self) -> Rollout:
+    def rollout(self, gamma: NumOrArray, gae_lambda: NumOrArray) -> Rollout:
         ...
 
 
