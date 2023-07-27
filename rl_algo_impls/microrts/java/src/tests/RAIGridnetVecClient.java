@@ -76,9 +76,9 @@ public class RAIGridnetVecClient {
     byte[][] terrain;
 
     double[] terminalReward1;
-    boolean[] terminalRone1;
+    boolean[] terminalDone1;
     double[] terminalReward2;
-    boolean[] terminalRone2;
+    boolean[] terminalDone2;
 
     public RAIGridnetVecClient(int a_num_selfplayenvs, int a_num_envs, int a_max_steps, RewardFunctionInterface[] a_rfs,
             String a_micrortsPath, String[] a_mapPaths,
@@ -109,9 +109,9 @@ public class RAIGridnetVecClient {
         done = new boolean[s1][rfs.length];
         resources = new byte[s1][2];
         terminalReward1 = new double[rfs.length];
-        terminalRone1 = new boolean[rfs.length];
+        terminalDone1 = new boolean[rfs.length];
         terminalReward2 = new double[rfs.length];
-        terminalRone2 = new boolean[rfs.length];
+        terminalDone2 = new boolean[rfs.length];
         responses = new RAIResponses(null, null, null, null, null, null);
         terrain = new byte[s1][];
         rs = new RAIResponse[s1];
@@ -120,9 +120,11 @@ public class RAIGridnetVecClient {
     public RAIResponses reset(int[] players) throws Exception {
         for (int i = 0; i < selfPlayClients.length; i++) {
             selfPlayClients[i].reset();
-            rs[i * 2] = selfPlayClients[i].getResponse(0);
-            rs[i * 2 + 1] = selfPlayClients[i].getResponse(1);
+            for (int p = 0; p < 2; ++p) {
+                rs[i * 2 + p] = selfPlayClients[i].getResponse(p);
+            }
         }
+        Arrays.fill(envSteps, 0);
         for (int i = selfPlayClients.length * 2; i < players.length; i++) {
             rs[i] = clients[i - selfPlayClients.length * 2].reset(players[i]);
         }
@@ -149,17 +151,17 @@ public class RAIGridnetVecClient {
             if (rs[i * 2].done[0] || envSteps[i * 2] >= maxSteps) {
                 for (int j = 0; j < terminalReward1.length; j++) {
                     terminalReward1[j] = rs[i * 2].reward[j];
-                    terminalRone1[j] = rs[i * 2].done[j];
+                    terminalDone1[j] = rs[i * 2].done[j];
                     terminalReward2[j] = rs[i * 2 + 1].reward[j];
-                    terminalRone2[j] = rs[i * 2 + 1].done[j];
+                    terminalDone2[j] = rs[i * 2 + 1].done[j];
                 }
 
                 selfPlayClients[i].reset();
                 for (int j = 0; j < terminalReward1.length; j++) {
                     rs[i * 2].reward[j] = terminalReward1[j];
-                    rs[i * 2].done[j] = terminalRone1[j];
+                    rs[i * 2].done[j] = terminalDone1[j];
                     rs[i * 2 + 1].reward[j] = terminalReward2[j];
-                    rs[i * 2 + 1].done[j] = terminalRone2[j];
+                    rs[i * 2 + 1].done[j] = terminalDone2[j];
                 }
                 rs[i * 2].done[0] = true;
                 rs[i * 2 + 1].done[0] = true;
@@ -176,12 +178,12 @@ public class RAIGridnetVecClient {
                 // so we need to set the old reward and done to this response
                 for (int j = 0; j < rs[i].reward.length; j++) {
                     terminalReward1[j] = rs[i].reward[j];
-                    terminalRone1[j] = rs[i].done[j];
+                    terminalDone1[j] = rs[i].done[j];
                 }
                 clients[i - selfPlayClients.length * 2].reset(players[i]);
                 for (int j = 0; j < rs[i].reward.length; j++) {
                     rs[i].reward[j] = terminalReward1[j];
-                    rs[i].done[j] = terminalRone1[j];
+                    rs[i].done[j] = terminalDone1[j];
                 }
                 rs[i].done[0] = true;
                 envSteps[i] = 0;

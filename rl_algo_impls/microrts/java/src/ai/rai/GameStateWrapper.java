@@ -8,12 +8,14 @@ import java.util.stream.Collectors;
 import rts.GameState;
 import rts.PhysicalGameState;
 import rts.Player;
+import rts.PlayerAction;
 import rts.ResourceUsage;
 import rts.UnitAction;
 import rts.UnitActionAssignment;
 import rts.units.Unit;
 import rts.units.UnitType;
 import rts.units.UnitTypeTable;
+import util.Pair;
 
 public class GameStateWrapper {
     GameState gs;
@@ -603,5 +605,57 @@ public class GameStateWrapper {
                 (byte) gs.getPlayer(player).getResources(),
                 (byte) gs.getPlayer(1 - player).getResources()
         };
+    }
+
+    public static int[][] toVectorAction(GameState gs, PlayerAction pa) {
+        UnitTypeTable utt = gs.getUnitTypeTable();
+        int centerCoordinate = utt.getMaxAttackRange();
+        int maxAttackDiameter = utt.getMaxAttackRange() * 2 + 1;
+        int width = gs.getPhysicalGameState().getWidth();
+
+        ArrayList<int[]> vectorActions = new ArrayList<>();
+
+        for (Pair<Unit, UnitAction> uua : pa.getActions()) {
+            Unit u = uua.m_a;
+            UnitAction ua = uua.m_b;
+            if (!gs.getActionAssignment(u).action.equals(ua)) {
+                System.out.println(u + " hasn't been issued " + ua + ". Skipping.");
+                continue;
+            }
+            int[] va = new int[8];
+            va[0] = u.getX() + u.getY() * width;
+            va[1] = ua.getType();
+            switch (ua.getType()) {
+                case UnitAction.TYPE_NONE: {
+                    break;
+                }
+                case UnitAction.TYPE_MOVE: {
+                    va[2] = ua.getDirection();
+                    break;
+                }
+                case UnitAction.TYPE_HARVEST: {
+                    va[3] = ua.getDirection();
+                    break;
+                }
+                case UnitAction.TYPE_RETURN: {
+                    va[4] = ua.getDirection();
+                    break;
+                }
+                case UnitAction.TYPE_PRODUCE: {
+                    va[5] = ua.getDirection();
+                    va[6] = ua.getUnitType().ID;
+                    break;
+                }
+                case UnitAction.TYPE_ATTACK_LOCATION: {
+                    int relativeX = ua.getLocationX() - u.getX();
+                    int relativeY = ua.getLocationY() - u.getY();
+                    va[7] = relativeX + centerCoordinate
+                            + (relativeY + centerCoordinate) * maxAttackDiameter;
+                    break;
+                }
+            }
+            vectorActions.add(va);
+        }
+        return vectorActions.toArray(new int[0][]);
     }
 }

@@ -17,6 +17,7 @@ from gym.spaces import Box, Discrete
 from torch.utils.tensorboard.writer import SummaryWriter
 
 from rl_algo_impls.a2c.a2c import A2C
+from rl_algo_impls.acbc.acbc import ACBC
 from rl_algo_impls.dqn.dqn import DQN
 from rl_algo_impls.dqn.policy import DQNPolicy
 from rl_algo_impls.ppo.ppo import PPO
@@ -36,12 +37,14 @@ ALGOS: Dict[str, Type[Algorithm]] = {
     "vpg": VanillaPolicyGradient,
     "ppo": PPO,
     "a2c": A2C,
+    "acbc": ACBC,
 }
 POLICIES: Dict[str, Type[Policy]] = {
     "dqn": DQNPolicy,
     "vpg": VPGActorCritic,
     "ppo": ActorCritic,
     "a2c": ActorCritic,
+    "acbc": ActorCritic,
 }
 
 HYPERPARAMS_PATH = "hyperparams"

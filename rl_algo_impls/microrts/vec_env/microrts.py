@@ -13,6 +13,7 @@ from rl_algo_impls.microrts.wrappers.microrts_stats_recorder import (
     MicrortsStatsRecorder,
 )
 from rl_algo_impls.runner.config import Config, EnvHyperparams
+from rl_algo_impls.wrappers.action_mask_stats_recorder import ActionMaskStatsRecorder
 from rl_algo_impls.wrappers.action_mask_wrapper import MicrortsMaskWrapper
 from rl_algo_impls.wrappers.additional_win_loss_reward import (
     AdditionalWinLossRewardWrapper,
@@ -63,6 +64,7 @@ def make_microrts_env(
         terrain_overrides,
         time_budget_ms,
         video_frames_per_second,
+        _,  # reference_bot,
     ) = astuple(hparams)
 
     seed = config.seed(training=training)
@@ -190,10 +192,10 @@ def make_microrts_env(
     if not is_agent:
         envs = MicrortsStatsRecorder(
             envs,
-            config.algo_hyperparams.get("gamma", 0.99),
             bots,
             make_kwargs.get("map_paths"),
         )
+    envs = ActionMaskStatsRecorder(envs)
     if training:
         assert tb_writer
         envs = EpisodeStatsWriter(

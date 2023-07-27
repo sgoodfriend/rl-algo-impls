@@ -10,7 +10,7 @@ from torch.utils.tensorboard.writer import SummaryWriter
 
 from rl_algo_impls.shared.algorithm import Algorithm
 from rl_algo_impls.shared.callbacks import Callback
-from rl_algo_impls.shared.gae import compute_advantages
+from rl_algo_impls.shared.gae import compute_advantages_from_policy
 from rl_algo_impls.shared.policy.actor_critic import ActorCritic
 from rl_algo_impls.shared.schedule import schedule, update_learning_rate
 from rl_algo_impls.shared.stats import log_scalars
@@ -127,7 +127,7 @@ class A2C(Algorithm):
                     clamped_action
                 )
 
-            advantages = compute_advantages(
+            advantages = compute_advantages_from_policy(
                 rewards,
                 values,
                 episode_starts,

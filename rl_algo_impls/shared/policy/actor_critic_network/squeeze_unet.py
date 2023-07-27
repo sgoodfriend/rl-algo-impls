@@ -197,6 +197,8 @@ class SqueezeUnetActorCriticNetwork(BackboneActorCritic):
         additional_critic_activation_functions: Optional[List[str]] = None,
         critic_channels: int = 64,
         increment_kernel_size_on_down_conv: bool = False,
+        output_activation_fn: str = "identity",
+        subaction_mask: Optional[List[int]] = None,
     ) -> None:
         if cnn_layers_init_orthogonal is None:
             cnn_layers_init_orthogonal = False
@@ -239,4 +241,6 @@ class SqueezeUnetActorCriticNetwork(BackboneActorCritic):
             init_layers_orthogonal=init_layers_orthogonal,
             cnn_layers_init_orthogonal=cnn_layers_init_orthogonal,
             strides=strides_per_level,
+            output_activation_fn=output_activation_fn,
+            subaction_mask=subaction_mask,
         )

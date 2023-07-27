@@ -47,12 +47,13 @@ def make_procgen_env(
         _,  # map_paths,
         _,  # score_reward_kwargs,
         _,  # is_agent
-        _, # valid_sizes,
-        _, # paper_planes_sizes,
-        _, # fixed_size,
-        _, # terrain_overrides,
+        _,  # valid_sizes,
+        _,  # paper_planes_sizes,
+        _,  # fixed_size,
+        _,  # terrain_overrides,
         _,  # time_budget_ms,
         _,  # video_frames_per_second,
+        _,  # reference_bot,
     ) = astuple(hparams)
 
     seed = config.seed(training=training)

@@ -1,11 +1,10 @@
 from typing import Dict, TypeVar
 
 import numpy as np
-from gym.spaces import Dict as DictSpace
 
 from rl_algo_impls.ppo.rollout import Rollout, RolloutGenerator
 from rl_algo_impls.shared.policy.actor_critic import ActorCritic
-from rl_algo_impls.shared.tensor_utils import batch_dict_keys
+from rl_algo_impls.shared.tensor_utils import NumOrArray, batch_dict_keys
 from rl_algo_impls.wrappers.vectorable_wrapper import (
     VecEnv,
     single_action_space,
@@ -20,8 +19,13 @@ class SyncStepRolloutGenerator(RolloutGenerator):
         vec_env: VecEnv,
         n_steps: int = 2048,
         sde_sample_freq: int = -1,
+        scale_advantage_by_values_accuracy: bool = False,
     ) -> None:
-        super().__init__(n_steps, sde_sample_freq)
+        super().__init__(
+            n_steps,
+            sde_sample_freq,
+            scale_advantage_by_values_accuracy=scale_advantage_by_values_accuracy,
+        )
         self.policy = policy
         self.vec_env = vec_env
         self.get_action_mask = getattr(vec_env, "get_action_mask", None)
@@ -75,7 +79,7 @@ class SyncStepRolloutGenerator(RolloutGenerator):
                 else None
             )
 
-    def rollout(self) -> Rollout:
+    def rollout(self, gamma: NumOrArray, gae_lambda: NumOrArray) -> Rollout:
         self.policy.eval()
         self.policy.reset_noise()
         for s in range(self.n_steps):
@@ -104,11 +108,13 @@ class SyncStepRolloutGenerator(RolloutGenerator):
                 self.get_action_mask() if self.get_action_mask else None
             )
 
+        next_values = self.policy.value(self.next_obs)
+
         self.policy.train()
         assert isinstance(self.next_obs, np.ndarray)
         return Rollout(
-            next_obs=self.next_obs,
             next_episode_starts=self.next_episode_starts,
+            next_values=next_values,
             obs=self.obs,
             actions=self.actions,
             rewards=self.rewards,
@@ -116,6 +122,9 @@ class SyncStepRolloutGenerator(RolloutGenerator):
             values=self.values,
             logprobs=self.logprobs,
             action_masks=self.action_masks,
+            gamma=gamma,
+            gae_lambda=gae_lambda,
+            scale_advantage_by_values_accuracy=self.scale_advantage_by_values_accuracy,
         )
 
 

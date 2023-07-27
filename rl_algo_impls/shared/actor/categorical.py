@@ -7,6 +7,10 @@ from torch.distributions import Categorical
 from rl_algo_impls.shared.actor import Actor, PiForward, pi_forward
 from rl_algo_impls.shared.module.utils import mlp
 
+DEBUG_VERIFY = False
+if DEBUG_VERIFY:
+    import logging
+
 
 class MaskedCategorical(Categorical):
     def __init__(
@@ -19,8 +23,22 @@ class MaskedCategorical(Categorical):
         if mask is not None:
             assert logits is not None, "mask requires logits and not probs"
             logits = torch.where(mask, logits, torch.tensor(-1e8).to(logits.device))
+            if DEBUG_VERIFY:
+                self.rows_with_valid_actions = mask.any(dim=1)
+                self.non_empty_action_mask = mask[self.rows_with_valid_actions]
         self.mask = mask
         super().__init__(probs, logits, validate_args)
+
+    def log_prob(self, value):
+        logp = super().log_prob(value)
+        if DEBUG_VERIFY and self.mask is not None:
+            valid_actions = self.non_empty_action_mask[
+                torch.arange(self.non_empty_action_mask.shape[0]),
+                value[self.rows_with_valid_actions],
+            ]
+            if not (len(valid_actions) == 0 or valid_actions.all()):
+                logging.error(f"INVALID ACTIONS SELECTED")
+        return logp
 
     def entropy(self) -> torch.Tensor:
         if self.mask is None:

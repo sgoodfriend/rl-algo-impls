@@ -138,6 +138,7 @@ class EvalCallback(Callback):
         score_function: str = "mean-std",
         wandb_enabled: bool = False,
         score_threshold: Optional[float] = None,
+        skip_evaluate_at_start: bool = False,
     ) -> None:
         super().__init__()
         self.policy = policy
@@ -163,10 +164,14 @@ class EvalCallback(Callback):
         self.score_function = score_function
         self.wandb_enabled = wandb_enabled
         self.score_threshold = score_threshold
+        self.skip_evaluate_at_start = skip_evaluate_at_start
 
     def on_step(self, timesteps_elapsed: int = 1) -> bool:
         super().on_step(timesteps_elapsed)
-        if self.timesteps_elapsed // self.step_freq >= len(self.stats):
+        desired_num_stats = self.timesteps_elapsed // self.step_freq
+        if not self.skip_evaluate_at_start:
+            desired_num_stats += 1
+        if desired_num_stats > len(self.stats):
             self.evaluate()
         return True
 

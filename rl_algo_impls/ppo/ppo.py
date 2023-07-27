@@ -20,12 +20,7 @@ from rl_algo_impls.shared.schedule import (
     update_learning_rate,
 )
 from rl_algo_impls.shared.stats import log_scalars
-from rl_algo_impls.shared.tensor_utils import (
-    NumOrList,
-    num_or_array,
-    unqueeze_dims_to_match,
-)
-from rl_algo_impls.wrappers.vectorable_wrapper import VecEnv
+from rl_algo_impls.shared.tensor_utils import NumOrList, num_or_array
 
 
 class TrainStepStats(NamedTuple):
@@ -117,11 +112,11 @@ class PPO(Algorithm):
         vf_coef: NumOrList = 0.5,
         ppo2_vf_coef_halving: bool = False,
         max_grad_norm: float = 0.5,
-        update_advantage_between_epochs: bool = True,
-        update_returns_between_epochs: bool = False,
         gamma_end: Optional[NL] = None,
         multi_reward_weights: Optional[List[int]] = None,
         gradient_accumulation: bool = False,
+        kl_cutoff: Optional[float] = None,
+        scale_loss_by_num_actions: bool = False,
     ) -> None:
         super().__init__(policy, device, tb_writer)
         self.policy = policy
@@ -149,13 +144,13 @@ class PPO(Algorithm):
         self.batch_size = batch_size
         self.n_epochs = n_epochs
 
-        self.update_advantage_between_epochs = update_advantage_between_epochs
-        self.update_returns_between_epochs = update_returns_between_epochs
 
         self.multi_reward_weights = (
             np.array(multi_reward_weights) if multi_reward_weights else None
         )
         self.gradient_accumulation = gradient_accumulation
+        self.kl_cutoff = kl_cutoff
+        self.scale_loss_by_num_actions = scale_loss_by_num_actions
 
     def learn(
         self: PPOSelf,
@@ -196,7 +191,7 @@ class PPO(Algorithm):
                 chart_scalars["reward_weights"] = self.multi_reward_weights
             log_scalars(self.tb_writer, "charts", chart_scalars, timesteps_elapsed)
 
-            r = rollout_generator.rollout()
+            r = rollout_generator.rollout(gamma, self.gae_lambda)
             timesteps_elapsed += r.total_steps
 
             step_stats = []
@@ -206,14 +201,8 @@ class PPO(Algorithm):
                 else None
             )
             vf_coef = torch.Tensor(np.array(self.vf_coef)).to(self.device)
+            pi_coef = 1
             for e in range(self.n_epochs):
-                if e == 0 or self.update_advantage_between_epochs:
-                    r.update_advantages(
-                        self.policy,
-                        gamma,
-                        self.gae_lambda,
-                        update_returns=self.update_returns_between_epochs,
-                    )
                 # Only record last epoch's stats
                 step_stats.clear()
                 for mb in r.minibatches(self.batch_size, self.device):
@@ -224,6 +213,7 @@ class PPO(Algorithm):
                         mb_logprobs,
                         mb_actions,
                         mb_action_masks,
+                        mb_num_actions,
                         mb_values,
                         mb_adv,
                         mb_returns,
@@ -241,7 +231,12 @@ class PPO(Algorithm):
                     logratio = new_logprobs - mb_logprobs
                     ratio = torch.exp(logratio)
                     clipped_ratio = torch.clamp(ratio, min=1 - pi_clip, max=1 + pi_clip)
-                    pi_loss = torch.max(-ratio * mb_adv, -clipped_ratio * mb_adv).mean()
+                    pi_loss = -torch.min(ratio * mb_adv, clipped_ratio * mb_adv)
+                    if self.scale_loss_by_num_actions:
+                        pi_loss = torch.where(
+                            mb_num_actions > 0, pi_loss / mb_num_actions, 0
+                        )
+                    pi_loss = pi_loss.mean()
 
                     v_loss_unclipped = (new_values - mb_returns) ** 2
                     if v_clip:
@@ -258,8 +253,16 @@ class PPO(Algorithm):
                         v_loss *= 0.5
 
                     entropy_loss = -entropy.mean()
+                    with torch.no_grad():
+                        approx_kl = ((ratio - 1) - logratio).mean().cpu().numpy().item()
+                    if self.kl_cutoff is not None and approx_kl > self.kl_cutoff:
+                        pi_coef = 0
 
-                    loss = pi_loss + ent_coef * entropy_loss + (vf_coef * v_loss).sum()
+                    loss = (
+                        pi_coef * pi_loss
+                        + ent_coef * entropy_loss
+                        + (vf_coef * v_loss).sum()
+                    )
 
                     if self.gradient_accumulation:
                         loss /= r.num_minibatches(self.batch_size)
@@ -268,7 +271,6 @@ class PPO(Algorithm):
                         self.optimizer_step()
 
                     with torch.no_grad():
-                        approx_kl = ((ratio - 1) - logratio).mean().cpu().numpy().item()
                         clipped_frac = (
                             ((ratio - 1).abs() > pi_clip)
                             .float()

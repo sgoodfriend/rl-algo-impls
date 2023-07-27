@@ -1,6 +1,7 @@
 # Support for PyTorch mps mode (https://pytorch.org/docs/stable/notes/mps.html)
 import os
 
+from rl_algo_impls.ppo.reference_ai_rollout import ReferenceAIRollout
 from rl_algo_impls.ppo.sync_step_rollout import SyncStepRolloutGenerator
 from rl_algo_impls.shared.callbacks.self_play_callback import SelfPlayCallback
 
@@ -133,9 +134,14 @@ def train(args: TrainArgs):
     if self_play_wrapper:
         callbacks.append(SelfPlayCallback(policy, policy_factory, self_play_wrapper))
 
-    rollout_generator = SyncStepRolloutGenerator(
-        policy, env, **config.rollout_hyperparams
-    )
+    rollout_generator_cls = SyncStepRolloutGenerator
+    if config.rollout_type:
+        if config.rollout_type == "reference":
+            rollout_generator_cls = ReferenceAIRollout
+        else:
+            raise ValueError(f"{config.rollout_type} not recognized rollout_type")
+
+    rollout_generator = rollout_generator_cls(policy, env, **config.rollout_hyperparams)
     algo.learn(config.n_timesteps, rollout_generator, callbacks=callbacks)
 
     policy.save(config.model_dir_path(best=False))

@@ -260,7 +260,8 @@ MicrortsRandomEnemyShapedReward3-v1-NoMask:
 _microrts_ai: &microrts-ai-defaults
   <<: *microrts-defaults
   n_timesteps: !!float 100e6
-  additional_keys_to_log: ["microrts_stats", "microrts_results", "results"]
+  additional_keys_to_log:
+    [microrts_stats, microrts_results, results, action_mask_stats]
   env_hyperparams: &microrts-ai-env-defaults
     n_envs: 24
     env_type: microrts
@@ -274,6 +275,7 @@ _microrts_ai: &microrts-ai-defaults
     <<: *microrts-policy-defaults
     cnn_flatten_dim: 256
     actor_head_style: gridnet
+    subaction_mask: [1, 2, 3, 4, 4, 5]
   rollout_hyperparams: &microrts-ai-rollout-defaults
     n_steps: 512
   algo_hyperparams: &microrts-ai-algo-defaults
@@ -636,7 +638,7 @@ _Microrts-squnet-map16: &microrts-squnet-map16
     valid_sizes: [16]
   eval_hyperparams: &microrts-squnet-map16-eval-defaults
     <<: *microrts-squnet-eval-defaults
-    env_overrides:
+    env_overrides: &microrts-squnet-map16-eval-env-overrides
       <<: *microrts-squnet-eval-env-overrides
       make_kwargs:
         <<: *microrts-ai-eval-env-make-kwargs-overrides
@@ -1481,8 +1483,61 @@ Microrts-squnet-d16-128-map64-finetune: &microrts-squnet-d16-128-map64-finetune
       - 0.2
       - 0.45
 
+Microrts-squnet-d16-128-iMayari: &microrts-squnet-d16-128-imayari
+  <<: *microrts-squnet-deep16-128
+  rollout_type: reference
+  env_hyperparams:
+    <<: *microrts-squnet-map16-env-defaults
+    n_envs: 36
+    env_type: microrts_bots
+    map_paths:
+      - maps/16x16/basesWorkers16x16A.xml
+      - maps/16x16/TwoBasesBarracks16x16.xml
+      - maps/8x8/basesWorkers8x8A.xml
+      - maps/8x8/FourBasesWorkers8x8.xml
+      - maps/NoWhereToRun9x8.xml
+      - maps/16x16/EightBasesWorkers16x16.xml
+    make_kwargs:
+      max_steps: 4000
+      reward_weight: [1.0, 0, 0, 0, 0, 0, 0, 0, 0]
+    self_play_kwargs: null
+    reference_bot: mayari
+    bots:
+      mayari: 6
+      coacAI: 12
+      lightRushAI: 12
+    additional_win_loss_reward: false
+    score_reward_kwargs: null
+  rollout_hyperparams:
+    <<: *microrts-ai-rollout-defaults
+    scale_advantage_by_values_accuracy: true
+  policy_hyperparams:
+    <<: *microrts-squnet-deep16-128-policy-defaults
+    additional_critic_activation_functions: []
+    output_activation_fn: tanh
+  algo_hyperparams: &microrts-squnet-d16-128-imayari-algo-defaults
+    <<: *microrts-squnet-deep16-128-algo-defaults
+    batch_size: 3072
+    n_epochs: 1
+    gradient_accumulation: true
+    gamma: 0.999
+    gae_lambda: 0.99
+    learning_rate: !!float 1e-5
+    vf_coef: 0.5
+    ent_coef: 0.0001
+    clip_range_vf: 0.1
+    normalize_advantage: false
+    kl_cutoff: 0.01
+    scale_loss_by_num_actions: true
+  eval_hyperparams:
+    <<: *microrts-squnet-map16-eval-defaults
+    env_overrides:
+      <<: *microrts-squnet-map16-eval-env-overrides
+      env_type: microrts
+    skip_evaluate_at_start: true
+
 Microrts-debug: &microrts-debug-defaults
-  <<: *microrts-squnet-d16-128-map64-finetune
+  <<: *microrts-squnet-d16-128-imayari
   device: mps
 
 Microrts-agent: &microrts-agent

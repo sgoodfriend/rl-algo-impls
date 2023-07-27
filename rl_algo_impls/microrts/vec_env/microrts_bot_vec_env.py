@@ -21,6 +21,7 @@ from rl_algo_impls.microrts.vec_env.microrts_interface import (
     MicroRTSInterface,
     MicroRTSInterfaceListener,
 )
+from rl_algo_impls.microrts.vec_env.microrts_vec_env import to_byte_array_list
 
 MICRORTS_MAC_OS_RENDER_MESSAGE = """
 gym-microrts render is not available on MacOS. See https://github.com/jpype-project/jpype/issues/906
@@ -30,50 +31,43 @@ See https://github.com/vwxyzjn/gym-microrts/blob/b46c0815efd60ae959b70c14659efb9
 as an example.
 """
 
-MicroRTSGridModeVecEnvSelf = TypeVar(
-    "MicroRTSGridModeVecEnvSelf", bound="MicroRTSGridModeVecEnv"
+MicroRTSBotGridVecEnvSelf = TypeVar(
+    "MicroRTSBotGridVecEnvSelf", bound="MicroRTSBotGridVecEnv"
 )
 
 UTT_VERSION_ORIGINAL_FINETUNED = 2
 
 
-class MicroRTSGridModeVecEnv(MicroRTSInterface):
-    DEBUG_VERIFY = False
+class MicroRTSBotGridVecEnv(MicroRTSInterface):
+    DEBUG_VERIFY = True
 
     def __init__(
         self,
-        num_selfplay_envs,
-        num_bot_envs,
+        ais,
+        reference_indexes: List[int],
         partial_obs=False,
         max_steps=2000,
         render_theme=2,
         frame_skip=0,
-        ai2s=[],
         map_paths=["maps/10x10/basesTwoWorkers10x10.xml"],
-        reward_weight=np.array([10.0, 1.0, 1.0, 0.2, 1.0, 4.0, 5.25, 6.0, 0]),
+        reward_weight=np.array([1.0, 0, 0, 0, 0, 0, 0, 0, 0]),
         cycle_maps=[],
-        bot_envs_alternate_player: bool = False,
         video_frames_per_second: Optional[int] = None,
     ):
-        self.num_selfplay_envs = num_selfplay_envs
-        self.num_bot_envs = num_bot_envs
-        self._num_envs = num_selfplay_envs + num_bot_envs
-        assert self.num_bot_envs == len(
-            ai2s
-        ), "for each environment, a microrts ai should be provided"
+        self._num_envs = len(reference_indexes)
         self._partial_obs = partial_obs
         self.max_steps = max_steps
         self.render_theme = render_theme
         self.frame_skip = frame_skip
-        self.ai2s = ai2s
-        self.players = [i % 2 for i in range(self._num_envs)]
-        self.bot_envs_alternate_player = bot_envs_alternate_player
+        self.ais = ais
+        self.reference_indexes = reference_indexes
+        self.players = [idx % 2 for idx in reference_indexes]
         self.map_paths = map_paths
         if len(map_paths) == 1:
-            self.map_paths = [map_paths[0] for _ in range(self.num_envs)]
+            self.map_paths = [map_paths[0] for _ in range(len(ais))]
         else:
-            assert (
-                len(map_paths) == self.num_envs
+            assert len(map_paths) == len(
+                ais
             ), "if multiple maps are provided, they should be provided for each environment"
         self.reward_weight = reward_weight
         self.metadata = {
@@ -99,6 +93,8 @@ class MicroRTSGridModeVecEnv(MicroRTSInterface):
             w = int(root.get("width"))
             self._heights.append(h)
             self._widths.append(w)
+        self._selected_heights = None
+        self._selected_widths = None
 
         # launch the JVM
         if not jpype._jpype.isStarted():
@@ -155,26 +151,24 @@ class MicroRTSGridModeVecEnv(MicroRTSInterface):
         self.raw_names = [str(rf) for rf in self.rfs]
         self.start_client()
 
-        self.delta_rewards = np.zeros(self.num_envs, dtype=np.float32)
+        self.delta_rewards = np.zeros(len(ais), dtype=np.float32)
 
     def start_client(self):
         from ai.core import AI
-        from ts import RAIGridnetVecClient as Client
+        from ts import RAIBotGridnetVecClient as Client
 
         self.vec_client = Client(
-            self.num_selfplay_envs,
-            self.num_bot_envs,
             self.max_steps,
             self.rfs,
             os.path.expanduser(self.microrts_path),
             self.map_paths,
-            JArray(AI)([ai2(self.real_utt) for ai2 in self.ai2s]),
+            JArray(AI)([ai(self.real_utt) for ai in self.ais]),
             self.real_utt,
             self.partial_obs,
         )
         self.render_client = (
-            self.vec_client.selfPlayClients[0]
-            if len(self.vec_client.selfPlayClients) > 0
+            self.vec_client.botClients[0]
+            if len(self.vec_client.botClients) > 0
             else self.vec_client.clients[0]
         )
         # get the unit type table
@@ -183,12 +177,12 @@ class MicroRTSGridModeVecEnv(MicroRTSInterface):
     def reset(self):
         self.delta_rewards = np.zeros_like(self.delta_rewards)
 
-        responses = self.vec_client.reset(self.players)
+        responses = self.vec_client.reset()
         self._resources = to_byte_array_list(responses.resources)
         self._terrain = to_byte_array_list(responses.terrain)
         return (
-            to_byte_array_list(responses.observation),
-            to_byte_array_list(responses.mask),
+            select(to_byte_array_list(responses.observation), self.reference_indexes),
+            select(to_byte_array_list(responses.mask), self.reference_indexes),
         )
 
     def _encode_info(
@@ -223,78 +217,44 @@ class MicroRTSGridModeVecEnv(MicroRTSInterface):
         return infos
 
     def step_async(self, actions):
-        self.actions = JArray(JArray(JArray(JInt)))(
-            [
-                JArray(JArray(JInt))([JArray(JInt)(a) for a in actions_in_env])
-                for actions_in_env in actions
-            ]
-        )
+        pass
 
     def step_wait(self):
-        responses = self.vec_client.gameStep(self.actions, self.players)
+        responses = self.vec_client.gameStep()
         reward, done = np.array(responses.reward), np.array(responses.done)
         obs = to_byte_array_list(responses.observation)
         mask = to_byte_array_list(responses.mask)
         self._resources = to_byte_array_list(responses.resources)
         infos = self._encode_info(reward, done[:, 0])
+        self._action = java_action_to_python_action_list(responses.action)
+
         # check if it is in evaluation, if not, then change maps
         if len(self.cycle_maps) > 0:
             # check if an environment is done, if done, reset the client, and replace the observation
             for done_idx, d in enumerate(done[:, 0]):
                 if not d:
                     continue
-                if done_idx < self.num_selfplay_envs:
-                    if done_idx % 2 == 1:
-                        continue
-                    self.vec_client.selfPlayClients[done_idx // 2].mapPath = next(
-                        self.next_map
-                    )
-                    self.vec_client.selfPlayClients[done_idx // 2].reset(
-                        self.players[done_idx]
-                    )
-                    p0_response = self.vec_client.selfPlayClients[
-                        done_idx // 2
-                    ].getResponse(0)
-                    p1_response = self.vec_client.selfPlayClients[
-                        done_idx // 2
-                    ].getResponse(1)
-                    obs[done_idx] = np.array(p0_response.observation)
-                    obs[done_idx + 1] = np.array(p1_response.observation)
-                    mask[done_idx] = np.array(p0_response.mask)
-                    mask[done_idx + 1] = np.array(p1_response.mask)
-                    self._terrain[done_idx] = np.array(p0_response.terrain)
-                    self._terrain[done_idx + 1] = np.array(p1_response.terrain)
-                    self._resources[done_idx] = np.array(p0_response.resources)
-                    self._resources[done_idx + 1] = np.array(p1_response.resources)
-                else:
-                    env_idx = done_idx - self.num_selfplay_envs
-                    self.vec_client.clients[env_idx].mapPath = next(self.next_map)
-                    if self.bot_envs_alternate_player:
-                        self.players[done_idx] = (self.players[done_idx] + 1) % 2
-                    response = self.vec_client.clients[env_idx].reset(
-                        self.players[done_idx]
-                    )
-                    obs[done_idx] = np.array(response.observation)
-                    mask[done_idx] = np.array(response.mask)
-                    self._terrain[done_idx] = np.array(response.terrain)
-                    self._resources[done_idx] = np.array(response.resources)
-        else:
-            if self.bot_envs_alternate_player:
-                for done_idx, d in enumerate(done[:, 0]):
-                    if not d:
-                        continue
-                    if done_idx < self.num_selfplay_envs:
-                        continue
-                    self.players[done_idx] = (self.players[done_idx] + 1) % 2
-                    env_idx = done_idx - self.num_selfplay_envs
-                    response = self.vec_client.clients[env_idx].reset(
-                        self.players[done_idx]
-                    )
-                    obs[done_idx] = np.array(response.observation)
-                    mask[done_idx] = np.array(response.mask)
-                    self._terrain[done_idx] = np.array(response.terrain)
-                    self._resources[done_idx] = np.array(response.resources)
-        return obs, mask, reward @ self.reward_weight, done[:, 0], infos
+                if done_idx % 2 == 1:
+                    continue
+                self.vec_client.botClients[done_idx // 2].mapPath = next(self.next_map)
+                self.vec_client.botClients[done_idx // 2].reset(self.players[done_idx])
+                p0_response = self.vec_client.botClients[done_idx // 2].getResponse(0)
+                p1_response = self.vec_client.botClients[done_idx // 2].getResponse(1)
+                obs[done_idx] = np.array(p0_response.observation)
+                obs[done_idx + 1] = np.array(p1_response.observation)
+                mask[done_idx] = np.array(p0_response.mask)
+                mask[done_idx + 1] = np.array(p1_response.mask)
+                self._terrain[done_idx] = np.array(p0_response.terrain)
+                self._terrain[done_idx + 1] = np.array(p1_response.terrain)
+                self._resources[done_idx] = np.array(p0_response.resources)
+                self._resources[done_idx + 1] = np.array(p1_response.resources)
+        return (
+            select(obs, self.reference_indexes),
+            select(mask, self.reference_indexes),
+            reward[self.reference_indexes] @ self.reward_weight,
+            done[self.reference_indexes, 0],
+            select(infos, self.reference_indexes),
+        )
 
     def step(self, ac):
         self.step_async(ac)
@@ -306,11 +266,15 @@ class MicroRTSGridModeVecEnv(MicroRTSInterface):
 
     @property
     def heights(self) -> List[int]:
-        return self._heights
+        if self._selected_heights is None:
+            self._selected_heights = select(self._heights, self.reference_indexes)
+        return self._selected_heights
 
     @property
     def widths(self) -> List[int]:
-        return self._widths
+        if self._selected_widths is None:
+            self._selected_widths = select(self._widths, self.reference_indexes)
+        return self._selected_widths
 
     @property
     def utt(self) -> Dict[str, Any]:
@@ -321,8 +285,8 @@ class MicroRTSGridModeVecEnv(MicroRTSInterface):
         return self._partial_obs
 
     def terrain(self, env_idx: int) -> np.ndarray:
-        return self._terrain[env_idx].reshape(
-            (self._heights[env_idx], self._widths[env_idx])
+        return self._terrain[self.reference_indexes[env_idx]].reshape(
+            (self.heights[env_idx], self.widths[env_idx])
         )
 
     def terrain_md5(self, env_idx: int) -> str:
@@ -333,7 +297,11 @@ class MicroRTSGridModeVecEnv(MicroRTSInterface):
         return hash_obj.hexdigest()
 
     def resources(self, env_idx: int) -> np.ndarray:
-        return self._resources[env_idx]
+        return self._resources[self.reference_indexes[env_idx]]
+
+    @property
+    def last_action(self) -> List[List[List[int]]]:
+        return select(self._action, self.reference_indexes)
 
     def render(self, mode="human"):
         if mode == "human":
@@ -361,14 +329,9 @@ class MicroRTSGridModeVecEnv(MicroRTSInterface):
             return None
         from ai.rai import GameStateWrapper
 
-        if env_idx < self.num_selfplay_envs:
-            gsw = GameStateWrapper(self.vec_client.selfPlayClients[env_idx // 2].gs)
-            player_id = env_idx % 2
-        else:
-            gsw = GameStateWrapper(
-                self.vec_client.clients[env_idx - self.num_selfplay_envs].gs
-            )
-            player_id = self.players[env_idx]
+        underlying_idx = self.reference_indexes[env_idx]
+        gsw = GameStateWrapper(self.vec_client.botClients[underlying_idx // 2].gs)
+        player_id = self.players[env_idx]
         return np.transpose(np.array(gsw.getVectorObservation(player_id)), (1, 2, 0))
 
     def debug_matrix_mask(self, env_idx: int) -> Optional[np.ndarray]:
@@ -377,16 +340,25 @@ class MicroRTSGridModeVecEnv(MicroRTSInterface):
 
         from ai.rai import GameStateWrapper
 
-        if env_idx < self.num_selfplay_envs:
-            gsw = GameStateWrapper(self.vec_client.selfPlayClients[env_idx // 2].gs)
-            player_id = env_idx % 2
-        else:
-            gsw = GameStateWrapper(
-                self.vec_client.clients[env_idx - self.num_selfplay_envs].gs
-            )
-            player_id = self.players[env_idx]
+        underlying_idx = self.reference_indexes[env_idx]
+        gsw = GameStateWrapper(self.vec_client.botClients[underlying_idx // 2].gs)
+        player_id = self.players[env_idx]
+
         return np.array(gsw.getMasks(player_id))
 
 
-def to_byte_array_list(java_array) -> List[ByteArray]:
-    return [np.array(a) for a in java_array]
+T = TypeVar("T")
+
+
+def select(a: List[T], indexes: List[int]) -> List[T]:
+    return [a[idx] for idx in indexes]
+
+
+def java_action_to_python_action_list(j_action) -> List[List[List[int]]]:
+    p_a = []
+    for j_a_in_env in j_action:
+        p_a_in_env = []
+        for j_a in j_a_in_env:
+            p_a_in_env.append(list(j_a))
+        p_a.append(p_a_in_env)
+    return p_a

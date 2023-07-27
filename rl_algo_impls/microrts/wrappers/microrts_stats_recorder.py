@@ -13,12 +13,10 @@ class MicrortsStatsRecorder(VectorableWrapper):
     def __init__(
         self,
         env,
-        gamma: float,
         bots: Optional[Dict[str, int]] = None,
         map_paths: Optional[List[str]] = None,
     ) -> None:
         super().__init__(env)
-        self.gamma = gamma
         self.raw_rewards = [[] for _ in range(self.num_envs)]
         self.bots = bots
         if self.bots:
