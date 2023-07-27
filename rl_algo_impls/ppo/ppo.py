@@ -144,7 +144,6 @@ class PPO(Algorithm):
         self.batch_size = batch_size
         self.n_epochs = n_epochs
 
-
         self.multi_reward_weights = (
             np.array(multi_reward_weights) if multi_reward_weights else None
         )

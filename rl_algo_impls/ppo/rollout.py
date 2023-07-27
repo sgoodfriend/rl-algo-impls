@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import astuple, dataclass
-from typing import Iterator, Optional
+from typing import Iterator, Optional, Union
 
 import numpy as np
 import torch
@@ -125,7 +125,7 @@ class Rollout:
             1 if self.total_steps % batch_size else 0
         )
 
-    def minibatches(self, batch_size: int, device: torch.device) -> Iterator[Batch]:
+    def batch(self, device: torch.device) -> Batch:
         if self._batch is None:
             b_obs = flatten_to_tensor(self.obs, device)
             b_logprobs = torch.tensor(self.logprobs.reshape(-1)).to(device)
@@ -160,7 +160,9 @@ class Rollout:
                 b_advantages,
                 b_returns,
             )
+        return self._batch
 
+    def minibatches(self, batch_size: int, device: torch.device) -> Iterator[Batch]:
         (
             obs,
             logprobs,
@@ -170,7 +172,7 @@ class Rollout:
             values,
             advantages,
             returns,
-        ) = astuple(self._batch)
+        ) = astuple(self.batch(device))
         b_idxs = torch.randperm(self.total_steps)
         for i in range(0, self.total_steps, batch_size):
             mb_idxs = b_idxs[i : i + batch_size]

@@ -2,6 +2,8 @@ CartPole-v1: &cartpole-defaults
   n_timesteps: !!float 5e5
   env_hyperparams:
     n_envs: 8
+  rollout_hyperparams:
+    n_steps: 5
 
 CartPole-v0:
   <<: *cartpole-defaults
@@ -11,6 +13,8 @@ MountainCar-v0:
   env_hyperparams:
     n_envs: 16
     normalize: true
+  rollout_hyperparams:
+    n_steps: 5
 
 MountainCarContinuous-v0:
   n_timesteps: !!float 1e5
@@ -22,14 +26,17 @@ MountainCarContinuous-v0:
   #   log_std_init: 0.0
   #   init_layers_orthogonal: false
   algo_hyperparams:
-    n_steps: 100
     sde_sample_freq: 16
+  rollout_hyperparams:
+    n_steps: 100
 
 Acrobot-v1:
   n_timesteps: !!float 5e5
   env_hyperparams:
     normalize: true
     n_envs: 16
+  rollout_hyperparams:
+    n_steps: 5
 
 # Tuned
 LunarLander-v2:
@@ -39,7 +46,6 @@ LunarLander-v2:
     n_envs: 4
     normalize: true
   algo_hyperparams:
-    n_steps: 2
     gamma: 0.9955517404308908
     gae_lambda: 0.9875340918797773
     learning_rate: 0.0013814130817068916
@@ -49,6 +55,8 @@ LunarLander-v2:
     max_grad_norm: 3.33982095073364
     normalize_advantage: true
     vf_coef: 0.1667838310548184
+  rollout_hyperparams:
+    n_steps: 2
 
 BipedalWalker-v3:
   n_timesteps: !!float 5e6
@@ -62,12 +70,13 @@ BipedalWalker-v3:
   algo_hyperparams:
     ent_coef: 0
     max_grad_norm: 0.5
-    n_steps: 8
     gae_lambda: 0.9
     vf_coef: 0.4
     gamma: 0.99
     learning_rate: !!float 9.6e-4
     learning_rate_decay: linear
+  rollout_hyperparams:
+    n_steps: 8
 
 HalfCheetahBulletEnv-v0: &pybullet-defaults
   n_timesteps: !!float 2e6
@@ -79,7 +88,6 @@ HalfCheetahBulletEnv-v0: &pybullet-defaults
     log_std_init: -2
     init_layers_orthogonal: false
   algo_hyperparams: &pybullet-algo-defaults
-    n_steps: 8
     ent_coef: 0
     max_grad_norm: 0.5
     gae_lambda: 0.9
@@ -87,6 +95,8 @@ HalfCheetahBulletEnv-v0: &pybullet-defaults
     vf_coef: 0.4
     learning_rate: !!float 9.6e-4
     learning_rate_decay: linear
+  rollout_hyperparams:
+    n_steps: 8
 
 AntBulletEnv-v0:
   <<: *pybullet-defaults
@@ -116,7 +126,6 @@ CarRacing-v0:
     cnn_flatten_dim: 256
     hidden_sizes: [256]
   algo_hyperparams:
-    n_steps: 64
     learning_rate: 0.000018971962220405576
     gamma: 0.9942776405534832
     gae_lambda: 0.9549244758833236
@@ -127,6 +136,8 @@ CarRacing-v0:
     normalize_advantage: false
     use_rms_prop: false
     sde_sample_freq: 16
+  rollout_hyperparams:
+    n_steps: 64
 
 _atari: &atari-defaults
   n_timesteps: !!float 1e7
@@ -141,3 +152,5 @@ _atari: &atari-defaults
   algo_hyperparams:
     ent_coef: 0.01
     vf_coef: 0.25
+  rollout_hyperparams:
+    n_steps: 5

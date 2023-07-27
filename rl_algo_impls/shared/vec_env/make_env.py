@@ -68,12 +68,13 @@ def make_eval_env(
             if k == "n_envs" and v == 1:
                 hparams_kwargs["vec_env_class"] = "sync"
                 MAP_PATHS_KEY = "map_paths"
+                make_kwargs = hparams_kwargs["make_kwargs"]
                 if hparams_kwargs.get(MAP_PATHS_KEY, []):
                     if len(hparams_kwargs[MAP_PATHS_KEY]) > 1:
                         hparams_kwargs[MAP_PATHS_KEY] = hparams_kwargs[MAP_PATHS_KEY][
                             :1
                         ]
-                elif len(hparams_kwargs["make_kwargs"].get(MAP_PATHS_KEY, [])) > 1:
+                elif make_kwargs and len(make_kwargs.get(MAP_PATHS_KEY, [])) > 1:
                     hparams_kwargs["make_kwargs"][MAP_PATHS_KEY] = hparams_kwargs[
                         "make_kwargs"
                     ][MAP_PATHS_KEY][:1]
