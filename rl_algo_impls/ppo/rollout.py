@@ -21,6 +21,7 @@ class Batch:
 
     actions: TensorOrDict
     action_masks: Optional[TensorOrDict]
+    num_actions: Optional[TensorOrDict]
 
     values: torch.Tensor
 
@@ -43,6 +44,7 @@ class Rollout:
     values: np.ndarray
     logprobs: np.ndarray
     action_masks: Optional[NumpyOrDict]
+    num_actions: Optional[np.ndarray]
 
     advantages: Optional[np.ndarray] = None
     returns: Optional[np.ndarray] = None
@@ -75,6 +77,20 @@ class Rollout:
         self.logprobs = logprobs
         self.action_masks = action_masks
         self.scale_advantage_by_values_accuracy = scale_advantage_by_values_accuracy
+
+        if self.action_masks is not None:
+            if isinstance(self.action_masks, dict):
+                self.num_actions = np.sum(
+                    [
+                        np.sum(np.any(am, axis=-1), axis=-1)
+                        for am in self.action_masks.values()
+                    ],
+                    axis=0,
+                )
+            else:
+                self.num_actions = np.sum(np.any(self.action_masks, axis=-1), axis=-1)
+        else:
+            self.num_actions = None
 
     def update_advantages(
         self,
@@ -138,6 +154,11 @@ class Rollout:
                 if self.action_masks is not None
                 else None
             )
+            b_num_actions = (
+                torch.tensor(self.num_actions.reshape(-1)).to(device)
+                if self.num_actions is not None
+                else None
+            )
 
             b_values = torch.tensor(self.y_pred).to(device)
 
@@ -152,14 +173,22 @@ class Rollout:
                 b_logprobs,
                 b_actions,
                 b_action_masks,
+                b_num_actions,
                 b_values,
                 b_advantages,
                 b_returns,
             )
 
-        obs, logprobs, actions, action_masks, values, advantages, returns = astuple(
-            self._batch
-        )
+        (
+            obs,
+            logprobs,
+            actions,
+            action_masks,
+            num_actions,
+            values,
+            advantages,
+            returns,
+        ) = astuple(self._batch)
         b_idxs = torch.randperm(self.total_steps)
         for i in range(0, self.total_steps, batch_size):
             mb_idxs = b_idxs[i : i + batch_size]
@@ -170,6 +199,7 @@ class Rollout:
                 tensor_by_indicies(action_masks, mb_idxs)
                 if action_masks is not None
                 else None,
+                num_actions[mb_idxs] if num_actions is not None else None,
                 values[mb_idxs],
                 advantages[mb_idxs],
                 returns[mb_idxs],

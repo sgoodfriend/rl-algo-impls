@@ -109,6 +109,7 @@ class ACBC(Algorithm):
                         mb_logprobs,
                         mb_actions,
                         mb_action_masks,
+                        mb_num_actions,
                         _,
                         _,
                         mb_returns,
@@ -118,10 +119,8 @@ class ACBC(Algorithm):
                         mb_obs, mb_actions, action_masks=mb_action_masks
                     )
                     if self.scale_loss_by_num_actions:
-                        with torch.no_grad():
-                            num_actions = mb_action_masks.any(2).sum(1)
                         pi_loss = -torch.where(
-                            num_actions > 0, new_logprobs / num_actions, 0
+                            mb_num_actions > 0, new_logprobs / mb_num_actions, 0
                         ).mean()
                     else:
                         pi_loss = -new_logprobs.mean()

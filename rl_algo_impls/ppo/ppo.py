@@ -224,6 +224,7 @@ class PPO(Algorithm):
                         mb_logprobs,
                         mb_actions,
                         mb_action_masks,
+                        mb_num_actions,
                         mb_values,
                         mb_adv,
                         mb_returns,
@@ -243,9 +244,9 @@ class PPO(Algorithm):
                     clipped_ratio = torch.clamp(ratio, min=1 - pi_clip, max=1 + pi_clip)
                     pi_loss = -torch.min(ratio * mb_adv, clipped_ratio * mb_adv)
                     if self.scale_loss_by_num_actions:
-                        with torch.no_grad():
-                            num_actions = mb_action_masks.any(2).sum(1)
-                        pi_loss = torch.where(num_actions > 0, pi_loss / num_actions, 0)
+                        pi_loss = torch.where(
+                            mb_num_actions > 0, pi_loss / mb_num_actions, 0
+                        )
                     pi_loss = pi_loss.mean()
 
                     v_loss_unclipped = (new_values - mb_returns) ** 2
