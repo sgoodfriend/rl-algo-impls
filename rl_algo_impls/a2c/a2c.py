@@ -51,7 +51,7 @@ class A2C(Algorithm):
         super().__init__(policy, device, tb_writer)
         self.policy = policy
 
-        self.lr_schedule = schedule(learning_rate_decay, learning_rate)
+        self.learning_rate_schedule = schedule(learning_rate_decay, learning_rate)
         if use_rms_prop:
             self.optimizer = torch.optim.RMSprop(
                 policy.parameters(), lr=learning_rate, eps=rms_prop_eps
@@ -93,7 +93,7 @@ class A2C(Algorithm):
 
             progress = timesteps_elapsed / total_timesteps
             ent_coef = self.ent_coef_schedule(progress)
-            learning_rate = self.lr_schedule(progress)
+            learning_rate = self.learning_rate_schedule(progress)
             update_learning_rate(self.optimizer, learning_rate)
             chart_scalars = {
                 "ent_coef": ent_coef,
