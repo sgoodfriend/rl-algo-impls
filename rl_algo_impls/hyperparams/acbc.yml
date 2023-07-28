@@ -213,7 +213,7 @@ Microrts-squnet-d16-128-iMayari-map64: &microrts-squnet-d16-128-imayari-map64
         map_paths: [maps/BroodWar/(4)BloodBath.scmB.xml]
   algo_hyperparams:
     <<: *microrts-squnet-d16-128-imayari-map32-algo
-    batch_size: 128
+    batch_size: 192
     gradient_accumulation: true
 
 Microrts-debug: &microrts-debug-defaults
