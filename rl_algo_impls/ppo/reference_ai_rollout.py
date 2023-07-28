@@ -88,6 +88,7 @@ class ReferenceAIRollout(SyncStepRolloutGenerator):
             gamma=gamma,
             gae_lambda=gae_lambda,
             scale_advantage_by_values_accuracy=self.scale_advantage_by_values_accuracy,
+            full_batch_off_accelerator=self.full_batch_off_accelerator,
         )
 
     def actions_to_tensor(self, a: NumpyOrDict) -> TensorOrDict:
