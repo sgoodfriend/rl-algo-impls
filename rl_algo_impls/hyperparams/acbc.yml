@@ -7,6 +7,7 @@ Microrts-squnet-d16-128-iMayari: &microrts-squnet-d16-128-imayari
     - action_mask_stats
   algo_hyperparams: &microrts-squnet-d16-128-imayari-algo
     learning_rate: 8.0e-05
+    learning_rate_decay: linear
     batch_size: 3072
     n_epochs: 2
     gamma: 0.999
@@ -132,17 +133,10 @@ Microrts-squnet-d16-128-iMayari: &microrts-squnet-d16-128-imayari
     include_logp: false
   rollout_type: reference
 
-Microrts-squnet-d16-128-iMayari-linear-lr:
-  &microrts-squnet-d16-128-imayari-linear-lr
-  <<: *microrts-squnet-d16-128-imayari
-  algo_hyperparams: &microrts-squnet-d16-128-imayari-linear-lr-algo
-    <<: *microrts-squnet-d16-128-imayari-algo
-    learning_rate_decay: linear
-
 Microrts-squnet-d16-128-iMayari-batch: &microrts-squnet-d16-128-imayari-batch
-  <<: *microrts-squnet-d16-128-imayari-linear-lr
+  <<: *microrts-squnet-d16-128-imayari
   algo_hyperparams:
-    <<: *microrts-squnet-d16-128-imayari-linear-lr-algo
+    <<: *microrts-squnet-d16-128-imayari-algo
     batch_size: 3456
     n_epochs: 1
   rollout_hyperparams:
@@ -150,7 +144,7 @@ Microrts-squnet-d16-128-iMayari-batch: &microrts-squnet-d16-128-imayari-batch
     n_steps: 96
 
 Microrts-squnet-d16-128-iMayari-map32: &microrts-squnet-d16-128-imayari-map32
-  <<: *microrts-squnet-d16-128-imayari-linear-lr
+  <<: *microrts-squnet-d16-128-imayari
   policy_hyperparams:
     <<: *microrts-squnet-d16-128-imayari-policy
     load_path: downloaded_models/acbc-Microrts-squnet-d16-128-iMayari-S1-best
@@ -182,7 +176,7 @@ Microrts-squnet-d16-128-iMayari-map32: &microrts-squnet-d16-128-imayari-map32
         max_steps: 6000
         map_paths: [maps/BWDistantResources32x32.xml]
   algo_hyperparams: &microrts-squnet-d16-128-imayari-map32-algo
-    <<: *microrts-squnet-d16-128-imayari-linear-lr-algo
+    <<: *microrts-squnet-d16-128-imayari-algo
     batch_size: 512
   hyperparam_transitions_kwargs:
     interpolate_method: cosine
@@ -228,5 +222,5 @@ Microrts-squnet-d16-128-iMayari-map64: &microrts-squnet-d16-128-imayari-map64
     gradient_accumulation: true
 
 Microrts-debug: &microrts-debug-defaults
-  <<: *microrts-squnet-d16-128-imayari
-  device: cpu
+  <<: *microrts-squnet-d16-128-imayari-batch
+  device: mps
