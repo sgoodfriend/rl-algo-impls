@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import astuple, dataclass
-from typing import Iterator, Optional, TypeVar, Union
+from typing import Dict, Iterator, Optional, TypeVar, Union
 
 import numpy as np
 import torch
@@ -14,12 +14,13 @@ from rl_algo_impls.shared.tensor_utils import (
 )
 
 BatchSelf = TypeVar("BatchSelf", bound="Batch")
+TDN = TypeVar("TDN", torch.Tensor, Dict[str, torch.Tensor], None)
 
 
 @dataclass
 class Batch:
     obs: torch.Tensor
-    logprobs: torch.Tensor
+    logprobs: Optional[torch.Tensor]
 
     actions: TensorOrDict
     action_masks: Optional[TensorOrDict]
@@ -37,7 +38,16 @@ class Batch:
     def to(self: BatchSelf, device: torch.device) -> BatchSelf:
         if self.device == device:
             return self
-        return self.__class__(*(t.to(device) for t in astuple(self)))
+
+        def to_device(t: TDN) -> TDN:
+            if t is None:
+                return t
+            elif isinstance(t, dict):
+                return {k: v.to(device) for k, v in t.items()}  # type: ignore
+            else:
+                return t.to(device)
+
+        return self.__class__(*(to_device(t) for t in astuple(self)))
 
 
 class Rollout:
@@ -46,7 +56,7 @@ class Rollout:
     rewards: np.ndarray
     episode_starts: np.ndarray
     values: np.ndarray
-    logprobs: np.ndarray
+    logprobs: Optional[np.ndarray]
     action_masks: Optional[NumpyOrDict]
     num_actions: Optional[np.ndarray]
 
@@ -66,7 +76,7 @@ class Rollout:
         rewards: np.ndarray,
         episode_starts: np.ndarray,
         values: np.ndarray,
-        logprobs: np.ndarray,
+        logprobs: Optional[np.ndarray],
         action_masks: Optional[NumpyOrDict],
         gamma: NumOrArray,
         gae_lambda: NumOrArray,
@@ -137,7 +147,11 @@ class Rollout:
     def batch(self, device: torch.device) -> Batch:
         if self._batch is None:
             b_obs = flatten_to_tensor(self.obs, device)
-            b_logprobs = torch.tensor(self.logprobs.reshape(-1)).to(device)
+            b_logprobs = (
+                torch.tensor(self.logprobs.reshape(-1)).to(device)
+                if self.logprobs is not None
+                else None
+            )
 
             b_actions = flatten_actions_to_tensor(self.actions, device)
             b_action_masks = (
@@ -191,7 +205,7 @@ class Rollout:
             mb_idxs = b_idxs[i : i + batch_size]
             yield Batch(
                 obs[mb_idxs],
-                logprobs[mb_idxs],
+                logprobs[mb_idxs] if logprobs is not None else None,
                 tensor_by_indicies(actions, mb_idxs),
                 tensor_by_indicies(action_masks, mb_idxs)
                 if action_masks is not None

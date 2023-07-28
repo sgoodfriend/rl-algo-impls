@@ -2,7 +2,8 @@ CartPole-v1: &cartpole-defaults
   n_timesteps: !!float 5e5
   env_hyperparams:
     n_envs: 8
-  rollout_hyperparams:
+  rollout_hyperparams: &default-rollout
+    include_logp: false
     n_steps: 5
 
 CartPole-v0:
@@ -14,7 +15,7 @@ MountainCar-v0:
     n_envs: 16
     normalize: true
   rollout_hyperparams:
-    n_steps: 5
+    <<: *default-rollout
 
 MountainCarContinuous-v0:
   n_timesteps: !!float 1e5
@@ -28,6 +29,7 @@ MountainCarContinuous-v0:
   algo_hyperparams:
     sde_sample_freq: 16
   rollout_hyperparams:
+    <<: *default-rollout
     n_steps: 100
 
 Acrobot-v1:
@@ -36,7 +38,7 @@ Acrobot-v1:
     normalize: true
     n_envs: 16
   rollout_hyperparams:
-    n_steps: 5
+    <<: *default-rollout
 
 # Tuned
 LunarLander-v2:
@@ -56,6 +58,7 @@ LunarLander-v2:
     normalize_advantage: true
     vf_coef: 0.1667838310548184
   rollout_hyperparams:
+    <<: *default-rollout
     n_steps: 2
 
 BipedalWalker-v3:
@@ -76,6 +79,7 @@ BipedalWalker-v3:
     learning_rate: !!float 9.6e-4
     learning_rate_decay: linear
   rollout_hyperparams:
+    <<: *default-rollout
     n_steps: 8
 
 HalfCheetahBulletEnv-v0: &pybullet-defaults
@@ -96,6 +100,7 @@ HalfCheetahBulletEnv-v0: &pybullet-defaults
     learning_rate: !!float 9.6e-4
     learning_rate_decay: linear
   rollout_hyperparams:
+    <<: *default-rollout
     n_steps: 8
 
 AntBulletEnv-v0:
@@ -137,6 +142,7 @@ CarRacing-v0:
     use_rms_prop: false
     sde_sample_freq: 16
   rollout_hyperparams:
+    <<: *default-rollout
     n_steps: 64
 
 _atari: &atari-defaults
@@ -153,7 +159,7 @@ _atari: &atari-defaults
     ent_coef: 0.01
     vf_coef: 0.25
   rollout_hyperparams:
-    n_steps: 5
+    <<: *default-rollout
 
 Microrts-squnet-d16-128-BC-offline: &microrts-squnet-d16-128-bc-offline
   additional_keys_to_log:
@@ -287,6 +293,7 @@ Microrts-squnet-d16-128-BC-offline: &microrts-squnet-d16-128-bc-offline
       - 4
       - 5
   rollout_hyperparams:
+    <<: *default-rollout
     n_steps: 96
     scale_advantage_by_values_accuracy: true
   hyperparam_transitions_kwargs:

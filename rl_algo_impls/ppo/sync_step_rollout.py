@@ -21,6 +21,7 @@ class SyncStepRolloutGenerator(RolloutGenerator):
         sde_sample_freq: int = -1,
         scale_advantage_by_values_accuracy: bool = False,
         full_batch_off_accelerator: bool = False,
+        include_logp: bool = True,
     ) -> None:
         super().__init__()
         self.policy = policy
@@ -29,6 +30,7 @@ class SyncStepRolloutGenerator(RolloutGenerator):
         self.sde_sample_freq = sde_sample_freq
         self.scale_advantage_by_values_accuracy = scale_advantage_by_values_accuracy
         self.full_batch_off_accelerator = full_batch_off_accelerator
+        self.include_logp = include_logp
 
         self.get_action_mask = getattr(vec_env, "get_action_mask", None)
         if self.get_action_mask:
@@ -52,7 +54,9 @@ class SyncStepRolloutGenerator(RolloutGenerator):
         self.rewards = np.zeros(epoch_dim + value_shape, dtype=np.float32)
         self.episode_starts = np.zeros(epoch_dim, dtype=np.bool_)
         self.values = np.zeros(epoch_dim + value_shape, dtype=np.float32)
-        self.logprobs = np.zeros(epoch_dim, dtype=np.float32)
+        self.logprobs = (
+            np.zeros(epoch_dim, dtype=np.float32) if self.include_logp else None
+        )
 
         if isinstance(act_shape, dict):
             self.actions = {
@@ -96,9 +100,11 @@ class SyncStepRolloutGenerator(RolloutGenerator):
             (
                 actions,
                 self.values[s],
-                self.logprobs[s],
+                logprobs,
                 clamped_actions,
             ) = self.policy.step(self.next_obs, action_masks=self.next_action_masks)
+            if self.logprobs is not None:
+                self.logprobs[s] = logprobs
             fold_in(self.actions, actions, s)
             (
                 self.next_obs,

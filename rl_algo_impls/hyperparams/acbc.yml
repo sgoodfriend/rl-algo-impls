@@ -129,6 +129,7 @@ Microrts-squnet-d16-128-iMayari: &microrts-squnet-d16-128-imayari
       - 5
   rollout_hyperparams: &microrts-squnet-d16-128-imayari-rollout
     n_steps: 512
+    include_logp: false
   rollout_type: reference
 
 Microrts-squnet-d16-128-iMayari-linear-lr:

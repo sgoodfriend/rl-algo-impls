@@ -95,7 +95,7 @@ class ACBC(Algorithm):
 
                     (
                         mb_obs,
-                        mb_logprobs,
+                        _,
                         mb_actions,
                         mb_action_masks,
                         mb_num_actions,
@@ -122,18 +122,14 @@ class ACBC(Algorithm):
                     if not self.gradient_accumulation:
                         self.optimizer_step(optimizer)
 
-                    with torch.no_grad():
-                        logratio = new_logprobs - mb_logprobs
-                        ratio = torch.exp(logratio)
-                        approx_kl = ((ratio - 1) - logratio).mean().cpu().numpy().item()
-                        step_stats.append(
-                            {
-                                "loss": loss.item(),
-                                "pi_loss": pi_loss.item(),
-                                "v_loss": v_loss.item(),
-                                "approx_kl": approx_kl,
-                            }
-                        )
+                    step_stats.append(
+                        {
+                            "loss": loss.item(),
+                            "pi_loss": pi_loss.item(),
+                            "v_loss": v_loss.item(),
+                        }
+                    )
+
                 if self.gradient_accumulation:
                     self.optimizer_step(optimizer)
 

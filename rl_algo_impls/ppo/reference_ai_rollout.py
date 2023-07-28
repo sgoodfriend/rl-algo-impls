@@ -22,6 +22,7 @@ class ReferenceAIRollout(SyncStepRolloutGenerator):
         sde_sample_freq: int = -1,
         scale_advantage_by_values_accuracy: bool = False,
         full_batch_off_accelerator: bool = False,
+        include_logp: bool = True,
     ) -> None:
         super().__init__(
             training_policy,
@@ -30,6 +31,7 @@ class ReferenceAIRollout(SyncStepRolloutGenerator):
             sde_sample_freq,
             scale_advantage_by_values_accuracy=scale_advantage_by_values_accuracy,
             full_batch_off_accelerator=full_batch_off_accelerator,
+            include_logp=include_logp,
         )
         if isinstance(self.actions, dict):
             self.zero_action = {k: np.zeros_like(v[0]) for k, v in self.actions.items()}
@@ -48,8 +50,14 @@ class ReferenceAIRollout(SyncStepRolloutGenerator):
             if self.action_masks is not None:
                 fold_in(self.action_masks, self.next_action_masks, s)
 
-            t_obs = torch.as_tensor(self.next_obs).to(self.policy.device)
-            t_action_masks = self.actions_to_tensor(self.next_action_masks)
+            if self.include_logp:
+                t_obs = torch.as_tensor(self.next_obs).to(self.policy.device)
+                t_action_masks = self.actions_to_tensor(self.next_action_masks)
+            else:
+                t_obs = None
+                t_action_masks = None
+                self.values[s] = self.policy.value(self.next_obs)
+
             (
                 self.next_obs,
                 self.rewards[s],
@@ -59,13 +67,15 @@ class ReferenceAIRollout(SyncStepRolloutGenerator):
             actions = getattr(self.vec_env, "last_action")
             fold_in(self.actions, actions, s)
 
-            t_actions = self.actions_to_tensor(actions)
-            with torch.no_grad():
-                (logprobs, _, values) = self.policy(
-                    t_obs, t_actions, action_masks=t_action_masks
-                )
-            self.logprobs[s] = tensor_to_numpy(logprobs)
-            self.values[s] = tensor_to_numpy(values)
+            if self.include_logp:
+                t_actions = self.actions_to_tensor(actions)
+                with torch.no_grad():
+                    (logprobs, _, values) = self.policy(
+                        t_obs, t_actions, action_masks=t_action_masks
+                    )
+                assert self.logprobs is not None
+                self.logprobs[s] = tensor_to_numpy(logprobs)
+                self.values[s] = tensor_to_numpy(values)
 
             self.next_action_masks = (
                 self.get_action_mask() if self.get_action_mask else None
