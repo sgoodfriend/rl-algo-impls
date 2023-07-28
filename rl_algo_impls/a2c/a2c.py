@@ -46,6 +46,7 @@ class A2C(Algorithm):
         normalize_advantage: bool = False,
         multi_reward_weights: Optional[List[int]] = None,
         scale_loss_by_num_actions: bool = False,
+        min_logprob: Optional[float] = None,
     ) -> None:
         super().__init__(policy, device, tb_writer)
         self.policy = policy
@@ -72,6 +73,7 @@ class A2C(Algorithm):
             np.array(multi_reward_weights) if multi_reward_weights else None
         )
         self.scale_loss_by_num_actions = scale_loss_by_num_actions
+        self.min_logprob = min_logprob
 
     def learn(
         self: A2CSelf,
@@ -133,6 +135,14 @@ class A2C(Algorithm):
             pi_loss = -(b_advantages * logp_a)
             if self.scale_loss_by_num_actions:
                 pi_loss = torch.where(b_num_actions > 0, pi_loss / b_num_actions, 0)
+            if self.min_logprob is not None:
+                clipped_pi_loss = -(
+                    b_advantages
+                    * torch.max(
+                        logp_a, torch.Tensor((self.min_logprob,)).to(self.device)
+                    )
+                )
+                pi_loss = torch.max(pi_loss, clipped_pi_loss)
             pi_loss = pi_loss.mean()
 
             value_loss = ((v - b_returns) ** 2).mean(0)

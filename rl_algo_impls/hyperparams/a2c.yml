@@ -171,6 +171,7 @@ Microrts-squnet-d16-128-BC-offline: &microrts-squnet-d16-128-bc-offline
     normalize_advantage: false
     scale_loss_by_num_actions: true
     vf_coef: 0.5
+    min_logprob: -3
   env_hyperparams:
     additional_win_loss_reward: false
     bots:
