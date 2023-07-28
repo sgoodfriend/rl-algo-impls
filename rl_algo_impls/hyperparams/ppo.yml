@@ -1568,16 +1568,16 @@ Microrts-squnet-d16-128-BC-finetune: &microrts-squnet-d16-128-bc-finetune
     phases:
       - learning_rate: !!float 1e-5
         ent_coef: 0.01
-      - learning_rate: !!float 7e-5
+      - learning_rate: !!float 1e-4
         ent_coef: 0.01
       - learning_rate: !!float 1e-5
         ent_coef: 0.0001
     durations:
       - 0
       - 0.05
-      - 0.3
+      - 0.4
+      - 0.35
       - 0.2
-      - 0.45
   eval_hyperparams:
     <<: *microrts-squnet-map16-eval-defaults
 
