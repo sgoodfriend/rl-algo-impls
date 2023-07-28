@@ -286,7 +286,7 @@ Microrts-squnet-d16-128-BC-offline: &microrts-squnet-d16-128-bc-offline
       - 4
       - 5
   rollout_hyperparams:
-    n_steps: 64
+    n_steps: 96
     scale_advantage_by_values_accuracy: true
   rollout_type: reference
 
