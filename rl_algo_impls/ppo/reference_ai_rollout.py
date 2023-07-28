@@ -13,7 +13,7 @@ from rl_algo_impls.shared.tensor_utils import (
 from rl_algo_impls.wrappers.vectorable_wrapper import VecEnv
 
 
-class ReferenceAIRollout(SyncStepRolloutGenerator):
+class ReferenceAIRolloutGenerator(SyncStepRolloutGenerator):
     def __init__(
         self,
         training_policy: ActorCritic,
