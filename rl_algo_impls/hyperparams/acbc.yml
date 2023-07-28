@@ -182,7 +182,7 @@ Microrts-squnet-d16-128-iMayari-map32: &microrts-squnet-d16-128-imayari-map32
     interpolate_method: cosine
     phases:
       - learning_rate: !!float 1e-5
-      - learning_rate: !!float 4e-5
+      - learning_rate: !!float 8e-5
       - learning_rate: !!float 1e-6
     durations:
       - 0
