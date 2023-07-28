@@ -118,7 +118,7 @@ class OneHotPlane(Plane):
             )
         destination[:, destination_col : destination_col + self.num_planes] = np.eye(
             self.num_planes
-        )[col.clip(0, self.num_planes - 1)]
+        )[col]
         return destination_col + self.num_planes
 
     @property
