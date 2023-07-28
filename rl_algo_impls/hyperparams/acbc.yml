@@ -139,6 +139,16 @@ Microrts-squnet-d16-128-iMayari-linear-lr:
     <<: *microrts-squnet-d16-128-imayari-algo
     learning_rate_decay: linear
 
+Microrts-squnet-d16-128-iMayari-batch: &microrts-squnet-d16-128-imayari-batch
+  <<: *microrts-squnet-d16-128-imayari-linear-lr
+  algo_hyperparams:
+    <<: *microrts-squnet-d16-128-imayari-linear-lr-algo
+    batch_size: 3456
+    n_epochs: 1
+  rollout_hyperparams:
+    <<: *microrts-squnet-d16-128-imayari-rollout
+    n_steps: 96
+
 Microrts-squnet-d16-128-iMayari-map32: &microrts-squnet-d16-128-imayari-map32
   <<: *microrts-squnet-d16-128-imayari-linear-lr
   policy_hyperparams:
