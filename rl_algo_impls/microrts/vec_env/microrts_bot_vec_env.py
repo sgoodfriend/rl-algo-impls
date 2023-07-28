@@ -38,7 +38,7 @@ UTT_VERSION_ORIGINAL_FINETUNED = 2
 
 
 class MicroRTSBotGridVecEnv(MicroRTSInterface):
-    DEBUG_VERIFY = True
+    DEBUG_VERIFY = False
 
     def __init__(
         self,
