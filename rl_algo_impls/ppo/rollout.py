@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import astuple, dataclass
-from typing import Iterator, Optional, Union
+from typing import Iterator, Optional, TypeVar, Union
 
 import numpy as np
 import torch
@@ -12,6 +12,8 @@ from rl_algo_impls.shared.tensor_utils import (
     TensorOrDict,
     tensor_by_indicies,
 )
+
+BatchSelf = TypeVar("BatchSelf", bound="Batch")
 
 
 @dataclass
@@ -31,6 +33,11 @@ class Batch:
     @property
     def device(self) -> torch.device:
         return self.obs.device
+
+    def to(self: BatchSelf, device: torch.device) -> BatchSelf:
+        if self.device != device:
+            return self
+        return self.__class__(*(t.to(device) for t in astuple(self)))
 
 
 class Rollout:
@@ -160,7 +167,7 @@ class Rollout:
                 b_advantages,
                 b_returns,
             )
-        return self._batch
+        return self._batch.to(device)
 
     def minibatches(self, batch_size: int, device: torch.device) -> Iterator[Batch]:
         (
@@ -172,7 +179,7 @@ class Rollout:
             values,
             advantages,
             returns,
-        ) = astuple(self.batch(device))
+        ) = astuple(self.batch(torch.device("cpu")))
         b_idxs = torch.randperm(self.total_steps)
         for i in range(0, self.total_steps, batch_size):
             mb_idxs = b_idxs[i : i + batch_size]
@@ -187,7 +194,7 @@ class Rollout:
                 values[mb_idxs],
                 advantages[mb_idxs],
                 returns[mb_idxs],
-            )
+            ).to(device)
 
 
 class RolloutGenerator(ABC):
