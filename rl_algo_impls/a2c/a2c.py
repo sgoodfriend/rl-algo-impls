@@ -47,6 +47,7 @@ class A2C(Algorithm):
         multi_reward_weights: Optional[List[int]] = None,
         scale_loss_by_num_actions: bool = False,
         min_logprob: Optional[float] = None,
+        exp_logpa_loss: bool = False,
     ) -> None:
         super().__init__(policy, device, tb_writer)
         self.policy = policy
@@ -74,6 +75,7 @@ class A2C(Algorithm):
         )
         self.scale_loss_by_num_actions = scale_loss_by_num_actions
         self.min_logprob = min_logprob
+        self.exp_logpa_loss = exp_logpa_loss
 
     def learn(
         self: A2CSelf,
@@ -111,6 +113,11 @@ class A2C(Algorithm):
             timesteps_elapsed += r.total_steps
 
             vf_coef = torch.Tensor(np.array(self.vf_coef)).to(self.device)
+            min_logprob = (
+                torch.Tensor((self.min_logprob,)).to(self.device)
+                if self.min_logprob is not None
+                else None
+            )
 
             (
                 b_obs,
@@ -132,17 +139,16 @@ class A2C(Algorithm):
                 b_obs, b_actions, action_masks=b_action_masks
             )
 
-            pi_loss = -(b_advantages * logp_a)
             if self.scale_loss_by_num_actions:
-                pi_loss = torch.where(b_num_actions > 0, pi_loss / b_num_actions, 0)
-            if self.min_logprob is not None:
-                clipped_pi_loss = -(
-                    b_advantages
-                    * torch.max(
-                        logp_a, torch.Tensor((self.min_logprob,)).to(self.device)
-                    )
+                logp_a = torch.where(b_num_actions > 0, logp_a / b_num_actions, 0)
+            if min_logprob is not None:
+                logp_a = torch.where(
+                    b_advantages < 0, torch.max(logp_a, min_logprob), logp_a
                 )
-                pi_loss = torch.max(pi_loss, clipped_pi_loss)
+            if self.exp_logpa_loss:
+                pi_loss = -(b_advantages * torch.exp(logp_a))
+            else:
+                pi_loss = -(b_advantages * logp_a)
             pi_loss = pi_loss.mean()
 
             value_loss = ((v - b_returns) ** 2).mean(0)

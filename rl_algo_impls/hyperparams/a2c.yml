@@ -161,7 +161,7 @@ Microrts-squnet-d16-128-BC-offline: &microrts-squnet-d16-128-bc-offline
     - microrts_results
     - results
     - action_mask_stats
-  algo_hyperparams:
+  algo_hyperparams: &microrts-squnet-d16-128-bc-offline-algo
     ent_coef: 0.0001
     gae_lambda: 0.99
     gamma: 0.999
@@ -306,5 +306,12 @@ Microrts-squnet-d16-128-BC-offline: &microrts-squnet-d16-128-bc-offline
       - 0.2
   rollout_type: reference
 
-Microrts-debug:
+Microrts-squnet-d16-128-BC-offline-exp: &microrts-squnet-d16-128-bc-offline-exp
   <<: *microrts-squnet-d16-128-bc-offline
+  algo_hyperparams:
+    <<: *microrts-squnet-d16-128-bc-offline-algo
+    min_logprob: null
+    exp_logpa_loss: true
+
+Microrts-debug:
+  <<: *microrts-squnet-d16-128-bc-offline-exp
