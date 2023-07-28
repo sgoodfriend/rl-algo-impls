@@ -13,11 +13,10 @@ import jpype
 import jpype.imports
 import numpy as np
 from jpype.imports import registerDomain
-from jpype.types import JArray, JInt
+from jpype.types import JArray
 from PIL import Image
 
 from rl_algo_impls.microrts.vec_env.microrts_interface import (
-    ByteArray,
     MicroRTSInterface,
     MicroRTSInterfaceListener,
 )
