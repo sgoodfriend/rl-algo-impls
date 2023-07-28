@@ -21,6 +21,7 @@ class ReferenceAIRollout(SyncStepRolloutGenerator):
         n_steps: int = 2048,
         sde_sample_freq: int = -1,
         scale_advantage_by_values_accuracy: bool = False,
+        full_batch_off_accelerator: bool = False,
     ) -> None:
         super().__init__(
             training_policy,
@@ -28,6 +29,7 @@ class ReferenceAIRollout(SyncStepRolloutGenerator):
             n_steps,
             sde_sample_freq,
             scale_advantage_by_values_accuracy=scale_advantage_by_values_accuracy,
+            full_batch_off_accelerator=full_batch_off_accelerator,
         )
         if isinstance(self.actions, dict):
             self.zero_action = {k: np.zeros_like(v[0]) for k, v in self.actions.items()}

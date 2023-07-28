@@ -127,7 +127,7 @@ Microrts-squnet-d16-128-iMayari: &microrts-squnet-d16-128-imayari
       - 4
       - 4
       - 5
-  rollout_hyperparams:
+  rollout_hyperparams: &microrts-squnet-d16-128-imayari-rollout
     n_steps: 512
   rollout_type: reference
 
@@ -158,6 +158,9 @@ Microrts-squnet-d16-128-iMayari-map32: &microrts-squnet-d16-128-imayari-map32
       lightRushAI: 6
       coacAI: 6
     valid_sizes: [32]
+  rollout_hyperparams:
+    <<: *microrts-squnet-d16-128-imayari-rollout
+    full_batch_off_accelerator: true
   eval_hyperparams: &microrts-squnet-d16-128-imayari-map32-eval
     <<: *microrts-squnet-d16-128-imayari-eval
     step_freq: !!float 5e6

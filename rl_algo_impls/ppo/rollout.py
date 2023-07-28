@@ -35,7 +35,7 @@ class Batch:
         return self.obs.device
 
     def to(self: BatchSelf, device: torch.device) -> BatchSelf:
-        if self.device != device:
+        if self.device == device:
             return self
         return self.__class__(*(t.to(device) for t in astuple(self)))
 
@@ -71,6 +71,7 @@ class Rollout:
         gamma: NumOrArray,
         gae_lambda: NumOrArray,
         scale_advantage_by_values_accuracy: bool = False,
+        full_batch_off_accelerator: bool = False,
     ) -> None:
         self.obs = obs
         self.actions = actions
@@ -80,6 +81,7 @@ class Rollout:
         self.logprobs = logprobs
         self.action_masks = action_masks
         self.scale_advantage_by_values_accuracy = scale_advantage_by_values_accuracy
+        self.full_batch_off_accelerator = full_batch_off_accelerator
 
         if self.action_masks is not None:
             if isinstance(self.action_masks, dict):
@@ -179,7 +181,11 @@ class Rollout:
             values,
             advantages,
             returns,
-        ) = astuple(self.batch(torch.device("cpu")))
+        ) = astuple(
+            self.batch(
+                torch.device("cpu") if self.full_batch_off_accelerator else device
+            )
+        )
         b_idxs = torch.randperm(self.total_steps)
         for i in range(0, self.total_steps, batch_size):
             mb_idxs = b_idxs[i : i + batch_size]
@@ -198,16 +204,8 @@ class Rollout:
 
 
 class RolloutGenerator(ABC):
-    def __init__(
-        self,
-        n_steps: int,
-        sde_sample_freq: int,
-        scale_advantage_by_values_accuracy: bool = False,
-    ) -> None:
+    def __init__(self, **kwargs) -> None:
         super().__init__()
-        self.n_steps = n_steps
-        self.sde_sample_freq = sde_sample_freq
-        self.scale_advantage_by_values_accuracy = scale_advantage_by_values_accuracy
 
     @abstractmethod
     def rollout(self, gamma: NumOrArray, gae_lambda: NumOrArray) -> Rollout:
