@@ -6,7 +6,7 @@ Microrts-squnet-d16-128-iMayari: &microrts-squnet-d16-128-imayari
     - results
     - action_mask_stats
   algo_hyperparams: &microrts-squnet-d16-128-imayari-algo
-    learning_rate: 2.0e-05
+    learning_rate: 4.0e-05
     batch_size: 3072
     n_epochs: 2
     gamma: 0.999
