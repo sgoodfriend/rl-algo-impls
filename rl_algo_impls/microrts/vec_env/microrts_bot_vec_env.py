@@ -35,6 +35,9 @@ MicroRTSBotGridVecEnvSelf = TypeVar(
 )
 
 UTT_VERSION_ORIGINAL_FINETUNED = 2
+UTT_VERSION_NON_DETERMINISTIC = 3
+UTT_MOVE_CONFLICT_RESOLUTION_CANCEL_BOTH = 1
+UTT_MOVE_CONFLICT_RESOLUTION_CANCEL_RANDOM = 2
 
 
 class MicroRTSBotGridVecEnv(MicroRTSInterface):
@@ -52,6 +55,7 @@ class MicroRTSBotGridVecEnv(MicroRTSInterface):
         reward_weight=np.array([1.0, 0, 0, 0, 0, 0, 0, 0, 0]),
         cycle_maps=[],
         video_frames_per_second: Optional[int] = None,
+        non_deterministic: bool = False,
     ):
         self._num_envs = len(reference_indexes)
         self._partial_obs = partial_obs
@@ -119,7 +123,14 @@ class MicroRTSBotGridVecEnv(MicroRTSInterface):
         # start microrts client
         from rts.units import UnitTypeTable
 
-        self.real_utt = UnitTypeTable(UTT_VERSION_ORIGINAL_FINETUNED)
+        self.real_utt = (
+            UnitTypeTable(
+                UTT_VERSION_NON_DETERMINISTIC,
+                UTT_MOVE_CONFLICT_RESOLUTION_CANCEL_RANDOM,
+            )
+            if non_deterministic
+            else UnitTypeTable(UTT_VERSION_ORIGINAL_FINETUNED)
+        )
         from ai.reward import (
             AttackRewardFunction,
             ProduceBuildingRewardFunction,
