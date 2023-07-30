@@ -1568,9 +1568,9 @@ Microrts-squnet-d16-128-BC-finetune: &microrts-squnet-d16-128-bc-finetune
     interpolate_method: cosine
     phases:
       - learning_rate: !!float 1e-5
-        ent_coef: 0.01
-      - learning_rate: !!float 1e-4
-        ent_coef: 0.01
+        ent_coef: 0.001
+      - learning_rate: !!float 5e-5
+        ent_coef: 0.001
       - learning_rate: !!float 1e-5
         ent_coef: 0.0001
     durations:
