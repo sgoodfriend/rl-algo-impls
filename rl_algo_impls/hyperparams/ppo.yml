@@ -1545,6 +1545,7 @@ Microrts-squnet-d16-128-BC-oppo: &microrts-squnet-d16-128-bc-oppo
 
 Microrts-squnet-d16-128-BC-finetune: &microrts-squnet-d16-128-bc-finetune
   <<: *microrts-squnet-deep16-128
+  n_timesteps: !!float 100e6
   policy_hyperparams:
     <<: *microrts-squnet-d16-128-bc-oppo-policy
   env_hyperparams:
