@@ -35,6 +35,7 @@ Microrts-squnet-d16-128-iMayari: &microrts-squnet-d16-128-imayari
         - 0
         - 0
         - 0
+      non_deterministic: true
     map_paths:
       - maps/16x16/basesWorkers16x16A.xml
       - maps/16x16/TwoBasesBarracks16x16.xml
@@ -133,15 +134,6 @@ Microrts-squnet-d16-128-iMayari: &microrts-squnet-d16-128-imayari
     include_logp: false
   rollout_type: reference
 
-Microrts-squnet-d16-128-iMayari-nondeterministic:
-  &microrts-squnet-d16-128-imayari-non-deterministic
-  <<: *microrts-squnet-d16-128-imayari
-  env_hyperparams:
-    <<: *microrts-squnet-d16-128-imayari-env
-    make_kwargs:
-      <<: *microrts-squnet-d16-128-imayari-env-make-kwargs
-      non_deterministic: true
-
 Microrts-squnet-d16-128-iMayari-batch: &microrts-squnet-d16-128-imayari-batch
   <<: *microrts-squnet-d16-128-imayari
   algo_hyperparams:
@@ -156,7 +148,7 @@ Microrts-squnet-d16-128-iMayari-map32: &microrts-squnet-d16-128-imayari-map32
   <<: *microrts-squnet-d16-128-imayari
   policy_hyperparams:
     <<: *microrts-squnet-d16-128-imayari-policy
-    load_path: downloaded_models/acbc-Microrts-squnet-d16-128-iMayari-S1-best
+    load_path: downloaded_models/acbc-Microrts-squnet-d16-128-iMayari-nondeterministic-S1-best
   env_hyperparams: &microrts-squnet-d16-128-imayari-map32-env
     <<: *microrts-squnet-d16-128-imayari-env
     n_envs: 24

@@ -280,7 +280,7 @@ Microrts-squnet-d16-128-BC-offline: &microrts-squnet-d16-128-bc-offline
       - 3
       - 2
       - 4
-    load_path: downloaded_models/acbc-Microrts-squnet-d16-128-iMayari-S1-best
+    load_path: downloaded_models/acbc-Microrts-squnet-d16-128-iMayari-nondeterministic-S1-best
     output_activation_fn: tanh
     strides_per_level:
       - 4
