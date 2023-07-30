@@ -223,5 +223,5 @@ Microrts-squnet-d16-128-iMayari-map64: &microrts-squnet-d16-128-imayari-map64
     gradient_accumulation: true
 
 Microrts-debug: &microrts-debug-defaults
-  <<: *microrts-squnet-d16-128-imayari-non-deterministic
+  <<: *microrts-squnet-d16-128-imayari
   device: mps
