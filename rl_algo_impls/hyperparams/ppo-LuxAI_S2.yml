@@ -142,6 +142,7 @@ LuxAI_S2-v0-dc-A10: &lux-dc-a10-defaults
     gradient_accumulation: true
 
 LuxAI_S2-v0-dc-A10-subaction-mask: &lux-dc-a10-subaction-mask
+  <<: *lux-dc-a10-defaults
   policy_hyperparams:
     <<: *lux-dc-policy
     subaction_mask:
