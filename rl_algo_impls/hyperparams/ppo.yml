@@ -1581,9 +1581,15 @@ Microrts-squnet-d16-128-BC-finetune: &microrts-squnet-d16-128-bc-finetune
       - 0.2
   eval_hyperparams:
     <<: *microrts-squnet-map16-eval-defaults
+  
+Microrts-squnet-d16-128-map16-sc-cos-ga-selfplay-a10:
+  &microrts-squnet-d16-128-map16-sc-cos-ga-selfplay-a10
+  <<: *microrts-squnet-d16-128-sc-cos-ga-selfplay-a10
+  env_hyperparams: 
+    <<: *microrts-squnet-d16-128-map16-env-defaults
 
 Microrts-debug: &microrts-debug-defaults
-  <<: *microrts-squnet-d16-128-bc-oppo
+  <<: *microrts-squnet-d16-128-map16-sc-cos-ga-selfplay-a10
   device: cpu
 
 Microrts-agent: &microrts-agent
