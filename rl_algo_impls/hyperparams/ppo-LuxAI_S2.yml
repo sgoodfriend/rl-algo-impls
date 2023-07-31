@@ -1,0 +1,247 @@
+LuxAI_S2-v0: &lux-defaults
+  n_timesteps: !!float 40e6
+  additional_keys_to_log: ["stats", "results"]
+  env_id: LuxAI_S2-v0
+  env_hyperparams: &lux-env-defaults
+    env_type: lux
+    vec_env_class: sync
+    n_envs: 24
+    self_play_kwargs:
+      num_old_policies: 12
+      save_steps: 300000
+      swap_steps: 3000
+      swap_window_size: 4
+      window: 33
+    make_kwargs: &lux-env-make-defaults
+      bid_std_dev: 0
+      reward_weights:
+        ice_generation: 0.0025 # 0.5/day of water for factory, 0.05/heavy dig
+        ore_generation: 0.008 # 4/heavy robot build, 0.16/heavy dig
+        water_generation: 0.01 # 0.5/day of water for factory
+        metal_generation: 0.04 # 4/heavy robot build
+        power_generation: 0
+        ice_rubble_cleared: 0.002 # 80% of ice_generation
+        ore_rubble_cleared: 0.0064 # 80% of ore_generation
+        built_light: 0.1
+        built_heavy: 1
+        lost_factory: -1
+        factories_alive: 0.01
+        heavies_alive: 0.005 # 0.25/day of heavy alive
+        lights_alive: 0.0005 # 0.025/day of light alive
+    additional_win_loss_reward: true
+    score_reward_kwargs:
+      episode_end: true
+  eval_hyperparams: &lux-eval-defaults
+    deterministic: false
+    step_freq: !!float 1e6
+    score_function: mean
+    only_record_video_on_best: true
+    score_threshold: 0.27
+    env_overrides: &lux-eval-env-overrides
+      n_envs: 66
+      self_play_kwargs:
+        eval_use_training_cache: true
+      make_kwargs: &lux-eval-env-override-make-kwargs
+        <<: *lux-env-make-defaults
+        reward_weights:
+          win_loss: 1
+      additional_win_loss_reward: false
+      score_reward_kwargs: {}
+  policy_hyperparams: &lux-policy-defaults
+    activation_fn: relu
+    actor_head_style: unet
+    v_hidden_sizes: [256, 128]
+    embed_layer: false
+    additional_critic_activation_functions: [tanh, identity]
+  hyperparam_transitions_kwargs: &lux-transitions-defaults
+    phases:
+      - multi_reward_weights: [0.98, 0.01, 0.01] # Initial shaped rewards (mostly)
+        vf_coef: [0.5, 0.1, 0.1]
+        ent_coef: 0.01
+        learning_rate: !!float 1e-4
+      - multi_reward_weights: [0.34, 0.33, 0.33] # Equal contributions
+        vf_coef: [0.25, 0.25, 0.25]
+        ent_coef: 0.01
+        learning_rate: !!float 1e-4
+      - multi_reward_weights: [0, 0.9, 0.1] # Win-loss sparse rewards
+        vf_coef: [0, 0.4, 0.2]
+        ent_coef: 0.001
+        learning_rate: !!float 5e-5
+    durations:
+      - 0.3
+      - 0.2
+      - 0.2
+      - 0.2
+      - 0.1
+  rollout_hyperparams: &lux-rollout-defaults
+    n_steps: 384
+  algo_hyperparams: &lux-algo-defaults
+    batch_size: 2304
+    n_epochs: 4
+    learning_rate_decay: none
+    ent_coef: 0.01
+    max_grad_norm: 0.5
+    clip_range: 0.1
+    clip_range_decay: none
+    clip_range_vf: 0.1
+    ppo2_vf_coef_halving: true
+    multi_reward_weights: [0.99, 0.01]
+    gamma: [0.99, 0.999, 0.999]
+    gae_lambda: [0.95, 0.99, 0.99]
+    vf_coef: [0.5, 0.1, 0.1]
+
+LuxAI_S2-v0-double-cone: &lux-dc-defaults
+  <<: *lux-defaults
+  policy_hyperparams:
+    actor_head_style: double_cone
+    pooled_channels: 128
+    additional_critic_activation_functions: [tanh, identity]
+  rollout_hyperparams: &lux-dc-rollout-defaults
+    <<: *lux-rollout-defaults
+    n_steps: 128
+  algo_hyperparams: &lux-dc-algo-defaults
+    <<: *lux-algo-defaults
+    batch_size: 768
+    n_epochs: 2
+
+LuxAI_S2-v0-eval:
+  <<: *lux-defaults
+  device: cpu
+  eval_hyperparams:
+    <<: *lux-eval-defaults
+    env_overrides:
+      n_envs: 1
+      self_play_kwargs:
+        save_steps: .inf
+        swap_steps: .inf
+      make_kwargs:
+        <<: *lux-env-make-defaults
+        reward_weights:
+          win_loss: 1
+
+LuxAI_S2-v0-A10: &lux-a10-defaults
+  <<: *lux-defaults
+  rollout_hyperparams:
+    n_steps: 192
+  algo_hyperparams:
+    <<: *lux-algo-defaults
+    batch_size: 1152
+
+LuxAI_S2-v0-A10-100M:
+  <<: *lux-a10-defaults
+  n_timesteps: !!float 100e6
+
+LuxAI_S2-v0-dc-A10: &lux-dc-a10-defaults
+  <<: *lux-dc-defaults
+  rollout_hyperparams:
+    <<: *lux-dc-rollout-defaults
+    n_steps: 64
+  algo_hyperparams:
+    <<: *lux-dc-algo-defaults
+    batch_size: 256
+
+LuxAI_S2-v0-medium-transfer: &lux-medium-transfer-defaults
+  <<: *lux-a10-defaults
+  policy_hyperparams:
+    <<: *lux-policy-defaults
+    load_run_path: sgoodfriend/rl-algo-impls-benchmarks/qpm5k6n1
+    load_run_path_best: false
+
+LuxAI_S2-v0-medium-transfer-debug:
+  <<: *lux-medium-transfer-defaults
+  device: cpu
+  env_hyperparams:
+    <<: *lux-env-defaults
+    vec_env_class: sync
+    make_kwargs:
+      <<: *lux-env-make-defaults
+      verbose: 2
+  hyperparam_transitions_kwargs:
+    <<: *lux-transitions-defaults
+    durations:
+      - 0 # Should already know water generation, so transition to sparse rewards
+      - 0.3
+      - 0.2
+      - 0.2
+      - 0.3
+
+LuxAI_S2-v0-medium-transfer-A100:
+  <<: *lux-medium-transfer-defaults
+  algo_hyperparams:
+    <<: *lux-algo-defaults
+
+LuxAI_S2-v0-small: &small-lux-defaults
+  <<: *lux-defaults
+  env_hyperparams: &small-lux-env-defaults
+    <<: *lux-env-defaults
+    make_kwargs:
+      <<: *lux-env-make-defaults
+      map_size: 16
+      MIN_FACTORIES: 1
+      MAX_FACTORIES: 1
+  eval_hyperparams:
+    <<: *lux-eval-defaults
+    env_overrides:
+      <<: *lux-eval-env-overrides
+      make_kwargs:
+        <<: *lux-eval-env-override-make-kwargs
+        map_size: 16
+        MIN_FACTORIES: 1
+        MAX_FACTORIES: 1
+
+LuxAI_S2-v0-small-debug:
+  <<: *small-lux-defaults
+  device: cpu
+  env_hyperparams:
+    <<: *small-lux-env-defaults
+    vec_env_class: sync
+
+LuxAI_S2-v0-medium: &medium-lux-defaults
+  <<: *lux-defaults
+  n_timesteps: !!float 30e6
+  env_hyperparams: &medium-lux-env-defaults
+    <<: *lux-env-defaults
+    make_kwargs:
+      <<: *lux-env-make-defaults
+      map_size: 32
+      MIN_FACTORIES: 1
+      MAX_FACTORIES: 1
+  eval_hyperparams:
+    <<: *lux-eval-defaults
+    env_overrides:
+      <<: *lux-eval-env-overrides
+      make_kwargs:
+        <<: *lux-eval-env-override-make-kwargs
+        map_size: 32
+        MIN_FACTORIES: 1
+        MAX_FACTORIES: 1
+
+LuxAI_S2-v0-medium-debug:
+  <<: *medium-lux-defaults
+  device: cpu
+  env_hyperparams:
+    <<: *medium-lux-env-defaults
+    vec_env_class: sync
+
+LuxAI_S2-v0-debug:
+  <<: *lux-dc-a10-defaults
+  n_timesteps: !!float 1e6
+  device: cpu
+  env_hyperparams:
+    <<: *lux-env-defaults
+    vec_env_class: sync
+    make_kwargs:
+      <<: *lux-env-make-defaults
+      verbose: 3
+      verify: true
+  eval_hyperparams:
+    <<: *lux-eval-defaults
+    step_freq: !!float 1e5
+  hyperparam_transitions_kwargs:
+    <<: *lux-transitions-defaults
+    durations:
+      - 0.05
+      - 0.05
+      - 0.05
+      - 0.05
+      - 0.8

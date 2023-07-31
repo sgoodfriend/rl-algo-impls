@@ -78,6 +78,15 @@ def base_parser(multiple: bool = True) -> argparse.ArgumentParser:
 
 
 def load_hyperparams(algo: str, env_id: str) -> Hyperparams:
+    hp = load_hyperparams_by_env_id(algo, env_id) or load_hyperparams_by_algo(
+        algo, env_id
+    )
+    if hp is None:
+        raise ValueError(f"({algo},{env_id}) hyperparameters not specified")
+    return hp
+
+
+def load_hyperparams_by_algo(algo: str, env_id: str) -> Optional[Hyperparams]:
     root_path = Path(__file__).parent.parent
     hyperparams_path = os.path.join(root_path, HYPERPARAMS_PATH, f"{algo}.yml")
     with open(hyperparams_path, "r") as f:
@@ -93,8 +102,24 @@ def load_hyperparams(algo: str, env_id: str) -> Hyperparams:
         return Hyperparams(**hyperparams_dict["_atari"])
     elif "gym_microrts" in entry_point_name and "_microrts" in hyperparams_dict:
         return Hyperparams(**hyperparams_dict["_microrts"])
-    else:
-        raise ValueError(f"{env_id} not specified in {algo} hyperparameters file")
+
+    return None
+
+
+def load_hyperparams_by_env_id(algo: str, env_id: str) -> Optional[Hyperparams]:
+    root_path = Path(__file__).parent.parent
+    env_prefix = env_id.split("-")[0].lower()
+    hyperparams_path = os.path.join(
+        root_path, HYPERPARAMS_PATH, f"{algo}-{env_prefix}.yml"
+    )
+    if not os.path.exists(hyperparams_path):
+        return None
+    with open(hyperparams_path, "r") as f:
+        hyperparams_dict = yaml.safe_load(f)
+
+    if env_id in hyperparams_dict:
+        return Hyperparams(**hyperparams_dict[env_id])
+    return None
 
 
 def get_device(config: Config, env: VecEnv) -> torch.device:
