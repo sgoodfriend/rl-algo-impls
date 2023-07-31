@@ -1,4 +1,4 @@
-from collections import deque
+from collections import defaultdict, deque
 from typing import Any, Dict, List, Optional
 
 import numpy as np
@@ -10,6 +10,10 @@ from rl_algo_impls.wrappers.vectorable_wrapper import (
     VecEnvStepReturn,
     VectorableWrapper,
 )
+
+CHECK_DUPLICATE_RESULTS = True
+if CHECK_DUPLICATE_RESULTS:
+    import logging
 
 
 class EpisodeStatsWriter(VectorableWrapper):
@@ -32,6 +36,10 @@ class EpisodeStatsWriter(VectorableWrapper):
         self.additional_keys_to_log = (
             additional_keys_to_log if additional_keys_to_log is not None else []
         )
+        if CHECK_DUPLICATE_RESULTS:
+            self.results_by_step_count = [
+                defaultdict(int) for _ in range(self.env.num_envs)
+            ]
 
     def step(self, actions: np.ndarray) -> VecEnvStepReturn:
         obs, rews, dones, infos = self.env.step(actions)
@@ -47,9 +55,17 @@ class EpisodeStatsWriter(VectorableWrapper):
     def _record_stats(self, infos: List[Dict[str, Any]]) -> None:
         self.total_steps += getattr(self.env, "num_envs", 1)
         step_episodes = []
-        for info in infos:
+        for idx, info in enumerate(infos):
             ep_info = info.get("episode")
             if ep_info:
+                if CHECK_DUPLICATE_RESULTS:
+                    self.results_by_step_count[idx][ep_info["l"]] += 1
+                    if (
+                        len(self.results_by_step_count[idx]) == 1
+                        and sum(self.results_by_step_count[idx].values()) == 10
+                    ):
+                        logging.warn(f"Duplicate step count on env {idx}")
+
                 additional_info = {k: info[k] for k in self.additional_keys_to_log}
                 episode = Episode(ep_info["r"], ep_info["l"], info=additional_info)
                 step_episodes.append(episode)
