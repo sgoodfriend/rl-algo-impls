@@ -1,5 +1,5 @@
 import logging
-from typing import List, Optional, Union
+from typing import Dict, List, Optional, Union
 
 import torch
 import torch.nn as nn
@@ -198,7 +198,7 @@ class SqueezeUnetActorCriticNetwork(BackboneActorCritic):
         critic_channels: int = 64,
         increment_kernel_size_on_down_conv: bool = False,
         output_activation_fn: str = "identity",
-        subaction_mask: Optional[List[int]] = None,
+        subaction_mask: Optional[Dict[int, Dict[int, int]]] = None,
     ) -> None:
         if cnn_layers_init_orthogonal is None:
             cnn_layers_init_orthogonal = False

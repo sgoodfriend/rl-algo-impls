@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 import torch
 import torch.nn as nn
@@ -177,6 +177,7 @@ class DoubleConeActorCritic(BackboneActorCritic):
         num_additional_critics: int = 0,
         additional_critic_activation_functions: Optional[List[str]] = None,
         gelu_pool_conv: bool = True,
+        subaction_mask: Optional[Dict[int, Dict[int, int]]] = None,
     ) -> None:
         if cnn_layers_init_orthogonal is None:
             cnn_layers_init_orthogonal = False
@@ -202,4 +203,5 @@ class DoubleConeActorCritic(BackboneActorCritic):
             critic_channels=critic_channels,
             init_layers_orthogonal=init_layers_orthogonal,
             cnn_layers_init_orthogonal=cnn_layers_init_orthogonal,
+            subaction_mask=subaction_mask,
         )

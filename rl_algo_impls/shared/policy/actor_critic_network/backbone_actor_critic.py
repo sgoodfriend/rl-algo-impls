@@ -8,7 +8,7 @@ from gym.spaces import Dict as DictSpace
 from gym.spaces import MultiDiscrete, Space
 
 from rl_algo_impls.shared.actor import pi_forward
-from rl_algo_impls.shared.actor.gridnet import GridnetDistribution
+from rl_algo_impls.shared.actor.gridnet import GridnetDistribution, ValueDependentMask
 from rl_algo_impls.shared.actor.gridnet_decoder import Transpose
 from rl_algo_impls.shared.module.stack import HStack
 from rl_algo_impls.shared.module.utils import layer_init
@@ -34,7 +34,7 @@ class BackboneActorCritic(ActorCriticNetwork):
         cnn_layers_init_orthogonal: bool = False,
         strides: Sequence[Union[int, Sequence[int]]] = (2, 2),
         output_activation_fn: str = "identity",
-        subaction_mask: Optional[List[int]] = None,
+        subaction_mask: Optional[Dict[int, Dict[int, int]]] = None,
     ):
         if num_additional_critics and not additional_critic_activation_functions:
             additional_critic_activation_functions = [
@@ -162,7 +162,9 @@ class BackboneActorCritic(ActorCriticNetwork):
             self.action_vec,
             logits,
             action_masks,
-            subaction_mask=torch.tensor(self.subaction_mask).to(obs.device)
+            subaction_mask=ValueDependentMask.from_reference_index_to_index_to_value(
+                self.subaction_mask
+            )
             if self.subaction_mask
             else None,
         )

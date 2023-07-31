@@ -1,4 +1,4 @@
-from typing import Dict, Optional, Tuple, Type
+from typing import Dict, NamedTuple, Optional, Tuple, Type, TypeVar
 
 import numpy as np
 import torch
@@ -12,6 +12,24 @@ from rl_algo_impls.shared.encoder import EncoderOutDim
 from rl_algo_impls.shared.module.utils import mlp
 from rl_algo_impls.shared.tensor_utils import TensorOrDict
 
+ValueDependentMaskSelf = TypeVar("ValueDependentMaskSelf", bound="ValueDependentMask")
+
+
+class ValueDependentMask(NamedTuple):
+    reference_index: int
+    value: int
+
+    @classmethod
+    def from_reference_index_to_index_to_value(
+        cls: Type[ValueDependentMaskSelf],
+        ref_idx_to_idx_to_value: Dict[int, Dict[int, int]],
+    ) -> Dict[int, ValueDependentMaskSelf]:
+        m = {}
+        for ref_idx, idx_to_value in ref_idx_to_idx_to_value.items():
+            for idx, value in idx_to_value.items():
+                m[idx] = cls(ref_idx, value)
+        return m
+
 
 class GridnetDistribution(Distribution):
     def __init__(
@@ -21,7 +39,7 @@ class GridnetDistribution(Distribution):
         logits: torch.Tensor,
         masks: TensorOrDict,
         validate_args: Optional[bool] = None,
-        subaction_mask: Optional[torch.Tensor] = None,
+        subaction_mask: Optional[Dict[int, ValueDependentMask]] = None,
     ) -> None:
         self.map_size = map_size
         self.action_vec = action_vec
@@ -85,26 +103,25 @@ class GridnetDistribution(Distribution):
             -1, action_per_position.shape[-1]
         ).T
 
-        prob_stack_per_position = torch.stack(
-            [
-                (
+        prob_per_position = []
+        for idx, (a, c) in enumerate(
+            zip(
+                action_per_position,
+                self.categoricals_per_position,
+            )
+        ):
+            if self.subaction_mask and idx in self.subaction_mask:
+                reference_index, value = self.subaction_mask[idx]
+                prob_per_position.append(
                     torch.where(
-                        action_per_position[0] == self.subaction_mask[idx - 1],
+                        action_per_position[reference_index] == value,
                         c.log_prob(a),
                         0,
                     )
-                    if idx > 0 and self.subaction_mask is not None
-                    else c.log_prob(a)
                 )
-                for idx, (a, c) in enumerate(
-                    zip(
-                        action_per_position,
-                        self.categoricals_per_position,
-                    )
-                )
-            ],
-            dim=-1,
-        )
+            else:
+                prob_per_position.append(c.log_prob(a))
+        prob_stack_per_position = torch.stack(prob_per_position, dim=-1)
         logprob_per_position = prob_stack_per_position.view(
             -1, self.map_size, len(self.action_vec)
         ).sum(dim=(1, 2))

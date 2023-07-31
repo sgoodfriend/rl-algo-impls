@@ -60,7 +60,14 @@ _microrts_ai: &microrts-ai-defaults
     <<: *microrts-policy-defaults
     cnn_flatten_dim: 256
     actor_head_style: gridnet
-    subaction_mask: [1, 2, 3, 4, 4, 5]
+    subaction_mask:
+      0:
+        1: 1
+        2: 2
+        3: 3
+        4: 4
+        5: 4
+        6: 5
   rollout_hyperparams: &microrts-ai-rollout-defaults
     n_steps: 512
   algo_hyperparams: &microrts-ai-algo-defaults
@@ -1366,11 +1373,11 @@ Microrts-squnet-d16-128-BC-finetune: &microrts-squnet-d16-128-bc-finetune
       - 0.2
   eval_hyperparams:
     <<: *microrts-squnet-map16-eval-defaults
-  
+
 Microrts-squnet-d16-128-map16-sc-cos-ga-selfplay-a10:
   &microrts-squnet-d16-128-map16-sc-cos-ga-selfplay-a10
   <<: *microrts-squnet-d16-128-sc-cos-ga-selfplay-a10
-  env_hyperparams: 
+  env_hyperparams:
     <<: *microrts-squnet-d16-128-map16-env-defaults
 
 Microrts-debug: &microrts-debug-defaults

@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from typing import List, NamedTuple, Optional, Sequence, Tuple, TypeVar, Union
+from typing import Dict, List, NamedTuple, Optional, Sequence, Tuple, TypeVar, Union
 
 import gym
 import numpy as np
@@ -130,7 +130,7 @@ class ActorCritic(OnPolicy):
         decoder_residual_blocks_per_level: Optional[List[int]] = None,
         increment_kernel_size_on_down_conv: bool = False,
         output_activation_fn: str = "identity",
-        subaction_mask: Optional[List[int]] = None,
+        subaction_mask: Optional[Dict[int, Dict[int, int]]] = None,
         **kwargs,
     ) -> None:
         super().__init__(env, **kwargs)
@@ -171,6 +171,7 @@ class ActorCritic(OnPolicy):
                 num_additional_critics=num_additional_critics,
                 additional_critic_activation_functions=additional_critic_activation_functions,
                 gelu_pool_conv=gelu_pool_conv,
+                subaction_mask=subaction_mask,
             )
         elif actor_head_style == "squeeze_unet":
             assert action_plane_space is not None
