@@ -108,7 +108,7 @@ def load_hyperparams_by_algo(algo: str, env_id: str) -> Optional[Hyperparams]:
 
 def load_hyperparams_by_env_id(algo: str, env_id: str) -> Optional[Hyperparams]:
     root_path = Path(__file__).parent.parent
-    env_prefix = env_id.split("-")[0].lower()
+    env_prefix = env_id.split("-")[0]
     hyperparams_path = os.path.join(
         root_path, HYPERPARAMS_PATH, f"{algo}-{env_prefix}.yml"
     )
