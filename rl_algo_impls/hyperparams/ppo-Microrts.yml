@@ -540,7 +540,7 @@ Microrts-squnet-d16-128-sc-cos-ga-selfplay:
 Microrts-squnet-d16-128-sc-cos-ga-selfplay-a10:
   &microrts-squnet-d16-128-sc-cos-ga-selfplay-a10
   <<: *microrts-squnet-d16-128-sc-cos-ga-selfplay
-  algo_hyperparams:
+  algo_hyperparams: &microrts-squnet-d16-128-sc-cos-ga-selfplay-a10-algo
     <<: *microrts-squnet-d16-128-sc-cos-ga-selfplay-algo-defaults
     batch_size: 3072
 
@@ -1380,9 +1380,12 @@ Microrts-squnet-d16-128-map16-sc-cos-ga-selfplay-a10:
   env_hyperparams:
     <<: *microrts-squnet-d16-128-map16-env-defaults
 
-Microrts-debug: &microrts-debug-defaults
+Microrts-squnet-d16-128-map16-sc-cos-ga-scale-loss-selfplay:
+  &microrts-squnet-d16-128-map16-sc-cos-ga-scale-loss-selfplay
   <<: *microrts-squnet-d16-128-map16-sc-cos-ga-selfplay-a10
-  device: cpu
+  algo_hyperparams:
+    <<: *microrts-squnet-d16-128-sc-cos-ga-selfplay-a10-algo
+    scale_loss_by_num_actions: true
 
 Microrts-agent: &microrts-agent
   <<: *microrts-sp-dc-phases-defaults
@@ -1415,3 +1418,7 @@ Microrts-agent: &microrts-agent
         #   md5_hash: 686eb7e687e50729cb134d3958d7814d
         #   size: 64
         #   use_paper_obs: true
+
+Microrts-debug: &microrts-debug-defaults
+  <<: *microrts-squnet-d16-128-map16-sc-cos-ga-scale-loss-selfplay
+  device: mps
