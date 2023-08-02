@@ -1399,14 +1399,14 @@ Microrts-squnet-d16-128-map32-BC-finetune:
     <<: *microrts-squnet-map32-eval-defaults
   algo_hyperparams: &microrts-squnet-d16-128-map32-bc-finetune-algo
     <<: *microrts-squnet-d16-128-bc-finetune-algo
-    batch_size: 1024
+    batch_size: 1536
 
 Microrts-squnet-d16-128-map32-BC-finetune-A10:
   &microrts-squnet-d16-128-map32-bc-finetune-a10
   <<: *microrts-squnet-d16-128-map32-bc-finetune
   algo_hyperparams:
     <<: *microrts-squnet-d16-128-map32-bc-finetune-algo
-    batch_size: 512
+    batch_size: 768
     gradient_accumulation: true
 
 Microrts-squnet-d16-128-map64-BC-finetune:
