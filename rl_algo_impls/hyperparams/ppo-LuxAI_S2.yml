@@ -136,13 +136,6 @@ LuxAI_S2-v0-dc-A10: &lux-dc-a10-defaults
   rollout_hyperparams:
     <<: *lux-dc-rollout-defaults
     n_steps: 64
-  algo_hyperparams:
-    <<: *lux-dc-algo-defaults
-    batch_size: 256
-    gradient_accumulation: true
-
-LuxAI_S2-v0-dc-A10-subaction-mask: &lux-dc-a10-subaction-mask
-  <<: *lux-dc-a10-defaults
   policy_hyperparams:
     <<: *lux-dc-policy
     subaction_mask:
@@ -151,6 +144,10 @@ LuxAI_S2-v0-dc-A10-subaction-mask: &lux-dc-a10-subaction-mask
         3: 1
         4: 1
         5: 2
+  algo_hyperparams:
+    <<: *lux-dc-algo-defaults
+    batch_size: 256
+    gradient_accumulation: true
 
 LuxAI_S2-v0-medium-transfer: &lux-medium-transfer-defaults
   <<: *lux-a10-defaults
