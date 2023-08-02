@@ -573,7 +573,7 @@ _Microrts-squnet-map32: &microrts-squnet-map32
       - maps/DoubleGame24x24.xml
       - maps/BWDistantResources32x32.xml
       - maps/chambers32x32.xml
-    make_kwargs:
+    make_kwargs: &microrts-squnet-map32-env-make-kwargs
       <<: *microrts-selfplay-env-make-kwargs-defaults
       num_selfplay_envs: 24
       max_steps: 6000
@@ -1349,7 +1349,7 @@ Microrts-squnet-d16-128-BC-finetune: &microrts-squnet-d16-128-bc-finetune
     score_reward_kwargs: null
   rollout_hyperparams:
     <<: *microrts-ai-rollout-defaults
-  algo_hyperparams:
+  algo_hyperparams: &microrts-squnet-d16-128-bc-finetune-algo
     <<: *microrts-squnet-deep16-128-algo-defaults
     batch_size: 3072
     gamma: 0.999
@@ -1373,6 +1373,26 @@ Microrts-squnet-d16-128-BC-finetune: &microrts-squnet-d16-128-bc-finetune
       - 0.2
   eval_hyperparams:
     <<: *microrts-squnet-map16-eval-defaults
+
+Microrts-squnet-d16-128-map32-BC-finetune:
+  &microrts-squnet-d16-128-map32-bc-finetune
+  <<: *microrts-squnet-d16-128-bc-finetune
+  n_timesteps: !!float 200e6
+  env_hyperparams:
+    <<: *microrts-squnet-map32-env-defaults
+    make_kwargs:
+      <<: *microrts-squnet-map32-env-make-kwargs
+      reward_weight: [1.0, 0, 0, 0, 0, 0, 0, 0, 0]
+    additional_win_loss_reward: false
+    score_reward_kwargs: null
+  policy_hyperparams:
+    <<: *microrts-squnet-d16-128-imayari-policy
+    load_run_path: sgoodfriend/rl-algo-impls-microrts-2023/su1f8k92
+  eval_hyperparams:
+    <<: *microrts-squnet-map32-eval-defaults
+  algo_hyperparams:
+    <<: *microrts-squnet-d16-128-bc-finetune-algo
+    batch_size: 1024
 
 Microrts-squnet-d16-128-map16-sc-cos-ga-selfplay-a10:
   &microrts-squnet-d16-128-map16-sc-cos-ga-selfplay-a10
@@ -1420,5 +1440,5 @@ Microrts-agent: &microrts-agent
         #   use_paper_obs: true
 
 Microrts-debug: &microrts-debug-defaults
-  <<: *microrts-squnet-d16-128-map16-sc-cos-ga-scale-loss-selfplay
+  <<: *microrts-squnet-d16-128-map32-bc-finetune
   device: mps

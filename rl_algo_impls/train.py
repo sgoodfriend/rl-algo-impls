@@ -33,12 +33,15 @@ def train() -> None:
     parser.add_argument(
         "--virtual-display", action="store_true", help="Use headless virtual display"
     )
-    # parser.set_defaults(
-    #     algo=["ppo"],
-    #     env=["CartPole-v1"],
-    #     seed=[10],
-    #     pool_size=3,
-    # )
+    parser.set_defaults(
+        algo=["ppo"],
+        # env=["CartPole-v1"],
+        env=["Microrts-debug"],
+        # env=["LuxAI_S2-v0-debug"],
+        seed=[1],
+        pool_size=3,
+        # wandb_project_name=None,
+    )
     args = parser.parse_args()
     print(args)
 
