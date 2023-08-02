@@ -631,11 +631,11 @@ _Microrts-squnet-map64: &microrts-squnet-map64
     map_paths:
       - maps/BroodWar/(4)BloodBath.scmB.xml # 64x64
       - maps/BroodWar/(4)BloodBath.scmE.xml # 64x64
-    make_kwargs:
+    make_kwargs: &microrts-squnet-map64-env-make-kwargs
       <<: *microrts-selfplay-env-make-kwargs-defaults
       num_selfplay_envs: 20
       max_steps: 8000
-    self_play_kwargs:
+    self_play_kwargs: &microrts-squnet-map64-env-self-play-kwargs
       <<: *microrts-selfplay-self-play-kwargs-defaults
       num_old_policies: 4
       swap_window_size: 4
@@ -1392,7 +1392,7 @@ Microrts-squnet-d16-128-map32-BC-finetune:
   rollout_hyperparams: &microrts-squnet-d16-128-map32-bc-finetune-rollout
     <<: *microrts-squnet-d16-128-bc-finetune-rollout
     full_batch_off_accelerator: true
-  policy_hyperparams:
+  policy_hyperparams: &microrts-squnet-d16-128-map32-bc-finetune-policy
     <<: *microrts-squnet-d16-128-imayari-policy
     load_run_path: sgoodfriend/rl-algo-impls-microrts-2023/su1f8k92
   eval_hyperparams:
@@ -1401,13 +1401,44 @@ Microrts-squnet-d16-128-map32-BC-finetune:
     <<: *microrts-squnet-d16-128-bc-finetune-algo
     batch_size: 1024
 
-Microrts-squnet-d16-128-map32-BC-finetune-a10:
+Microrts-squnet-d16-128-map32-BC-finetune-A10:
   &microrts-squnet-d16-128-map32-bc-finetune-a10
   <<: *microrts-squnet-d16-128-map32-bc-finetune
   algo_hyperparams:
     <<: *microrts-squnet-d16-128-map32-bc-finetune-algo
     batch_size: 512
     gradient_accumulation: true
+
+Microrts-squnet-d16-128-map64-BC-finetune:
+  &microrts-squnet-d16-128-map64-bc-finetune
+  <<: *microrts-squnet-d16-128-map32-bc-finetune
+  env_hyperparams:
+    <<: *microrts-squnet-map64-env-defaults
+    make_kwargs:
+      <<: *microrts-squnet-map64-env-make-kwargs
+      reward_weight: [1.0, 0, 0, 0, 0, 0, 0, 0, 0]
+    additional_win_loss_reward: false
+    score_reward_kwargs: null
+    self_play_kwargs:
+      <<: *microrts-squnet-map64-env-self-play-kwargs
+      save_steps: !!float 1e6
+      window: 50
+  policy_hyperparams:
+    <<: *microrts-squnet-d16-128-imayari-policy
+    load_path: downloaded_models/acbc-Microrts-squnet-d16-128-iMayari-map64-S1-best
+  eval_hyperparams:
+    <<: *microrts-squnet-map64-eval-defaults
+  algo_hyperparams: &microrts-squnet-d16-128-map64-bc-finetune-algo
+    <<: *microrts-squnet-d16-128-map32-bc-finetune-algo
+    batch_size: 384
+    gradient_accumulation: true
+
+Microrts-squnet-d16-128-map64-BC-finetune-A10:
+  &microrts-squnet-d16-128-map64-bc-finetune-a10
+  <<: *microrts-squnet-d16-128-map64-bc-finetune
+  algo_hyperparams:
+    <<: *microrts-squnet-d16-128-map64-bc-finetune-algo
+    batch_size: 192
 
 Microrts-squnet-d16-128-map16-sc-cos-ga-selfplay-a10:
   &microrts-squnet-d16-128-map16-sc-cos-ga-selfplay-a10
@@ -1455,5 +1486,5 @@ Microrts-agent: &microrts-agent
         #   use_paper_obs: true
 
 Microrts-debug: &microrts-debug-defaults
-  <<: *microrts-squnet-d16-128-map32-bc-finetune-a10
+  <<: *microrts-squnet-d16-128-map64-bc-finetune-a10
   device: mps
