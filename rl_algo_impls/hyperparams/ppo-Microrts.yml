@@ -577,7 +577,7 @@ _Microrts-squnet-map32: &microrts-squnet-map32
       <<: *microrts-selfplay-env-make-kwargs-defaults
       num_selfplay_envs: 24
       max_steps: 6000
-    self_play_kwargs:
+    self_play_kwargs: &microrts-squnet-map32-env-self-play-kwargs
       <<: *microrts-selfplay-self-play-kwargs-defaults
       num_old_policies: 6
       swap_window_size: 3
@@ -1347,7 +1347,7 @@ Microrts-squnet-d16-128-BC-finetune: &microrts-squnet-d16-128-bc-finetune
       reward_weight: [1.0, 0, 0, 0, 0, 0, 0, 0, 0]
     additional_win_loss_reward: false
     score_reward_kwargs: null
-  rollout_hyperparams:
+  rollout_hyperparams: &microrts-squnet-d16-128-bc-finetune-rollout
     <<: *microrts-ai-rollout-defaults
   algo_hyperparams: &microrts-squnet-d16-128-bc-finetune-algo
     <<: *microrts-squnet-deep16-128-algo-defaults
@@ -1385,14 +1385,29 @@ Microrts-squnet-d16-128-map32-BC-finetune:
       reward_weight: [1.0, 0, 0, 0, 0, 0, 0, 0, 0]
     additional_win_loss_reward: false
     score_reward_kwargs: null
+    self_play_kwargs:
+      <<: *microrts-squnet-map32-env-self-play-kwargs
+      save_steps: !!float 1e6
+      window: 50
+  rollout_hyperparams: &microrts-squnet-d16-128-map32-bc-finetune-rollout
+    <<: *microrts-squnet-d16-128-bc-finetune-rollout
+    full_batch_off_accelerator: true
   policy_hyperparams:
     <<: *microrts-squnet-d16-128-imayari-policy
     load_run_path: sgoodfriend/rl-algo-impls-microrts-2023/su1f8k92
   eval_hyperparams:
     <<: *microrts-squnet-map32-eval-defaults
-  algo_hyperparams:
+  algo_hyperparams: &microrts-squnet-d16-128-map32-bc-finetune-algo
     <<: *microrts-squnet-d16-128-bc-finetune-algo
     batch_size: 1024
+
+Microrts-squnet-d16-128-map32-BC-finetune-a10:
+  &microrts-squnet-d16-128-map32-bc-finetune-a10
+  <<: *microrts-squnet-d16-128-map32-bc-finetune
+  algo_hyperparams:
+    <<: *microrts-squnet-d16-128-map32-bc-finetune-algo
+    batch_size: 512
+    gradient_accumulation: true
 
 Microrts-squnet-d16-128-map16-sc-cos-ga-selfplay-a10:
   &microrts-squnet-d16-128-map16-sc-cos-ga-selfplay-a10
@@ -1440,5 +1455,5 @@ Microrts-agent: &microrts-agent
         #   use_paper_obs: true
 
 Microrts-debug: &microrts-debug-defaults
-  <<: *microrts-squnet-d16-128-map32-bc-finetune
+  <<: *microrts-squnet-d16-128-map32-bc-finetune-a10
   device: mps
