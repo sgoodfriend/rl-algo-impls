@@ -53,6 +53,12 @@ LuxAI_S2-v0: &lux-defaults
     v_hidden_sizes: [256, 128]
     embed_layer: false
     additional_critic_activation_functions: [tanh, identity]
+    subaction_mask:
+      1:
+        2: 0
+        3: 1
+        4: 1
+        5: 2
   hyperparam_transitions_kwargs: &lux-transitions-defaults
     phases:
       - multi_reward_weights: [0.98, 0.01, 0.01] # Initial shaped rewards (mostly)
@@ -96,6 +102,12 @@ LuxAI_S2-v0-double-cone: &lux-dc-defaults
     actor_head_style: double_cone
     pooled_channels: 128
     additional_critic_activation_functions: [tanh, identity]
+    subaction_mask:
+      1:
+        2: 0
+        3: 1
+        4: 1
+        5: 2
   rollout_hyperparams: &lux-dc-rollout-defaults
     <<: *lux-rollout-defaults
     n_steps: 128
@@ -136,14 +148,6 @@ LuxAI_S2-v0-dc-A10: &lux-dc-a10-defaults
   rollout_hyperparams:
     <<: *lux-dc-rollout-defaults
     n_steps: 64
-  policy_hyperparams:
-    <<: *lux-dc-policy
-    subaction_mask:
-      1:
-        2: 0
-        3: 1
-        4: 1
-        5: 2
   algo_hyperparams:
     <<: *lux-dc-algo-defaults
     batch_size: 256
@@ -232,8 +236,40 @@ LuxAI_S2-v0-medium-debug:
     <<: *medium-lux-env-defaults
     vec_env_class: sync
 
+LuxAI_S2-v0-squnet: &lux-squnet
+  <<: *lux-defaults
+  policy_hyperparams: &lux-squnet-policy
+    actor_head_style: double_cone
+    subaction_mask:
+      1:
+        2: 0
+        3: 1
+        4: 1
+        5: 2
+    channels_per_level: [128, 128, 128]
+    strides_per_level: [4, 4]
+    deconv_strides_per_level: [[2, 2], [2, 2]]
+    encoder_residual_blocks_per_level: [3, 2, 4]
+    decoder_residual_blocks_per_level: [2, 3]
+    additional_critic_activation_functions: [tanh, identity]
+  rollout_hyperparams: &lux-squnet-rollout
+    <<: *lux-rollout-defaults
+    n_steps: 64
+    full_batch_off_accelerator: true
+  algo_hyperparams: &lux-squnet-algo
+    <<: *lux-algo-defaults
+    batch_size: 256
+    n_epochs: 2
+    gradient_accumulation: true
+    # gamma: 0.999
+    # gae_lambda: 0.99
+    # learning_rate: !!float 1e-4
+    # vf_coef: 0.5
+    # ent_coef: 0.001
+    # scale_loss_by_num_actions: true
+
 LuxAI_S2-v0-debug:
-  <<: *lux-dc-a10-subaction-mask
+  <<: *lux-squnet
   n_timesteps: !!float 1e6
   device: mps
   env_hyperparams:
