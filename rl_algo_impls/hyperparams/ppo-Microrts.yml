@@ -1417,6 +1417,11 @@ Microrts-squnet-d16-128-map64-BC-finetune:
     make_kwargs:
       <<: *microrts-squnet-map64-env-make-kwargs
       reward_weight: [1.0, 0, 0, 0, 0, 0, 0, 0, 0]
+    bots:
+      workerRushAI: 2
+      lightRushAI: 2
+      coacAI: 2
+      mayari: 2
     additional_win_loss_reward: false
     score_reward_kwargs: null
     self_play_kwargs:
