@@ -286,12 +286,13 @@ Microrts-squnet-d16-128-BC-offline: &microrts-squnet-d16-128-bc-offline
       - 4
       - 4
     subaction_mask:
-      - 1
-      - 2
-      - 3
-      - 4
-      - 4
-      - 5
+      0:
+        1: 1
+        2: 2
+        3: 3
+        4: 4
+        5: 4
+        6: 5
   rollout_hyperparams:
     <<: *default-rollout
     n_steps: 96

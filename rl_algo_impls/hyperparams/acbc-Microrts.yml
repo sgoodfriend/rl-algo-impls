@@ -123,12 +123,13 @@ Microrts-squnet-d16-128-iMayari: &microrts-squnet-d16-128-imayari
       - 4
       - 4
     subaction_mask:
-      - 1
-      - 2
-      - 3
-      - 4
-      - 4
-      - 5
+      0:
+        1: 1
+        2: 2
+        3: 3
+        4: 4
+        5: 4
+        6: 5
   rollout_hyperparams: &microrts-squnet-d16-128-imayari-rollout
     n_steps: 512
     include_logp: false
