@@ -33,7 +33,7 @@ LuxAI_S2-v0: &lux-defaults
       episode_end: true
   eval_hyperparams: &lux-eval-defaults
     deterministic: false
-    step_freq: !!float 1e6
+    step_freq: !!float 5e6
     score_function: mean
     only_record_video_on_best: true
     score_threshold: 0.27
