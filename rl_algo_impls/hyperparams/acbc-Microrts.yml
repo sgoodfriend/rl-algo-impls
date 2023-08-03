@@ -179,7 +179,7 @@ Microrts-squnet-d16-128-iMayari-map32: &microrts-squnet-d16-128-imayari-map32
         map_paths: [maps/BWDistantResources32x32.xml]
   algo_hyperparams: &microrts-squnet-d16-128-imayari-map32-algo
     <<: *microrts-squnet-d16-128-imayari-algo
-    batch_size: 512
+    batch_size: 768
     gamma: 0.9996
     gae_lambda: 0.996
   hyperparam_transitions_kwargs:
@@ -228,5 +228,5 @@ Microrts-squnet-d16-128-iMayari-map64: &microrts-squnet-d16-128-imayari-map64
     gae_lambda: 0.9983
 
 Microrts-debug: &microrts-debug-defaults
-  <<: *microrts-squnet-d16-128-imayari
+  <<: *microrts-squnet-d16-128-imayari-map64
   device: mps
