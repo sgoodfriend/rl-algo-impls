@@ -1400,6 +1400,8 @@ Microrts-squnet-d16-128-map32-BC-finetune:
   algo_hyperparams: &microrts-squnet-d16-128-map32-bc-finetune-algo
     <<: *microrts-squnet-d16-128-bc-finetune-algo
     batch_size: 1536
+    gamma: 0.9996
+    gae_lambda: 0.996
 
 Microrts-squnet-d16-128-map32-BC-finetune-A10:
   &microrts-squnet-d16-128-map32-bc-finetune-a10
@@ -1437,6 +1439,8 @@ Microrts-squnet-d16-128-map64-BC-finetune:
     <<: *microrts-squnet-d16-128-map32-bc-finetune-algo
     batch_size: 384
     gradient_accumulation: true
+    gamma: 0.99983
+    gae_lambda: 0.9983
 
 Microrts-squnet-d16-128-map64-BC-finetune-A10:
   &microrts-squnet-d16-128-map64-bc-finetune-a10

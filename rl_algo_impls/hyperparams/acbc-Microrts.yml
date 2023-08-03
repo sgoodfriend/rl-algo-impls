@@ -149,7 +149,7 @@ Microrts-squnet-d16-128-iMayari-map32: &microrts-squnet-d16-128-imayari-map32
   <<: *microrts-squnet-d16-128-imayari
   policy_hyperparams:
     <<: *microrts-squnet-d16-128-imayari-policy
-    load_path: downloaded_models/acbc-Microrts-squnet-d16-128-iMayari-nondeterministic-S1-best
+    load_path_path: sgoodfriend/rl-algo-impls-microrts-2023/dqtbbmor
   env_hyperparams: &microrts-squnet-d16-128-imayari-map32-env
     <<: *microrts-squnet-d16-128-imayari-env
     n_envs: 24
@@ -180,6 +180,8 @@ Microrts-squnet-d16-128-iMayari-map32: &microrts-squnet-d16-128-imayari-map32
   algo_hyperparams: &microrts-squnet-d16-128-imayari-map32-algo
     <<: *microrts-squnet-d16-128-imayari-algo
     batch_size: 512
+    gamma: 0.9996
+    gae_lambda: 0.996
   hyperparam_transitions_kwargs:
     interpolate_method: cosine
     phases:
@@ -222,6 +224,8 @@ Microrts-squnet-d16-128-iMayari-map64: &microrts-squnet-d16-128-imayari-map64
     <<: *microrts-squnet-d16-128-imayari-map32-algo
     batch_size: 192
     gradient_accumulation: true
+    gamma: 0.99983
+    gae_lambda: 0.9983
 
 Microrts-debug: &microrts-debug-defaults
   <<: *microrts-squnet-d16-128-imayari
