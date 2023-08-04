@@ -258,15 +258,9 @@ LuxAI_S2-v0-squnet: &lux-squnet
     full_batch_off_accelerator: true
   algo_hyperparams: &lux-squnet-algo
     <<: *lux-algo-defaults
-    batch_size: 256
+    batch_size: 192
     n_epochs: 2
     gradient_accumulation: true
-    # gamma: 0.999
-    # gae_lambda: 0.99
-    # learning_rate: !!float 1e-4
-    # vf_coef: 0.5
-    # ent_coef: 0.001
-    # scale_loss_by_num_actions: true
 
 LuxAI_S2-v0-debug:
   <<: *lux-squnet
