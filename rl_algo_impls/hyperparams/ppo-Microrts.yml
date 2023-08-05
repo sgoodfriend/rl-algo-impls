@@ -1394,7 +1394,7 @@ Microrts-squnet-d16-128-map32-BC-finetune:
     full_batch_off_accelerator: true
   policy_hyperparams: &microrts-squnet-d16-128-map32-bc-finetune-policy
     <<: *microrts-squnet-d16-128-imayari-policy
-    load_run_path: sgoodfriend/rl-algo-impls-microrts-2023/su1f8k92
+    load_path: downloaded_models/acbc-Microrts-squnet-d16-128-iMayari-map32-S1-best
   eval_hyperparams:
     <<: *microrts-squnet-map32-eval-defaults
   algo_hyperparams: &microrts-squnet-d16-128-map32-bc-finetune-algo
