@@ -19,12 +19,9 @@ from rl_algo_impls.lux.shared import (
 from rl_algo_impls.lux.stats import ActionStats
 
 FACTORY_ACTION_SIZES = (
-    4,  # build light robot, build heavy robot, water lichen, do nothing
+    4,  # do nothing, build light robot, build heavy robot, water lichen
 )
 FACTORY_ACTION_ENCODED_SIZE = sum(FACTORY_ACTION_SIZES)
-
-FACTORY_DO_NOTHING_ACTION = 3
-
 
 UNIT_ACTION_SIZES = (
     6,  # action type
@@ -221,11 +218,11 @@ def to_lux_actions(
         if no_valid_factory_actions(f, action_mask, cfg.map_size):
             continue
         a = actions[pos_to_idx(f.pos, cfg.map_size), 0]
-        if a != FACTORY_DO_NOTHING_ACTION:
-            if a in {0, 1} and pos_to_idx(f.pos, cfg.map_size) in positions_occupied:
+        if a > 0:
+            if a in {1, 2} and pos_to_idx(f.pos, cfg.map_size) in positions_occupied:
                 action_stats.build_cancelled += 1
                 continue
-            lux_actions[f.unit_id] = a
+            lux_actions[f.unit_id] = a - 1
 
     return lux_actions
 

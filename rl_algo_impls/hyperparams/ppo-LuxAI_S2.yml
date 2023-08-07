@@ -263,6 +263,49 @@ LuxAI_S2-v0-squnet: &lux-squnet
     n_epochs: 2
     gradient_accumulation: true
 
+LuxAI_S2-v0-squnet-iDeimos: &lux-squnet-ideimos
+  <<: *lux-squnet
+  env_hyperparams:
+    <<: *lux-env-defaults
+    make_kwargs:
+      <<: *lux-env-make-defaults
+      reward_weights:
+        - score_vs_opponent: 1
+    additional_win_loss_reward: true
+    score_reward_kwargs: null
+    self_play_kwargs:
+      <<: *lux-env-self-play
+      save_steps: !!float 1e6
+      window: 50
+  policy_hyperparams: &lux-squnet-ideimos-policy
+    <<: *lux-squnet-policy
+    additional_critic_activation_functions: [tanh]
+    output_activation_fn: tanh
+  algo_hyperparams: &lux-squnet-ideimos-algo
+    <<: *lux-squnet-algo
+    multi_reward_weights: [0.5, 0.5]
+    gamma: [0.999, 0.999]
+    gae_lambda: [0.99, 0.99]
+    vf_coef: [0.25, 0.25]
+    learning_rate: !!float 1e-4
+    ent_coef: 0.01
+    scale_loss_by_num_actions: true
+  hyperparam_transitions_kwargs: &lux-squnet-ideimos-hyperparam-transitions
+    interpolate_method: cosine
+    phases:
+      - ent_coef: 0.001
+        learning_rate: !!float 1e-5
+      - ent_coef: 0.01
+        learning_rate: !!float 5e-5
+      - ent_coef: 0.0001
+        learning_rate: !!float 1e-5
+    durations:
+      - 0
+      - 0.05
+      - 0.4
+      - 0.35
+      - 0.2
+
 LuxAI_S2-v0-debug:
   <<: *lux-squnet
   n_timesteps: !!float 1e6

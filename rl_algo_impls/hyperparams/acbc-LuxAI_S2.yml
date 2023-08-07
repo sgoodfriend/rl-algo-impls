@@ -1,0 +1,65 @@
+LuxAI_S2-v0-squnet-iDeimos: &lux-squnet-ideimos
+  env_id: LuxAI_S2-v0
+  n_timesteps: !!float 40e6
+  additional_keys_to_log: ["results"]
+  env_hyperparams:
+    env_type: lux
+    vec_env_class: replay
+    n_envs: 24
+    make_kwargs: &lux-env-make-defaults
+      replay_dir: data/lux/replays-deimos
+      team_name: Deimos
+      reward_weights:
+        score_vs_opponent: 1
+    additional_win_loss_reward: true
+  rollout_type: reference
+  rollout_hyperparams: &lux-squnet-ideimos-rollout
+    n_steps: 64
+    full_batch_off_accelerator: true
+    include_logp: false
+  eval_hyperparams: &lux-eval-defaults
+    deterministic: false
+    step_freq: !!float 5e6
+    score_function: mean
+    only_record_video_on_best: true
+    score_threshold: 0.37
+    env_overrides: &lux-eval-env-overrides
+      vec_env_class: sync
+      n_envs: 32
+      make_kwargs: &lux-eval-env-override-make-kwargs
+        reward_weights:
+          win_loss: 1
+      additional_win_loss_reward: false
+      score_reward_kwargs: {}
+      self_play_reference_kwargs:
+        window: 32
+  policy_hyperparams: &lux-squnet-ideimos-policy
+    actor_head_style: squeeze_unet
+    subaction_mask:
+      1:
+        2: 0
+        3: 1
+        4: 1
+        5: 2
+    channels_per_level: [128, 128, 128]
+    strides_per_level: [4, 4]
+    deconv_strides_per_level: [[2, 2], [2, 2]]
+    encoder_residual_blocks_per_level: [3, 2, 4]
+    decoder_residual_blocks_per_level: [2, 3]
+    additional_critic_activation_functions: [tanh]
+    output_activation_fn: tanh
+  algo_hyperparams: &lux-squnet-ideimos-algo
+    learning_rate: !!float 1e-4
+    learning_rate_decay: linear
+    batch_size: 192
+    n_epochs: 2
+    gamma: [0.999, 0.999]
+    gae_lambda: [0.99, 0.99]
+    vf_coef: [0.25, 0.25]
+    max_grad_norm: 0.5
+    gradient_accumulation: true
+    scale_loss_by_num_actions: true
+
+LuxAI_S2-v0-debug:
+  <<: *lux-squnet-ideimos
+  device: mps
