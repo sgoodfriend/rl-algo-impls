@@ -1,4 +1,3 @@
-import logging
 import os
 import os.path
 from pathlib import Path
@@ -8,18 +7,18 @@ import numpy as np
 from gym.spaces import MultiDiscrete
 from luxai_s2.state import ObservationStateDict
 
-from rl_algo_impls.lux.kit.config import EnvConfig
-from rl_algo_impls.lux.kit.kit import obs_to_game_state
-from rl_algo_impls.runner.config import Config, EnvHyperparams, RunArgs
-from rl_algo_impls.runner.running_utils import get_device, load_hyperparams, make_policy
 from rl_algo_impls.lux.actions import (
     ACTION_SIZES,
     enqueued_action_from_obs,
     to_lux_actions,
 )
-from rl_algo_impls.lux.early import bid_action, place_factory_action
+from rl_algo_impls.lux.early import bid_action
+from rl_algo_impls.lux.kit.config import EnvConfig
+from rl_algo_impls.lux.kit.kit import obs_to_game_state
 from rl_algo_impls.lux.observation import observation_and_action_mask
 from rl_algo_impls.lux.stats import ActionStats
+from rl_algo_impls.runner.config import Config, EnvHyperparams, RunArgs
+from rl_algo_impls.runner.running_utils import get_device, load_hyperparams, make_policy
 from rl_algo_impls.shared.vec_env.make_env import make_eval_env
 from rl_algo_impls.wrappers.hwc_to_chw_observation import HwcToChwObservation
 from rl_algo_impls.wrappers.vectorable_wrapper import find_wrapper
@@ -65,6 +64,7 @@ class Agent:
 
         self.map_size = env_cfg.map_size
         self.num_map_tiles = self.map_size * self.map_size
+        # TODO: Update for actions being changed to a dict.
         self.action_plane_space = MultiDiscrete(ACTION_SIZES)
         self.action_mask_shape = (
             self.num_map_tiles,
@@ -112,6 +112,7 @@ class Agent:
     def factory_placement_policy(
         self, step: int, lux_obs: ObservationStateDict, remainingOverageTime: int = 60
     ) -> Dict[str, Any]:
+        # TODO: This is now handled by the network
         state = obs_to_game_state(step, self.env_cfg, lux_obs)
         return place_factory_action(state, self.agents, self.player_idx)
 
