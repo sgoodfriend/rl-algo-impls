@@ -106,6 +106,7 @@ def train(args: TrainArgs):
     )
     eval_callback = EvalCallback(
         policy,
+        policy_factory,
         eval_env,
         tb_writer,
         best_model_path=config.model_dir_path(best=True),

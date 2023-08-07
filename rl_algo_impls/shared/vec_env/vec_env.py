@@ -88,6 +88,7 @@ def make_vec_env(
         _,  # time_budget_ms,
         _,  # video_frames_per_second,
         _,  # reference_bot,
+        _,  # self_play_reference_kwargs,
     ) = astuple(hparams)
 
     import_for_env_id(config.env_id)

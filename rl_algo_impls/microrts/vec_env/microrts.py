@@ -65,6 +65,7 @@ def make_microrts_env(
         time_budget_ms,
         video_frames_per_second,
         _,  # reference_bot,
+        _, # self_play_reference_kwargs,
     ) = astuple(hparams)
 
     seed = config.seed(training=training)
