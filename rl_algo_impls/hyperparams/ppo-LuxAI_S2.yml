@@ -239,7 +239,7 @@ LuxAI_S2-v0-medium-debug:
 LuxAI_S2-v0-squnet: &lux-squnet
   <<: *lux-defaults
   policy_hyperparams: &lux-squnet-policy
-    actor_head_style: double_cone
+    actor_head_style: squeeze_unet
     subaction_mask:
       1:
         2: 0
