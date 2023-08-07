@@ -8,6 +8,7 @@ from rl_algo_impls.shared.tensor_utils import (
     NumOrArray,
     NumpyOrDict,
     TensorOrDict,
+    batch_dict_keys,
     tensor_to_numpy,
 )
 from rl_algo_impls.wrappers.vectorable_wrapper import VecEnv
@@ -64,7 +65,7 @@ class ReferenceAIRolloutGenerator(SyncStepRolloutGenerator):
                 self.next_episode_starts,
                 _,
             ) = self.vec_env.step(self.zero_action)
-            actions = getattr(self.vec_env, "last_action")
+            actions = batch_dict_keys(getattr(self.vec_env, "last_action"))
             fold_in(self.actions, actions, s)
 
             if self.include_logp:
