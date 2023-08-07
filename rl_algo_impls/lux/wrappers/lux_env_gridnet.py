@@ -127,6 +127,7 @@ class LuxEnvGridnet(Wrapper):
                 self.env.state,
                 self.action_mask_shape,
                 self._enqueued_actions,
+                factory_ice_distance_buffer=0,
             )
             observations.append(obs)
             action_masks.append(action_mask)

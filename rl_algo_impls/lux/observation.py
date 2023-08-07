@@ -27,15 +27,16 @@ LICHEN_FACTORY_MAX = 128_000
 
 class ObservationAndActionMask(NamedTuple):
     observation: np.ndarray
-    action_mask: np.ndarray
+    action_mask: Dict[str, np.ndarray]
 
 
 def observation_and_action_mask(
     player: str,
     lux_obs: ObservationStateDict,
     state: LuxGameState,
-    action_mask_shape: Tuple[int, int],
+    action_mask_shape: Dict[str, Tuple[int, int]],
     enqueued_actions: Dict[str, Optional[np.ndarray]],
+    factory_ice_distance_buffer: Optional[int] = None,
 ) -> ObservationAndActionMask:
     move_masks = agent_move_masks(state, player, enqueued_actions)
     move_validity_map = valid_destination_map(state, player, move_masks)
@@ -46,6 +47,7 @@ def observation_and_action_mask(
         enqueued_actions,
         move_masks,
         move_validity_map,
+        factory_ice_distance_buffer=factory_ice_distance_buffer,
     )
     observation = from_lux_observation(
         player, lux_obs, state, enqueued_actions, move_validity_map

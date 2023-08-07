@@ -81,7 +81,12 @@ class Agent:
             for u_id, u in lux_obs["units"][p].items()
         }
         obs, action_mask = observation_and_action_mask(
-            self.player, lux_obs, state, self.action_mask_shape, enqueued_actions
+            self.player,
+            lux_obs,
+            state,
+            self.action_mask_shape,
+            enqueued_actions,
+            factory_ice_distance_buffer=0,
         )
         obs = np.expand_dims(obs, axis=0)
         obs = self.transpose_wrapper.observation(obs)
