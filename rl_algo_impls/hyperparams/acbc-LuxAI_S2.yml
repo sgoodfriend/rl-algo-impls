@@ -20,6 +20,7 @@ LuxAI_S2-v0-squnet-iDeimos: &lux-squnet-ideimos
   eval_hyperparams: &lux-eval-defaults
     deterministic: false
     step_freq: !!float 5e6
+    skip_evaluate_at_start: true
     score_function: mean
     only_record_video_on_best: true
     score_threshold: 0.37
@@ -49,7 +50,7 @@ LuxAI_S2-v0-squnet-iDeimos: &lux-squnet-ideimos
     additional_critic_activation_functions: [tanh]
     output_activation_fn: tanh
   algo_hyperparams: &lux-squnet-ideimos-algo
-    learning_rate: !!float 1e-4
+    learning_rate: !!float 1e-5
     learning_rate_decay: linear
     batch_size: 192
     n_epochs: 2
@@ -62,4 +63,4 @@ LuxAI_S2-v0-squnet-iDeimos: &lux-squnet-ideimos
 
 LuxAI_S2-v0-debug:
   <<: *lux-squnet-ideimos
-  device: mps
+  device: cpu
