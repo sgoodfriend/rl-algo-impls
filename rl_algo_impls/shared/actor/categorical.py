@@ -22,8 +22,8 @@ class MaskedCategorical(Categorical):
     ):
         if mask is not None:
             assert logits is not None, "mask requires logits and not probs"
-            logits = torch.where(mask, logits, torch.tensor(-1e8).to(logits.device))
             if DEBUG_VERIFY:
+            logits = torch.where(mask, logits, torch.tensor(-1e10).to(logits.device))
                 self.rows_with_valid_actions = mask.any(dim=1)
                 self.non_empty_action_mask = mask[self.rows_with_valid_actions]
         self.mask = mask
