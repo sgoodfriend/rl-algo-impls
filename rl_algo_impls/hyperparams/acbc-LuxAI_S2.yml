@@ -14,7 +14,7 @@ LuxAI_S2-v0-squnet-iDeimos: &lux-squnet-ideimos
     additional_win_loss_reward: true
   rollout_type: reference
   rollout_hyperparams: &lux-squnet-ideimos-rollout
-    n_steps: 64
+    n_steps: 128
     full_batch_off_accelerator: true
     include_logp: false
   eval_hyperparams: &lux-eval-defaults
@@ -52,7 +52,7 @@ LuxAI_S2-v0-squnet-iDeimos: &lux-squnet-ideimos
   algo_hyperparams: &lux-squnet-ideimos-algo
     learning_rate: !!float 1e-5
     learning_rate_decay: linear
-    batch_size: 192
+    batch_size: 384
     n_epochs: 2
     gamma: [0.999, 0.999]
     gae_lambda: [0.99, 0.99]
