@@ -38,7 +38,7 @@ LuxAI_S2-v0: &lux-defaults
     only_record_video_on_best: true
     score_threshold: 0.37
     env_overrides: &lux-eval-env-overrides
-      n_envs: 32
+      n_envs: 64
       self_play_kwargs: null
       make_kwargs: &lux-eval-env-override-make-kwargs
         <<: *lux-env-make-defaults

@@ -25,7 +25,7 @@ LuxAI_S2-v0-squnet-iDeimos: &lux-squnet-ideimos
     score_threshold: 0.37
     env_overrides: &lux-eval-env-overrides
       vec_env_class: sync
-      n_envs: 32
+      n_envs: 64
       make_kwargs: &lux-eval-env-override-make-kwargs
         reward_weights:
           win_loss: 1
