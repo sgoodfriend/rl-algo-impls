@@ -228,7 +228,7 @@ Microrts-squnet-d16-128-iMayari-map64-from32:
   &microrts-squnet-d16-128-imayari-map64-from32
   <<: *microrts-squnet-d16-128-imayari-map64
   policy_hyperparams:
-    <<: microrts-squnet-d16-128-imayari-policy
+    <<: *microrts-squnet-d16-128-imayari-policy
     load_run_path: sgoodfriend/rl-algo-impls-microrts-2023/16o4391r
     load_run_path_best: true
 
