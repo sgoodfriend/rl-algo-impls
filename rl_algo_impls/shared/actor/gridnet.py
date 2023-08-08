@@ -14,6 +14,10 @@ from rl_algo_impls.shared.tensor_utils import TensorOrDict
 
 ValueDependentMaskSelf = TypeVar("ValueDependentMaskSelf", bound="ValueDependentMask")
 
+DEBUG_VERIFY = False
+if DEBUG_VERIFY:
+    import logging
+
 
 class ValueDependentMask(NamedTuple):
     reference_index: int
@@ -86,7 +90,9 @@ class GridnetDistribution(Distribution):
                 logits_pick_position, self.pick_vec, dim=1
             )
             self.categoricals_pick_position = [
-                MaskedCategorical(logits=lg, validate_args=validate_args, mask=m)
+                MaskedCategorical(
+                    logits=lg, validate_args=validate_args, mask=m, verify=DEBUG_VERIFY
+                )
                 for lg, m in zip(split_logits_pick_position, split_masks_pick_position)
             ]
         else:
@@ -122,6 +128,18 @@ class GridnetDistribution(Distribution):
             else:
                 prob_per_position.append(c.log_prob(a))
         prob_stack_per_position = torch.stack(prob_per_position, dim=-1)
+        if DEBUG_VERIFY:
+            non_one_probs = prob_stack_per_position[prob_stack_per_position < 0]
+            low_probs = non_one_probs[non_one_probs < -6.90776]
+            if len(low_probs):
+                logging.warn(
+                    f"Found sub 0.1% events: {low_probs.detach().cpu().numpy()}"
+                )
+            high_probs = non_one_probs[non_one_probs > -0.0010005]
+            if len(high_probs):
+                logging.warn(
+                    f"Found over 99.9% events: {high_probs.detach().cpu().numpy()}"
+                )
         logprob_per_position = prob_stack_per_position.view(
             -1, self.map_size, len(self.action_vec)
         ).sum(dim=(1, 2))
@@ -139,6 +157,19 @@ class GridnetDistribution(Distribution):
                 ],
                 dim=-1,
             )
+            if DEBUG_VERIFY:
+                non_one_probs = prob_stack_pick_position[prob_stack_pick_position < 0]
+                low_prob_thresh = -np.log(self.map_size) - 3
+                low_probs = non_one_probs[non_one_probs < low_prob_thresh]
+                if len(low_probs):
+                    logging.warn(
+                        f"Found sub {100*np.exp(low_prob_thresh):.1}% events: {low_probs.detach().cpu().numpy()}"
+                    )
+                high_probs = non_one_probs[non_one_probs > -0.0010005]
+                if len(high_probs):
+                    logging.warn(
+                        f"Found over 99.9% events: {high_probs.detach().cpu().numpy()}"
+                    )
             logprob_pick_position = prob_stack_pick_position.sum(dim=-1)
             return logprob_per_position + logprob_pick_position
 
