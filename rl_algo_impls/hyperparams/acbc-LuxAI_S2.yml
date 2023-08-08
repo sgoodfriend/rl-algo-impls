@@ -14,7 +14,7 @@ LuxAI_S2-v0-squnet-iDeimos: &lux-squnet-ideimos
     additional_win_loss_reward: true
   rollout_type: reference
   rollout_hyperparams: &lux-squnet-ideimos-rollout
-    n_steps: 128
+    n_steps: 512
     full_batch_off_accelerator: true
     include_logp: false
   eval_hyperparams: &lux-eval-defaults
