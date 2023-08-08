@@ -241,13 +241,34 @@ def from_lux_action(
         if is_valid_action(a, pos_mask, unit):
             action["per_position"][pos_idx, 1:] = a
         elif np.any(pos_mask[FACTORY_ACTION_ENCODED_SIZE:]):
-            fa = np.zeros(len(UNIT_ACTION_SIZES), dtype=np.int32)
-            fa[0] = UNIT_ACTION_SIZES[0] - 1  # Recharge
-            if not is_valid_action(fa, pos_mask, unit):
-                # TODO: Need to use legal value in this case.
-                logging.error(f"Fallback action invalid")
-            action["per_position"][pos_idx, 1:] = fa
+            action["per_position"][pos_idx, 1:] = fallback_action(pos_mask)
     return action
+
+
+def fallback_action(pos_mask: np.ndarray) -> np.ndarray:
+    unit_masks = []
+    m_idx = FACTORY_ACTION_ENCODED_SIZE
+    for mask_sz in UNIT_ACTION_SIZES:
+        unit_masks.append(pos_mask[m_idx : m_idx + mask_sz])
+        m_idx += mask_sz
+    assert unit_masks[0].any()
+    a = np.zeros(len(UNIT_ACTION_SIZES), dtype=np.int32)
+    if unit_masks[0][UNIT_ACTION_SIZES[0] - 1]:  # Recharge
+        a[0] = UNIT_ACTION_SIZES[0] - 1
+        return a
+    for idx, m in enumerate(unit_masks[0]):
+        if not m:
+            continue
+        a[0] = idx
+        if idx == 0:
+            a[1] = np.where(unit_masks[1])[0]
+        elif idx == 1:
+            a[2] = np.where(unit_masks[2])[0]
+            a[3] = np.where(unit_masks[3])[0]
+        elif idx == 2:
+            a[4] = np.where(unit_masks[4])[0]
+        return a
+    assert False, "unit_masks[0] earlier asserted to be non-zero. Unreachable"
 
 
 def is_valid_action(
