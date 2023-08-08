@@ -4,7 +4,6 @@ from typing import Any, Dict, Optional, Tuple
 
 import numpy as np
 from luxai_s2.actions import move_deltas
-from luxai_s2.utils import my_turn_to_place_factory
 
 from rl_algo_impls.lux.actions import (
     FACTORY_ACTION_ENCODED_SIZE,
@@ -12,6 +11,7 @@ from rl_algo_impls.lux.actions import (
     is_position_in_map,
     min_factory_resources,
 )
+from rl_algo_impls.lux.kit.utils import my_turn_to_place_factory
 from rl_algo_impls.lux.shared import (
     LuxEnvConfig,
     LuxFactory,
