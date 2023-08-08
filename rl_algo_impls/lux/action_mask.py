@@ -74,10 +74,10 @@ def get_action_mask_per_position(
             pos_to_idx(f.pos, config.map_size), :FACTORY_ACTION_ENCODED_SIZE
         ] = np.array(
             [
+                True,  # Do nothing is always valid
                 is_build_light_valid(f, config),
                 is_build_heavy_valid(f, config),
                 is_water_action_valid(f, state, config),
-                True,  # Do nothing is always valid
             ]
         )
     for u_id, u in state.units[player].items():
