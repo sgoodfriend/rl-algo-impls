@@ -17,11 +17,13 @@ class MaskedCategorical(Categorical):
         validate_args=None,
         mask: Optional[torch.Tensor] = None,
         verify: bool = False,
+        neg_inf: Optional[float] = None,
     ):
         self.verify = verify
         if mask is not None:
             assert logits is not None, "mask requires logits and not probs"
-            logits = torch.where(mask, logits, torch.tensor(-1e10).to(logits.device))
+            neg_inf = neg_inf if neg_inf is not None else torch.finfo(logits.dtype).min
+            logits = torch.where(mask, logits, neg_inf)
             if self.verify:
                 self.rows_with_valid_actions = mask.any(dim=1)
                 self.non_empty_action_mask = mask[self.rows_with_valid_actions]
