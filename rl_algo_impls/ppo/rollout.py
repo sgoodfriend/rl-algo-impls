@@ -95,13 +95,16 @@ class Rollout:
 
         if self.action_masks is not None:
             if isinstance(self.action_masks, dict):
-                self.num_actions = np.sum(
-                    [
-                        np.sum(np.any(am, axis=-1), axis=-1)
-                        for am in self.action_masks.values()
-                    ],
-                    axis=0,
+                per_position_actions = (
+                    self.action_masks["per_position"].any(axis=-1).sum(axis=-1)
                 )
+                pick_positions = (
+                    self.action_masks["pick_position"].any(axis=-2).sum(axis=-1)
+                )
+                self.num_actions = (
+                    per_position_actions
+                    + np.where(pick_positions > 0, np.log(pick_positions), 0)
+                ).astype(np.float32)
             else:
                 self.num_actions = np.sum(np.any(self.action_masks, axis=-1), axis=-1)
         else:
