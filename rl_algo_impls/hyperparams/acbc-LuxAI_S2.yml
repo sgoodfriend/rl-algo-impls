@@ -63,4 +63,4 @@ LuxAI_S2-v0-squnet-iDeimos: &lux-squnet-ideimos
 
 LuxAI_S2-v0-debug:
   <<: *lux-squnet-ideimos
-  device: cpu
+  device: mps

@@ -1,3 +1,5 @@
+from typing import Dict, Optional
+
 import numpy as np
 import torch
 
@@ -24,6 +26,7 @@ class ReferenceAIRolloutGenerator(SyncStepRolloutGenerator):
         scale_advantage_by_values_accuracy: bool = False,
         full_batch_off_accelerator: bool = False,
         include_logp: bool = True,
+        subaction_mask: Optional[Dict[int, Dict[int, int]]] = None,
     ) -> None:
         super().__init__(
             training_policy,
@@ -33,6 +36,7 @@ class ReferenceAIRolloutGenerator(SyncStepRolloutGenerator):
             scale_advantage_by_values_accuracy=scale_advantage_by_values_accuracy,
             full_batch_off_accelerator=full_batch_off_accelerator,
             include_logp=include_logp,
+            subaction_mask=subaction_mask,
         )
         if isinstance(self.actions, dict):
             self.zero_action = {k: np.zeros_like(v[0]) for k, v in self.actions.items()}
@@ -100,6 +104,8 @@ class ReferenceAIRolloutGenerator(SyncStepRolloutGenerator):
             gae_lambda=gae_lambda,
             scale_advantage_by_values_accuracy=self.scale_advantage_by_values_accuracy,
             full_batch_off_accelerator=self.full_batch_off_accelerator,
+            subaction_mask=self.subaction_mask,
+            action_plane_space=getattr(self.vec_env, "action_plane_space", None),
         )
 
     def actions_to_tensor(self, a: NumpyOrDict) -> TensorOrDict:

@@ -4,7 +4,9 @@ from typing import Dict, Iterator, Optional, TypeVar, Union
 
 import numpy as np
 import torch
+from gym.spaces import MultiDiscrete
 
+from rl_algo_impls.shared.actor.gridnet import ValueDependentMask
 from rl_algo_impls.shared.gae import compute_advantages
 from rl_algo_impls.shared.tensor_utils import (
     NumOrArray,
@@ -82,6 +84,8 @@ class Rollout:
         gae_lambda: NumOrArray,
         scale_advantage_by_values_accuracy: bool = False,
         full_batch_off_accelerator: bool = False,
+        subaction_mask: Optional[Dict[int, Dict[int, int]]] = None,
+        action_plane_space: Optional[MultiDiscrete] = None,
     ) -> None:
         self.obs = obs
         self.actions = actions
@@ -93,22 +97,14 @@ class Rollout:
         self.scale_advantage_by_values_accuracy = scale_advantage_by_values_accuracy
         self.full_batch_off_accelerator = full_batch_off_accelerator
 
-        if self.action_masks is not None:
-            if isinstance(self.action_masks, dict):
-                per_position_actions = (
-                    self.action_masks["per_position"].any(axis=-1).sum(axis=-1)
-                )
-                pick_positions = (
-                    self.action_masks["pick_position"].any(axis=-2).sum(axis=-1)
-                )
-                self.num_actions = (
-                    per_position_actions
-                    + np.where(pick_positions > 0, np.log(pick_positions), 0)
-                ).astype(np.float32)
-            else:
-                self.num_actions = np.sum(np.any(self.action_masks, axis=-1), axis=-1)
-        else:
-            self.num_actions = None
+        self.num_actions = num_actions(
+            actions,
+            action_masks,
+            ValueDependentMask.from_reference_index_to_index_to_value(subaction_mask)
+            if subaction_mask
+            else None,
+            action_plane_space,
+        )
 
         self.advantages = compute_advantages(
             self.rewards,
@@ -237,3 +233,56 @@ def flatten_actions_to_tensor(a: NumpyOrDict, device: torch.device) -> TensorOrD
     if isinstance(a, dict):
         return {k: flatten_to_tensor(v, device) for k, v in a.items()}
     return flatten_to_tensor(a, device)
+
+
+def num_actions(
+    actions: NumpyOrDict,
+    action_masks: Optional[NumpyOrDict],
+    subaction_mask: Optional[Dict[int, ValueDependentMask]],
+    action_plane_space: Optional[MultiDiscrete],
+) -> Optional[np.ndarray]:
+    if action_masks is None:
+        return None
+
+    if isinstance(action_masks, dict):
+        per_position_actions = per_position_num_actions(
+            actions["per_position"],
+            action_masks["per_position"],
+            subaction_mask,
+            action_plane_space,
+        )
+        pick_positions = action_masks["pick_position"].any(axis=-2).sum(axis=-1)
+        return (
+            per_position_actions
+            + np.where(pick_positions > 0, np.log(pick_positions), 0)
+        ).astype(np.float32)
+    else:
+        assert isinstance(actions, np.ndarray)
+        return per_position_num_actions(
+            actions, action_masks, subaction_mask, action_plane_space
+        )
+
+
+def per_position_num_actions(
+    actions: np.ndarray,
+    action_masks: np.ndarray,
+    subaction_mask: Optional[Dict[int, ValueDependentMask]],
+    action_plane_space: Optional[MultiDiscrete],
+) -> np.ndarray:
+    if not subaction_mask:
+        return np.sum(np.any(action_masks, axis=-1), axis=-1)
+    assert action_plane_space
+    num_actions = np.zeros(actions.shape[:-2], dtype=np.int32)
+    m_idx = 0
+    for idx, m_sz in enumerate(action_plane_space.nvec):
+        m = action_masks[..., m_idx : m_idx + m_sz]
+        if idx in subaction_mask:
+            reference_index, value = subaction_mask[idx]
+            m = np.where(
+                np.expand_dims(actions[..., reference_index] == value, axis=-1),
+                m,
+                False,
+            )
+        num_actions += np.sum(np.any(m, axis=-1), axis=-1)
+        m_idx += m_sz
+    return num_actions
