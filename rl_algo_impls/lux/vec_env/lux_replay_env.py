@@ -174,9 +174,6 @@ def from_lux_action(
             len(action_space["pick_position"].nvec), dtype=np.int32
         ),
     }
-    # No action, likely factory placement phase and not player's turn
-    if not lux_action:
-        return action
     # Bid action
     if "bid" in lux_action:
         # TODO: Handle bid action
@@ -186,7 +183,14 @@ def from_lux_action(
         assert isinstance(lux_action["spawn"], list)
         pos = np.array(lux_action["spawn"])
         action["pick_position"][0] = pos_to_idx(pos, map_size)
+        assert action_mask["pick_position"][0, pos_to_idx(pos, map_size)]
         # TODO: Handle metal and water assignment
+        return action
+    # Bid or factory placement phase. No unit or factory actions.
+    if game_state.real_env_steps < 0:
+        assert not my_turn_to_place_factory(
+            game_state.teams[player].place_first, game_state.env_steps
+        )
         return action
     for fu_id, a in lux_action.items():
         if fu_id.startswith("factory"):
