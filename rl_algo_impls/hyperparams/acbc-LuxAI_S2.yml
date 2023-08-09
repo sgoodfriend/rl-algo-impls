@@ -11,6 +11,7 @@ LuxAI_S2-v0-squnet-iDeimos: &lux-squnet-ideimos
       team_name: Deimos
       reward_weights:
         score_vs_opponent: 1
+      offset_env_starts: true
     additional_win_loss_reward: true
   rollout_type: reference
   rollout_hyperparams: &lux-squnet-ideimos-rollout

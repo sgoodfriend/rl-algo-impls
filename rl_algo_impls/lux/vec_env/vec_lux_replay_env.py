@@ -16,11 +16,13 @@ class VecLuxReplayEnv(VectorEnv):
         replay_dir: str,
         team_name: str,
         reward_weights: Optional[Dict[str, float]] = None,
+        offset_env_starts: bool = False,
         **kwargs,
     ) -> None:
         self.num_envs = num_envs
         self.replay_dir = replay_dir
         self.team_name = team_name
+        self.offset_env_starts = offset_env_starts
 
         self.replay_paths = []
         for dirpath, _, filenames in os.walk(replay_dir):
@@ -59,6 +61,12 @@ class VecLuxReplayEnv(VectorEnv):
 
     def reset(self) -> VecEnvObs:
         env_observations = [env.reset() for env in self.envs]
+        if self.offset_env_starts:
+            max_episode_length = self.envs[0].state.env_cfg.max_episode_length
+            for idx, env in enumerate(self.envs):
+                offset = int(max_episode_length * idx / self.num_envs)
+                for _ in range(offset):
+                    env_observations[idx], _, _, _ = env.step()
         return np.stack(env_observations)
 
     def seed(self, seeds=None):
