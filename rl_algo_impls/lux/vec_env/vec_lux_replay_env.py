@@ -52,7 +52,7 @@ class VecLuxReplayEnv(VectorEnv):
         return rp
 
     def step(self, action: np.ndarray) -> VecEnvStepReturn:
-        step_returns = [env.step() for env in self.envs]
+        step_returns = [env.step(a) for env, a in zip(self.envs, action)]
         obs = np.stack([sr[0] for sr in step_returns])
         rewards = np.stack([sr[1] for sr in step_returns])
         dones = np.stack([sr[2] for sr in step_returns])
@@ -66,7 +66,7 @@ class VecLuxReplayEnv(VectorEnv):
             for idx, env in enumerate(self.envs):
                 offset = int(max_episode_length * idx / self.num_envs)
                 for _ in range(offset):
-                    env_observations[idx], _, _, _ = env.step()
+                    env_observations[idx], _, _, _ = env.step(None)
         return np.stack(env_observations)
 
     def seed(self, seeds=None):

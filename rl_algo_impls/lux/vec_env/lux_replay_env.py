@@ -10,6 +10,7 @@ from gym.spaces import MultiDiscrete
 from rl_algo_impls.lux.actions import (
     ACTION_SIZES,
     FACTORY_ACTION_ENCODED_SIZE,
+    RECHARGE_UNIT_ACTION,
     UNIT_ACTION_SIZES,
 )
 from rl_algo_impls.lux.kit.kit import GameState
@@ -17,7 +18,7 @@ from rl_algo_impls.lux.kit.unit import Unit
 from rl_algo_impls.lux.kit.utils import my_turn_to_place_factory
 from rl_algo_impls.lux.observation import observation_and_action_mask
 from rl_algo_impls.lux.rewards import MIN_SCORE, LuxRewardWeights
-from rl_algo_impls.lux.shared import pos_to_idx
+from rl_algo_impls.lux.shared import idx_to_pos, pos_to_idx
 from rl_algo_impls.lux.vec_env.lux_replay_state import LuxReplayState, LuxState
 
 
@@ -86,17 +87,18 @@ class LuxReplayEnv(Env):
         )
 
     def step(
-        self,
+        self, action: Optional[Dict[str, np.ndarray]]
     ) -> Tuple[np.ndarray, float, bool, Dict[str, Any]]:
-        state, action, done, self_score, opponent_score = self.state.step()
+        state, replay_action, done, self_score, opponent_score = self.state.step()
         # _last_action must be set before _from_lux_state is called, which updates prior obs
         self._last_action = from_lux_action(
             self.action_space,
             state.player,
-            action,
+            replay_action,
             self._action_mask,
             self._last_game_state,
             self._last_enqueued_actions,
+            action,
         )
         obs = self._from_lux_state(state)
 
@@ -160,7 +162,8 @@ def from_lux_action(
     lux_action: Dict[str, Union[int, str, List[List[int]]]],
     action_mask: Dict[str, np.ndarray],
     game_state: GameState,
-    enqueued_actions: Dict[str, np.ndarray],
+    enqueued_actions: Dict[str, Optional[np.ndarray]],
+    fallback_action: Optional[Dict[str, np.ndarray]],
 ) -> Dict[str, np.ndarray]:
     num_map_tiles = len(action_space["per_position"].nvec) // len(ACTION_SIZES)
     map_size = int(np.sqrt(num_map_tiles))
@@ -187,8 +190,16 @@ def from_lux_action(
     if "spawn" in lux_action:
         assert isinstance(lux_action["spawn"], list)
         pos = np.array(lux_action["spawn"])
-        action["pick_position"][0] = pos_to_idx(pos, map_size)
-        assert action_mask["pick_position"][0, pos_to_idx(pos, map_size)]
+        spawn_action = pos_to_idx(pos, map_size)
+        if not action_mask["pick_position"][0, spawn_action]:
+            if fallback_action:
+                spawn_action = fallback_action["pick_position"][0]
+                logging.warn(
+                    f"Invalid spawn action {pos}. Fallback: {idx_to_pos(spawn_action, map_size)}"
+                )
+            else:
+                raise ValueError(f"Invalid spawn action {pos}. No fallback.")
+        action["pick_position"][0] = spawn_action
         # TODO: Handle metal and water assignment
         return action
     # Bid or factory placement phase. No unit or factory actions.
@@ -228,24 +239,38 @@ def from_lux_action(
         factory_mask = action_mask["per_position"][
             pos_idx, :FACTORY_ACTION_ENCODED_SIZE
         ]
-        if not factory_mask[a + 1]:
+        factory_action = a + 1
+        if not factory_mask[factory_action]:
+            if fallback_action:
+                fa = fallback_action["per_position"][pos_idx, 0]
+                action["per_position"][pos_idx, 0] = fa
+            else:
+                fa = None
             logging.warn(
-                f"Invalid factory action {a + 1} for factory {factory}. Mask {factory_mask}"
+                f"Invalid factory action {factory_action} for factory {factory}. Mask {factory_mask}. Fallback {fa}"
             )
             continue
-        action["per_position"][pos_idx, 0] = a + 1
+        action["per_position"][pos_idx, 0] = factory_action
     for u_id, a in unit_actions.items():
         unit = game_state.units[player][u_id]
         pos_idx = pos_to_idx(unit.pos, map_size)
         pos_mask = action_mask["per_position"][pos_idx]
-        if is_valid_action(a, pos_mask, unit):
-            action["per_position"][pos_idx, 1:] = a
-        elif np.any(pos_mask[FACTORY_ACTION_ENCODED_SIZE:]):
-            action["per_position"][pos_idx, 1:] = fallback_action(pos_mask)
+        if not np.any(pos_mask[FACTORY_ACTION_ENCODED_SIZE:]):
+            if a is not None:
+                logging.info(f"Attempt action {a} despite no valid actions {unit}")
+            continue
+        unit_action = a
+        if not is_valid_action(unit_action, pos_mask, unit):
+            unit_action = get_fallback_action(pos_mask, fallback_action, pos_idx)
+            if a is not None or unit_action[0] != RECHARGE_UNIT_ACTION:
+                logging.info(f"{unit} action fallback: {a} -> {unit_action}")
+        action["per_position"][pos_idx, 1:] = unit_action
     return action
 
 
-def fallback_action(pos_mask: np.ndarray) -> np.ndarray:
+def get_fallback_action(
+    pos_mask: np.ndarray, fallback_action: Optional[Dict[str, np.ndarray]], pos_idx: int
+) -> np.ndarray:
     unit_masks = []
     m_idx = FACTORY_ACTION_ENCODED_SIZE
     for mask_sz in UNIT_ACTION_SIZES:
@@ -253,9 +278,11 @@ def fallback_action(pos_mask: np.ndarray) -> np.ndarray:
         m_idx += mask_sz
     assert unit_masks[0].any()
     a = np.zeros(len(UNIT_ACTION_SIZES), dtype=np.int32)
-    if unit_masks[0][UNIT_ACTION_SIZES[0] - 1]:  # Recharge
-        a[0] = UNIT_ACTION_SIZES[0] - 1
+    if unit_masks[0][RECHARGE_UNIT_ACTION]:  # Recharge
+        a[0] = RECHARGE_UNIT_ACTION
         return a
+    if fallback_action:
+        return fallback_action["per_position"][pos_idx, 1:]
     for idx, m in enumerate(unit_masks[0]):
         if not m:
             continue

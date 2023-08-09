@@ -65,6 +65,6 @@ LuxAI_S2-v0-squnet-iDeimos: &lux-squnet-ideimos
 LuxAI_S2-v0-debug:
   <<: *lux-squnet-ideimos
   device: mps
-  eval_hyperparams:
-    <<: *lux-eval-defaults
-    skip_evaluate_at_start: false
+  # eval_hyperparams:
+  #   <<: *lux-eval-defaults
+  #   skip_evaluate_at_start: false
