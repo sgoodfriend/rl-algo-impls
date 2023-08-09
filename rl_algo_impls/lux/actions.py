@@ -264,7 +264,7 @@ class UnitAction(NamedTuple):
 
 
 def is_position_in_map(pos: np.ndarray, config: LuxEnvConfig) -> bool:
-    return bool(np.all(pos >= 0) and np.all(pos < config.map_size))
+    return (0 <= pos[0] < config.map_size) and (0 <= pos[1] < config.map_size)
 
 
 def max_move_repeats(
