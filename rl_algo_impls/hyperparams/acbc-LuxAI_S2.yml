@@ -50,7 +50,7 @@ LuxAI_S2-v0-squnet-iDeimos: &lux-squnet-ideimos
     additional_critic_activation_functions: [tanh]
     output_activation_fn: tanh
   algo_hyperparams: &lux-squnet-ideimos-algo
-    learning_rate: !!float 1e-5
+    learning_rate: !!float 4e-5
     learning_rate_decay: linear
     batch_size: 384
     n_epochs: 2
@@ -64,3 +64,6 @@ LuxAI_S2-v0-squnet-iDeimos: &lux-squnet-ideimos
 LuxAI_S2-v0-debug:
   <<: *lux-squnet-ideimos
   device: mps
+  eval_hyperparams:
+    <<: *lux-eval-defaults
+    skip_evaluate_at_start: false
