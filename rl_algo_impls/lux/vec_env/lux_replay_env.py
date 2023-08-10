@@ -155,6 +155,10 @@ class LuxReplayEnv(Env):
     def last_action(self) -> Dict[str, np.ndarray]:
         return self._last_action
 
+    @property
+    def max_episode_length(self) -> int:
+        return self.state.env_cfg.max_episode_length
+
 
 def from_lux_action(
     action_space: DictSpace,

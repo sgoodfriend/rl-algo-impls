@@ -7,11 +7,12 @@ LuxAI_S2-v0-squnet-iDeimos: &lux-squnet-ideimos
     vec_env_class: replay
     n_envs: 24
     make_kwargs: &lux-env-make-defaults
-      replay_dir: data/lux/replays-deimos
+      replay_dir: data/lux/npz-deimos
       team_name: Deimos
       reward_weights:
         score_vs_opponent: 1
       offset_env_starts: true
+      is_npz_dir: true
     additional_win_loss_reward: true
   rollout_type: reference
   rollout_hyperparams: &lux-squnet-ideimos-rollout

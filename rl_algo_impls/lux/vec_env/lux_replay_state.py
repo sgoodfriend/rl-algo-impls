@@ -81,6 +81,10 @@ class LuxReplayState:
         self._update_non_board_obs(obs)
         return self.get_state()
 
+    @property
+    def num_steps(self) -> int:
+        return len(self.replay_dict["steps"])
+
     def get_state(self) -> LuxState:
         obs_state_dict: ObservationStateDict = dict(
             units=self.units,
