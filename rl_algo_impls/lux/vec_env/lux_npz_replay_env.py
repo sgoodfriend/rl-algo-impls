@@ -15,8 +15,10 @@ class Replay(NamedTuple):
     obs: np.ndarray
     reward: np.ndarray
     done: np.ndarray
-    action: List[Dict[str, np.ndarray]]
-    action_mask: List[Dict[str, np.ndarray]]
+    action_per_position: np.ndarray
+    action_pick_position: np.ndarray
+    action_mask_per_position: np.ndarray
+    action_mask_pick_position: np.ndarray
 
 
 @ray.remote
@@ -25,26 +27,15 @@ def async_load_npz(file_path: str) -> Replay:
 
 
 def sync_load_npz(file_path: str) -> Replay:
-    def load_action(
-        data: Dict[str, np.ndarray], name: str
-    ) -> List[Dict[str, np.ndarray]]:
-        return [
-            {
-                "per_position": per,
-                "pick_position": pick,
-            }
-            for per, pick in zip(
-                data[f"{name}_per_position"], data[f"{name}_pick_position"]
-            )
-        ]
-
     with np.load(file_path, allow_pickle=True) as data:
         replay = Replay(
             data["obs"],
             data["reward"],
             data["done"],
-            load_action(data, "actions"),
-            load_action(data, "action_mask"),
+            data["actions_per_position"],
+            data["actions_pick_position"],
+            data["action_mask_per_position"],
+            data["action_mask_pick_position"],
         )
     return replay
 
@@ -147,21 +138,44 @@ class LuxNpzReplayEnv(Env):
         return 1000
 
     def _load_next_replay(self):
+        def load_action(
+            per_pos: np.ndarray, pick_pos: np.ndarray
+        ) -> List[Dict[str, np.ndarray]]:
+            return [
+                {
+                    "per_position": per,
+                    "pick_position": pick,
+                }
+                for per, pick in zip(per_pos, pick_pos)
+            ]
+
         assert (
             self.next_npz_path_fn
         ), f"next_npz_path_fn unset. Has {self.__class__.__name__} been closed?"
         if self._load_request:
-            self.obs, self.reward, self.done, self.action, self.action_mask = ray.get(
-                self._load_request
-            )
+            (
+                self.obs,
+                self.reward,
+                self.done,
+                action_per_pos,
+                action_pick_pos,
+                mask_per_pos,
+                mask_pick_pos,
+            ) = ray.get(self._load_request)
         else:
             logging.warn("Synchronous load of npz file")
             (
                 self.obs,
                 self.reward,
                 self.done,
-                self.action,
-                self.action_mask,
+                action_per_pos,
+                action_pick_pos,
+                mask_per_pos,
+                mask_pick_pos,
             ) = sync_load_npz(self.next_npz_path_fn())
+
+        self.action = load_action(action_per_pos, action_pick_pos)
+        self.action_mask = load_action(mask_per_pos, mask_pick_pos)
+
         self.env_step = 0
         self._load_request = async_load_npz.remote(self.next_npz_path_fn())
