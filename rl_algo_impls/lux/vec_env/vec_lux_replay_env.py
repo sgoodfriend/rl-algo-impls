@@ -39,14 +39,20 @@ class VecLuxReplayEnv(VectorEnv):
                 self.replay_paths.append(os.path.join(dirpath, fname))
         self.next_replay_idx = 0
 
-        self.envs = [
-            LuxNpzReplayEnv(self.next_replay_path)
-            if self.is_npz_dir
-            else LuxReplayEnv(
-                self.next_replay_path, team_name, reward_weights, **kwargs
-            )
-            for _ in range(self.num_envs)
-        ]
+        if self.is_npz_dir:
+            import ray
+
+            ray.init()
+            self.envs = [
+                LuxNpzReplayEnv(self.next_replay_path) for _ in range(self.num_envs)
+            ]
+            for e in self.envs:
+                e.initialize()
+        else:
+            self.envs = [
+                LuxReplayEnv(self.next_replay_path, team_name, reward_weights, **kwargs)
+                for _ in range(self.num_envs)
+            ]
         single_env = self.envs[0]
         map_dim = single_env.map_size
         self.num_map_tiles = map_dim * map_dim
@@ -83,6 +89,10 @@ class VecLuxReplayEnv(VectorEnv):
         pass
 
     def close_extras(self, **kwargs):
+        if self.is_npz_dir:
+            import ray
+
+            ray.shutdown()
         for env in self.envs:
             env.close()
 

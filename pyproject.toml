@@ -80,7 +80,8 @@ jupyter = [
 ]
 lux = [
     "luxai_s2",
-    "juxai-s2"
+    "juxai-s2",
+    "ray[air]",
 ]
 all = [
     "rl-algo-impls[test]",

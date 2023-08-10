@@ -1,13 +1,52 @@
 import logging
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, NamedTuple, Optional, Tuple
 
 import numpy as np
+import ray
 from gym import Env
 from gym.spaces import Box
 from gym.spaces import Dict as DictSpace
 from gym.spaces import MultiDiscrete
 
 from rl_algo_impls.lux.actions import ACTION_SIZES
+
+
+class Replay(NamedTuple):
+    obs: np.ndarray
+    reward: np.ndarray
+    done: np.ndarray
+    action: List[Dict[str, np.ndarray]]
+    action_mask: List[Dict[str, np.ndarray]]
+
+
+@ray.remote
+def async_load_npz(file_path: str) -> Replay:
+    return sync_load_npz(file_path)
+
+
+def sync_load_npz(file_path: str) -> Replay:
+    def load_action(
+        data: Dict[str, np.ndarray], name: str
+    ) -> List[Dict[str, np.ndarray]]:
+        return [
+            {
+                "per_position": per,
+                "pick_position": pick,
+            }
+            for per, pick in zip(
+                data[f"{name}_per_position"], data[f"{name}_pick_position"]
+            )
+        ]
+
+    with np.load(file_path, allow_pickle=True) as data:
+        replay = Replay(
+            data["obs"],
+            data["reward"],
+            data["done"],
+            load_action(data, "actions"),
+            load_action(data, "action_mask"),
+        )
+    return replay
 
 
 class LuxNpzReplayEnv(Env):
@@ -17,7 +56,11 @@ class LuxNpzReplayEnv(Env):
     ) -> None:
         super().__init__()
         self.next_npz_path_fn = next_npz_path_fn
+        self.initialized = False
 
+        self._load_request = async_load_npz.remote(next_npz_path_fn())
+
+    def initialize(self) -> None:
         self._load_next_replay()
         self.map_size = self.obs.shape[-2]
         self.num_map_tiles = self.map_size * self.map_size
@@ -47,8 +90,10 @@ class LuxNpzReplayEnv(Env):
             shape=self.obs.shape[1:],
             dtype=np.float32,
         )
+        self.initialized = True
 
     def reset(self) -> np.ndarray:
+        assert self.initialized
         self._load_next_replay()
         self._action_mask = self.action_mask[self.env_step]
         return self.obs[self.env_step]
@@ -56,6 +101,7 @@ class LuxNpzReplayEnv(Env):
     def step(
         self, action: Optional[Dict[str, np.ndarray]]
     ) -> Tuple[np.ndarray, float, bool, Dict[str, Any]]:
+        assert self.initialized
         r = self.reward[self.env_step]
         d = self.done[self.env_step]
         self._last_action = self.action[self.env_step]
@@ -85,10 +131,12 @@ class LuxNpzReplayEnv(Env):
         return (o, r, d, info)
 
     def get_action_mask(self) -> Dict[str, np.ndarray]:
+        assert self.initialized
         return self._action_mask
 
     def close(self) -> None:
         self.next_npz_path_fn = None
+        self._load_request = None
 
     @property
     def last_action(self) -> Dict[str, np.ndarray]:
@@ -99,26 +147,21 @@ class LuxNpzReplayEnv(Env):
         return 1000
 
     def _load_next_replay(self):
-        def load_action(
-            data: Dict[str, np.ndarray], name: str
-        ) -> List[Dict[str, np.ndarray]]:
-            return [
-                {
-                    "per_position": per,
-                    "pick_position": pick,
-                }
-                for per, pick in zip(
-                    data[f"{name}_per_position"], data[f"{name}_pick_position"]
-                )
-            ]
-
         assert (
             self.next_npz_path_fn
         ), f"next_npz_path_fn unset. Has {self.__class__.__name__} been closed?"
-        with np.load(self.next_npz_path_fn(), allow_pickle=True) as data:
-            self.obs = data["obs"]
-            self.reward = data["reward"]
-            self.done = data["done"]
-            self.action = load_action(data, "actions")
-            self.action_mask = load_action(data, "action_mask")
+        if self._load_request:
+            self.obs, self.reward, self.done, self.action, self.action_mask = ray.get(
+                self._load_request
+            )
+        else:
+            logging.warn("Synchronous load of npz file")
+            (
+                self.obs,
+                self.reward,
+                self.done,
+                self.action,
+                self.action_mask,
+            ) = sync_load_npz(self.next_npz_path_fn())
         self.env_step = 0
+        self._load_request = async_load_npz.remote(self.next_npz_path_fn())
