@@ -85,7 +85,7 @@ class VecLuxReplayEnv(VectorEnv):
         return self._reward_weights
 
 
-@ray.remote(num_cpus=1)
+@ray.remote(num_cpus=2)
 class RemoteVecLuxReplayEnv:
     def __init__(
         self,
