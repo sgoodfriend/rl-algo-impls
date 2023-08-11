@@ -1432,7 +1432,7 @@ Microrts-squnet-d16-128-map64-BC-finetune:
       window: 50
   policy_hyperparams:
     <<: *microrts-squnet-d16-128-imayari-policy
-    load_path: downloaded_models/acbc-Microrts-squnet-d16-128-iMayari-map64-S1-best
+    load_path: downloaded_models/acbc-Microrts-squnet-d16-128-iMayari-map64-from32-S1-best
   eval_hyperparams:
     <<: *microrts-squnet-map64-eval-defaults
   algo_hyperparams: &microrts-squnet-d16-128-map64-bc-finetune-algo
