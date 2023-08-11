@@ -57,6 +57,7 @@ extra = [
     "torchviz",
     "thop",
     "onnx",
+    "kaggle",
 ]
 optuna = [
     "optuna",
