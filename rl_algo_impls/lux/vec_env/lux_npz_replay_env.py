@@ -49,7 +49,7 @@ class LuxNpzReplayEnv(Env):
         self.next_npz_path_fn = next_npz_path_fn
         self.initialized = False
 
-        self._load_request = async_load_npz.remote(next_npz_path_fn())
+        # self._load_request = async_load_npz.remote(next_npz_path_fn())
 
     def initialize(self) -> None:
         self._load_next_replay()
@@ -127,7 +127,7 @@ class LuxNpzReplayEnv(Env):
 
     def close(self) -> None:
         self.next_npz_path_fn = None
-        self._load_request = None
+        # self._load_request = None
 
     @property
     def last_action(self) -> Dict[str, np.ndarray]:
@@ -152,30 +152,30 @@ class LuxNpzReplayEnv(Env):
         assert (
             self.next_npz_path_fn
         ), f"next_npz_path_fn unset. Has {self.__class__.__name__} been closed?"
-        if self._load_request:
-            (
-                self.obs,
-                self.reward,
-                self.done,
-                action_per_pos,
-                action_pick_pos,
-                mask_per_pos,
-                mask_pick_pos,
-            ) = ray.get(self._load_request)
-        else:
-            logging.warn("Synchronous load of npz file")
-            (
-                self.obs,
-                self.reward,
-                self.done,
-                action_per_pos,
-                action_pick_pos,
-                mask_per_pos,
-                mask_pick_pos,
-            ) = sync_load_npz(self.next_npz_path_fn())
+        # if self._load_request:
+        #     (
+        #         self.obs,
+        #         self.reward,
+        #         self.done,
+        #         action_per_pos,
+        #         action_pick_pos,
+        #         mask_per_pos,
+        #         mask_pick_pos,
+        #     ) = ray.get(self._load_request)
+        # else:
+        #     logging.warn("Synchronous load of npz file")
+        (
+            self.obs,
+            self.reward,
+            self.done,
+            action_per_pos,
+            action_pick_pos,
+            mask_per_pos,
+            mask_pick_pos,
+        ) = sync_load_npz(self.next_npz_path_fn())
 
         self.action = load_action(action_per_pos, action_pick_pos)
         self.action_mask = load_action(mask_per_pos, mask_pick_pos)
 
         self.env_step = 0
-        self._load_request = async_load_npz.remote(self.next_npz_path_fn())
+        # self._load_request = async_load_npz.remote(self.next_npz_path_fn())
