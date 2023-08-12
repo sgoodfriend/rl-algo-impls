@@ -34,7 +34,7 @@ def download_replays(
     score_threshold: int = SCORE_THRESHOLD,
     download_limit: int = REPLAY_DOWNLOAD_LIMIT,
 ) -> None:
-    target_dir = f"{target_base_dir}-{team_name}"
+    target_dir = f"{target_base_dir}-{team_name.lower()}"
     if not os.path.exists(target_dir):
         os.makedirs(target_dir)
     elif not os.path.isdir(target_dir):
@@ -127,7 +127,7 @@ def save_episode(ep_id: int, target_dir: str) -> None:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-m", "--meta-kaggle-dir", default="data/meta-kaggle")
-    parser.add_argument("-f", "--target-base-dir", default="data/lux/lux")
+    parser.add_argument("-f", "--target-base-dir", default="data/lux/lux-replays")
     parser.add_argument("-t", "--team-name", default="Deimos")
     parser.add_argument("-d", "--after-date", default="2023-04-01")
     parser.add_argument("-s", "--score-threshold", default=SCORE_THRESHOLD)
@@ -147,9 +147,9 @@ if __name__ == "__main__":
         download_limit=args.download_limit,
     )
 
-    target_dir = f"{args.target_base_dir}-{args.team_name}"
+    target_dir = f"{args.target_base_dir}-{args.team_name.lower()}"
     if not args.no_preprocess:
-        npz_target_dir = f"{args.target_base_dir}-npz-{args.team_name}"
+        npz_target_dir = f"{args.target_base_dir}-{args.team_name.lower()}-npz"
         if not args.skip_preprocess:
             replays_to_npz(
                 target_dir,
@@ -168,7 +168,7 @@ if __name__ == "__main__":
             with open(metadata_path) as f:
                 metadata = json.load(f)
             title = f"Lux Season 2 {args.team_name} Replays"
-            dataset_id = f"sgoodfriend/lux-replays-{args.team_name}"
+            dataset_id = f"sgoodfriend/lux-replays-{args.team_name.lower()}"
             if not args.no_preprocess:
                 title += " npz"
                 dataset_id += "-npz"
