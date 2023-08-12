@@ -192,6 +192,7 @@ cd rl-algo-impls
 git checkout acbc-lux
 bash ./scripts/setup.sh
 wandb login
+mkdir ~/.kaggle
 cat > ~/.kaggle/kaggle.json
 chmod 600 ~/.kaggle/kaggle.json
 kaggle datasets download -d sgoodfriend/lux-replays-deimos-npz -p data/lux
