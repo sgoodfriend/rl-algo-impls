@@ -1,10 +1,15 @@
+import json
 import os
 from multiprocessing import Pool
-from typing import Dict, NamedTuple, Optional
+from typing import Dict, NamedTuple, Optional, Union
 
 import numpy as np
 
 from rl_algo_impls.lux.vec_env.lux_replay_env import LuxReplayEnv
+
+DEFAULT_BEHAVIOR_COPY_REWARD_WEIGHTS: Dict[str, Union[float, int]] = {
+    "score_vs_opponent": 1
+}
 
 
 class Path(NamedTuple):
@@ -16,7 +21,7 @@ def replays_to_npz(
     replay_dir: str,
     npz_dir: str,
     team_name: str,
-    reward_weights: Optional[Dict[str, float]],
+    reward_weights: Optional[Dict[str, Union[float, int]]],
 ) -> None:
     if not os.path.exists(npz_dir):
         os.makedirs(npz_dir)
@@ -98,5 +103,5 @@ if __name__ == "__main__":
         "data/lux/replays-deimos",
         "data/lux/npz-deimos",
         "Deimos",
-        {"score_vs_opponent": 1},
+        DEFAULT_BEHAVIOR_COPY_REWARD_WEIGHTS,
     )

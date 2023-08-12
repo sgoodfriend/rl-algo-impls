@@ -83,6 +83,7 @@ lux = [
     "juxai-s2",
     "ray[air]",
     "kaggle",
+    "polars",
 ]
 all = [
     "rl-algo-impls[test]",
