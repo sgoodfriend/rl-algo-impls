@@ -194,6 +194,6 @@ bash ./scripts/setup.sh
 wandb login
 cat > ~/.kaggle/kaggle.json
 chmod 600 ~/.kaggle/kaggle.json
-kaggle datasets download -d sgoodfriend/lux-season-2-deimos-replays-npz -p data/lux
-unzip data/lux/lux-season-2-deimos-replays-npz.zip -d data/lux/
+kaggle datasets download -d sgoodfriend/lux-replays-deimos-npz -p data/lux
+unzip data/lux/lux-replays-deimos-npz.zip -d data/lux/
 bash ./scripts/benchmark.sh [-a {"ppo"}] [-e ENVS] [-j {6}] [-p {rl-algo-impls-benchmarks}] [-s {"1 2 3"}]
