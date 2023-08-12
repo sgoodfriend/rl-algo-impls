@@ -38,6 +38,7 @@ class VecLuxReplayEnv(VectorEnv):
                     continue
                 self.replay_paths.append(os.path.join(dirpath, fname))
         self.next_replay_idx = 0
+        self.replay_idx_permutation = np.random.permutation(len(self.replay_paths))
 
         if self.is_npz_dir:
             import ray
@@ -63,8 +64,11 @@ class VecLuxReplayEnv(VectorEnv):
         super().__init__(num_envs, single_observation_space, single_action_space)
 
     def next_replay_path(self) -> str:
-        rp = self.replay_paths[self.next_replay_idx]
-        self.next_replay_idx = (self.next_replay_idx + 1) % len(self.replay_paths)
+        rp = self.replay_paths[self.replay_idx_permutation[self.next_replay_idx]]
+        self.next_replay_idx += 1
+        if self.next_replay_idx == len(self.replay_idx_permutation):
+            self.replay_idx_permutation = np.random.permutation(len(self.replay_paths))
+            self.next_replay_idx = 0
         return rp
 
     def step(self, action: np.ndarray) -> VecEnvStepReturn:
