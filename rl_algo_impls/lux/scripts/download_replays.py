@@ -134,7 +134,7 @@ if __name__ == "__main__":
     parser.add_argument("--skip-download", action="store_true")
     parser.add_argument("--force-preprocess", action="store_true")
     parser.add_argument("--preprocess-synchronous", action="store_true")
-    parser.set_defaults(upload_to_kaggle=True, skip_download=True)
+    parser.set_defaults(upload_to_kaggle=True)
     args = parser.parse_args()
 
     if not args.skip_download:
@@ -178,7 +178,15 @@ if __name__ == "__main__":
             with open(metadata_path, "w") as f:
                 json.dump(metadata, f)
 
-            create_command = ["kaggle", "datasets", "create", "-p", target_dir]
+            create_command = [
+                "kaggle",
+                "datasets",
+                "create",
+                "-p",
+                target_dir,
+                "-r",
+                "zip",
+            ]
             subprocess.run(create_command)
         else:
             version_command = [
@@ -189,5 +197,7 @@ if __name__ == "__main__":
                 target_dir,
                 "-m",
                 "Updated data",
+                "-r",
+                "zip",
             ]
             subprocess.run(version_command)
