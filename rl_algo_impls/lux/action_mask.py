@@ -91,6 +91,9 @@ def get_action_mask_per_position(
             if np.any(transfer_direction_mask)
             else np.zeros(5)
         )
+        if not np.any(transfer_resource_mask):
+            transfer_direction_mask = np.zeros_like(transfer_direction_mask)
+
         pickup_resource_mask = valid_pickup_resource_mask(u, state, enqueued_action)
         valid_action_types = np.array(
             [

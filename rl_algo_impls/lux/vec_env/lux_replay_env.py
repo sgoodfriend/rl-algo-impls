@@ -280,7 +280,7 @@ def get_fallback_action(
     for mask_sz in UNIT_ACTION_SIZES:
         unit_masks.append(pos_mask[m_idx : m_idx + mask_sz])
         m_idx += mask_sz
-    assert unit_masks[0].any()
+    assert unit_masks[0].any(), f"No valid action types: {unit_masks}"
     a = np.zeros(len(UNIT_ACTION_SIZES), dtype=np.int32)
     if unit_masks[0][RECHARGE_UNIT_ACTION]:  # Recharge
         a[0] = RECHARGE_UNIT_ACTION
