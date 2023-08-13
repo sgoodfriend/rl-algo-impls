@@ -23,6 +23,7 @@ def replays_to_npz(
     team_name: str,
     reward_weights: Optional[Dict[str, Union[float, int]]],
     skip_existing_files: bool = True,
+    synchronous: bool = False,
 ) -> None:
     if not os.path.exists(npz_dir):
         os.makedirs(npz_dir)
@@ -46,11 +47,15 @@ def replays_to_npz(
                 )
             )
 
-    with Pool() as pool:
-        pool.starmap(
-            replay_file_to_npz,
-            [(p.replay, p.npz, team_name, reward_weights) for p in paths],
-        )
+    if synchronous:
+        for replay_path, npz_path in paths:
+            replay_file_to_npz(replay_path, npz_path, team_name, reward_weights)
+    else:
+        with Pool() as pool:
+            pool.starmap(
+                replay_file_to_npz,
+                [(p.replay, p.npz, team_name, reward_weights) for p in paths],
+            )
 
 
 def replay_file_to_npz(

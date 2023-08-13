@@ -131,18 +131,21 @@ if __name__ == "__main__":
     parser.add_argument("-l", "--download-limit", default=REPLAY_DOWNLOAD_LIMIT)
     parser.add_argument("-P", "--no-preprocess", action="store_true")
     parser.add_argument("-k", "--upload_to_kaggle", action="store_true")
+    parser.add_argument("--skip-download", action="store_true")
     parser.add_argument("--force-preprocess", action="store_true")
-    parser.set_defaults(upload_to_kaggle=True, download_limit=10)
+    parser.add_argument("--preprocess-synchronous", action="store_true")
+    parser.set_defaults(upload_to_kaggle=True, skip_download=True)
     args = parser.parse_args()
 
-    download_replays(
-        args.meta_kaggle_dir,
-        args.target_base_dir,
-        args.team_name,
-        args.after_date,
-        score_threshold=args.score_threshold,
-        download_limit=args.download_limit,
-    )
+    if not args.skip_download:
+        download_replays(
+            args.meta_kaggle_dir,
+            args.target_base_dir,
+            args.team_name,
+            args.after_date,
+            score_threshold=args.score_threshold,
+            download_limit=args.download_limit,
+        )
 
     target_dir = f"{args.target_base_dir}-{args.team_name.lower()}"
     if not args.no_preprocess:
@@ -153,6 +156,7 @@ if __name__ == "__main__":
             args.team_name,
             DEFAULT_BEHAVIOR_COPY_REWARD_WEIGHTS,
             skip_existing_files=not args.force_preprocess,
+            synchronous=args.preprocess_synchronous,
         )
         target_dir = npz_target_dir
 
