@@ -1,7 +1,4 @@
 import argparse
-import collections
-import datetime
-import glob
 import json
 import os
 import subprocess
@@ -34,7 +31,7 @@ def download_replays(
     score_threshold: int = SCORE_THRESHOLD,
     download_limit: int = REPLAY_DOWNLOAD_LIMIT,
 ) -> None:
-    target_dir = f"{target_base_dir}-{team_name.lower()}"
+    target_dir = os.path.join(f"{target_base_dir}-{team_name.lower()}", team_name)
     if not os.path.exists(target_dir):
         os.makedirs(target_dir)
     elif not os.path.isdir(target_dir):
@@ -134,8 +131,8 @@ if __name__ == "__main__":
     parser.add_argument("-l", "--download-limit", default=REPLAY_DOWNLOAD_LIMIT)
     parser.add_argument("-P", "--no-preprocess", action="store_true")
     parser.add_argument("-k", "--upload_to_kaggle", action="store_true")
-    parser.add_argument("--skip_preprocess", action="store_true")
-    parser.set_defaults(upload_to_kaggle=True)
+    parser.add_argument("--force-preprocess", action="store_true")
+    parser.set_defaults(upload_to_kaggle=True, download_limit=10)
     args = parser.parse_args()
 
     download_replays(
@@ -150,13 +147,13 @@ if __name__ == "__main__":
     target_dir = f"{args.target_base_dir}-{args.team_name.lower()}"
     if not args.no_preprocess:
         npz_target_dir = f"{args.target_base_dir}-{args.team_name.lower()}-npz"
-        if not args.skip_preprocess:
-            replays_to_npz(
-                target_dir,
-                npz_target_dir,
-                args.team_name,
-                DEFAULT_BEHAVIOR_COPY_REWARD_WEIGHTS,
-            )
+        replays_to_npz(
+            target_dir,
+            npz_target_dir,
+            args.team_name,
+            DEFAULT_BEHAVIOR_COPY_REWARD_WEIGHTS,
+            skip_existing_files=not args.force_preprocess,
+        )
         target_dir = npz_target_dir
 
     if args.upload_to_kaggle:

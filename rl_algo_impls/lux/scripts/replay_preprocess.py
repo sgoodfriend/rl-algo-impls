@@ -1,5 +1,5 @@
-import json
 import os
+import pathlib
 from multiprocessing import Pool
 from typing import Dict, NamedTuple, Optional, Union
 
@@ -22,6 +22,7 @@ def replays_to_npz(
     npz_dir: str,
     team_name: str,
     reward_weights: Optional[Dict[str, Union[float, int]]],
+    skip_existing_files: bool = True,
 ) -> None:
     if not os.path.exists(npz_dir):
         os.makedirs(npz_dir)
@@ -30,14 +31,18 @@ def replays_to_npz(
 
     paths = []
     for dirpath, _, filenames in os.walk(replay_dir):
+        full_npz_path = pathlib.Path(dirpath).as_posix().replace(replay_dir, npz_dir)
         for fname in filenames:
             basename, ext = os.path.splitext(fname)
             if ext != ".json" or not basename.isdigit():
                 continue
+            npz_filepath = os.path.join(full_npz_path, f"{basename}.npz")
+            if skip_existing_files and os.path.exists(npz_filepath):
+                continue
             paths.append(
                 Path(
                     os.path.join(dirpath, fname),
-                    os.path.join(npz_dir, f"{basename}.npz"),
+                    npz_filepath,
                 )
             )
 
