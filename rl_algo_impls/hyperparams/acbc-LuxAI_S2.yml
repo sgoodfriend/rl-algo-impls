@@ -7,7 +7,7 @@ LuxAI_S2-v0-squnet-iDeimos: &lux-squnet-ideimos
     vec_env_class: replay
     n_envs: 24
     make_kwargs: &lux-env-make-defaults
-      replay_dir: data/lux/lux-replays-deimos-npz
+      replay_dir: data/lux/npz-deimos
       team_name: Deimos
       reward_weights:
         score_vs_opponent: 1
@@ -52,7 +52,7 @@ LuxAI_S2-v0-squnet-iDeimos: &lux-squnet-ideimos
     additional_critic_activation_functions: [tanh]
     output_activation_fn: tanh
   algo_hyperparams: &lux-squnet-ideimos-algo
-    learning_rate: !!float 9.2e-4
+    learning_rate: !!float 1.2e-3
     learning_rate_decay: linear
     batch_size: 384
     n_epochs: 2
