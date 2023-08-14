@@ -74,6 +74,7 @@ class MicrortsStatsRecorder(VectorableWrapper):
     def bot_at_index(self, idx: int) -> Optional[str]:
         if not self.bots:
             return None
+        bots = self._bot_at_index
         if hasattr(self.env, "learner_indexes"):
-            return self._bot_at_index[self.env.learner_indexes()][idx]
+            bots = [b for i, b in zip(self.env.learner_indexes(), bots) if i]
         return self._bot_at_index[idx]
