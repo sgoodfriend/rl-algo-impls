@@ -1449,6 +1449,7 @@ Microrts-squnet-d16-128-map64-BC-finetune-scale-loss:
   algo_hyperparams: &microrts-squnet-d16-128-map64-bc-finetune-scale-loss-algo
     <<: *microrts-squnet-d16-128-map64-bc-finetune-algo
     scale_loss_by_num_actions: true
+    batch_size: 192
 
 Microrts-squnet-d16-128-map64-BC-finetune-sl-no-norm-adv:
   &microrts-squnet-d16-128-map64-bc-finetune-sl-norm-adv
