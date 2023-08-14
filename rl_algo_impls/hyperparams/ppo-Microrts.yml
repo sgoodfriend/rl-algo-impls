@@ -1357,6 +1357,7 @@ Microrts-squnet-d16-128-BC-finetune: &microrts-squnet-d16-128-bc-finetune
     vf_coef: 0.5
     ent_coef: 0.0001
   hyperparam_transitions_kwargs:
+    &microrts-squnet-d16-128-bc-finetune-transitions
     interpolate_method: cosine
     phases:
       - learning_rate: !!float 1e-5
@@ -1433,7 +1434,7 @@ Microrts-squnet-d16-128-map64-BC-finetune:
   policy_hyperparams:
     <<: *microrts-squnet-d16-128-imayari-policy
     load_path: downloaded_models/acbc-Microrts-squnet-d16-128-iMayari-map64-from32-S1-best
-  eval_hyperparams:
+  eval_hyperparams: &microrts-squnet-d16-128-map64-bc-finetune-eval
     <<: *microrts-squnet-map64-eval-defaults
   algo_hyperparams: &microrts-squnet-d16-128-map64-bc-finetune-algo
     <<: *microrts-squnet-d16-128-map32-bc-finetune-algo
@@ -1441,6 +1442,20 @@ Microrts-squnet-d16-128-map64-BC-finetune:
     gradient_accumulation: true
     gamma: 0.99983
     gae_lambda: 0.9983
+
+Microrts-squnet-d16-128-map64-BC-finetune-scale-loss:
+  &microrts-squnet-d16-128-map64-bc-finetune-scale-loss
+  <<: *microrts-squnet-d16-128-map64-bc-finetune
+  algo_hyperparams: &microrts-squnet-d16-128-map64-bc-finetune-scale-loss-algo
+    <<: *microrts-squnet-d16-128-map64-bc-finetune-algo
+    scale_loss_by_num_actions: true
+
+Microrts-squnet-d16-128-map64-BC-finetune-sl-no-norm-adv:
+  &microrts-squnet-d16-128-map64-bc-finetune-sl-norm-adv
+  <<: *microrts-squnet-d16-128-map64-bc-finetune-scale-loss
+  algo_hyperparams:
+    <<: *microrts-squnet-d16-128-map64-bc-finetune-scale-loss-algo
+    normalize_advantage: false
 
 Microrts-squnet-d16-128-map64-BC-finetune-A10:
   &microrts-squnet-d16-128-map64-bc-finetune-a10
@@ -1495,5 +1510,8 @@ Microrts-agent: &microrts-agent
         #   use_paper_obs: true
 
 Microrts-debug: &microrts-debug-defaults
-  <<: *microrts-squnet-d16-128-map64-bc-finetune-a10
+  <<: *microrts-squnet-d16-128-map64-bc-finetune-sl-norm-adv
   device: mps
+  eval_hyperparams:
+    <<: *microrts-squnet-d16-128-map64-bc-finetune-eval
+    skip_evaluate_at_start: true
