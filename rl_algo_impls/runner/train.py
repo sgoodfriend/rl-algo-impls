@@ -75,10 +75,7 @@ def train(args: TrainArgs):
         config, EnvHyperparams(**config.env_hyperparams), tb_writer=tb_writer
     )
     device = get_device(config, env)
-    policy_factory = lambda: make_policy(
-        config, env, device, **config.policy_hyperparams
-    )
-    policy = policy_factory()
+    policy = make_policy(config, env, device, **config.policy_hyperparams)
     algo = ALGOS[args.algo](policy, device, tb_writer, **config.algo_hyperparams)
 
     num_parameters = policy.num_parameters()
@@ -106,7 +103,6 @@ def train(args: TrainArgs):
     )
     eval_callback = EvalCallback(
         policy,
-        policy_factory,
         eval_env,
         tb_writer,
         best_model_path=config.model_dir_path(best=True),
@@ -133,7 +129,7 @@ def train(args: TrainArgs):
             )
         )
     if self_play_wrapper:
-        callbacks.append(SelfPlayCallback(policy, policy_factory, self_play_wrapper))
+        callbacks.append(SelfPlayCallback(policy, self_play_wrapper))
 
     if config.rollout_type:
         if config.rollout_type == "sync":

@@ -1,7 +1,7 @@
 import os
 from abc import ABC, abstractmethod
 from copy import deepcopy
-from typing import Dict, Optional, Type, TypeVar, Union
+from typing import Any, Dict, Optional, Type, TypeVar, Union
 
 import numpy as np
 import torch
@@ -94,6 +94,20 @@ class Policy(nn.Module, ABC):
             assert policy.norm_reward
             self.norm_reward.load_from(policy.norm_reward)
         return self
+
+    def __deepcopy__(self: PolicySelf, memo: Dict[int, Any]) -> PolicySelf:
+        cls = self.__class__
+        cpy = cls.__new__(cls)
+
+        memo[id(self)] = cpy
+
+        for k, v in self.__dict__.items():
+            if k == "env":
+                setattr(cpy, k, v)  # Don't deepcopy Env
+            else:
+                setattr(cpy, k, deepcopy(v, memo))
+
+        return cpy
 
     def reset_noise(self) -> None:
         pass

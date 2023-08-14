@@ -201,11 +201,8 @@ def simple_optimize(trial: optuna.Trial, args: RunArgs, study_args: StudyArgs) -
         config, EnvHyperparams(**config.env_hyperparams), tb_writer=tb_writer
     )
     device = get_device(config, env)
-    policy_factory = lambda: make_policy(
-        config, env, device, **config.policy_hyperparams
-    )
-    policy = policy_factory()
-    algo = ALGOS[args.algo](policy, env, device, tb_writer, **config.algo_hyperparams)
+    policy = make_policy(config, env, device, **config.policy_hyperparams)
+    algo = ALGOS[args.algo](policy, device, tb_writer, **config.algo_hyperparams)
 
     self_play_wrapper = find_wrapper(env, SelfPlayWrapper)
     eval_env = make_eval_env(
@@ -242,7 +239,7 @@ def simple_optimize(trial: optuna.Trial, args: RunArgs, study_args: StudyArgs) -
             )
         )
     if self_play_wrapper:
-        callbacks.append(SelfPlayCallback(policy, policy_factory, self_play_wrapper))
+        callbacks.append(SelfPlayCallback(policy, self_play_wrapper))
     try:
         algo.learn(config.n_timesteps, callbacks=callbacks)
 
@@ -332,15 +329,10 @@ def stepwise_optimize(
                 tb_writer=tb_writer,
             )
             device = get_device(config, env)
-            policy_factory = lambda: make_policy(
-                config, env, device, **config.policy_hyperparams
-            )
-            policy = policy_factory()
+            policy = make_policy(config, env, device, **config.policy_hyperparams)
             if i > 0:
                 policy.load(config.model_dir_path())
-            algo = ALGOS[arg.algo](
-                policy, env, device, tb_writer, **config.algo_hyperparams
-            )
+            algo = ALGOS[arg.algo](policy, device, tb_writer, **config.algo_hyperparams)
 
             self_play_wrapper = find_wrapper(env, SelfPlayWrapper)
             eval_env = make_eval_env(
@@ -378,9 +370,7 @@ def stepwise_optimize(
                     )
                 )
             if self_play_wrapper:
-                callbacks.append(
-                    SelfPlayCallback(policy, policy_factory, self_play_wrapper)
-                )
+                callbacks.append(SelfPlayCallback(policy, self_play_wrapper))
             try:
                 algo.learn(
                     train_timesteps,

@@ -2,6 +2,7 @@ import itertools
 import os
 import shutil
 from collections import deque
+from copy import deepcopy
 from time import perf_counter
 from typing import Callable, Deque, Dict, List, Optional, Sequence, Union
 
@@ -125,7 +126,6 @@ class EvalCallback(Callback):
     def __init__(
         self,
         policy: Policy,
-        policy_factory: Callable[[], Policy],
         env: VecEnv,
         tb_writer: SummaryWriter,
         best_model_path: Optional[str] = None,
@@ -146,7 +146,6 @@ class EvalCallback(Callback):
     ) -> None:
         super().__init__()
         self.policy = policy
-        self.policy_factory = policy_factory
         self.env = env
         self.tb_writer = tb_writer
         self.best_model_path = best_model_path
@@ -273,4 +272,4 @@ class EvalCallback(Callback):
 
     def checkpoint_policy(self):
         if self.prior_policies is not None:
-            self.prior_policies.append(self.policy_factory().load_from(self.policy))
+            self.prior_policies.append(deepcopy(self.policy))
