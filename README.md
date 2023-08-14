@@ -189,7 +189,6 @@ Requires Java SDK to also be installed.
 
 git clone https://github.com/sgoodfriend/rl-algo-impls.git
 cd rl-algo-impls
-git checkout acbc-lux
 bash ./scripts/setup.sh
 wandb login
 mkdir ~/.kaggle
