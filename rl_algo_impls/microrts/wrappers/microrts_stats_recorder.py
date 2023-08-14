@@ -20,15 +20,9 @@ class MicrortsStatsRecorder(VectorableWrapper):
         self.raw_rewards = [[] for _ in range(self.num_envs)]
         self.bots = bots
         if self.bots:
-            self.bot_at_index = [None] * (env.num_envs - sum(self.bots.values()))
+            self._bot_at_index = [None] * (env.num_envs - sum(self.bots.values()))
             for b, n in self.bots.items():
-                self.bot_at_index.extend([b] * n)
-        else:
-            self.bot_at_index = [None] * env.num_envs
-        if map_paths and len(map_paths) > 1:
-            self.map_names = [mp.split("/")[-1] for mp in map_paths]
-        else:
-            self.map_names = [None] * self.num_envs
+                self._bot_at_index.extend([b] * n)
 
     def reset(self) -> VecEnvObs:
         obs = super().reset()
@@ -60,7 +54,7 @@ class MicrortsStatsRecorder(VectorableWrapper):
                     "draw": int(winloss == 0),
                     "loss": int(winloss == -1),
                 }
-                bot = self.bot_at_index[idx]
+                bot = self.bot_at_index(idx)
                 map_name = self.map_names[idx]
                 if bot or map_name:
                     paired_name = "_".join(s for s in [bot, map_name] if s)
@@ -76,3 +70,10 @@ class MicrortsStatsRecorder(VectorableWrapper):
                 info["microrts_results"] = microrts_results
 
                 self.raw_rewards[idx] = []
+
+    def bot_at_index(self, idx: int) -> Optional[str]:
+        if not self.bots:
+            return None
+        if hasattr(self.env, "learner_indexes"):
+            return self._bot_at_index[self.env.learner_indexes()][idx]
+        return self._bot_at_index[idx]

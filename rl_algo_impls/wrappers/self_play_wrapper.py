@@ -143,3 +143,13 @@ class SelfPlayWrapper(VectorableWrapper):
         self.next_obs = super().reset()
         self.next_action_masks = self.env.get_action_mask()
         return self.next_obs[self.learner_indexes()]
+
+    def __getattr__(self, name):
+        attr = super().__getattr__(name)
+        if hasattr(attr, "__len__") and len(attr) == self.env.num_envs:
+            indexes = self.learner_indexes()
+            if isinstance(attr, np.ndarray):
+                return attr[indexes]
+            else:
+                return [a for i, a in zip(indexes, attr) if i]
+        return attr
