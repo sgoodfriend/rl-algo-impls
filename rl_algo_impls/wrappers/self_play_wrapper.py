@@ -61,7 +61,7 @@ class SelfPlayWrapper(VectorableWrapper):
         assert self.next_action_masks is not None
         return self.next_action_masks[self.learner_indexes()]
 
-    def learner_indexes(self) -> List[int]:
+    def learner_indexes(self) -> List[bool]:
         return [p is None for p in self.policy_assignments]
 
     def checkpoint_policy(self, copied_policy: Policy) -> None:
