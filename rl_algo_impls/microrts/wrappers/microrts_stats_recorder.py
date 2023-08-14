@@ -55,7 +55,7 @@ class MicrortsStatsRecorder(VectorableWrapper):
                     "loss": int(winloss == -1),
                 }
                 bot = self.bot_at_index(idx)
-                map_name = self.map_names[idx]
+                map_name = self.map_paths[idx].split("/")[-1]
                 if bot or map_name:
                     paired_name = "_".join(s for s in [bot, map_name] if s)
                     suffixes = {s for s in [bot, map_name, paired_name] if s}
