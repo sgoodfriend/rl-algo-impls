@@ -137,7 +137,7 @@ class SelfPlayWrapper(VectorableWrapper):
                 self.swap_policy(idx, self.swap_window_size)
 
         new_learner_indexes = self.learner_indexes()
-        return self.next_obs[new_learner_indexes], rew, done[new_learner_indexes], info
+        return self.next_obs[new_learner_indexes], rew, done[orig_learner_indexes], info
 
     def reset(self) -> VecEnvObs:
         self.next_obs = super().reset()
