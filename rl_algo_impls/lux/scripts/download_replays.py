@@ -3,7 +3,7 @@ import json
 import os
 import subprocess
 import time
-from typing import List
+from typing import List, Optional
 
 import numpy as np
 import pandas as pd
@@ -30,6 +30,7 @@ def download_replays(
     after_date: str,
     score_threshold: int = SCORE_THRESHOLD,
     download_limit: int = REPLAY_DOWNLOAD_LIMIT,
+    num_latest_submissions: Optional[int] = None,
 ) -> None:
     target_dir = os.path.join(f"{target_base_dir}-{team_name.lower()}", team_name)
     if not os.path.exists(target_dir):
@@ -39,7 +40,7 @@ def download_replays(
 
     team_id = get_team_id(meta_kaggle_dir, team_name)
     submission_ids = get_team_submission_ids(
-        meta_kaggle_dir, team_id, after_date, score_threshold
+        meta_kaggle_dir, team_id, after_date, score_threshold, num_latest_submissions
     )
     episode_agents_df = get_submission_episode_agents(meta_kaggle_dir, submission_ids)
     episodes_df = get_episodes(
@@ -80,7 +81,11 @@ def get_team_id(meta_kaggle_dir: str, team_name: str) -> int:
 
 
 def get_team_submission_ids(
-    meta_kaggle_dir: str, team_id: int, after_date: str, score_threshold: int
+    meta_kaggle_dir: str,
+    team_id: int,
+    after_date: str,
+    score_threshold: int,
+    num_latest_submissions: Optional[int],
 ) -> List[int]:
     subs_pldf = pl.read_csv(os.path.join(meta_kaggle_dir, "Submissions.csv"))
     subs_pldf = subs_pldf.filter(pl.col("TeamId") == team_id)
@@ -91,6 +96,9 @@ def get_team_submission_ids(
         (subs_df["ScoreDate"] >= after_date)
         & (subs_df["PrivateScoreFullPrecision"] >= score_threshold)
     ]
+    if num_latest_submissions:
+        subs_df.sort_values(by="ScoreDate", inplace=True)
+        subs_df = subs_df.tail(num_latest_submissions)
     print(f"Filtered down to {len(subs_df)} submissions")
     return subs_df["Id"].to_list()
 
@@ -127,6 +135,7 @@ if __name__ == "__main__":
     parser.add_argument("-f", "--target-base-dir", default="data/lux/lux-replays")
     parser.add_argument("-t", "--team-name", default="Deimos")
     parser.add_argument("-d", "--after-date", default="2023-04-01")
+    parser.add_argument("--num-latest-submissions", default=None)
     parser.add_argument("-s", "--score-threshold", default=SCORE_THRESHOLD)
     parser.add_argument("-l", "--download-limit", default=REPLAY_DOWNLOAD_LIMIT)
     parser.add_argument("-P", "--no-preprocess", action="store_true")
@@ -134,7 +143,9 @@ if __name__ == "__main__":
     parser.add_argument("--skip-download", action="store_true")
     parser.add_argument("--force-preprocess", action="store_true")
     parser.add_argument("--preprocess-synchronous", action="store_true")
-    parser.set_defaults(upload_to_kaggle=True)
+    parser.set_defaults(
+        upload_to_kaggle=True, team_name="flg", num_latest_submissions=3
+    )
     args = parser.parse_args()
 
     if not args.skip_download:
@@ -145,6 +156,7 @@ if __name__ == "__main__":
             args.after_date,
             score_threshold=args.score_threshold,
             download_limit=args.download_limit,
+            num_latest_submissions=args.num_latest_submissions,
         )
 
     target_dir = f"{args.target_base_dir}-{args.team_name.lower()}"
