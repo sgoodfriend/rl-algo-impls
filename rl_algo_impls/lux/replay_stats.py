@@ -1,7 +1,7 @@
 import dataclasses
 import logging
 from dataclasses import dataclass
-from typing import Dict, Optional, Union
+from typing import Dict, Optional, Tuple, Union
 
 import numpy as np
 
@@ -74,45 +74,37 @@ class ReplayActionStats:
         action_mask: Dict[str, np.ndarray],
     ) -> None:
         PER_POSITION_KEY = "per_position"
+        r_action = replay_action[PER_POSITION_KEY]
+        p_action = policy_action[PER_POSITION_KEY] if policy_action else None
+        mask = action_mask[PER_POSITION_KEY]
 
-        for idx, (ra, mask) in enumerate(
-            zip(replay_action[PER_POSITION_KEY], action_mask[PER_POSITION_KEY])
-        ):
-            record_action(ra, mask, self.replay_factory, self.replay_unit)
-            if policy_action is not None:
-                pa = policy_action[PER_POSITION_KEY][idx]
-                record_action(pa, mask, self.policy_factory, self.policy_unit)
-                if ra[0] == pa[0]:
-                    if ra[0] != 0:
-                        self.matching.action_match_cnt += 1
-                else:
-                    self.matching.action_mismatch_cnt += 1
-                unit_action_mask = mask[
-                    FACTORY_ACTION_ENCODED_SIZE : FACTORY_ACTION_ENCODED_SIZE
-                    + UNIT_ACTION_SIZES[0]
-                ]
-                if unit_action_mask.any():
-                    if ra[1] == pa[1]:
-                        self.matching.action_match_cnt += 1
-                    else:
-                        self.matching.action_mismatch_cnt += 1
+        record_factory_action(self.replay_factory, r_action)
+        r_unit_action_type, r_selected, r_valid, r_count = unit_action_arrays(
+            r_action, mask
+        )
+        self.replay_unit.action_type += r_count
+
+        if p_action is not None:
+            record_factory_action(self.policy_factory, p_action)
+            p_unit_action_type, _, _, p_count = unit_action_arrays(p_action, mask)
+            self.policy_unit.action_type += p_count
+
+            rp_match = np.sum(r_selected & (r_unit_action_type == p_unit_action_type))
+            self.matching.action_match_cnt += rp_match
+            self.matching.action_mismatch_cnt += len(r_valid) - rp_match
 
 
-def record_action(
-    action: np.ndarray,
-    action_mask: np.ndarray,
-    factory_stats: FactoryActionStats,
-    unit_stats: UnitActionStats,
-):
-    if action[0]:
-        factory_stats.action_type[action[0]] += 1
-    unit_action_mask = action_mask[
-        FACTORY_ACTION_ENCODED_SIZE : FACTORY_ACTION_ENCODED_SIZE + UNIT_ACTION_SIZES[0]
+def record_factory_action(stats: FactoryActionStats, action: np.ndarray) -> None:
+    stats.action_type += np.bincount(action[:, 0], minlength=len(stats.action_type))
+
+
+def unit_action_arrays(
+    action: np.ndarray, mask: np.ndarray
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    unit_action_type = action[:, 1]
+    selected = mask[
+        np.arange(len(unit_action_type)), unit_action_type + FACTORY_ACTION_ENCODED_SIZE
     ]
-    if unit_action_mask.any():
-        if unit_action_mask[action[1]]:
-            unit_stats.action_type[action[1]] += 1
-        else:
-            logging.warning(
-                f"Illegal action {action[1]}. Legal actions: {unit_action_mask}"
-            )
+    valid = unit_action_type[selected]
+    count = np.bincount(valid, minlength=UNIT_ACTION_SIZES[0])
+    return unit_action_type, selected, valid, count
