@@ -78,24 +78,39 @@ class ReplayActionStats:
         p_action = policy_action[PER_POSITION_KEY] if policy_action else None
         mask = action_mask[PER_POSITION_KEY]
 
-        record_factory_action(self.replay_factory, r_action)
+        rf_action_type, rf_selected, rf_valid, rf_count = factory_action_arrays(
+            r_action, mask
+        )
+        self.replay_factory.action_type += rf_count
         r_unit_action_type, r_selected, r_valid, r_count = unit_action_arrays(
             r_action, mask
         )
         self.replay_unit.action_type += r_count
 
         if p_action is not None:
-            record_factory_action(self.policy_factory, p_action)
+            pf_action_type, _, _, pf_count = factory_action_arrays(p_action, mask)
+            self.policy_factory.action_type += pf_count
             p_unit_action_type, _, _, p_count = unit_action_arrays(p_action, mask)
             self.policy_unit.action_type += p_count
 
-            rp_match = np.sum(r_selected & (r_unit_action_type == p_unit_action_type))
-            self.matching.action_match_cnt += rp_match
-            self.matching.action_mismatch_cnt += len(r_valid) - rp_match
+            rp_factory_match = np.sum(rf_selected & (rf_action_type == pf_action_type))
+            rp_unit_match = np.sum(
+                r_selected & (r_unit_action_type == p_unit_action_type)
+            )
+            self.matching.action_match_cnt += rp_factory_match + rp_unit_match
+            self.matching.action_mismatch_cnt += (len(r_valid) - rp_unit_match) + (
+                len(rf_valid) - rp_factory_match
+            )
 
 
-def record_factory_action(stats: FactoryActionStats, action: np.ndarray) -> None:
-    stats.action_type += np.bincount(action[:, 0], minlength=len(stats.action_type))
+def factory_action_arrays(
+    action: np.ndarray, mask: np.ndarray
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    factory_action = action[:, 0]
+    selected = mask[np.arange(len(factory_action)), factory_action]
+    valid = factory_action[selected]
+    count = np.bincount(valid, minlength=FACTORY_ACTION_ENCODED_SIZE)
+    return factory_action, selected, valid, count
 
 
 def unit_action_arrays(
