@@ -186,6 +186,8 @@ class EvalCallback(Callback):
                     video_sprw
                 ), f"video_env should have SelfPlayReferenceWrapper given eval env does"
                 video_sprw.policies_getter_fn = policies_getter_fn
+        else:
+            self.prior_policies = None
 
     def on_step(self, timesteps_elapsed: int = 1) -> bool:
         super().on_step(timesteps_elapsed)
