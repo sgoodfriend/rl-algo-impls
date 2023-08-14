@@ -73,11 +73,11 @@ class VecLuxEnv(VectorEnv):
             for env in self.envs:
                 env.render(mode=mode, **kwargs)
         elif mode == "rgb_array":
-            imgs = self.get_images()
+            imgs = self._get_images()
             bigimg = tile_images(imgs)
             return bigimg
 
-    def get_images(self) -> List[np.ndarray]:
+    def _get_images(self) -> List[np.ndarray]:
         return [env.render(mode="rgb_array") for env in self.envs]
 
     def get_action_mask(self) -> np.ndarray:

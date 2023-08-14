@@ -1,8 +1,9 @@
 import itertools
 import os
 import shutil
+from collections import deque
 from time import perf_counter
-from typing import Dict, List, Optional, Union
+from typing import Callable, Deque, Dict, List, Optional, Sequence, Union
 
 import numpy as np
 from torch.utils.tensorboard.writer import SummaryWriter
@@ -11,9 +12,9 @@ from rl_algo_impls.shared.callbacks import Callback
 from rl_algo_impls.shared.policy.policy import Policy
 from rl_algo_impls.shared.stats import Episode, EpisodeAccumulator, EpisodesStats
 from rl_algo_impls.shared.tensor_utils import batch_dict_keys
-from rl_algo_impls.wrappers.action_mask_wrapper import find_action_masker
+from rl_algo_impls.wrappers.self_play_reference_wrapper import SelfPlayReferenceWrapper
 from rl_algo_impls.wrappers.vec_episode_recorder import VecEpisodeRecorder
-from rl_algo_impls.wrappers.vectorable_wrapper import VecEnv
+from rl_algo_impls.wrappers.vectorable_wrapper import VecEnv, find_wrapper
 
 
 class EvaluateAccumulator(EpisodeAccumulator):
@@ -119,9 +120,12 @@ def evaluate(
 
 
 class EvalCallback(Callback):
+    prior_policies: Optional[Deque[Policy]]
+
     def __init__(
         self,
         policy: Policy,
+        policy_factory: Callable[[], Policy],
         env: VecEnv,
         tb_writer: SummaryWriter,
         best_model_path: Optional[str] = None,
@@ -142,6 +146,7 @@ class EvalCallback(Callback):
     ) -> None:
         super().__init__()
         self.policy = policy
+        self.policy_factory = policy_factory
         self.env = env
         self.tb_writer = tb_writer
         self.best_model_path = best_model_path
@@ -165,6 +170,23 @@ class EvalCallback(Callback):
         self.wandb_enabled = wandb_enabled
         self.score_threshold = score_threshold
         self.skip_evaluate_at_start = skip_evaluate_at_start
+
+        self_play_reference_wrapper = find_wrapper(env, SelfPlayReferenceWrapper)
+        if self_play_reference_wrapper:
+            self.prior_policies = deque(maxlen=self_play_reference_wrapper.window)
+            self.checkpoint_policy()
+
+            def policies_getter_fn() -> Sequence[Policy]:
+                assert self.prior_policies
+                return self.prior_policies
+
+            self_play_reference_wrapper.policies_getter_fn = policies_getter_fn
+            if video_env:
+                video_sprw = find_wrapper(video_env, SelfPlayReferenceWrapper)
+                assert (
+                    video_sprw
+                ), f"video_env should have SelfPlayReferenceWrapper given eval env does"
+                video_sprw.policies_getter_fn = policies_getter_fn
 
     def on_step(self, timesteps_elapsed: int = 1) -> bool:
         super().on_step(timesteps_elapsed)
@@ -246,5 +268,9 @@ class EvalCallback(Callback):
             print(f"Saved video: {video_stats}")
 
         eval_stat.write_to_tensorboard(self.tb_writer, "eval", self.timesteps_elapsed)
-
+        self.checkpoint_policy()
         return eval_stat
+
+    def checkpoint_policy(self):
+        if self.prior_policies is not None:
+            self.prior_policies.append(self.policy_factory().load_from(self.policy))

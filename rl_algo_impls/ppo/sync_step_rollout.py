@@ -1,4 +1,4 @@
-from typing import Dict, TypeVar
+from typing import Dict, Optional, TypeVar
 
 import numpy as np
 
@@ -22,6 +22,7 @@ class SyncStepRolloutGenerator(RolloutGenerator):
         scale_advantage_by_values_accuracy: bool = False,
         full_batch_off_accelerator: bool = False,
         include_logp: bool = True,
+        subaction_mask: Optional[Dict[int, Dict[int, int]]] = None,
     ) -> None:
         super().__init__()
         self.policy = policy
@@ -57,6 +58,7 @@ class SyncStepRolloutGenerator(RolloutGenerator):
         self.logprobs = (
             np.zeros(epoch_dim, dtype=np.float32) if self.include_logp else None
         )
+        self.subaction_mask = subaction_mask
 
         if isinstance(act_shape, dict):
             self.actions = {
@@ -134,6 +136,8 @@ class SyncStepRolloutGenerator(RolloutGenerator):
             gae_lambda=gae_lambda,
             scale_advantage_by_values_accuracy=self.scale_advantage_by_values_accuracy,
             full_batch_off_accelerator=self.full_batch_off_accelerator,
+            subaction_mask=self.subaction_mask,
+            action_plane_space=getattr(self.vec_env, "action_plane_space", None),
         )
 
 

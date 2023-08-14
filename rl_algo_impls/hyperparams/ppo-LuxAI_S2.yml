@@ -6,7 +6,7 @@ LuxAI_S2-v0: &lux-defaults
     env_type: lux
     vec_env_class: sync
     n_envs: 24
-    self_play_kwargs:
+    self_play_kwargs: &lux-env-self-play
       num_old_policies: 12
       save_steps: 300000
       swap_steps: 3000
@@ -36,17 +36,18 @@ LuxAI_S2-v0: &lux-defaults
     step_freq: !!float 5e6
     score_function: mean
     only_record_video_on_best: true
-    score_threshold: 0.27
+    score_threshold: 0.37
     env_overrides: &lux-eval-env-overrides
-      n_envs: 66
-      self_play_kwargs:
-        eval_use_training_cache: true
+      n_envs: 64
+      self_play_kwargs: null
       make_kwargs: &lux-eval-env-override-make-kwargs
         <<: *lux-env-make-defaults
         reward_weights:
           win_loss: 1
       additional_win_loss_reward: false
-      score_reward_kwargs: {}
+      score_reward_kwargs: null
+      self_play_reference_kwargs:
+        window: 32
   policy_hyperparams: &lux-policy-defaults
     activation_fn: relu
     actor_head_style: unet
@@ -261,6 +262,49 @@ LuxAI_S2-v0-squnet: &lux-squnet
     batch_size: 192
     n_epochs: 2
     gradient_accumulation: true
+
+LuxAI_S2-v0-squnet-iDeimos: &lux-squnet-ideimos
+  <<: *lux-squnet
+  env_hyperparams:
+    <<: *lux-env-defaults
+    make_kwargs:
+      <<: *lux-env-make-defaults
+      reward_weights:
+        - score_vs_opponent: 1
+    additional_win_loss_reward: true
+    score_reward_kwargs: null
+    self_play_kwargs:
+      <<: *lux-env-self-play
+      save_steps: !!float 1e6
+      window: 50
+  policy_hyperparams: &lux-squnet-ideimos-policy
+    <<: *lux-squnet-policy
+    additional_critic_activation_functions: [tanh]
+    output_activation_fn: tanh
+  algo_hyperparams: &lux-squnet-ideimos-algo
+    <<: *lux-squnet-algo
+    multi_reward_weights: [0.5, 0.5]
+    gamma: [0.999, 0.999]
+    gae_lambda: [0.99, 0.99]
+    vf_coef: [0.25, 0.25]
+    learning_rate: !!float 1e-4
+    ent_coef: 0.01
+    scale_loss_by_num_actions: true
+  hyperparam_transitions_kwargs: &lux-squnet-ideimos-hyperparam-transitions
+    interpolate_method: cosine
+    phases:
+      - ent_coef: 0.001
+        learning_rate: !!float 1e-5
+      - ent_coef: 0.01
+        learning_rate: !!float 5e-5
+      - ent_coef: 0.0001
+        learning_rate: !!float 1e-5
+    durations:
+      - 0
+      - 0.05
+      - 0.4
+      - 0.35
+      - 0.2
 
 LuxAI_S2-v0-debug:
   <<: *lux-squnet

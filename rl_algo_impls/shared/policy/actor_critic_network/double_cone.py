@@ -177,6 +177,7 @@ class DoubleConeActorCritic(BackboneActorCritic):
         num_additional_critics: int = 0,
         additional_critic_activation_functions: Optional[List[str]] = None,
         gelu_pool_conv: bool = True,
+        output_activation_fn: str = "identity",
         subaction_mask: Optional[Dict[int, Dict[int, int]]] = None,
     ) -> None:
         if cnn_layers_init_orthogonal is None:
@@ -203,5 +204,6 @@ class DoubleConeActorCritic(BackboneActorCritic):
             critic_channels=critic_channels,
             init_layers_orthogonal=init_layers_orthogonal,
             cnn_layers_init_orthogonal=cnn_layers_init_orthogonal,
+            output_activation_fn=output_activation_fn,
             subaction_mask=subaction_mask,
         )

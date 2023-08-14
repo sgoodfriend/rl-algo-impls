@@ -148,3 +148,5 @@ videos/*
 rl_algo_impls/microrts/java/bin/*
 tournament_[0-9]*
 tournament_*_[0-9]*
+
+data/*

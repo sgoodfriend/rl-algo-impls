@@ -17,10 +17,8 @@ from rl_algo_impls.lux.actions import (
 )
 from rl_algo_impls.lux.early import bid_action
 from rl_algo_impls.lux.observation import observation_and_action_mask
-from rl_algo_impls.lux.rewards import LuxRewardWeights
+from rl_algo_impls.lux.rewards import LuxRewardWeights, from_lux_rewards
 from rl_algo_impls.lux.stats import StatsTracking
-
-MIN_SCORE = -1000
 
 
 class LuxEnvGridnet(Wrapper):
@@ -129,6 +127,7 @@ class LuxEnvGridnet(Wrapper):
                 self.env.state,
                 self.action_mask_shape,
                 self._enqueued_actions,
+                factory_ice_distance_buffer=0,
             )
             observations.append(obs)
             action_masks.append(action_mask)
@@ -157,80 +156,23 @@ class LuxEnvGridnet(Wrapper):
     def _from_lux_rewards(
         self, lux_rewards: Dict[str, float], done: bool, info: Dict[str, Any]
     ) -> np.ndarray:
-        agents = self.agents
-        player_opponent = tuple((p, opp) for p, opp in zip(agents, reversed(agents)))
         if done:
-            _win_loss = np.array(
-                [
-                    1
-                    if lux_rewards[p] > lux_rewards[opp]
-                    else (-1 if lux_rewards[p] < lux_rewards[opp] else 0)
-                    for p, opp in player_opponent
-                ]
-            )
-
-            _max_score_delta = (
-                1 / self.reward_weights.score_vs_opponent
-                if not np.isclose(self.reward_weights.score_vs_opponent, 0)
-                else np.inf
-            )
-            _score_delta = np.clip(
-                np.array(
-                    [lux_rewards[p] - lux_rewards[opp] for p, opp in player_opponent]
-                ),
-                -_max_score_delta,
-                _max_score_delta,
-            )
-            _done_rewards = np.concatenate(
-                [
-                    np.expand_dims(_win_loss, axis=-1),
-                    np.expand_dims(_score_delta, axis=-1),
-                ],
-                axis=-1,
-            )
-            for idx, agent in enumerate(self.agents):
-                agent_stats = self.stats.agent_stats[idx]
-                action_stats = self.stats.action_stats[idx]
-                info[agent]["stats"] = dict(
-                    zip(agent_stats.NAMES, agent_stats.stats.tolist())
-                )
+            for agent in self.agents:
                 state_agent_stats = self.unwrapped.state.stats[agent]
                 actions_success = state_agent_stats["action_queue_updates_success"]
                 actions_total = state_agent_stats["action_queue_updates_total"]
-                info[agent]["stats"]["actions_success"] = actions_success
-                info[agent]["stats"]["actions_failed"] = actions_total - actions_success
-                info[agent]["stats"].update(action_stats.stats_dict(prefix="actions_"))
+                info[agent]["stats"] = {
+                    **info[agent].get("stats", {}),
+                    **{
+                        "actions_success": actions_success,
+                        "actions_failed": actions_total - actions_success,
+                    },
+                }
                 if self.verify:
                     assert actions_total - actions_success == 0
-                self_score = lux_rewards[agent]
-                opp_score = lux_rewards[player_opponent[idx][1]]
-                score_delta = self_score - opp_score
-                score_reward = score_delta / (
-                    self_score + opp_score + 1 - 2 * MIN_SCORE
-                )
-                assert np.sign(score_reward) == np.sign(
-                    _win_loss[idx]
-                ), f"score_reward {score_reward} must be same sign as winloss {_win_loss[idx]}"
-                info[agent]["results"] = {
-                    "WinLoss": _win_loss[idx],
-                    "win": int(_win_loss[idx] == 1),
-                    "loss": int(_win_loss[idx] == -1),
-                    "score": self_score,
-                    "score_delta": score_delta,
-                    "score_reward": score_reward,
-                }
-        else:
-            _done_rewards = np.zeros((2, 2))
-        _stats_delta = self.stats.update(self.verify)
-        raw_rewards = np.concatenate(
-            [
-                _done_rewards,
-                _stats_delta,
-            ],
-            axis=-1,
+        return from_lux_rewards(
+            lux_rewards, done, info, self.stats, self.reward_weights, self.verify
         )
-        reward_weights = np.array(self.reward_weights)
-        return np.sum(raw_rewards * reward_weights, axis=-1)
 
 
 def bid_actions(agents: List[str], bid_std_dev: float) -> Dict[str, Any]:

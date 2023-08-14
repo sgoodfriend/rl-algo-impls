@@ -170,6 +170,7 @@ class ActorCritic(OnPolicy):
                 out_num_res_blocks=out_num_res_blocks,
                 num_additional_critics=num_additional_critics,
                 additional_critic_activation_functions=additional_critic_activation_functions,
+                output_activation_fn=output_activation_fn,
                 gelu_pool_conv=gelu_pool_conv,
                 subaction_mask=subaction_mask,
             )

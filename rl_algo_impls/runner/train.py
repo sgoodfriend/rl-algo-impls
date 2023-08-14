@@ -106,6 +106,7 @@ def train(args: TrainArgs):
     )
     eval_callback = EvalCallback(
         policy,
+        policy_factory,
         eval_env,
         tb_writer,
         best_model_path=config.model_dir_path(best=True),
@@ -144,7 +145,12 @@ def train(args: TrainArgs):
     else:
         rollout_generator_cls = SyncStepRolloutGenerator
 
-    rollout_generator = rollout_generator_cls(policy, env, **config.rollout_hyperparams)
+    rollout_generator = rollout_generator_cls(
+        policy,
+        env,
+        subaction_mask=config.policy_hyperparams.get("subaction_mask", None),
+        **config.rollout_hyperparams,
+    )
     algo.learn(config.n_timesteps, rollout_generator, callbacks=callbacks)
 
     policy.save(config.model_dir_path(best=False))

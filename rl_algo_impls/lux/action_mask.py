@@ -4,7 +4,6 @@ from typing import Any, Dict, Optional, Tuple
 
 import numpy as np
 from luxai_s2.actions import move_deltas
-from luxai_s2.utils import my_turn_to_place_factory
 
 from rl_algo_impls.lux.actions import (
     FACTORY_ACTION_ENCODED_SIZE,
@@ -12,6 +11,7 @@ from rl_algo_impls.lux.actions import (
     is_position_in_map,
     min_factory_resources,
 )
+from rl_algo_impls.lux.kit.utils import my_turn_to_place_factory
 from rl_algo_impls.lux.shared import (
     LuxEnvConfig,
     LuxFactory,
@@ -32,6 +32,7 @@ def get_action_mask(
     enqueued_actions: Dict[str, Optional[np.ndarray]],
     move_masks: Dict[str, Any],
     move_validity_map: np.ndarray,
+    factory_ice_distance_buffer: Optional[int] = None,
 ) -> Dict[str, np.ndarray]:
     return {
         "per_position": get_action_mask_per_position(
@@ -43,7 +44,10 @@ def get_action_mask(
             move_validity_map,
         ),
         "pick_position": get_action_mask_pick_position(
-            player, state, action_mask_shape["pick_position"]
+            player,
+            state,
+            action_mask_shape["pick_position"],
+            factory_ice_distance_buffer=factory_ice_distance_buffer,
         ),
     }
 
@@ -70,10 +74,10 @@ def get_action_mask_per_position(
             pos_to_idx(f.pos, config.map_size), :FACTORY_ACTION_ENCODED_SIZE
         ] = np.array(
             [
+                True,  # Do nothing is always valid
                 is_build_light_valid(f, config),
                 is_build_heavy_valid(f, config),
                 is_water_action_valid(f, state, config),
-                True,  # Do nothing is always valid
             ]
         )
     for u_id, u in state.units[player].items():
@@ -87,6 +91,9 @@ def get_action_mask_per_position(
             if np.any(transfer_direction_mask)
             else np.zeros(5)
         )
+        if not np.any(transfer_resource_mask):
+            transfer_direction_mask = np.zeros_like(transfer_direction_mask)
+
         pickup_resource_mask = valid_pickup_resource_mask(u, state, enqueued_action)
         valid_action_types = np.array(
             [
@@ -116,6 +123,7 @@ def get_action_mask_pick_position(
     player: str,
     state: LuxGameState,
     action_mask_shape: Tuple[int, int],
+    factory_ice_distance_buffer: Optional[int] = None,
 ) -> np.ndarray:
     action_mask = np.full(action_mask_shape, False, dtype=np.bool_)
     if state.real_env_steps >= 0:
@@ -124,37 +132,39 @@ def get_action_mask_pick_position(
     if not my_turn_to_place_factory(state.teams[player].place_first, state.env_steps):
         return action_mask
 
-    cfg = state.env_cfg
+    if factory_ice_distance_buffer is not None:
+        cfg = state.env_cfg
 
-    dist_map = np.full((cfg.map_size, cfg.map_size), np.inf)
-    ice_tile_locations = np.argwhere(state.board.ice)
-    queue = deque()
-    for loc in ice_tile_locations:
-        for dx in [-1, 0, 1]:
-            for dy in [-1, 0, 1]:
-                dloc = loc + np.array([dx, dy])
-                if not is_position_in_map(dloc, cfg):
+        dist_map = np.full((cfg.map_size, cfg.map_size), np.inf)
+        ice_tile_locations = np.argwhere(state.board.ice)
+        queue = deque()
+        for loc in ice_tile_locations:
+            for dx in [-1, 0, 1]:
+                for dy in [-1, 0, 1]:
+                    dloc = loc + np.array([dx, dy])
+                    if not is_position_in_map(dloc, cfg):
+                        continue
+                    x, y = dloc
+                    dist_map[x, y] = 0
+                    queue.append((dloc, 0))
+        directions = move_deltas[1:]
+        while queue:
+            loc, distance = queue.popleft()
+            ndist = distance + 1
+            for d in directions:
+                nloc = loc + d
+                if not is_position_in_map(nloc, cfg):
                     continue
-                x, y = dloc
-                dist_map[x, y] = 0
-                queue.append((dloc, 0))
-    directions = move_deltas[1:]
-    while queue:
-        loc, distance = queue.popleft()
-        ndist = distance + 1
-        for d in directions:
-            nloc = loc + d
-            if not is_position_in_map(nloc, cfg):
-                continue
-            nx, ny = nloc
-            if ndist < dist_map[nx, ny]:
-                dist_map[nx, ny] = ndist
-                queue.append((nloc, ndist))
+                nx, ny = nloc
+                if ndist < dist_map[nx, ny]:
+                    dist_map[nx, ny] = ndist
+                    queue.append((nloc, ndist))
 
-    dist_map = np.where(state.board.valid_spawns_mask, dist_map, np.inf)
+        dist_map = np.where(state.board.valid_spawns_mask, dist_map, np.inf)
 
-    valid_spawn_map = dist_map == np.min(dist_map)
-    return np.expand_dims(valid_spawn_map.flatten(), 0)
+        valid_spawn_map = dist_map <= np.min(dist_map) + factory_ice_distance_buffer
+        return np.expand_dims(valid_spawn_map.flatten(), 0)
+    return np.expand_dims(state.board.valid_spawns_mask.flatten(), 0)
 
 
 # Factory validity checks

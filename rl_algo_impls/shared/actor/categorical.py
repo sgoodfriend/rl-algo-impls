@@ -1,3 +1,4 @@
+import logging
 from typing import Optional, Tuple, Type
 
 import torch
@@ -7,10 +8,6 @@ from torch.distributions import Categorical
 from rl_algo_impls.shared.actor import Actor, PiForward, pi_forward
 from rl_algo_impls.shared.module.utils import mlp
 
-DEBUG_VERIFY = False
-if DEBUG_VERIFY:
-    import logging
-
 
 class MaskedCategorical(Categorical):
     def __init__(
@@ -19,11 +16,15 @@ class MaskedCategorical(Categorical):
         logits=None,
         validate_args=None,
         mask: Optional[torch.Tensor] = None,
+        verify: bool = False,
+        neg_inf: Optional[float] = None,
     ):
+        self.verify = verify
         if mask is not None:
             assert logits is not None, "mask requires logits and not probs"
-            logits = torch.where(mask, logits, torch.tensor(-1e8).to(logits.device))
-            if DEBUG_VERIFY:
+            neg_inf = neg_inf if neg_inf is not None else torch.finfo(logits.dtype).min
+            logits = torch.where(mask, logits, neg_inf)
+            if self.verify:
                 self.rows_with_valid_actions = mask.any(dim=1)
                 self.non_empty_action_mask = mask[self.rows_with_valid_actions]
         self.mask = mask
@@ -31,7 +32,7 @@ class MaskedCategorical(Categorical):
 
     def log_prob(self, value):
         logp = super().log_prob(value)
-        if DEBUG_VERIFY and self.mask is not None:
+        if self.verify and self.mask is not None:
             valid_actions = self.non_empty_action_mask[
                 torch.arange(self.non_empty_action_mask.shape[0]),
                 value[self.rows_with_valid_actions],
