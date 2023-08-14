@@ -1,7 +1,7 @@
 LuxAI_S2-v0-squnet-iDeimos: &lux-squnet-ideimos
   env_id: LuxAI_S2-v0
   n_timesteps: !!float 40e6
-  additional_keys_to_log: ["results"]
+  additional_keys_to_log: ["results", "stats"]
   env_hyperparams:
     env_type: lux
     vec_env_class: replay

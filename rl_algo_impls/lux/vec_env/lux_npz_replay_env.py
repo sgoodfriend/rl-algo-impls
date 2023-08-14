@@ -9,6 +9,7 @@ from gym.spaces import Dict as DictSpace
 from gym.spaces import MultiDiscrete
 
 from rl_algo_impls.lux.actions import ACTION_SIZES
+from rl_algo_impls.lux.replay_stats import ReplayActionStats
 
 
 class Replay(NamedTuple):
@@ -60,6 +61,8 @@ class LuxNpzReplayEnv(Env):
 
         self._load_request = async_load_npz.remote(next_npz_path_fn())
 
+        self.action_stats = ReplayActionStats()
+
     def initialize(self) -> None:
         self._load_next_replay()
         self.map_size = self.obs.shape[-2]
@@ -94,6 +97,7 @@ class LuxNpzReplayEnv(Env):
 
     def reset(self) -> np.ndarray:
         assert self.initialized
+        self.action_stats = ReplayActionStats()
         self._load_next_replay()
         self._action_mask = self.action_mask[self.env_step]
         return self.obs[self.env_step]
@@ -105,6 +109,9 @@ class LuxNpzReplayEnv(Env):
         r = self.reward[self.env_step]
         d = self.done[self.env_step]
         self._last_action = self.action[self.env_step]
+        self.action_stats.update_action_stats(
+            self._last_action, action, self._action_mask
+        )
         self.env_step += 1
 
         if d:
@@ -115,12 +122,13 @@ class LuxNpzReplayEnv(Env):
             else:
                 win_loss = 0
             info = {
+                "stats": self.action_stats.stats_dict(),
                 "results": {
                     "WinLoss": win_loss,
                     "win": r > 0,
                     "loss": r < 0,
                     "score_reward": r,
-                }
+                },
             }
             self.reset()
         else:
