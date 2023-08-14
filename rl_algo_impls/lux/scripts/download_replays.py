@@ -185,7 +185,7 @@ if __name__ == "__main__":
                 "-p",
                 target_dir,
                 "-r",
-                "zip",
+                "tar",
             ]
             subprocess.run(create_command)
         else:
@@ -198,6 +198,6 @@ if __name__ == "__main__":
                 "-m",
                 "Updated data",
                 "-r",
-                "zip",
+                "tar",
             ]
             subprocess.run(version_command)
