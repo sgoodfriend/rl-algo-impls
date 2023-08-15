@@ -82,6 +82,7 @@ LuxAI_S2-v0: &lux-defaults
       - 0.1
   rollout_hyperparams: &lux-rollout-defaults
     n_steps: 384
+    full_batch_off_accelerator: true
   algo_hyperparams: &lux-algo-defaults
     batch_size: 2304
     n_epochs: 4
@@ -259,18 +260,19 @@ LuxAI_S2-v0-squnet: &lux-squnet
     full_batch_off_accelerator: true
   algo_hyperparams: &lux-squnet-algo
     <<: *lux-algo-defaults
-    batch_size: 192
+    batch_size: 384
     n_epochs: 2
     gradient_accumulation: true
 
 LuxAI_S2-v0-squnet-iDeimos: &lux-squnet-ideimos
   <<: *lux-squnet
-  env_hyperparams:
+  n_timesteps: !!float 50e6
+  env_hyperparams: &lux-squnet-ideimos-env
     <<: *lux-env-defaults
-    make_kwargs:
+    make_kwargs: &lux-squnet-ideimos-env-make-kwargs
       <<: *lux-env-make-defaults
       reward_weights:
-        - score_vs_opponent: 1
+        score_vs_opponent: 1
       factory_ice_distance_buffer: null
     additional_win_loss_reward: true
     score_reward_kwargs: null
@@ -289,6 +291,7 @@ LuxAI_S2-v0-squnet-iDeimos: &lux-squnet-ideimos
     <<: *lux-squnet-policy
     additional_critic_activation_functions: [tanh]
     output_activation_fn: tanh
+    load_run_path: sgoodfriend/rl-algo-impls-benchmarks/7ugwzif8
   algo_hyperparams: &lux-squnet-ideimos-algo
     <<: *lux-squnet-algo
     multi_reward_weights: [0.5, 0.5]
@@ -302,30 +305,32 @@ LuxAI_S2-v0-squnet-iDeimos: &lux-squnet-ideimos
     interpolate_method: cosine
     phases:
       - ent_coef: 0.001
-        learning_rate: !!float 1e-5
-      - ent_coef: 0.01
+        learning_rate: !!float 5e-6
+      - ent_coef: 0.001
         learning_rate: !!float 5e-5
       - ent_coef: 0.0001
         learning_rate: !!float 1e-5
     durations:
       - 0
-      - 0.05
+      - 0.15
       - 0.4
-      - 0.35
-      - 0.2
+      - 0.3
+      - 0.15
 
 LuxAI_S2-v0-debug:
   <<: *lux-squnet
+LuxAI_S2-v0-debug:
+  <<: *lux-squnet-ideimos
   n_timesteps: !!float 1e6
   device: mps
   env_hyperparams:
-    <<: *lux-env-defaults
+    <<: *lux-squnet-ideimos-env
     make_kwargs:
-      <<: *lux-env-make-defaults
+      <<: *lux-squnet-ideimos-env-make-kwargs
       verbose: 3
       verify: true
   hyperparam_transitions_kwargs:
-    <<: *lux-transitions-defaults
+    <<: *lux-squnet-ideimos-hyperparam-transitions
     durations:
       - 0.05
       - 0.05
