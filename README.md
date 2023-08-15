@@ -205,12 +205,5 @@ ssh-keyscan -t ed25519 github.com >> ~/.ssh/known_hosts
 chmod go-rwx ~/.ssh/id_ed25519
 git clone git@github.com:sgoodfriend/rl-algo-impls-lux-nips1.git
 cd rl-algo-impls-lux-nips1
-bash ./scripts/setup.sh
-mkdir ~/.kaggle
-cat > ~/.kaggle/kaggle.json
-chmod 600 ~/.kaggle/kaggle.json
-kaggle datasets download -d sgoodfriend/lux-replays-flg-npz -p data/lux
-mkdir -p data/lux/lux-replays-flg-npz
-unzip data/lux/lux-replays-flg-npz.zip -d data/lux/lux-replays-flg-npz
-wandb login
+bash ./scripts/setup-lux.sh
 bash ./scripts/lux.sh [-a {"ppo"}] [-e ENVS]
