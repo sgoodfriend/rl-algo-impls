@@ -50,12 +50,14 @@ class Agent:
             override_hparams={"n_envs": 1},
         )
         device = get_device(config, env)
+        config.policy_hyperparams["load_path"] = os.path.join(
+            root_dir, config.policy_hyperparams["load_path"]
+        )
         self.policy = make_policy(
             config,
             env,
             device,
             **config.policy_hyperparams,
-            load_path=os.path.join(root_dir, config.policy_hyperparams["load_path"]),
         ).eval()
 
         transpose_wrapper = find_wrapper(env, HwcToChwObservation)
