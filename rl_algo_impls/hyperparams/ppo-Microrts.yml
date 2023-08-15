@@ -1417,9 +1417,11 @@ Microrts-squnet-d16-128-map64-BC-finetune:
   <<: *microrts-squnet-d16-128-map32-bc-finetune
   env_hyperparams:
     <<: *microrts-squnet-map64-env-defaults
+    n_envs: 48
     make_kwargs:
       <<: *microrts-squnet-map64-env-make-kwargs
       reward_weight: [1.0, 0, 0, 0, 0, 0, 0, 0, 0]
+      num_selfplay_envs: 52
     bots:
       workerRushAI: 2
       lightRushAI: 2
@@ -1431,6 +1433,7 @@ Microrts-squnet-d16-128-map64-BC-finetune:
       <<: *microrts-squnet-map64-env-self-play-kwargs
       save_steps: !!float 1e6
       window: 50
+      num_old_policies: 12
   policy_hyperparams:
     <<: *microrts-squnet-d16-128-imayari-policy
     load_path: downloaded_models/acbc-Microrts-squnet-d16-128-iMayari-map64-from32-S1-best
@@ -1442,6 +1445,21 @@ Microrts-squnet-d16-128-map64-BC-finetune:
     gradient_accumulation: true
     gamma: 0.99983
     gae_lambda: 0.9983
+  hyperparam_transitions_kwargs:
+    interpolate_method: cosine
+    phases:
+      - learning_rate: !!float 1e-6
+        ent_coef: 0.0001
+      - learning_rate: !!float 2.5e-5
+        ent_coef: 0.001
+      - learning_rate: !!float 5e-6
+        ent_coef: 0.0001
+    durations:
+      - 0
+      - 0.15
+      - 0.4
+      - 0.4
+      - 0.05
 
 Microrts-squnet-d16-128-map64-BC-finetune-scale-loss:
   &microrts-squnet-d16-128-map64-bc-finetune-scale-loss
