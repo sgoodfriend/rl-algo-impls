@@ -1,9 +1,10 @@
-import os
+import logging
 import os.path
 from pathlib import Path
 from typing import Any, Dict
 
 import numpy as np
+from gym.spaces import Dict as DictSpace
 from gym.spaces import MultiDiscrete
 from luxai_s2.state import ObservationStateDict
 
@@ -19,11 +20,10 @@ from rl_algo_impls.lux.observation import observation_and_action_mask
 from rl_algo_impls.lux.stats import ActionStats
 from rl_algo_impls.runner.config import Config, EnvHyperparams, RunArgs
 from rl_algo_impls.runner.running_utils import get_device, load_hyperparams, make_policy
+from rl_algo_impls.shared.tensor_utils import batch_dict_keys
 from rl_algo_impls.shared.vec_env.make_env import make_eval_env
 from rl_algo_impls.wrappers.hwc_to_chw_observation import HwcToChwObservation
 from rl_algo_impls.wrappers.vectorable_wrapper import find_wrapper
-
-MODEL_LOAD_PATH = "saved_models/ppo-LuxAI_S2-v0-A10-S1"
 
 
 class Agent:
@@ -36,7 +36,7 @@ class Agent:
 
         self.env_cfg = env_cfg
 
-        run_args = RunArgs(algo="ppo", env="LuxAI_S2-v0-eval", seed=1)
+        run_args = RunArgs(algo="ppo", env="LuxAI_S2-agent", seed=1)
         hyperparams = load_hyperparams(run_args.algo, run_args.env)
         config = Config(
             run_args,
@@ -54,7 +54,6 @@ class Agent:
             config,
             env,
             device,
-            load_path=os.path.join(root_dir, MODEL_LOAD_PATH),
             **config.policy_hyperparams,
         ).eval()
 
@@ -64,12 +63,25 @@ class Agent:
 
         self.map_size = env_cfg.map_size
         self.num_map_tiles = self.map_size * self.map_size
-        # TODO: Update for actions being changed to a dict.
         self.action_plane_space = MultiDiscrete(ACTION_SIZES)
-        self.action_mask_shape = (
-            self.num_map_tiles,
-            self.action_plane_space.nvec.sum(),
+        self.action_space = DictSpace(
+            {
+                "per_position": MultiDiscrete(
+                    np.array(ACTION_SIZES * self.num_map_tiles).flatten().tolist()
+                ),
+                "pick_position": MultiDiscrete([self.num_map_tiles]),
+            }
         )
+        self.action_mask_shape = {
+            "per_position": (
+                self.num_map_tiles,
+                self.action_plane_space.nvec.sum(),
+            ),
+            "pick_position": (
+                len(self.action_space["pick_position"].nvec),
+                self.num_map_tiles,
+            ),
+        }
 
     def act(
         self, step: int, lux_obs: ObservationStateDict, remainingOverageTime: int = 60
@@ -92,7 +104,9 @@ class Agent:
         obs = self.transpose_wrapper.observation(obs)
         action_mask = np.expand_dims(action_mask, axis=0)
 
-        actions = self.policy.act(obs, deterministic=False, action_masks=action_mask)
+        actions = self.policy.act(
+            obs, deterministic=False, action_masks=batch_dict_keys(action_mask)
+        )
         action_stats = ActionStats()
         lux_action = to_lux_actions(
             self.player,
@@ -108,16 +122,3 @@ class Agent:
         self, step: int, lux_obs: ObservationStateDict, remainingOverageTime: int = 60
     ) -> Dict[str, Any]:
         return bid_action(5, self.faction)
-
-    def factory_placement_policy(
-        self, step: int, lux_obs: ObservationStateDict, remainingOverageTime: int = 60
-    ) -> Dict[str, Any]:
-        # TODO: This is now handled by the network
-        state = obs_to_game_state(step, self.env_cfg, lux_obs)
-        return place_factory_action(state, self.agents, self.player_idx)
-
-    def place_initial_robot_action(
-        self, step: int, lux_obs: ObservationStateDict, remainingOverageTime: int = 60
-    ) -> Dict[str, Any]:
-        state = obs_to_game_state(step, self.env_cfg, lux_obs)
-        return {f: 1 for f in state.factories[self.player]}

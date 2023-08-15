@@ -33,10 +33,6 @@ def agent_fn(observation, configurations):
     agent.step = step
     if step == 0:
         actions = agent.bid_policy(step, obs, remainingOverageTime)
-    elif obs["real_env_steps"] < 0:
-        actions = agent.factory_placement_policy(step, obs, remainingOverageTime)
-    elif obs["real_env_steps"] == 0:
-        actions = agent.place_initial_robot_action(step, obs, remainingOverageTime)
     else:
         actions = agent.act(step, obs, remainingOverageTime)
 

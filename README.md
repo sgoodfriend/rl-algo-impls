@@ -206,11 +206,11 @@ chmod go-rwx ~/.ssh/id_ed25519
 git clone git@github.com:sgoodfriend/rl-algo-impls-lux-nips1.git
 cd rl-algo-impls-lux-nips1
 bash ./scripts/setup.sh
-wandb login
 mkdir ~/.kaggle
 cat > ~/.kaggle/kaggle.json
 chmod 600 ~/.kaggle/kaggle.json
 kaggle datasets download -d sgoodfriend/lux-replays-deimos-npz -p data/lux
-mkdir data/lux/lux-replays-deimos-npz
+mkdir -p data/lux/lux-replays-deimos-npz
 unzip data/lux/lux-replays-deimos-npz.zip -d data/lux/lux-replays-deimos-npz
+wandb login
 bash ./scripts/lux.sh [-a {"ppo"}] [-e ENVS]
