@@ -323,7 +323,7 @@ LuxAI_S2-agent: &lux-agent
   policy_hyperparams:
     <<: *lux-squnet-ideimos-policy
     load_run_path: null
-    load_path: downloaded_models/acbc-LuxAI_S2-v0-squnet-iDeimos-S1-best
+    load_path: lux_models/acbc-LuxAI_S2-v0-squnet-iDeimos-S1-best
   eval_hyperparams:
     <<: *lux-eval-defaults
     env_overrides:
