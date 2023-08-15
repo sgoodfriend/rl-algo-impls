@@ -10,10 +10,9 @@ import pandas as pd
 import polars as pl
 import requests
 
-from rl_algo_impls.lux.scripts.replay_preprocess import (
-    DEFAULT_BEHAVIOR_COPY_REWARD_WEIGHTS,
-    replays_to_npz,
-)
+from rl_algo_impls.lux.scripts.replay_preprocess import replays_to_npz
+from rl_algo_impls.runner.config import EnvHyperparams
+from rl_algo_impls.runner.running_utils import load_hyperparams
 
 LUX_COMPETITION_ID = 45040
 REPLAY_DOWNLOAD_LIMIT = 1000
@@ -133,7 +132,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-m", "--meta-kaggle-dir", default="data/meta-kaggle")
     parser.add_argument("-f", "--target-base-dir", default="data/lux/lux-replays")
-    parser.add_argument("-t", "--team-name", default="Deimos")
+    parser.add_argument("-e", "--env-id", default="LuxAI_S2-v0-squnet-iDeimos")
+    parser.add_argument("-a", "--algo", default="acbc")
     parser.add_argument("-d", "--after-date", default="2023-04-01")
     parser.add_argument("--num-latest-submissions", default=None)
     parser.add_argument("-s", "--score-threshold", default=SCORE_THRESHOLD)
@@ -144,29 +144,37 @@ if __name__ == "__main__":
     parser.add_argument("--force-preprocess", action="store_true")
     parser.add_argument("--preprocess-synchronous", action="store_true")
     parser.set_defaults(
-        upload_to_kaggle=True, team_name="flg", num_latest_submissions=3
+        # upload_to_kaggle=True,
+        # num_latest_submissions=3,
+        skip_download=True,
+        force_preprocess=True,
+        # preprocess_synchronous=True,
     )
     args = parser.parse_args()
+
+    hparams = load_hyperparams(args.algo, args.env_id)
+    env_hparams = EnvHyperparams(**hparams.env_hyperparams)
+    team_name = (env_hparams.make_kwargs or {}).get("team_name", "Deimos")
 
     if not args.skip_download:
         download_replays(
             args.meta_kaggle_dir,
             args.target_base_dir,
-            args.team_name,
+            team_name,
             args.after_date,
             score_threshold=args.score_threshold,
             download_limit=args.download_limit,
             num_latest_submissions=args.num_latest_submissions,
         )
 
-    target_dir = f"{args.target_base_dir}-{args.team_name.lower()}"
+    target_dir = f"{args.target_base_dir}-{team_name.lower()}"
     if not args.no_preprocess:
-        npz_target_dir = f"{args.target_base_dir}-{args.team_name.lower()}-npz"
+        npz_target_dir = f"{args.target_base_dir}-{team_name.lower()}-npz"
         replays_to_npz(
             target_dir,
             npz_target_dir,
-            args.team_name,
-            DEFAULT_BEHAVIOR_COPY_REWARD_WEIGHTS,
+            args.env_id,
+            algo=args.algo,
             skip_existing_files=not args.force_preprocess,
             synchronous=args.preprocess_synchronous,
         )
@@ -180,8 +188,8 @@ if __name__ == "__main__":
             assert os.path.exists(metadata_path)
             with open(metadata_path) as f:
                 metadata = json.load(f)
-            title = f"Lux Season 2 {args.team_name} Replays"
-            dataset_id = f"sgoodfriend/lux-replays-{args.team_name.lower()}"
+            title = f"Lux Season 2 {team_name} Replays"
+            dataset_id = f"sgoodfriend/lux-replays-{team_name.lower()}"
             if not args.no_preprocess:
                 title += " npz"
                 dataset_id += "-npz"

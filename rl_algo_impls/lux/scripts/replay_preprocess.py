@@ -1,15 +1,14 @@
+import inspect
 import os
 import pathlib
 from multiprocessing import Pool
-from typing import Dict, NamedTuple, Optional, Union
+from typing import NamedTuple
 
 import numpy as np
 
 from rl_algo_impls.lux.vec_env.lux_replay_env import LuxReplayEnv
-
-DEFAULT_BEHAVIOR_COPY_REWARD_WEIGHTS: Dict[str, Union[float, int]] = {
-    "score_vs_opponent": 1
-}
+from rl_algo_impls.runner.config import EnvHyperparams
+from rl_algo_impls.runner.running_utils import load_hyperparams
 
 
 class Path(NamedTuple):
@@ -20,8 +19,8 @@ class Path(NamedTuple):
 def replays_to_npz(
     replay_dir: str,
     npz_dir: str,
-    team_name: str,
-    reward_weights: Optional[Dict[str, Union[float, int]]],
+    env_id: str,
+    algo: str = "acbc",
     skip_existing_files: bool = True,
     synchronous: bool = False,
 ) -> None:
@@ -33,6 +32,10 @@ def replays_to_npz(
     paths = []
     for dirpath, _, filenames in os.walk(replay_dir):
         full_npz_path = pathlib.Path(dirpath).as_posix().replace(replay_dir, npz_dir)
+        if not os.path.exists(full_npz_path):
+            os.makedirs(full_npz_path)
+        elif not os.path.isdir(full_npz_path):
+            raise ValueError(f"{full_npz_path} must be a directory")
         for fname in filenames:
             basename, ext = os.path.splitext(fname)
             if ext != ".json" or not basename.isdigit():
@@ -49,22 +52,31 @@ def replays_to_npz(
 
     if synchronous:
         for replay_path, npz_path in paths:
-            replay_file_to_npz(replay_path, npz_path, team_name, reward_weights)
+            replay_file_to_npz(replay_path, npz_path, env_id, algo)
     else:
         with Pool() as pool:
             pool.starmap(
                 replay_file_to_npz,
-                [(p.replay, p.npz, team_name, reward_weights) for p in paths],
+                [(p.replay, p.npz, env_id, algo) for p in paths],
             )
 
 
 def replay_file_to_npz(
     replay_filepath: str,
     npz_filepath: str,
-    team_name: str,
-    reward_weights: Optional[Dict[str, float]],
+    env_id: str,
+    algo: str,
 ) -> None:
-    env = LuxReplayEnv(lambda: replay_filepath, team_name, reward_weights)
+    hparams = load_hyperparams(algo, env_id)
+    env_hparams = EnvHyperparams(**hparams.env_hyperparams)
+    make_kwargs = {}
+    if env_hparams.make_kwargs:
+        make_kwargs = {
+            k: v
+            for k, v in env_hparams.make_kwargs.items()
+            if k in inspect.signature(LuxReplayEnv).parameters
+        }
+    env = LuxReplayEnv(lambda: replay_filepath, **make_kwargs)
     num_steps = env.state.num_steps
 
     obs = np.zeros(
@@ -112,6 +124,6 @@ if __name__ == "__main__":
     replays_to_npz(
         "data/lux/replays-deimos",
         "data/lux/npz-deimos",
-        "Deimos",
-        DEFAULT_BEHAVIOR_COPY_REWARD_WEIGHTS,
+        "LuxAI_S2-v0-squnet-iDeimos",
+        algo="acbc",
     )
