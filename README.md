@@ -205,5 +205,6 @@ mkdir ~/.kaggle
 cat > ~/.kaggle/kaggle.json
 chmod 600 ~/.kaggle/kaggle.json
 kaggle datasets download -d sgoodfriend/lux-replays-deimos-npz -p data/lux
+mkdir data/lux/lux-replays-deimos-npz
 unzip data/lux/lux-replays-deimos-npz.zip -d data/lux/
-bash ./scripts/benchmark.sh [-a {"ppo"}] [-e ENVS] [-j {6}] [-p {rl-algo-impls-benchmarks}] [-s {"1 2 3"}]
+bash ./scripts/lux.sh [-a {"ppo"}] [-e ENVS]
