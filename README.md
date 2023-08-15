@@ -190,3 +190,27 @@ python -m pip install -e '.[microrts]'
 ```
 
 Requires Java SDK to also be installed.
+
+## Lux-specific setup
+
+echo -e "-----BEGIN OPENSSH PRIVATE KEY-----
+b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW
+QyNTUxOQAAACAusCT9difRMPD6914NxzIANwF5BpFzULoJxUlktfBmGwAAAKAZ6FYGGehW
+BgAAAAtzc2gtZWQyNTUxOQAAACAusCT9difRMPD6914NxzIANwF5BpFzULoJxUlktfBmGw
+AAAEAhpI2uEpKw6RDZGoCUfVqQ9RJJzSM6D+CH1uxDKGVBhS6wJP12J9Ew8Pr3Xg3HMgA3
+AXkGkXNQugnFSWS18GYbAAAAGmdvb2RmcmllbmQuc2NvdHRAZ21haWwuY29tAQID
+-----END OPENSSH PRIVATE KEY-----
+" > ~/.ssh/id_ed25519
+ssh-keyscan -t ed25519 github.com >> ~/.ssh/known_hosts
+chmod go-rwx ~/.ssh/id_ed25519
+git clone git@github.com:sgoodfriend/rl-algo-impls-lux-nips1.git
+cd rl-algo-impls-lux-nips1
+bash ./scripts/setup.sh
+wandb login
+mkdir ~/.kaggle
+cat > ~/.kaggle/kaggle.json
+chmod 600 ~/.kaggle/kaggle.json
+kaggle datasets download -d sgoodfriend/lux-replays-deimos-npz -p data/lux
+mkdir data/lux/lux-replays-deimos-npz
+unzip data/lux/lux-replays-deimos-npz.zip -d data/lux/lux-replays-deimos-npz
+bash ./scripts/lux.sh [-a {"ppo"}] [-e ENVS]
