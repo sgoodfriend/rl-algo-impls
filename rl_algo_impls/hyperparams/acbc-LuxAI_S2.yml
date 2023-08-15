@@ -2,11 +2,11 @@ LuxAI_S2-v0-squnet-iDeimos: &lux-squnet-ideimos
   env_id: LuxAI_S2-v0
   n_timesteps: !!float 40e6
   additional_keys_to_log: ["results", "stats"]
-  env_hyperparams:
+  env_hyperparams: &lux-squnet-idemios-env
     env_type: lux
     vec_env_class: replay
     n_envs: 24
-    make_kwargs: &lux-env-make-defaults
+    make_kwargs: &lux-squnet-idemios-env-make-defaults
       replay_dir: data/lux/lux-replays-deimos-npz
       team_name: Deimos
       reward_weights:
@@ -64,6 +64,15 @@ LuxAI_S2-v0-squnet-iDeimos: &lux-squnet-ideimos
     max_grad_norm: 0.5
     gradient_accumulation: true
     scale_loss_by_num_actions: true
+
+LuxAI_S2-v0-squnet-flg: &lux-squnet-flg
+  <<: *lux-squnet-ideimos
+  env_hyperparams:
+    <<: *lux-squnet-idemios-env
+    make_kwargs:
+      <<: *lux-squnet-idemios-env-make-defaults
+      replay_dir: data/lux/lux-replays-flg-npz
+      team_name: flg
 
 LuxAI_S2-v0-debug:
   <<: *lux-squnet-ideimos

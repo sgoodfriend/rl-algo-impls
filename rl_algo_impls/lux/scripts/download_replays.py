@@ -146,6 +146,7 @@ if __name__ == "__main__":
     parser.set_defaults(
         # upload_to_kaggle=True,
         # num_latest_submissions=3,
+        # env_id="LuxAI_S2-v0-squnet-flg",
         skip_download=True,
         force_preprocess=True,
         # preprocess_synchronous=True,
