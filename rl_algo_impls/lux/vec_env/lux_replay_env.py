@@ -192,8 +192,11 @@ def from_lux_action(
     if "bid" in lux_action:
         # TODO: Handle bid action
         return action
+    factory_placement_turn = my_turn_to_place_factory(
+        game_state.teams[player].place_first, game_state.env_steps
+    )
     # Factory placement action
-    if "spawn" in lux_action:
+    if factory_placement_turn and "spawn" in lux_action:
         assert isinstance(lux_action["spawn"], list)
         pos = np.array(lux_action["spawn"])
         spawn_action = pos_to_idx(pos, map_size)
@@ -210,9 +213,7 @@ def from_lux_action(
         return action
     # Bid or factory placement phase. No unit or factory actions.
     if game_state.real_env_steps < 0:
-        assert not my_turn_to_place_factory(
-            game_state.teams[player].place_first, game_state.env_steps
-        )
+        assert not factory_placement_turn
         return action
     factory_actions = {}
     unit_actions = {}
