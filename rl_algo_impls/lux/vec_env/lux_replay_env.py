@@ -29,6 +29,7 @@ class LuxReplayEnv(Env):
         team_name: str,
         reward_weights: Optional[Dict[str, float]] = None,
         verify: bool = False,
+        factory_ice_distance_buffer: Optional[int] = None,
     ) -> None:
         super().__init__()
         self.next_replay_path_fn = next_replay_path_fn
@@ -39,6 +40,7 @@ class LuxReplayEnv(Env):
             else LuxRewardWeights(**reward_weights)
         )
         self.verify = verify
+        self.factory_ice_distance_buffer = factory_ice_distance_buffer
 
         self.state = LuxReplayState(self.next_replay_path_fn(), self.team_name)
         obs_state_dict, game_state, enqueued_actions, player = self.state.reset(
@@ -74,7 +76,7 @@ class LuxReplayEnv(Env):
             game_state,
             self.action_mask_shape,
             enqueued_actions,
-            factory_ice_distance_buffer=None,
+            factory_ice_distance_buffer=self.factory_ice_distance_buffer,
         )
 
         single_obs_shape = obs.shape
@@ -141,7 +143,7 @@ class LuxReplayEnv(Env):
             game_state,
             self.action_mask_shape,
             enqueued_actions,
-            factory_ice_distance_buffer=None,
+            factory_ice_distance_buffer=self.factory_ice_distance_buffer,
         )
         return obs
 

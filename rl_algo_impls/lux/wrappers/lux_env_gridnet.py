@@ -28,6 +28,7 @@ class LuxEnvGridnet(Wrapper):
         bid_std_dev: float = 5,
         reward_weights: Optional[Dict[str, float]] = None,
         verify: bool = False,
+        factory_ice_distance_buffer: Optional[int] = None,
     ) -> None:
         super().__init__(env)
         self.bid_std_dev = bid_std_dev
@@ -36,6 +37,7 @@ class LuxEnvGridnet(Wrapper):
         else:
             self.reward_weights = LuxRewardWeights(**reward_weights)
         self.verify = verify
+        self.factory_ice_distance_buffer = factory_ice_distance_buffer
         self.map_size = self.unwrapped.env_cfg.map_size
 
         self.stats = StatsTracking()
@@ -127,7 +129,7 @@ class LuxEnvGridnet(Wrapper):
                 self.env.state,
                 self.action_mask_shape,
                 self._enqueued_actions,
-                factory_ice_distance_buffer=0,
+                factory_ice_distance_buffer=self.factory_ice_distance_buffer,
             )
             observations.append(obs)
             action_masks.append(action_mask)

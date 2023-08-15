@@ -271,12 +271,20 @@ LuxAI_S2-v0-squnet-iDeimos: &lux-squnet-ideimos
       <<: *lux-env-make-defaults
       reward_weights:
         - score_vs_opponent: 1
+      factory_ice_distance_buffer: null
     additional_win_loss_reward: true
     score_reward_kwargs: null
     self_play_kwargs:
       <<: *lux-env-self-play
       save_steps: !!float 1e6
       window: 50
+  eval_hyperparams:
+    <<: *lux-eval-defaults
+    env_overrides:
+      <<: *lux-eval-env-overrides
+      make_kwargs:
+        <<: *lux-eval-env-override-make-kwargs
+        factory_ice_distance_buffer: null
   policy_hyperparams: &lux-squnet-ideimos-policy
     <<: *lux-squnet-policy
     additional_critic_activation_functions: [tanh]

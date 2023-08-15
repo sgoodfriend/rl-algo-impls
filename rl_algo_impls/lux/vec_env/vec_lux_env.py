@@ -19,6 +19,7 @@ class VecLuxEnv(VectorEnv):
         bid_std_dev: float = 5,
         reward_weights: Optional[Dict[str, float]] = None,
         verify: bool = False,
+        factory_ice_distance_buffer: Optional[int] = None,
         **kwargs,
     ) -> None:
         assert num_envs % 2 == 0, f"{num_envs} must be even"
@@ -28,6 +29,7 @@ class VecLuxEnv(VectorEnv):
                 bid_std_dev=bid_std_dev,
                 reward_weights=reward_weights,
                 verify=verify,
+                factory_ice_distance_buffer=factory_ice_distance_buffer,
             )
             for _ in range(num_envs // 2)
         ]
