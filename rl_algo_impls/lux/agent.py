@@ -55,6 +55,7 @@ class Agent:
             env,
             device,
             **config.policy_hyperparams,
+            load_path=os.path.join(root_dir, config.policy_hyperparams["load_path"]),
         ).eval()
 
         transpose_wrapper = find_wrapper(env, HwcToChwObservation)
