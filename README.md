@@ -209,8 +209,8 @@ bash ./scripts/setup.sh
 mkdir ~/.kaggle
 cat > ~/.kaggle/kaggle.json
 chmod 600 ~/.kaggle/kaggle.json
-kaggle datasets download -d sgoodfriend/lux-replays-deimos-npz -p data/lux
-mkdir -p data/lux/lux-replays-deimos-npz
-unzip data/lux/lux-replays-deimos-npz.zip -d data/lux/lux-replays-deimos-npz
+kaggle datasets download -d sgoodfriend/lux-replays-flg-npz -p data/lux
+mkdir -p data/lux/lux-replays-flg-npz
+unzip data/lux/lux-replays-flg-npz.zip -d data/lux/lux-replays-flg-npz
 wandb login
 bash ./scripts/lux.sh [-a {"ppo"}] [-e ENVS]
