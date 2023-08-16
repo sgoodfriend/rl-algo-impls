@@ -74,6 +74,15 @@ LuxAI_S2-v0-squnet-flg: &lux-squnet-flg
       replay_dir: data/lux/lux-replays-flg-npz
       team_name: flg
 
+LuxAI_S2-v0-squnet-ry-andy: &lux-squnet-ry-andy
+  <<: *lux-squnet-ideimos
+  env_hyperparams:
+    <<: *lux-squnet-idemios-env
+    make_kwargs:
+      <<: *lux-squnet-idemios-env-make-defaults
+      replay_dir: data/lux/lux-replays-ry_andy_-npz
+      team_name: ry_andy_
+
 LuxAI_S2-v0-debug:
   <<: *lux-squnet-flg
   device: mps

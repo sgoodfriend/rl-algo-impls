@@ -144,11 +144,11 @@ if __name__ == "__main__":
     parser.add_argument("--force-preprocess", action="store_true")
     parser.add_argument("--preprocess-synchronous", action="store_true")
     parser.set_defaults(
-        # upload_to_kaggle=True,
-        # num_latest_submissions=3,
-        # env_id="LuxAI_S2-v0-squnet-flg",
-        skip_download=True,
-        force_preprocess=True,
+        upload_to_kaggle=True,
+        num_latest_submissions=3,
+        env_id="LuxAI_S2-v0-squnet-ry-andy",
+        # skip_download=True,
+        # force_preprocess=True,
         # preprocess_synchronous=True,
     )
     args = parser.parse_args()
