@@ -146,6 +146,7 @@ if __name__ == "__main__":
     parser.set_defaults(
         upload_to_kaggle=True,
         num_latest_submissions=3,
+        # env_id="LuxAI_S2-v0-squnet-flg",
         env_id="LuxAI_S2-v0-squnet-ry-andy",
         # skip_download=True,
         # force_preprocess=True,
@@ -190,7 +191,8 @@ if __name__ == "__main__":
             with open(metadata_path) as f:
                 metadata = json.load(f)
             title = f"Lux Season 2 {team_name} Replays"
-            dataset_id = f"sgoodfriend/lux-replays-{team_name.lower()}"
+            team_name_processed = team_name.replace("_", "-").strip("-")
+            dataset_id = f"sgoodfriend/lux-replays-{team_name_processed}"
             if not args.no_preprocess:
                 title += " npz"
                 dataset_id += "-npz"
