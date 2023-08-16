@@ -2,6 +2,12 @@
 
 Implementations of reinforcement learning algorithms.
 
+- Competitions
+  - [IEEE-CoG2023 MicroRTS
+    competition](https://github.com/sgoodfriend/rl-algo-impls/tree/main/rl_algo_impls/microrts):
+    Technical details in
+    [technical-description.md](https://github.com/sgoodfriend/rl-algo-impls/blob/main/rl_algo_impls/microrts/technical-description.md).
+  - [Lux AI Season 2](https://www.kaggle.com/competitions/lux-ai-season-2/discussion/406791)
 - [WandB benchmark reports](https://wandb.ai/sgoodfriend/rl-algo-impls-benchmarks/reportlist)
   - [Basic, PyBullet, and Atari games
     (v0.0.9)](https://api.wandb.ai/links/sgoodfriend/fdp5mg6h)
