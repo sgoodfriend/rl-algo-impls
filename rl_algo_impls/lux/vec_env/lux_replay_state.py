@@ -85,6 +85,10 @@ class LuxReplayState:
     def num_steps(self) -> int:
         return len(self.replay_dict["steps"])
 
+    @property
+    def successful_ending(self) -> bool:
+        return all(s == "DONE" for s in self.replay_dict["statuses"])
+
     def get_state(self) -> LuxState:
         obs_state_dict: ObservationStateDict = dict(
             units=self.units,

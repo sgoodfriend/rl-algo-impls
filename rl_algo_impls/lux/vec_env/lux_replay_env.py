@@ -161,6 +161,10 @@ class LuxReplayEnv(Env):
     def max_episode_length(self) -> int:
         return self.state.env_cfg.max_episode_length
 
+    @property
+    def successful_ending(self) -> bool:
+        return self.state.successful_ending
+
 
 def from_lux_action(
     action_space: DictSpace,
@@ -188,6 +192,9 @@ def from_lux_action(
             len(action_space["pick_position"].nvec), dtype=np.int32
         ),
     }
+    if lux_action is None:
+        logging.warn(f"lux_action is None. This likely means player errored.")
+        return action
     # Bid action
     if "bid" in lux_action:
         # TODO: Handle bid action

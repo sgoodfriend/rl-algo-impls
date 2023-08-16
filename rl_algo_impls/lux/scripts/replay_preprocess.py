@@ -1,4 +1,5 @@
 import inspect
+import logging
 import os
 import pathlib
 from multiprocessing import Pool
@@ -77,6 +78,10 @@ def replay_file_to_npz(
             if k in inspect.signature(LuxReplayEnv).parameters
         }
     env = LuxReplayEnv(lambda: replay_filepath, **make_kwargs)
+    if not env.successful_ending:
+        logging.warn(f"{replay_filepath} did not end successfully. Skipping")
+        return
+
     num_steps = env.state.num_steps
 
     obs = np.zeros(
