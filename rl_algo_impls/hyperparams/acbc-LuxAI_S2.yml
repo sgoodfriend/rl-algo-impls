@@ -80,7 +80,7 @@ LuxAI_S2-v0-squnet-ry-andy: &lux-squnet-ry-andy
     <<: *lux-squnet-idemios-env
     make_kwargs:
       <<: *lux-squnet-idemios-env-make-defaults
-      replay_dir: data/lux/lux-replays-ry_andy_-npz
+      replay_dir: data/lux/lux-replays-ry-andy-npz
       team_name: ry_andy_
 
 LuxAI_S2-v0-debug:
