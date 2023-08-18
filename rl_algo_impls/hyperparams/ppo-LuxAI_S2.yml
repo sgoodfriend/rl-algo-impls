@@ -291,7 +291,7 @@ LuxAI_S2-v0-squnet-iDeimos: &lux-squnet-ideimos
     <<: *lux-squnet-policy
     additional_critic_activation_functions: [tanh]
     output_activation_fn: tanh
-    load_run_path: sgoodfriend/rl-algo-impls-benchmarks/7ugwzif8
+    load_run_path: sgoodfriend/rl-algo-impls-benchmarks/f5rpfey0
   algo_hyperparams: &lux-squnet-ideimos-algo
     <<: *lux-squnet-algo
     multi_reward_weights: [0.1, 0.9]
