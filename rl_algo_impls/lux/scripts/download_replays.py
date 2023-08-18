@@ -148,6 +148,7 @@ if __name__ == "__main__":
         num_latest_submissions=3,
         # env_id="LuxAI_S2-v0-squnet-flg",
         env_id="LuxAI_S2-v0-squnet-ry-andy",
+        download_limit=5000,
         # skip_download=True,
         # force_preprocess=True,
         # preprocess_synchronous=True,
