@@ -145,7 +145,7 @@ if __name__ == "__main__":
     parser.add_argument("--skip-download", action="store_true")
     parser.add_argument("--force-preprocess", action="store_true")
     parser.add_argument("--preprocess-synchronous", action="store_true")
-    parser.add_argument("--dataset-id-prefix", action="lux-replays-")
+    parser.add_argument("--dataset-id-prefix", action="lux-replays")
     parser.add_argument("--dataset-title-prefix", action="Lux Season 2")
     parser.set_defaults(
         upload_to_kaggle=True,
