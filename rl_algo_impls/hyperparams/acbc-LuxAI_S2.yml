@@ -83,6 +83,15 @@ LuxAI_S2-v0-squnet-ry-andy: &lux-squnet-ry-andy
       replay_dir: data/lux/lux-replays-ry_andy_-npz
       team_name: ry_andy_
 
+LuxAI_S2-v0-squnet-tigga: &lux-squnet-tigga
+  <<: *lux-squnet-ideimos
+  env_hyperparams:
+    <<: *lux-squnet-idemios-env
+    make_kwargs:
+      <<: *lux-squnet-idemios-env-make-defaults
+      replay_dir: data/lux/lux-replays-tigga-npz
+      team_name: Tigga
+
 LuxAI_S2-v0-debug:
   <<: *lux-squnet-flg
   device: mps
