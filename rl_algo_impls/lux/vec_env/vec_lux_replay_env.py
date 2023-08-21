@@ -1,3 +1,4 @@
+import logging
 import os
 from typing import Dict, Optional
 
@@ -39,6 +40,14 @@ class VecLuxReplayEnv(VectorEnv):
                 self.replay_paths.append(os.path.join(dirpath, fname))
         self.next_replay_idx = 0
         self.replay_idx_permutation = np.random.permutation(len(self.replay_paths))
+
+        try:
+            import wandb
+
+            if wandb.run:
+                wandb.run.summary["num_replays"] = len(self.replay_paths)
+        except ImportError:
+            logging.warn("No wandb package. Not recording num_replays")
 
         if self.is_npz_dir:
             import ray
