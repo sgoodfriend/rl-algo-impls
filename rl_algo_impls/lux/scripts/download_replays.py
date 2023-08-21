@@ -135,14 +135,18 @@ if __name__ == "__main__":
     parser.add_argument("-e", "--env-id", default="LuxAI_S2-v0-squnet-iDeimos")
     parser.add_argument("-a", "--algo", default="acbc")
     parser.add_argument("-d", "--after-date", default="2023-04-01")
-    parser.add_argument("--num-latest-submissions", default=None)
-    parser.add_argument("-s", "--score-threshold", default=SCORE_THRESHOLD)
-    parser.add_argument("-l", "--download-limit", default=REPLAY_DOWNLOAD_LIMIT)
+    parser.add_argument("--num-latest-submissions", default=None, type=int)
+    parser.add_argument("-s", "--score-threshold", default=SCORE_THRESHOLD, type=int)
+    parser.add_argument(
+        "-l", "--download-limit", default=REPLAY_DOWNLOAD_LIMIT, type=int
+    )
     parser.add_argument("-P", "--no-preprocess", action="store_true")
     parser.add_argument("-k", "--upload_to_kaggle", action="store_true")
     parser.add_argument("--skip-download", action="store_true")
     parser.add_argument("--force-preprocess", action="store_true")
     parser.add_argument("--preprocess-synchronous", action="store_true")
+    parser.add_argument("--dataset-id-prefix", action="lux-replays-")
+    parser.add_argument("--dataset-title-prefix", action="Lux Season 2")
     parser.set_defaults(
         upload_to_kaggle=True,
         num_latest_submissions=3,
@@ -191,9 +195,9 @@ if __name__ == "__main__":
             assert os.path.exists(metadata_path)
             with open(metadata_path) as f:
                 metadata = json.load(f)
-            title = f"Lux Season 2 {team_name} Replays"
+            title = f"{args.dataset_title_prefix} {team_name} Replays"
             team_name_processed = team_name.replace("_", "-").strip("-")
-            dataset_id = f"sgoodfriend/lux-replays-{team_name_processed}"
+            dataset_id = f"sgoodfriend/{args.dataset_id_prefix}-{team_name_processed}"
             if not args.no_preprocess:
                 title += " npz"
                 dataset_id += "-npz"
