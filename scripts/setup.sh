@@ -12,4 +12,5 @@ git lfs pull
 python3 -m pip install --upgrade pip
 pip install --upgrade torch torchvision torchaudio
 
-python -m pip install -e --upgrade '.[all]'
+python -m pip install --upgrade '.[all]'
+python -m pip install -e .
