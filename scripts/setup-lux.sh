@@ -10,7 +10,7 @@ chmod 600 ~/.kaggle/kaggle.json
 
 bash ./scripts/setup.sh
 
-kaggle datasets download -d sgoodfriend/lux-replays-flg-npz -p data/lux
-mkdir -p data/lux/lux-replays-flg-npz
-unzip data/lux/lux-replays-flg-npz.zip -d data/lux/lux-replays-flg-npz
+# kaggle datasets download -d sgoodfriend/lux-replays-flg-npz -p data/lux
+# mkdir -p data/lux/lux-replays-flg-npz
+# unzip data/lux/lux-replays-flg-npz.zip -d data/lux/lux-replays-flg-npz
 wandb login
