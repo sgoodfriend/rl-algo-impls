@@ -1436,7 +1436,7 @@ Microrts-squnet-d16-128-map64-BC-finetune:
       num_old_policies: 12
   policy_hyperparams:
     <<: *microrts-squnet-d16-128-imayari-policy
-    load_path: downloaded_models/acbc-Microrts-squnet-d16-128-iMayari-map64-from32-S1-best
+    load_run_path: sgoodfriend/rl-algo-impls-microrts-2023/9yrvchxe
   eval_hyperparams: &microrts-squnet-d16-128-map64-bc-finetune-eval
     <<: *microrts-squnet-map64-eval-defaults
   algo_hyperparams: &microrts-squnet-d16-128-map64-bc-finetune-algo
@@ -1445,6 +1445,7 @@ Microrts-squnet-d16-128-map64-BC-finetune:
     gradient_accumulation: true
     gamma: 0.99983
     gae_lambda: 0.9983
+    vf_coef: 0.2
   hyperparam_transitions_kwargs:
     interpolate_method: cosine
     phases:
