@@ -13,6 +13,7 @@ from rl_algo_impls.wrappers.vectorable_wrapper import VecEnv
 
 ALGO_SET_NAMES = {"gae_lambda", "multi_reward_weights", "vf_coef"}
 ALGO_SET_SCHEDULE_NAMES = {"gamma", "ent_coef", "learning_rate"}
+ALGO_BOOL_NAMES = {"freeze_policy_head", "freeze_value_head", "freeze_backbone"}
 
 LUX_REWARD_WEIGHTS_NAME = "reward_weights"
 
@@ -86,6 +87,9 @@ class HyperparamTransitions(Callback):
             elif k in ALGO_SET_NAMES:
                 assert hasattr(self.algo, k)
                 setattr(self.algo, k, num_or_array(v))
+            elif k in ALGO_BOOL_NAMES:
+                assert hasattr(self.algo, k)
+                setattr(self.algo, k, v)
             elif k == LUX_REWARD_WEIGHTS_NAME:
                 assert hasattr(self.env, k)
                 setattr(self.env.unwrapped, k, LuxRewardWeights(**v))
@@ -132,6 +136,9 @@ class HyperparamTransitions(Callback):
                         self.interpolate_method,
                     ),
                 )
+            elif k in ALGO_BOOL_NAMES:
+                assert hasattr(self.algo, k)
+                setattr(self.algo, k, old_v)
             elif k == LUX_REWARD_WEIGHTS_NAME:
                 assert hasattr(self.env, k)
                 setattr(

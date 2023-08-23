@@ -111,3 +111,16 @@ class SeparateActorCriticNetwork(ActorCriticNetwork):
     @property
     def action_shape(self) -> Tuple[int, ...]:
         return self._pi.action_shape
+
+    def freeze(
+        self,
+        freeze_policy_head: bool,
+        freeze_value_head: bool,
+        freeze_backbone: bool = True,
+    ) -> None:
+        for p in self._pi.parameters():
+            p.requires_grad = not freeze_policy_head
+        for p in self._v.parameters():
+            p.requires_grad = not freeze_value_head
+        for p in self._feature_extractor.parameters():
+            p.requires_grad = not freeze_backbone

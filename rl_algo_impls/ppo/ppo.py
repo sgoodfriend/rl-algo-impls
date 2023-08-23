@@ -117,6 +117,9 @@ class PPO(Algorithm):
         gradient_accumulation: bool = False,
         kl_cutoff: Optional[float] = None,
         scale_loss_by_num_actions: bool = False,
+        freeze_policy_head: bool = False,
+        freeze_value_head: bool = False,
+        freeze_backbone: bool = False,
     ) -> None:
         super().__init__(policy, device, tb_writer)
         self.policy = policy
@@ -150,6 +153,10 @@ class PPO(Algorithm):
         self.gradient_accumulation = gradient_accumulation
         self.kl_cutoff = kl_cutoff
         self.scale_loss_by_num_actions = scale_loss_by_num_actions
+
+        self.freeze_policy_head = freeze_policy_head
+        self.freeze_value_head = freeze_value_head
+        self.freeze_backbone = freeze_backbone
 
     def learn(
         self: PPOSelf,
@@ -201,6 +208,16 @@ class PPO(Algorithm):
             )
             vf_coef = torch.Tensor(np.array(self.vf_coef)).to(self.device)
             pi_coef = 1
+            if (
+                self.freeze_policy_head
+                or self.freeze_value_head
+                or self.freeze_backbone
+            ):
+                self.policy.freeze(
+                    self.freeze_policy_head,
+                    self.freeze_value_head,
+                    self.freeze_backbone,
+                )
             for e in range(self.n_epochs):
                 # Only record last epoch's stats
                 step_stats.clear()
@@ -303,6 +320,12 @@ class PPO(Algorithm):
                     )
                 if self.gradient_accumulation:
                     self.optimizer_step()
+            if (
+                self.freeze_policy_head
+                or self.freeze_value_head
+                or self.freeze_backbone
+            ):
+                self.policy.unfreeze()
 
             var_y = np.var(r.y_true).item()
             explained_var = (

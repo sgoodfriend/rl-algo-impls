@@ -310,3 +310,16 @@ class ActorCritic(OnPolicy):
     @property
     def value_shape(self) -> Tuple[int, ...]:
         return self.network.value_shape
+
+    def freeze(
+        self,
+        freeze_policy_head: bool,
+        freeze_value_head: bool,
+        freeze_backbone: bool = True,
+    ) -> None:
+        self.network.freeze(
+            freeze_policy_head, freeze_value_head, freeze_backbone=freeze_backbone
+        )
+
+    def unfreeze(self) -> None:
+        self.network.unfreeze()

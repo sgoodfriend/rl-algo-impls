@@ -56,6 +56,18 @@ class ActorCriticNetwork(nn.Module, ABC):
     def value_shape(self) -> Tuple[int, ...]:
         return ()
 
+    @abstractmethod
+    def freeze(
+        self,
+        freeze_policy_head: bool,
+        freeze_value_head: bool,
+        freeze_backbone: bool = True,
+    ) -> None:
+        ...
+
+    def unfreeze(self):
+        self.freeze(False, False, freeze_backbone=False)
+
 
 def default_hidden_sizes(obs_space: Space) -> Sequence[int]:
     if isinstance(obs_space, Box):

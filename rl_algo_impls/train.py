@@ -34,7 +34,7 @@ def train() -> None:
         "--virtual-display", action="store_true", help="Use headless virtual display"
     )
     parser.set_defaults(
-        algo=["acbc"],
+        algo=["ppo"],
         # env=["CartPole-v1"],
         # env=["Microrts-debug"],
         env=["LuxAI_S2-v0-debug"],

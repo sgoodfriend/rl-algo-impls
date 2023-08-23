@@ -218,6 +218,31 @@ class UNetActorCriticNetwork(ActorCriticNetwork):
         else:
             return ()
 
+    def freeze(
+        self,
+        freeze_policy_head: bool,
+        freeze_value_head: bool,
+        freeze_backbone: bool = True,
+    ) -> None:
+        for p in self.out.parameters():
+            p.requires_grad = not freeze_policy_head
+        for p in self.critic_heads.parameters():
+            p.requires_grad = not freeze_value_head
+        for layer in (
+            self._preprocess,
+            self.enc1,
+            self.enc2,
+            self.enc3,
+            self.enc4,
+            self.enc5,
+            self.dec4,
+            self.dec3,
+            self.dec2,
+            self.dec1,
+        ):
+            for p in layer.parameters():
+                p.requires_grad = not freeze_backbone
+
 
 def max_pool() -> nn.MaxPool2d:
     return nn.MaxPool2d(3, stride=2, padding=1)

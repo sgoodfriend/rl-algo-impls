@@ -304,18 +304,36 @@ LuxAI_S2-v0-squnet-iDeimos: &lux-squnet-ideimos
   hyperparam_transitions_kwargs: &lux-squnet-ideimos-hyperparam-transitions
     interpolate_method: cosine
     phases:
+      - ent_coef: 0
+        learning_rate: !!float 1e-5
+        freeze_policy_head: true
+        freeze_backbone: true
+      - ent_coef: 0
+        learning_rate: !!float 5e-5
+        freeze_policy_head: true
+        freeze_backbone: true
       - ent_coef: 0.001
-        learning_rate: !!float 5e-6
+        learning_rate: !!float 1e-5
+        freeze_policy_head: false
+        freeze_backbone: false
       - ent_coef: 0.001
         learning_rate: !!float 5e-5
+        freeze_policy_head: false
+        freeze_backbone: false
       - ent_coef: 0.0001
         learning_rate: !!float 1e-5
+        freeze_policy_head: false
+        freeze_backbone: false
     durations:
       - 0
-      - 0.15
+      - 0.1
+      - 0
+      - 0
+      - 0
+      - 0.1
       - 0.4
       - 0.3
-      - 0.15
+      - 0.1
 
 LuxAI_S2-agent: &lux-agent
   <<: *lux-squnet-ideimos
@@ -344,11 +362,3 @@ LuxAI_S2-v0-debug:
       <<: *lux-squnet-ideimos-env-make-kwargs
       verbose: 3
       verify: true
-  hyperparam_transitions_kwargs:
-    <<: *lux-squnet-ideimos-hyperparam-transitions
-    durations:
-      - 0.05
-      - 0.05
-      - 0.05
-      - 0.05
-      - 0.8

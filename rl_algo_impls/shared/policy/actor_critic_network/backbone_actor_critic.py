@@ -202,3 +202,16 @@ class BackboneActorCritic(ActorCriticNetwork):
             return (len(self.critic_heads),)
         else:
             return ()
+
+    def freeze(
+        self,
+        freeze_policy_head: bool,
+        freeze_value_head: bool,
+        freeze_backbone: bool = True,
+    ) -> None:
+        for p in self.actor_head.parameters():
+            p.requires_grad = not freeze_policy_head
+        for p in self.critic_heads.parameters():
+            p.requires_grad = not freeze_value_head
+        for p in self.backbone.parameters():
+            p.requires_grad = not freeze_backbone
