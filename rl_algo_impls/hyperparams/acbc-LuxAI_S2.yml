@@ -92,6 +92,15 @@ LuxAI_S2-v0-squnet-Tigga: &lux-squnet-tigga
       replay_dir: data/lux/lux-replays-tigga-npz
       team_name: Tigga
 
+LuxAI_S2-v0-squnet-SiestaGuru: &lux-squnet-siestaguru
+  <<: *lux-squnet-ideimos
+  env_hyperparams:
+    <<: *lux-squnet-idemios-env
+    make_kwargs:
+      <<: *lux-squnet-idemios-env-make-defaults
+      replay_dir: data/lux/lux-replays-siestaguru-npz
+      team_name: SiestaGuru
+
 LuxAI_S2-v0-debug:
   <<: *lux-squnet-flg
   device: mps
