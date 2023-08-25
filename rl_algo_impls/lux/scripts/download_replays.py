@@ -148,7 +148,7 @@ if __name__ == "__main__":
     parser.add_argument("--dataset-id-prefix", default="lux-replays")
     parser.add_argument("--dataset-title-prefix", default="Lux Season 2")
     parser.set_defaults(
-        upload_to_kaggle=True,
+        # upload_to_kaggle=True,
         # num_latest_submissions=3,
         # env_id="LuxAI_S2-v0-squnet-flg",
         # env_id="LuxAI_S2-v0-squnet-ry-andy",
