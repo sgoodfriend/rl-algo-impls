@@ -105,7 +105,10 @@ def get_team_submission_ids(
 def get_submission_episode_agents(
     meta_kaggle_dir: str, submission_ids: List[int]
 ) -> pd.DataFrame:
-    ep_agents_pldf = pl.read_csv(os.path.join(meta_kaggle_dir, "EpisodeAgents.csv"))
+    ep_agents_pldf = pl.read_csv(
+        os.path.join(meta_kaggle_dir, "EpisodeAgents.csv"),
+        dtypes={"Reward": pl.Float32},
+    )
     ep_agents_pldf = ep_agents_pldf.filter(pl.col("SubmissionId").is_in(submission_ids))
     ep_agents_df = ep_agents_pldf.to_pandas()
     print(f"{len(ep_agents_df)} episode agents")
