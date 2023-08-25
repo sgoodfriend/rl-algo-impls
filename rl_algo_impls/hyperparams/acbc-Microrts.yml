@@ -221,8 +221,8 @@ Microrts-squnet-d16-128-iMayari-map64: &microrts-squnet-d16-128-imayari-map64
     <<: *microrts-squnet-d16-128-imayari-map32-algo
     batch_size: 192
     gradient_accumulation: true
-    gamma: 0.99983
-    gae_lambda: 0.9983
+    gamma: 0.9999
+    gae_lambda: 0.999
 
 Microrts-squnet-d16-128-iMayari-map64-from32:
   &microrts-squnet-d16-128-imayari-map64-from32
