@@ -1,8 +1,8 @@
 # Support for PyTorch mps mode (https://pytorch.org/docs/stable/notes/mps.html)
 import os
 
-from rl_algo_impls.ppo.reference_ai_rollout import ReferenceAIRolloutGenerator
-from rl_algo_impls.ppo.sync_step_rollout import SyncStepRolloutGenerator
+from rl_algo_impls.rollout.reference_ai_rollout import ReferenceAIRolloutGenerator
+from rl_algo_impls.rollout.sync_step_rollout import SyncStepRolloutGenerator
 from rl_algo_impls.shared.callbacks.self_play_callback import SelfPlayCallback
 
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"

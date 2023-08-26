@@ -3,8 +3,8 @@ from typing import Dict, Optional
 import numpy as np
 import torch
 
-from rl_algo_impls.ppo.rollout import Rollout
-from rl_algo_impls.ppo.sync_step_rollout import SyncStepRolloutGenerator, fold_in
+from rl_algo_impls.rollout.rollout import Rollout
+from rl_algo_impls.rollout.sync_step_rollout import SyncStepRolloutGenerator, fold_in
 from rl_algo_impls.shared.policy.actor_critic import ActorCritic
 from rl_algo_impls.shared.tensor_utils import (
     NumOrArray,

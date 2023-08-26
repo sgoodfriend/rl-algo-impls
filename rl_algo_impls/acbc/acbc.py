@@ -11,7 +11,7 @@ from torch.utils.tensorboard.writer import SummaryWriter
 
 from rl_algo_impls.acbc.train_stats import TrainStats
 from rl_algo_impls.ppo.ppo import NL
-from rl_algo_impls.ppo.rollout import RolloutGenerator
+from rl_algo_impls.rollout.rollout import RolloutGenerator
 from rl_algo_impls.shared.algorithm import Algorithm
 from rl_algo_impls.shared.callbacks.callback import Callback
 from rl_algo_impls.shared.policy.actor_critic import ActorCritic

@@ -2,7 +2,7 @@ from typing import Dict, Optional, TypeVar
 
 import numpy as np
 
-from rl_algo_impls.ppo.rollout import Rollout, RolloutGenerator
+from rl_algo_impls.rollout.rollout import Rollout, RolloutGenerator
 from rl_algo_impls.shared.policy.actor_critic import ActorCritic
 from rl_algo_impls.shared.tensor_utils import NumOrArray, batch_dict_keys
 from rl_algo_impls.wrappers.vectorable_wrapper import (

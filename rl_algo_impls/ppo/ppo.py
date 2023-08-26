@@ -9,7 +9,7 @@ import torch.nn as nn
 from torch.optim import Adam
 from torch.utils.tensorboard.writer import SummaryWriter
 
-from rl_algo_impls.ppo.rollout import RolloutGenerator
+from rl_algo_impls.rollout.rollout import RolloutGenerator
 from rl_algo_impls.shared.algorithm import Algorithm
 from rl_algo_impls.shared.callbacks import Callback
 from rl_algo_impls.shared.policy.actor_critic import ActorCritic
