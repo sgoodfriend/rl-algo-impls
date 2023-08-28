@@ -1,6 +1,7 @@
 # Support for PyTorch mps mode (https://pytorch.org/docs/stable/notes/mps.html)
 import os
 
+from rl_algo_impls.rollout.guided_learner_rollout import GuidedLearnerRolloutGenerator
 from rl_algo_impls.rollout.reference_ai_rollout import ReferenceAIRolloutGenerator
 from rl_algo_impls.rollout.sync_step_rollout import SyncStepRolloutGenerator
 from rl_algo_impls.shared.callbacks.self_play_callback import SelfPlayCallback
@@ -131,11 +132,24 @@ def train(args: TrainArgs):
     if self_play_wrapper:
         callbacks.append(SelfPlayCallback(policy, self_play_wrapper))
 
+    rollout_hyperparams = {
+        **config.rollout_hyperparams,
+        "subaction_mask": config.policy_hyperparams.get("subaction_mask", None),
+    }
     if config.rollout_type:
         if config.rollout_type == "sync":
             rollout_generator_cls = SyncStepRolloutGenerator
         elif config.rollout_type == "reference":
             rollout_generator_cls = ReferenceAIRolloutGenerator
+        elif config.rollout_type == "guided":
+            rollout_generator_cls = GuidedLearnerRolloutGenerator
+            guide_policy_hyperparams = {
+                **config.policy_hyperparams,
+                **rollout_hyperparams.get("guide_policy", {}),
+            }
+            rollout_hyperparams["guide_policy"] = make_policy(
+                config, env, device, **guide_policy_hyperparams
+            )
         else:
             raise ValueError(f"{config.rollout_type} not recognized rollout_type")
     else:
@@ -144,8 +158,7 @@ def train(args: TrainArgs):
     rollout_generator = rollout_generator_cls(
         policy,
         env,
-        subaction_mask=config.policy_hyperparams.get("subaction_mask", None),
-        **config.rollout_hyperparams,
+        **rollout_hyperparams,
     )
     algo.learn(config.n_timesteps, rollout_generator, callbacks=callbacks)
 

@@ -1502,6 +1502,14 @@ Microrts-squnet-d16-128-map64-BC-finetune-A10:
     <<: *microrts-squnet-d16-128-map64-bc-finetune-algo
     batch_size: 192
 
+Microrts-squnet-d16-128-map64-guided-finetune:
+  &microrts-squnet-d16-128-map64-guided-finetune
+  <<: *microrts-squnet-d16-128-map64-bc-finetune-a10
+  rollout_type: guided
+  rollout_hyperparams:
+    <<: *microrts-squnet-d16-128-map32-bc-finetune-rollout
+    switch_range: 3000
+
 Microrts-squnet-d16-128-map16-sc-cos-ga-selfplay-a10:
   &microrts-squnet-d16-128-map16-sc-cos-ga-selfplay-a10
   <<: *microrts-squnet-d16-128-sc-cos-ga-selfplay-a10
@@ -1548,7 +1556,7 @@ Microrts-agent: &microrts-agent
         #   use_paper_obs: true
 
 Microrts-debug: &microrts-debug-defaults
-  <<: *microrts-squnet-d16-128-map64-bc-finetune-sl-norm-adv
+  <<: *microrts-squnet-d16-128-map64-guided-finetune
   device: mps
   eval_hyperparams:
     <<: *microrts-squnet-d16-128-map64-bc-finetune-eval

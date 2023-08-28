@@ -36,8 +36,8 @@ def train() -> None:
     parser.set_defaults(
         algo=["ppo"],
         # env=["CartPole-v1"],
-        # env=["Microrts-debug"],
-        env=["LuxAI_S2-v0-debug"],
+        env=["Microrts-debug"],
+        # env=["LuxAI_S2-v0-debug"],
         seed=[1],
         pool_size=3,
         # wandb_project_name=None,
