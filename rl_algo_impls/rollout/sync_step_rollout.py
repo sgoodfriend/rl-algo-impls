@@ -2,7 +2,8 @@ from typing import Dict, Optional, TypeVar
 
 import numpy as np
 
-from rl_algo_impls.rollout.rollout import Rollout, RolloutGenerator
+from rl_algo_impls.rollout.vec_rollout import VecRollout
+from rl_algo_impls.rollout.rollout import RolloutGenerator
 from rl_algo_impls.shared.policy.actor_critic import ActorCritic
 from rl_algo_impls.shared.tensor_utils import NumOrArray, batch_dict_keys
 from rl_algo_impls.wrappers.vectorable_wrapper import (
@@ -32,6 +33,7 @@ class SyncStepRolloutGenerator(RolloutGenerator):
         self.scale_advantage_by_values_accuracy = scale_advantage_by_values_accuracy
         self.full_batch_off_accelerator = full_batch_off_accelerator
         self.include_logp = include_logp
+        self.subaction_mask = subaction_mask
 
         self.get_action_mask = getattr(vec_env, "get_action_mask", None)
         if self.get_action_mask:
@@ -58,7 +60,6 @@ class SyncStepRolloutGenerator(RolloutGenerator):
         self.logprobs = (
             np.zeros(epoch_dim, dtype=np.float32) if self.include_logp else None
         )
-        self.subaction_mask = subaction_mask
 
         if isinstance(act_shape, dict):
             self.actions = {
@@ -87,7 +88,9 @@ class SyncStepRolloutGenerator(RolloutGenerator):
                 else None
             )
 
-    def rollout(self, gamma: NumOrArray, gae_lambda: NumOrArray) -> Rollout:
+    def rollout(
+        self, gamma: NumOrArray, gae_lambda: NumOrArray, **kwargs
+    ) -> VecRollout:
         self.policy.eval()
         self.policy.reset_noise()
         for s in range(self.n_steps):
@@ -122,7 +125,7 @@ class SyncStepRolloutGenerator(RolloutGenerator):
 
         self.policy.train()
         assert isinstance(self.next_obs, np.ndarray)
-        return Rollout(
+        return VecRollout(
             next_episode_starts=self.next_episode_starts,
             next_values=next_values,
             obs=self.obs,

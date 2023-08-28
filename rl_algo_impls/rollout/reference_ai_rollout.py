@@ -3,7 +3,7 @@ from typing import Dict, Optional
 import numpy as np
 import torch
 
-from rl_algo_impls.rollout.rollout import Rollout
+from rl_algo_impls.rollout.vec_rollout import VecRollout
 from rl_algo_impls.rollout.sync_step_rollout import SyncStepRolloutGenerator, fold_in
 from rl_algo_impls.shared.policy.actor_critic import ActorCritic
 from rl_algo_impls.shared.tensor_utils import (
@@ -17,7 +17,9 @@ from rl_algo_impls.wrappers.vectorable_wrapper import VecEnv
 
 
 class ReferenceAIRolloutGenerator(SyncStepRolloutGenerator):
-    def rollout(self, gamma: NumOrArray, gae_lambda: NumOrArray) -> Rollout:
+    def rollout(
+        self, gamma: NumOrArray, gae_lambda: NumOrArray, **kwargs
+    ) -> VecRollout:
         self.policy.eval()
         self.policy.reset_noise()
         for s in range(self.n_steps):
@@ -52,7 +54,7 @@ class ReferenceAIRolloutGenerator(SyncStepRolloutGenerator):
 
         self.policy.train()
         assert isinstance(self.next_obs, np.ndarray)
-        return Rollout(
+        return VecRollout(
             next_episode_starts=self.next_episode_starts,
             next_values=next_values,
             obs=self.obs,

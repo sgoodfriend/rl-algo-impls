@@ -1,13 +1,12 @@
 from abc import ABC, abstractmethod
 from dataclasses import astuple, dataclass
-from typing import Dict, Iterator, Optional, TypeVar, Union
+from typing import Dict, Iterator, Optional, TypeVar
 
 import numpy as np
 import torch
 from gym.spaces import MultiDiscrete
 
 from rl_algo_impls.shared.actor.gridnet import ValueDependentMask
-from rl_algo_impls.shared.gae import compute_advantages
 from rl_algo_impls.shared.tensor_utils import (
     NumOrArray,
     NumpyOrDict,
@@ -26,7 +25,7 @@ class Batch:
 
     actions: TensorOrDict
     action_masks: Optional[TensorOrDict]
-    num_actions: Optional[TensorOrDict]
+    num_actions: Optional[torch.Tensor]
 
     values: torch.Tensor
 
@@ -51,169 +50,44 @@ class Batch:
 
         return self.__class__(*(to_device(t) for t in astuple(self)))
 
-
-class Rollout:
-    obs: np.ndarray
-    actions: NumpyOrDict
-    rewards: np.ndarray
-    episode_starts: np.ndarray
-    values: np.ndarray
-    logprobs: Optional[np.ndarray]
-    action_masks: Optional[NumpyOrDict]
-    num_actions: Optional[np.ndarray]
-
-    advantages: np.ndarray
-    returns: np.ndarray
-
-    y_true: np.ndarray
-
-    _batch: Optional[Batch] = None
-
-    def __init__(
-        self,
-        next_episode_starts: np.ndarray,
-        next_values: np.ndarray,
-        obs: np.ndarray,
-        actions: NumpyOrDict,
-        rewards: np.ndarray,
-        episode_starts: np.ndarray,
-        values: np.ndarray,
-        logprobs: Optional[np.ndarray],
-        action_masks: Optional[NumpyOrDict],
-        gamma: NumOrArray,
-        gae_lambda: NumOrArray,
-        scale_advantage_by_values_accuracy: bool = False,
-        full_batch_off_accelerator: bool = False,
-        subaction_mask: Optional[Dict[int, Dict[int, int]]] = None,
-        action_plane_space: Optional[MultiDiscrete] = None,
-    ) -> None:
-        self.obs = obs
-        self.actions = actions
-        self.rewards = rewards
-        self.episode_starts = episode_starts
-        self.values = values
-        self.logprobs = logprobs
-        self.action_masks = action_masks
-        self.scale_advantage_by_values_accuracy = scale_advantage_by_values_accuracy
-        self.full_batch_off_accelerator = full_batch_off_accelerator
-
-        self.num_actions = num_actions(
-            actions,
-            action_masks,
-            ValueDependentMask.from_reference_index_to_index_to_value(subaction_mask)
-            if subaction_mask
+    def __getitem__(self: BatchSelf, indices: torch.Tensor) -> BatchSelf:
+        return self.__class__(
+            self.obs[indices],
+            self.logprobs[indices] if self.logprobs is not None else None,
+            tensor_by_indicies(self.actions, indices),
+            tensor_by_indicies(self.action_masks, indices)
+            if self.action_masks is not None
             else None,
-            action_plane_space,
+            self.num_actions[indices] if self.num_actions is not None else None,
+            self.values[indices],
+            self.advantages[indices],
+            self.returns[indices],
         )
 
-        self.advantages = compute_advantages(
-            self.rewards,
-            self.values,
-            self.episode_starts,
-            next_episode_starts,
-            next_values,
-            gamma,
-            gae_lambda,
-        )
 
-        self.returns = self.advantages + self.values
-        self.y_true = self.returns.reshape((-1,) + self.returns.shape[2:])
-        if self._batch:
-            self._batch.returns = torch.tensor(self.y_true).to(self._batch.device)
-
-        if self.scale_advantage_by_values_accuracy:
-            self.advantages *= np.exp(
-                -np.abs(self.values - self.returns) / self.returns.ptp()
-            )
-        if self._batch:
-            self._batch.advantages = flatten_to_tensor(
-                self.advantages, self._batch.device
-            )
+class Rollout(ABC):
+    @property
+    @abstractmethod
+    def y_true(self) -> np.ndarray:
+        ...
 
     @property
+    @abstractmethod
     def y_pred(self) -> np.ndarray:
-        return self.values.reshape((-1,) + self.values.shape[2:])
+        ...
 
     @property
+    @abstractmethod
     def total_steps(self) -> int:
-        return int(np.prod(self.rewards.shape[:2]))
+        ...
 
+    @abstractmethod
     def num_minibatches(self, batch_size: int) -> int:
-        return self.total_steps // batch_size + (
-            1 if self.total_steps % batch_size else 0
-        )
+        ...
 
-    def batch(self, device: torch.device) -> Batch:
-        if self._batch is None:
-            b_obs = flatten_to_tensor(self.obs, device)
-            b_logprobs = (
-                torch.tensor(self.logprobs.reshape(-1)).to(device)
-                if self.logprobs is not None
-                else None
-            )
-
-            b_actions = flatten_actions_to_tensor(self.actions, device)
-            b_action_masks = (
-                flatten_actions_to_tensor(self.action_masks, device)
-                if self.action_masks is not None
-                else None
-            )
-            b_num_actions = (
-                torch.tensor(self.num_actions.reshape(-1)).to(device)
-                if self.num_actions is not None
-                else None
-            )
-
-            b_values = torch.tensor(self.y_pred).to(device)
-
-            assert (
-                self.advantages is not None and self.returns is not None
-            ), "Must call update_advantages before minibatches"
-            b_advantages = flatten_to_tensor(self.advantages, device)
-            b_returns = torch.tensor(self.y_true).to(device)
-
-            self._batch = Batch(
-                b_obs,
-                b_logprobs,
-                b_actions,
-                b_action_masks,
-                b_num_actions,
-                b_values,
-                b_advantages,
-                b_returns,
-            )
-        return self._batch.to(device)
-
+    @abstractmethod
     def minibatches(self, batch_size: int, device: torch.device) -> Iterator[Batch]:
-        (
-            obs,
-            logprobs,
-            actions,
-            action_masks,
-            num_actions,
-            values,
-            advantages,
-            returns,
-        ) = astuple(
-            self.batch(
-                torch.device("cpu") if self.full_batch_off_accelerator else device
-            )
-        )
-        b_idxs = torch.randperm(self.total_steps)
-        for i in range(0, self.total_steps, batch_size):
-            mb_idxs = b_idxs[i : i + batch_size]
-            yield Batch(
-                obs[mb_idxs],
-                logprobs[mb_idxs] if logprobs is not None else None,
-                tensor_by_indicies(actions, mb_idxs),
-                tensor_by_indicies(action_masks, mb_idxs)
-                if action_masks is not None
-                else None,
-                num_actions[mb_idxs] if num_actions is not None else None,
-                values[mb_idxs],
-                advantages[mb_idxs],
-                returns[mb_idxs],
-            ).to(device)
+        ...
 
 
 class RolloutGenerator(ABC):
@@ -221,7 +95,7 @@ class RolloutGenerator(ABC):
         super().__init__()
 
     @abstractmethod
-    def rollout(self, gamma: NumOrArray, gae_lambda: NumOrArray) -> Rollout:
+    def rollout(self, gamma: NumOrArray, gae_lambda: NumOrArray, **kwargs) -> Rollout:
         ...
 
 
