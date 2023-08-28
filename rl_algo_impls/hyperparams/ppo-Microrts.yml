@@ -1502,7 +1502,45 @@ Microrts-squnet-d16-128-map64-guided-finetune:
   rollout_type: guided
   rollout_hyperparams:
     <<: *microrts-squnet-d16-128-map32-bc-finetune-rollout
-    switch_range: 3000
+    switch_range: 1
+  hyperparam_transitions_kwargs:
+    interpolate_method: cosine
+    phases:
+      - learning_rate: !!float 5e-5
+        ent_coef: 0
+        freeze_policy_head: true
+        freeze_backbone: true
+        switch_range: 1
+      - learning_rate: !!float 1e-6
+        ent_coef: 0.001
+        freeze_policy_head: false
+        freeze_backbone: false
+        switch_range: 4000
+      - learning_rate: !!float 2.5e-5
+        ent_coef: 0.001
+        freeze_policy_head: false
+        freeze_backbone: false
+        switch_range: 3000
+      - learning_rate: !!float 2.5e-5
+        ent_coef: 0.001
+        freeze_policy_head: false
+        freeze_backbone: false
+        switch_range: 1
+      - learning_rate: !!float 1e-6
+        ent_coef: 0.0001
+        freeze_policy_head: false
+        freeze_backbone: false
+        switch_range: 1
+    durations:
+      - 0.01
+      - 0
+      - 0
+      - 0.24
+      - 0
+      - 0.4
+      - 0.1
+      - 0.23
+      - 0.02
 
 Microrts-squnet-d16-128-map16-sc-cos-ga-selfplay-a10:
   &microrts-squnet-d16-128-map16-sc-cos-ga-selfplay-a10

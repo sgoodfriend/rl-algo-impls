@@ -120,6 +120,7 @@ class PPO(Algorithm):
         freeze_policy_head: bool = False,
         freeze_value_head: bool = False,
         freeze_backbone: bool = False,
+        switch_range: Optional[int] = None,
     ) -> None:
         super().__init__(policy, device, tb_writer)
         self.policy = policy
@@ -157,6 +158,8 @@ class PPO(Algorithm):
         self.freeze_policy_head = freeze_policy_head
         self.freeze_value_head = freeze_value_head
         self.freeze_backbone = freeze_backbone
+
+        self.switch_range = switch_range
 
     def learn(
         self: PPOSelf,
@@ -197,6 +200,11 @@ class PPO(Algorithm):
                 chart_scalars["reward_weights"] = self.multi_reward_weights
             log_scalars(self.tb_writer, "charts", chart_scalars, timesteps_elapsed)
 
+            if self.switch_range is not None:
+                assert hasattr(
+                    rollout_generator, "switch_range"
+                ), f"rollout_generator assumed to have switch_range attribute"
+                setattr(rollout_generator, "switch_range", self.switch_range)
             r = rollout_generator.rollout(gamma, self.gae_lambda)
             timesteps_elapsed += r.total_steps
 

@@ -11,7 +11,7 @@ from rl_algo_impls.shared.tensor_utils import num_or_array
 from rl_algo_impls.utils.interpolate import InterpolateMethod, interpolate
 from rl_algo_impls.wrappers.vectorable_wrapper import VecEnv
 
-ALGO_SET_NAMES = {"gae_lambda", "multi_reward_weights", "vf_coef"}
+ALGO_SET_NAMES = {"gae_lambda", "multi_reward_weights", "vf_coef", "switch_range"}
 ALGO_SET_SCHEDULE_NAMES = {"gamma", "ent_coef", "learning_rate"}
 ALGO_BOOL_NAMES = {"freeze_policy_head", "freeze_value_head", "freeze_backbone"}
 
