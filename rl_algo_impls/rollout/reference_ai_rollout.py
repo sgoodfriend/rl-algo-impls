@@ -3,8 +3,8 @@ from typing import Dict, Optional
 import numpy as np
 import torch
 
-from rl_algo_impls.rollout.vec_rollout import VecRollout
 from rl_algo_impls.rollout.sync_step_rollout import SyncStepRolloutGenerator, fold_in
+from rl_algo_impls.rollout.vec_rollout import VecRollout
 from rl_algo_impls.shared.policy.actor_critic import ActorCritic
 from rl_algo_impls.shared.tensor_utils import (
     NumOrArray,
@@ -17,9 +17,7 @@ from rl_algo_impls.wrappers.vectorable_wrapper import VecEnv
 
 
 class ReferenceAIRolloutGenerator(SyncStepRolloutGenerator):
-    def rollout(
-        self, gamma: NumOrArray, gae_lambda: NumOrArray, **kwargs
-    ) -> VecRollout:
+    def rollout(self, gamma: NumOrArray, gae_lambda: NumOrArray) -> VecRollout:
         self.policy.eval()
         self.policy.reset_noise()
         for s in range(self.n_steps):

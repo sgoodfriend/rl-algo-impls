@@ -95,7 +95,7 @@ class RolloutGenerator(ABC):
         super().__init__()
 
     @abstractmethod
-    def rollout(self, gamma: NumOrArray, gae_lambda: NumOrArray, **kwargs) -> Rollout:
+    def rollout(self, gamma: NumOrArray, gae_lambda: NumOrArray) -> Rollout:
         ...
 
 
