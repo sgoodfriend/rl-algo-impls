@@ -1,8 +1,7 @@
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Tuple, TypeVar, Union
+from typing import Dict, List, Optional, TypeVar, Union
 
 import numpy as np
-from gym import Space
 
 from rl_algo_impls.shared.gae import compute_advantages
 
