@@ -1,14 +1,13 @@
-from typing import Dict, List, Optional, TypeVar
+from typing import Dict, List, Optional, Sequence, TypeVar
 
 import numpy as np
 
 from rl_algo_impls.rollout.rollout import RolloutGenerator
 from rl_algo_impls.rollout.trajectory import TrajectoryBuilder
 from rl_algo_impls.rollout.trajectory_rollout import TrajectoryRollout
-from rl_algo_impls.rollout.vec_rollout import VecRollout
 from rl_algo_impls.shared.policy.actor_critic import ActorCritic
 from rl_algo_impls.shared.tensor_utils import NumOrArray, batch_dict_keys
-from rl_algo_impls.wrappers.vectorable_wrapper import VecEnv, single_action_space
+from rl_algo_impls.wrappers.vectorable_wrapper import VecEnv
 
 
 class GuidedLearnerRolloutGenerator(RolloutGenerator):
@@ -97,7 +96,7 @@ class GuidedLearnerRolloutGenerator(RolloutGenerator):
                 policy_indexes.extend(
                     [idx for idx, m in enumerate(policy_matches) if m]
                 )
-                actions.extend(p_actions)
+                actions.extend(split_actions_by_env(p_actions))
                 values.extend(p_values)
                 logprobs.extend(p_logprobs)
                 clamped_actions.extend(p_clamped_actions)
@@ -176,3 +175,16 @@ T = TypeVar("T")
 
 def rearrange(lst: List[T], indices: List[int]) -> List[T]:
     return [itm for _, itm in sorted((idx, item) for idx, item in zip(indices, lst))]
+
+
+ND = TypeVar("ND", np.ndarray, Dict[str, np.ndarray])
+
+
+def split_actions_by_env(actions: ND) -> Sequence[ND]:
+    if isinstance(actions, dict):
+        return [
+            {k: v[idx] for k, v in actions.items()}
+            for idx in range(len(next(iter(actions.values()))))
+        ]
+    else:
+        return actions  # type: ignore
