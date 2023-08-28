@@ -1449,10 +1449,6 @@ Microrts-squnet-d16-128-map64-BC-finetune:
   hyperparam_transitions_kwargs:
     interpolate_method: cosine
     phases:
-      - learning_rate: !!float 1e-6
-        ent_coef: 0
-        freeze_policy_head: true
-        freeze_backbone: true
       - learning_rate: !!float 5e-5
         ent_coef: 0
         freeze_policy_head: true
@@ -1461,7 +1457,7 @@ Microrts-squnet-d16-128-map64-BC-finetune:
         ent_coef: 0.001
         freeze_policy_head: false
         freeze_backbone: false
-      - learning_rate: !!float 5e-5
+      - learning_rate: !!float 2.5e-5
         ent_coef: 0.001
         freeze_policy_head: false
         freeze_backbone: false
@@ -1470,14 +1466,12 @@ Microrts-squnet-d16-128-map64-BC-finetune:
         freeze_policy_head: false
         freeze_backbone: false
     durations:
-      - 0
-      - 0.05
-      - 0
+      - 0.01
       - 0
       - 0
-      - 0.2
-      - 0.4
-      - 0.33
+      - 0.24
+      - 0.5
+      - 0.23
       - 0.02
 
 Microrts-squnet-d16-128-map64-BC-finetune-scale-loss:
