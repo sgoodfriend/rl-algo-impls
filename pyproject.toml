@@ -106,3 +106,6 @@ profile = "black"
 
 [project.scripts]
 rai_microrts = "rl_algo_impls.microrts.agent:main"
+
+[mypy]
+plugins = "numpy.typing.mypy_plugin"
