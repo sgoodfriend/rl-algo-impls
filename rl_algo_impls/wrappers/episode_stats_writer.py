@@ -32,6 +32,7 @@ class EpisodeStatsWriter(VectorableWrapper):
         self.additional_keys_to_log = (
             additional_keys_to_log if additional_keys_to_log is not None else []
         )
+        self._steps_per_step: Optional[int] = None
 
     def step(self, actions: np.ndarray) -> VecEnvStepReturn:
         obs, rews, dones, infos = self.env.step(actions)
@@ -44,8 +45,18 @@ class EpisodeStatsWriter(VectorableWrapper):
         self._record_stats(infos)
         return obs, rews, dones, infos
 
+    @property
+    def steps_per_step(self) -> int:
+        if self._steps_per_step is None:
+            return getattr(self.env, "num_envs", 1)
+        return self._steps_per_step
+
+    @steps_per_step.setter
+    def steps_per_step(self, steps_per_step: int) -> None:
+        self._steps_per_step = steps_per_step
+
     def _record_stats(self, infos: List[Dict[str, Any]]) -> None:
-        self.total_steps += getattr(self.env, "num_envs", 1)
+        self.total_steps += self.steps_per_step
         step_episodes = []
         for info in infos:
             ep_info = info.get("episode")

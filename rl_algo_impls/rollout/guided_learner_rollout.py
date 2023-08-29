@@ -7,7 +7,8 @@ from rl_algo_impls.rollout.trajectory import TrajectoryBuilder
 from rl_algo_impls.rollout.trajectory_rollout import TrajectoryRollout
 from rl_algo_impls.shared.policy.actor_critic import ActorCritic
 from rl_algo_impls.shared.tensor_utils import NumOrArray, batch_dict_keys
-from rl_algo_impls.wrappers.vectorable_wrapper import VecEnv
+from rl_algo_impls.wrappers.episode_stats_writer import EpisodeStatsWriter
+from rl_algo_impls.wrappers.vectorable_wrapper import VecEnv, find_wrapper
 
 
 class GuidedLearnerRolloutGenerator(RolloutGenerator):
@@ -53,6 +54,8 @@ class GuidedLearnerRolloutGenerator(RolloutGenerator):
         self.next_action_masks = (
             self.get_action_mask() if self.get_action_mask else None
         )
+
+        self.episode_stats_writer = find_wrapper(vec_env, EpisodeStatsWriter)
 
     def rollout(self, gamma: NumOrArray, gae_lambda: NumOrArray) -> TrajectoryRollout:
         self.learning_policy.eval()
@@ -106,6 +109,10 @@ class GuidedLearnerRolloutGenerator(RolloutGenerator):
             logprobs = rearrange(logprobs, policy_indexes)
             clamped_actions = rearrange(clamped_actions, policy_indexes)
 
+            if self.episode_stats_writer:
+                self.episode_stats_writer.steps_per_step = self.policies_by_index.count(
+                    self.learning_policy
+                )
             self.next_obs, rewards, dones, _ = self.vec_env.step(
                 np.array(clamped_actions)
             )
