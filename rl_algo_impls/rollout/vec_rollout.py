@@ -1,4 +1,3 @@
-from dataclasses import astuple
 from typing import Dict, Iterator, Optional
 
 import numpy as np
@@ -14,11 +13,7 @@ from rl_algo_impls.rollout.rollout import (
 )
 from rl_algo_impls.shared.actor.gridnet import ValueDependentMask
 from rl_algo_impls.shared.gae import compute_advantages
-from rl_algo_impls.shared.tensor_utils import (
-    NumOrArray,
-    NumpyOrDict,
-    tensor_by_indicies,
-)
+from rl_algo_impls.shared.tensor_utils import NumOrArray, NumpyOrDict
 
 
 class VecRollout(Rollout):
@@ -56,6 +51,7 @@ class VecRollout(Rollout):
         subaction_mask: Optional[Dict[int, Dict[int, int]]] = None,
         action_plane_space: Optional[MultiDiscrete] = None,
     ) -> None:
+        super().__init__()
         self.obs = obs
         self.actions = actions
         self.rewards = rewards
