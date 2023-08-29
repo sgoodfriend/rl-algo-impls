@@ -198,13 +198,14 @@ class PPO(Algorithm):
                 v_clip = None
             if self.multi_reward_weights is not None:
                 chart_scalars["reward_weights"] = self.multi_reward_weights
-            log_scalars(self.tb_writer, "charts", chart_scalars, timesteps_elapsed)
-
             if self.switch_range is not None:
                 assert hasattr(
                     rollout_generator, "switch_range"
                 ), f"rollout_generator assumed to have switch_range attribute"
                 setattr(rollout_generator, "switch_range", self.switch_range)
+                chart_scalars["switch_range"] = self.switch_range
+            log_scalars(self.tb_writer, "charts", chart_scalars, timesteps_elapsed)
+
             r = rollout_generator.rollout(gamma, self.gae_lambda)
             timesteps_elapsed += r.total_steps
 
