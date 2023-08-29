@@ -71,7 +71,7 @@ class TrajectoryRollout(Rollout):
 
     @property
     def total_steps(self) -> int:
-        return len(self.obs)
+        return len(self.batch)
 
     def num_minibatches(self, batch_size: int) -> int:
         return self.total_steps // batch_size

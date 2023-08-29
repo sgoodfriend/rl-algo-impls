@@ -64,6 +64,9 @@ class Batch:
             self.returns[indices],
         )
 
+    def __len__(self) -> int:
+        return self.obs.shape[0]
+
 
 class Rollout(ABC):
     @property
