@@ -143,6 +143,7 @@ class EvalCallback(Callback):
         wandb_enabled: bool = False,
         score_threshold: Optional[float] = None,
         skip_evaluate_at_start: bool = False,
+        only_checkpoint_initial_policy: bool = False,
     ) -> None:
         super().__init__()
         self.policy = policy
@@ -173,6 +174,7 @@ class EvalCallback(Callback):
         self_play_reference_wrapper = find_wrapper(env, SelfPlayReferenceWrapper)
         if self_play_reference_wrapper:
             self.prior_policies = deque(maxlen=self_play_reference_wrapper.window)
+            self.only_checkpoint_initial_policy = only_checkpoint_initial_policy
             self.checkpoint_policy()
 
             def policies_getter_fn() -> Sequence[Policy]:
@@ -274,4 +276,6 @@ class EvalCallback(Callback):
 
     def checkpoint_policy(self):
         if self.prior_policies is not None:
+            if self.only_checkpoint_initial_policy and len(self.prior_policies) > 0:
+                return
             self.prior_policies.append(deepcopy(self.policy))

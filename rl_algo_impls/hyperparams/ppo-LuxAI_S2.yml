@@ -280,11 +280,11 @@ LuxAI_S2-v0-squnet-iDeimos: &lux-squnet-ideimos
       <<: *lux-env-self-play
       save_steps: !!float 1e6
       window: 50
-  eval_hyperparams:
+  eval_hyperparams: &lux-squnet-ideimos-eval
     <<: *lux-eval-defaults
-    env_overrides:
+    env_overrides: &lux-squnet-ideimos-eval-env-overrides
       <<: *lux-eval-env-overrides
-      make_kwargs:
+      make_kwargs: &lux-squnet-ideimos-eval-env-make-kwargs
         <<: *lux-eval-env-override-make-kwargs
         factory_ice_distance_buffer: null
   policy_hyperparams: &lux-squnet-ideimos-policy
@@ -341,6 +341,14 @@ LuxAI_S2-v0-squnet-Deimos-jumpstart: &lux-squnet-deimos-jumpstart
   rollout_hyperparams:
     <<: *lux-squnet-rollout
     switch_range: 1
+  eval_hyperparams:
+    <<: *lux-squnet-ideimos-eval
+    score_threshold: null
+    only_checkpoint_initial_policy: true
+    env_overrides:
+      <<: *lux-squnet-ideimos-eval-env-overrides
+      self_play_reference_kwargs:
+        window: 1
   hyperparam_transitions_kwargs:
     interpolate_method: cosine
     phases:
