@@ -161,6 +161,8 @@ class GuidedLearnerRolloutGenerator(RolloutGenerator):
             for traj_builder, next_value in zip(traj_builders, next_values)
             if len(traj_builder) > 0
         ]
+        # Release TrajectoryBuilders because they can be holding a lot of memory.
+        traj_builders = None
         return TrajectoryRollout(
             trajectories,
             scale_advantage_by_values_accuracy=self.scale_advantage_by_values_accuracy,

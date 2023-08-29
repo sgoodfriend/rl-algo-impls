@@ -351,6 +351,8 @@ class PPO(Algorithm):
                 rollout_steps / (end_time - start_time),
                 timesteps_elapsed,
             )
+            # Clear out rollout because it can take significant memory
+            r = None
 
             if callbacks:
                 if not all(
