@@ -1,3 +1,4 @@
+import gc
 import logging
 from dataclasses import asdict, astuple, dataclass
 from time import perf_counter
@@ -215,6 +216,7 @@ class PPO(Algorithm):
             log_scalars(self.tb_writer, "charts", chart_scalars, timesteps_elapsed)
 
             r = rollout_generator.rollout(gamma, self.gae_lambda)
+            gc.collect()
             timesteps_elapsed += r.total_steps
 
             step_stats = []
