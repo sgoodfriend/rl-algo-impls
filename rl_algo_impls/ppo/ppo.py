@@ -121,6 +121,7 @@ class PPO(Algorithm):
         freeze_value_head: bool = False,
         freeze_backbone: bool = False,
         switch_range: Optional[int] = None,
+        guide_probability: Optional[float] = None,
     ) -> None:
         super().__init__(policy, device, tb_writer)
         self.policy = policy
@@ -160,6 +161,7 @@ class PPO(Algorithm):
         self.freeze_backbone = freeze_backbone
 
         self.switch_range = switch_range
+        self.guide_probability = guide_probability
 
     def learn(
         self: PPOSelf,
@@ -204,6 +206,12 @@ class PPO(Algorithm):
                 ), f"rollout_generator assumed to have switch_range attribute"
                 setattr(rollout_generator, "switch_range", self.switch_range)
                 chart_scalars["switch_range"] = self.switch_range
+            if self.guide_probability is not None:
+                assert hasattr(
+                    rollout_generator, "guide_probability"
+                ), f"rollout_generator assumed to have guide_probability attribute"
+                setattr(rollout_generator, "guide_probability", self.guide_probability)
+                chart_scalars["guide_probability"] = self.guide_probability
             log_scalars(self.tb_writer, "charts", chart_scalars, timesteps_elapsed)
 
             r = rollout_generator.rollout(gamma, self.gae_lambda)

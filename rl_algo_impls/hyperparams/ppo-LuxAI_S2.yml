@@ -341,7 +341,7 @@ LuxAI_S2-v0-squnet-Deimos-jumpstart: &lux-squnet-deimos-jumpstart
   rollout_hyperparams:
     <<: *lux-squnet-rollout
     switch_range: 1
-  eval_hyperparams:
+  eval_hyperparams: &lux-squnet-deimos-jumpstart-eval
     <<: *lux-squnet-ideimos-eval
     score_threshold: null
     only_checkpoint_initial_policy: true
@@ -388,6 +388,53 @@ LuxAI_S2-v0-squnet-Deimos-jumpstart: &lux-squnet-deimos-jumpstart
       - 0.23
       - 0.02
 
+LuxAI_S2-v0-squnet-Deimos-guided-random: &lux-squnet-guided-random
+  <<: *lux-squnet-ideimos
+  rollout_type: guided_random
+  rollout_hyperparams:
+    <<: *lux-squnet-rollout
+    guide_probability: 0
+  eval_hyperparams:
+    <<: *lux-squnet-deimos-jumpstart-eval
+  hyperparam_transitions_kwargs:
+    interpolate_method: cosine
+    phases:
+      - learning_rate: !!float 3e-5
+        ent_coef: 0
+        freeze_policy_head: true
+        freeze_backbone: true
+        guide_probability: 0
+      - learning_rate: !!float 1e-6
+        ent_coef: 0.001
+        freeze_policy_head: false
+        freeze_backbone: false
+        guide_probability: 0.9
+      - learning_rate: !!float 3e-5
+        ent_coef: 0.001
+        freeze_policy_head: false
+        freeze_backbone: false
+        guide_probability: 0.6
+      - learning_rate: !!float 3e-5
+        ent_coef: 0.001
+        freeze_policy_head: false
+        freeze_backbone: false
+        guide_probability: 0
+      - learning_rate: !!float 1e-6
+        ent_coef: 0.0001
+        freeze_policy_head: false
+        freeze_backbone: false
+        guide_probability: 0
+    durations:
+      - 0.02
+      - 0
+      - 0
+      - 0.23
+      - 0
+      - 0.3
+      - 0.2
+      - 0.23
+      - 0.02
+
 LuxAI_S2-agent: &lux-agent
   <<: *lux-squnet-ideimos
   device: cpu
@@ -406,7 +453,7 @@ LuxAI_S2-agent: &lux-agent
         swap_steps: .inf
 
 LuxAI_S2-v0-debug:
-  <<: *lux-squnet-deimos-jumpstart
+  <<: *lux-squnet-guided-random
   n_timesteps: !!float 1e6
   device: mps
   env_hyperparams:
