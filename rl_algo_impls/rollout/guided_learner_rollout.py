@@ -40,7 +40,10 @@ class GuidedLearnerRolloutGenerator(RolloutGenerator):
             logging.warn(
                 f"{self.__class__.__name__} doesn't support full_batch_off_accelerator=False"
             )
-        self.include_logp = include_logp
+        if not include_logp:
+            logging.warn(
+                f"{self.__class__.__name__} doesn't implement include_logp=False"
+            )
         self.subaction_mask = subaction_mask
 
         self.get_action_mask = getattr(vec_env, "get_action_mask", None)
