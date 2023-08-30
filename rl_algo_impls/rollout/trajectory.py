@@ -9,8 +9,6 @@ from rl_algo_impls.shared.gae import compute_advantages
 @dataclass
 class Trajectory:
     obs: np.ndarray
-    rewards: np.ndarray
-    dones: np.ndarray
     values: np.ndarray
     advantages: np.ndarray
     logprobs: np.ndarray
@@ -76,8 +74,6 @@ class TrajectoryBuilder:
 
         return Trajectory(
             obs=np_obs,
-            rewards=np_rewards,
-            dones=np_dones,
             values=np_values,
             advantages=compute_advantages(
                 np_rewards,
