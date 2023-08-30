@@ -72,17 +72,11 @@ class RandomGuidedLearnerRolloutGenerator(RolloutGenerator):
         traj_builders = [DiscreteSkipsTrajectoryBuilder() for _ in range(num_envs)]
         completed_trajectories = []
 
-        step_values = np.zeros(
-            (num_envs,) + self.learning_policy.value_shape, dtype=np.float32
-        )
-        step_logprobs = np.zeros((num_envs,), dtype=np.float32)
         act_shape = self.learning_policy.action_shape
+        act_space = single_action_space(self.vec_env)
         if isinstance(act_shape, dict):
-            step_actions = np.zeros((num_envs,), dtype=np.object_)
             step_clamped_actions = np.zeros((num_envs,), dtype=np.object_)
         else:
-            act_space = single_action_space(self.vec_env)
-            step_actions = np.zeros((num_envs,) + act_shape, dtype=act_space.dtype)
             step_clamped_actions = np.zeros(
                 (num_envs,) + act_shape, dtype=act_space.dtype
             )
@@ -105,24 +99,46 @@ class RandomGuidedLearnerRolloutGenerator(RolloutGenerator):
             action_masks = self.next_action_masks
 
             use_guide_policy = np.random.rand(num_envs) < self.guide_probability
-            for indices, policy in (
-                (use_guide_policy, self.guide_policy),
-                (~use_guide_policy, self.learning_policy),
-            ):
-                if not np.any(indices):
-                    continue
+            use_learning_policy = ~use_guide_policy
+            if np.any(use_guide_policy):
                 (
-                    actions,
-                    step_values[indices],
-                    step_logprobs[indices],
-                    step_clamped_actions[indices],
-                ) = policy.step(
-                    obs[indices],
-                    action_masks=batch_dict_keys(action_masks[indices])
+                    _,
+                    _,
+                    _,
+                    step_clamped_actions[use_guide_policy],
+                ) = self.guide_policy.step(
+                    obs[use_guide_policy],
+                    action_masks=batch_dict_keys(action_masks[use_guide_policy])
                     if action_masks is not None
                     else None,
                 )
-                step_actions[indices] = split_actions_by_env(actions)
+            if np.any(use_learning_policy):
+                # Copy the obs necessary for learning so that the original obs with
+                # guide observations can be discarded.
+                step_obs = (
+                    obs[use_learning_policy].copy() if np.any(use_guide_policy) else obs
+                )
+                step_action_masks = (
+                    (
+                        action_masks[use_learning_policy].copy()
+                        if np.any(use_guide_policy)
+                        else action_masks
+                    )
+                    if action_masks is not None
+                    else None
+                )
+                (
+                    actions,
+                    step_values,
+                    step_logprobs,
+                    step_clamped_actions[use_learning_policy],
+                ) = self.learning_policy.step(
+                    step_obs,
+                    action_masks=batch_dict_keys(step_action_masks)
+                    if step_action_masks is not None
+                    else None,
+                )
+                step_actions = split_actions_by_env(actions)
 
             if self.episode_stats_writer:
                 self.episode_stats_writer.steps_per_step = np.sum(
@@ -133,24 +149,23 @@ class RandomGuidedLearnerRolloutGenerator(RolloutGenerator):
                 self.get_action_mask() if self.get_action_mask else None
             )
 
-            for idx, (traj_builder, done, is_guided) in enumerate(
-                zip(traj_builders, dones, use_guide_policy)
-            ):
-                if is_guided:
-                    traj_builder.step_no_add(rewards[idx].copy(), done, gamma)
-                else:
-                    steps += 1
-                    traj_builder.step_add(
-                        obs[idx].copy(),
-                        rewards[idx].copy(),
-                        done,
-                        step_values[idx].copy(),
-                        step_logprobs[idx],
-                        step_actions[idx].copy(),
-                        action_masks[idx].copy() if action_masks is not None else None,
-                        gamma,
-                    )
-                if done:
+            for idx in np.where(use_guide_policy)[0]:
+                traj_builders[idx].step_no_add(rewards[idx], dones[idx], gamma)
+            for step_idx, idx in enumerate(np.where(use_learning_policy)[0]):
+                traj_builders[idx].step_add(
+                    step_obs[step_idx],
+                    rewards[idx],
+                    dones[idx],
+                    step_values[step_idx],
+                    step_logprobs[step_idx],
+                    step_actions[step_idx],
+                    step_action_masks[step_idx]
+                    if step_action_masks is not None
+                    else None,
+                    gamma,
+                )
+            for traj_builder in traj_builders:
+                if traj_builder.done:
                     if len(traj_builder) > 0:
                         completed_trajectories.append(
                             traj_builder.trajectory(gamma, gae_lambda)
