@@ -151,6 +151,7 @@ class RandomGuidedLearnerRolloutGenerator(RolloutGenerator):
 
             for idx in np.where(use_guide_policy)[0]:
                 traj_builders[idx].step_no_add(rewards[idx], dones[idx], gamma)
+            steps += np.sum(use_learning_policy)
             for step_idx, idx in enumerate(np.where(use_learning_policy)[0]):
                 traj_builders[idx].step_add(
                     step_obs[step_idx],
