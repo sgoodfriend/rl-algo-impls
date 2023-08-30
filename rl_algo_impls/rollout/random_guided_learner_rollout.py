@@ -1,3 +1,4 @@
+import gc
 import logging
 from typing import Dict, Optional
 
@@ -154,6 +155,7 @@ class RandomGuidedLearnerRolloutGenerator(RolloutGenerator):
                             traj_builder.trajectory(gamma, gae_lambda)
                         )
                     traj_builder.reset()
+            gc.collect()
 
         next_values = self.learning_policy.value(self.next_obs)
         self.learning_policy.train()
