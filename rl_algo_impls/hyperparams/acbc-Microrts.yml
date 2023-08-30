@@ -178,7 +178,7 @@ Microrts-squnet-d16-128-iMayari-map32: &microrts-squnet-d16-128-imayari-map32
     <<: *microrts-squnet-d16-128-imayari-algo
     batch_size: 768
     gamma: 0.9996
-    gae_lambda: 0.996
+    gae_lambda: 0.99
   hyperparam_transitions_kwargs:
     interpolate_method: cosine
     phases:
@@ -222,7 +222,7 @@ Microrts-squnet-d16-128-iMayari-map64: &microrts-squnet-d16-128-imayari-map64
     batch_size: 192
     gradient_accumulation: true
     gamma: 0.9999
-    gae_lambda: 0.999
+    gae_lambda: 0.99
 
 Microrts-squnet-d16-128-iMayari-map64-from32:
   &microrts-squnet-d16-128-imayari-map64-from32

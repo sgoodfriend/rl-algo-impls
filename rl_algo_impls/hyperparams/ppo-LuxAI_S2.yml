@@ -296,7 +296,7 @@ LuxAI_S2-v0-squnet-iDeimos: &lux-squnet-ideimos
     <<: *lux-squnet-algo
     multi_reward_weights: [0.1, 0.9]
     gamma: [0.9997, 0.9997]
-    gae_lambda: [0.997, 0.997]
+    gae_lambda: [0.99, 0.99]
     vf_coef: [0.1, 0.4]
     learning_rate: !!float 1e-4
     ent_coef: 0.01

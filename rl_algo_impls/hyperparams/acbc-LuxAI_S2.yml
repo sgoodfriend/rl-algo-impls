@@ -59,7 +59,7 @@ LuxAI_S2-v0-squnet-iDeimos: &lux-squnet-ideimos
     batch_size: 384
     n_epochs: 2
     gamma: [0.9997, 0.9997]
-    gae_lambda: [0.997, 0.997]
+    gae_lambda: [0.99, 0.99]
     vf_coef: [0.25, 0.25]
     max_grad_norm: 0.5
     gradient_accumulation: true
