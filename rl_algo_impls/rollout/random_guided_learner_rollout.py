@@ -12,7 +12,11 @@ from rl_algo_impls.rollout.trajectory_rollout import TrajectoryRollout
 from rl_algo_impls.shared.policy.actor_critic import ActorCritic
 from rl_algo_impls.shared.tensor_utils import NumOrArray, batch_dict_keys
 from rl_algo_impls.wrappers.episode_stats_writer import EpisodeStatsWriter
-from rl_algo_impls.wrappers.vectorable_wrapper import VecEnv, find_wrapper
+from rl_algo_impls.wrappers.vectorable_wrapper import (
+    VecEnv,
+    find_wrapper,
+    single_action_space,
+)
 
 
 class RandomGuidedLearnerRolloutGenerator(RolloutGenerator):
@@ -71,8 +75,16 @@ class RandomGuidedLearnerRolloutGenerator(RolloutGenerator):
             (num_envs,) + self.learning_policy.value_shape, dtype=np.float32
         )
         step_logprobs = np.zeros((num_envs,), dtype=np.float32)
-        step_actions = np.zeros((num_envs,), dtype=np.object_)
-        step_clamped_actions = np.zeros((num_envs,), dtype=np.object_)
+        act_shape = self.learning_policy.action_shape
+        if isinstance(act_shape, dict):
+            step_actions = np.zeros((num_envs,), dtype=np.object_)
+            step_clamped_actions = np.zeros((num_envs,), dtype=np.object_)
+        else:
+            act_space = single_action_space(self.vec_env)
+            step_actions = np.zeros((num_envs,) + act_shape, dtype=act_space.dtype)
+            step_clamped_actions = np.zeros(
+                (num_envs,) + act_shape, dtype=act_space.dtype
+            )
 
         goal_steps = self.n_steps * num_envs
         steps = 0
