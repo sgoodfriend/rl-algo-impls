@@ -1546,7 +1546,7 @@ Microrts-squnet-d16-128-map64-guided-random:
   &microrts-squnet-d16-128-map64-guided-random
   <<: *microrts-squnet-d16-128-map64-bc-finetune-a10
   rollout_type: guided_random
-  rollout_hyperparams:
+  rollout_hyperparams: &microrts-squnet-d16-128-map64-guided-random-rollout
     <<: *microrts-squnet-d16-128-map32-bc-finetune-rollout
     guide_probability: 0
   hyperparam_transitions_kwargs:
@@ -1591,6 +1591,9 @@ Microrts-squnet-d16-128-map64-guided-random:
 Microrts-squnet-d16-128-map64-guided-random-fast:
   &microrts-squnet-d16-128-map64-guided-random-fast
   <<: *microrts-squnet-d16-128-map64-guided-random
+  rollout_hyperparams:
+    <<: *microrts-squnet-d16-128-map64-guided-random-rollout
+    guide_probability: 0.9
   hyperparam_transitions_kwargs:
     interpolate_method: cosine
     phases:

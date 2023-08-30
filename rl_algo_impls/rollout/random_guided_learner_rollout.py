@@ -141,13 +141,15 @@ class RandomGuidedLearnerRolloutGenerator(RolloutGenerator):
                 else:
                     steps += 1
                     traj_builder.step_add(
-                        obs[idx],
-                        rewards[idx],
+                        np.copy(obs[idx]),
+                        np.copy(rewards[idx]),
                         done,
-                        step_values[idx],
+                        np.copy(step_values[idx]),
                         step_logprobs[idx],
-                        step_actions[idx],
-                        action_masks[idx] if action_masks is not None else None,
+                        np.copy(step_actions[idx]),
+                        np.copy(action_masks[idx])
+                        if action_masks is not None
+                        else None,
                     )
                 if done:
                     if len(traj_builder) > 0:
