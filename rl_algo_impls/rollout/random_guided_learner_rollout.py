@@ -36,7 +36,6 @@ class RandomGuidedLearnerRolloutGenerator(RolloutGenerator):
         super().__init__()
         self.learning_policy = learning_policy
         self.guide_policy = guide_policy
-        self.guide_policy.eval()
 
         self.vec_env = vec_env
         self.guide_probability = guide_probability
@@ -65,6 +64,7 @@ class RandomGuidedLearnerRolloutGenerator(RolloutGenerator):
     def rollout(self, gamma: NumOrArray, gae_lambda: NumOrArray) -> Rollout:
         self.learning_policy.eval()
         self.learning_policy.reset_noise()
+        self.guide_policy.eval()
         self.guide_policy.reset_noise()
 
         num_envs = self.vec_env.num_envs
@@ -157,6 +157,7 @@ class RandomGuidedLearnerRolloutGenerator(RolloutGenerator):
 
         next_values = self.learning_policy.value(self.next_obs)
         self.learning_policy.train()
+        self.guide_policy.train()
 
         trajectories = completed_trajectories + [
             traj_builder.trajectory(gamma, gae_lambda, next_values=next_value)
