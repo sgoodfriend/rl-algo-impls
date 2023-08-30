@@ -16,7 +16,7 @@ class TrajectoryRollout(Rollout):
         self,
         trajectories: List[Trajectory],
         scale_advantage_by_values_accuracy: bool = False,
-        full_batch_off_accelerator: bool = False,  # Unused: Assumed True
+        full_batch_off_accelerator: bool = True,  # Unused: Assumed True
         subaction_mask: Optional[Dict[int, Dict[int, int]]] = None,
         action_plane_space: Optional[MultiDiscrete] = None,
     ) -> None:
