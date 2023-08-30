@@ -171,7 +171,6 @@ class RandomGuidedLearnerRolloutGenerator(RolloutGenerator):
                             traj_builder.trajectory(gamma, gae_lambda)
                         )
                     traj_builder.reset()
-            gc.collect()
 
         next_values = self.learning_policy.value(self.next_obs)
         self.learning_policy.train()
@@ -183,6 +182,7 @@ class RandomGuidedLearnerRolloutGenerator(RolloutGenerator):
             if len(traj_builder) > 0
         ]
         traj_builders = None
+        gc.collect()
         return TrajectoryRollout(
             trajectories,
             scale_advantage_by_values_accuracy=self.scale_advantage_by_values_accuracy,
