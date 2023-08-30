@@ -1542,6 +1542,52 @@ Microrts-squnet-d16-128-map64-guided-finetune:
       - 0.23
       - 0.02
 
+Microrts-squnet-d16-128-map64-guided-random:
+  &microrts-squnet-d16-128-map64-guided-random
+  <<: *microrts-squnet-d16-128-map64-bc-finetune-a10
+  rollout_type: guided_random
+  rollout_hyperparams:
+    <<: *microrts-squnet-d16-128-map32-bc-finetune-rollout
+    guide_probability: 0
+  hyperparam_transitions_kwargs:
+    interpolate_method: cosine
+    phases:
+      - learning_rate: !!float 5e-5
+        ent_coef: 0
+        freeze_policy_head: true
+        freeze_backbone: true
+        guide_probability: 0
+      - learning_rate: !!float 1e-6
+        ent_coef: 0.001
+        freeze_policy_head: false
+        freeze_backbone: false
+        guide_probability: 0.9
+      - learning_rate: !!float 2.5e-5
+        ent_coef: 0.001
+        freeze_policy_head: false
+        freeze_backbone: false
+        guide_probability: 0.6
+      - learning_rate: !!float 2.5e-5
+        ent_coef: 0.001
+        freeze_policy_head: false
+        freeze_backbone: false
+        guide_probability: 0
+      - learning_rate: !!float 1e-6
+        ent_coef: 0.0001
+        freeze_policy_head: false
+        freeze_backbone: false
+        guide_probability: 0
+    durations:
+      - 0.01
+      - 0
+      - 0
+      - 0.24
+      - 0
+      - 0.3
+      - 0.2
+      - 0.23
+      - 0.02
+
 Microrts-squnet-d16-128-map16-sc-cos-ga-selfplay-a10:
   &microrts-squnet-d16-128-map16-sc-cos-ga-selfplay-a10
   <<: *microrts-squnet-d16-128-sc-cos-ga-selfplay-a10
@@ -1588,7 +1634,8 @@ Microrts-agent: &microrts-agent
         #   use_paper_obs: true
 
 Microrts-debug: &microrts-debug-defaults
-  <<: *microrts-squnet-d16-128-map64-guided-finetune
+  <<: *microrts-squnet-d16-128-map64-guided-random
+  n_timesteps: !!float 1e6
   device: mps
   eval_hyperparams:
     <<: *microrts-squnet-d16-128-map64-bc-finetune-eval
