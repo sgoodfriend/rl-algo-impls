@@ -1,10 +1,8 @@
-from dataclasses import dataclass
-from typing import Dict, List, Optional, TypeVar, Union
+from typing import Dict, Optional, Union
 
 import numpy as np
 
 from rl_algo_impls.rollout.trajectory import Trajectory, batch_actions
-from rl_algo_impls.shared.gae import compute_advantages
 from rl_algo_impls.shared.tensor_utils import prepend_dims_to_match
 
 
@@ -25,8 +23,15 @@ class DiscreteSkipsTrajectoryBuilder:
         self.action_masks = []
         self.steps_elapsed = []
 
-    def step_no_add(self, done: bool) -> None:
+    def step_no_add(
+        self,
+        reward: Union[float, np.ndarray],
+        done: bool,
+        gamma: Union[float, np.ndarray],
+    ) -> None:
         assert not self.done, f"Shouldn't be stepping a done trajectory"
+        if self.rewards:
+            self.rewards[-1] += reward * gamma ** self.steps_elapsed[-1]
         if self.steps_elapsed:
             self.steps_elapsed[-1] += 1
         self.done = done
@@ -40,18 +45,19 @@ class DiscreteSkipsTrajectoryBuilder:
         logprob: float,
         action: Union[np.ndarray, Dict[str, np.ndarray]],
         action_mask: Optional[Union[np.ndarray, Dict[str, np.ndarray]]],
+        gamma: Union[float, np.ndarray],
     ) -> None:
         assert not self.done, f"Shouldn't be adding to a done trajectory"
 
         self.obs.append(obs)
-        self.rewards.append(reward)
         self.values.append(value)
         self.logprobs.append(logprob)
         self.actions.append(action)
         self.action_masks.append(action_mask)
-        self.steps_elapsed.append(0)
 
-        self.step_no_add(done)
+        self.rewards.append(np.zeros_like(reward))
+        self.steps_elapsed.append(0)
+        self.step_no_add(reward, done, gamma)
 
     def trajectory(
         self,

@@ -137,7 +137,7 @@ class RandomGuidedLearnerRolloutGenerator(RolloutGenerator):
                 zip(traj_builders, dones, use_guide_policy)
             ):
                 if is_guided:
-                    traj_builder.step_no_add(done)
+                    traj_builder.step_no_add(np.copy(rewards[idx]), done, gamma)
                 else:
                     steps += 1
                     traj_builder.step_add(
@@ -150,6 +150,7 @@ class RandomGuidedLearnerRolloutGenerator(RolloutGenerator):
                         np.copy(action_masks[idx])
                         if action_masks is not None
                         else None,
+                        gamma,
                     )
                 if done:
                     if len(traj_builder) > 0:
