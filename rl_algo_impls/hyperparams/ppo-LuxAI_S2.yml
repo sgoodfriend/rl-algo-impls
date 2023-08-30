@@ -435,6 +435,40 @@ LuxAI_S2-v0-squnet-Deimos-guided-random: &lux-squnet-guided-random
       - 0.23
       - 0.02
 
+LuxAI_S2-v0-squnet-Deimos-guided-random-fast: &lux-squnet-guided-random-fast
+  <<: *lux-squnet-guided-random
+  hyperparam_transitions_kwargs:
+    interpolate_method: cosine
+    phases:
+      - learning_rate: !!float 3e-5
+        ent_coef: 0
+        freeze_policy_head: true
+        freeze_backbone: true
+        guide_probability: 0
+      - learning_rate: !!float 1e-6
+        ent_coef: 0.001
+        freeze_policy_head: false
+        freeze_backbone: false
+        guide_probability: 0.9
+      - learning_rate: !!float 3e-5
+        ent_coef: 0.001
+        freeze_policy_head: false
+        freeze_backbone: false
+        guide_probability: 0
+      - learning_rate: !!float 1e-6
+        ent_coef: 0.0001
+        freeze_policy_head: false
+        freeze_backbone: false
+        guide_probability: 0
+    durations:
+      - 0.02
+      - 0
+      - 0
+      - 0.1
+      - 0.63
+      - 0.23
+      - 0.02
+
 LuxAI_S2-agent: &lux-agent
   <<: *lux-squnet-ideimos
   device: cpu
@@ -453,7 +487,7 @@ LuxAI_S2-agent: &lux-agent
         swap_steps: .inf
 
 LuxAI_S2-v0-debug:
-  <<: *lux-squnet-guided-random
+  <<: *lux-squnet-guided-random-fast
   n_timesteps: !!float 1e6
   device: mps
   env_hyperparams:
