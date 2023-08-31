@@ -84,6 +84,7 @@ lux = [
     "ray[air]",
     "kaggle",
     "polars",
+    "typing_extensions == 4.5.0",
 ]
 all = [
     "rl-algo-impls[test]",
