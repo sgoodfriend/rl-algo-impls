@@ -3,6 +3,7 @@ import logging
 from typing import Dict, Optional
 
 import numpy as np
+from numpy.typing import NDArray
 
 from rl_algo_impls.rollout.discrete_skips_trajectory_builder import (
     DiscreteSkipsTrajectoryBuilder,
@@ -11,7 +12,7 @@ from rl_algo_impls.rollout.guided_learner_rollout import split_actions_by_env
 from rl_algo_impls.rollout.rollout import Rollout, RolloutGenerator
 from rl_algo_impls.rollout.trajectory_rollout import TrajectoryRollout
 from rl_algo_impls.shared.policy.actor_critic import ActorCritic
-from rl_algo_impls.shared.tensor_utils import NumOrArray, batch_dict_keys
+from rl_algo_impls.shared.tensor_utils import NumOrArray, NumpyOrDict, batch_dict_keys
 from rl_algo_impls.wrappers.episode_stats_writer import EpisodeStatsWriter
 from rl_algo_impls.wrappers.vectorable_wrapper import (
     VecEnv,
@@ -33,6 +34,7 @@ class RandomGuidedLearnerRolloutGenerator(RolloutGenerator):
         full_batch_off_accelerator: bool = True,  # Unused, assumed True
         include_logp: bool = True,
         subaction_mask: Optional[Dict[int, Dict[int, int]]] = None,
+        skip_no_action_steps: bool = False,
     ) -> None:
         super().__init__()
         self.learning_policy = learning_policy
@@ -52,6 +54,7 @@ class RandomGuidedLearnerRolloutGenerator(RolloutGenerator):
                 f"{self.__class__.__name__} doesn't implement include_logp=False"
             )
         self.subaction_mask = subaction_mask
+        self.skip_no_action_steps = skip_no_action_steps
 
         self.get_action_mask = getattr(vec_env, "get_action_mask", None)
 
@@ -61,6 +64,27 @@ class RandomGuidedLearnerRolloutGenerator(RolloutGenerator):
         )
 
         self.episode_stats_writer = find_wrapper(vec_env, EpisodeStatsWriter)
+
+        if skip_no_action_steps:
+            assert (
+                self.get_action_mask is not None
+            ), f"skip_no_action_steps requires get_action_mask to be implemented on {vec_env}"
+            act_space = single_action_space(vec_env)
+            act_shape = self.learning_policy.action_shape
+            if isinstance(act_shape, dict):
+                self.zero_action = np.array(
+                    [
+                        {
+                            k: np.zeros(v, dtype=act_space[k].dtype)
+                            for k, v in act_shape.items()
+                        }
+                        for _ in range(vec_env.num_envs)
+                    ]
+                )
+            else:
+                self.zero_action = np.zeros(
+                    (vec_env.num_envs,) + act_shape, dtype=act_space.dtype
+                )
 
     def rollout(self, gamma: NumOrArray, gae_lambda: NumOrArray) -> Rollout:
         self.learning_policy.eval()
@@ -98,8 +122,19 @@ class RandomGuidedLearnerRolloutGenerator(RolloutGenerator):
             ), f"Expected obs to be np.ndarray, got {type(obs)}"
             action_masks = self.next_action_masks
 
-            use_guide_policy = np.random.rand(num_envs) < self.guide_probability
-            use_learning_policy = ~use_guide_policy
+            use_zero_policy = (
+                ~has_actions(action_masks)
+                if self.skip_no_action_steps and action_masks is not None
+                else np.full(num_envs, False)
+            )
+            use_learning_policy = ~use_zero_policy & (
+                np.random.rand(num_envs) >= self.guide_probability
+            )
+            use_guide_policy = ~use_zero_policy & ~use_learning_policy
+            if np.any(use_zero_policy):
+                step_clamped_actions[use_zero_policy] = self.zero_action[
+                    use_zero_policy
+                ]
             if np.any(use_guide_policy):
                 (
                     _,
@@ -116,12 +151,14 @@ class RandomGuidedLearnerRolloutGenerator(RolloutGenerator):
                 # Copy the obs necessary for learning so that the original obs with
                 # guide observations can be discarded.
                 step_obs = (
-                    obs[use_learning_policy].copy() if np.any(use_guide_policy) else obs
+                    obs[use_learning_policy].copy()
+                    if not np.all(use_learning_policy)
+                    else obs
                 )
                 step_action_masks = (
                     (
                         action_masks[use_learning_policy].copy()
-                        if np.any(use_guide_policy)
+                        if not np.all(use_learning_policy)
                         else action_masks
                     )
                     if action_masks is not None
@@ -149,7 +186,7 @@ class RandomGuidedLearnerRolloutGenerator(RolloutGenerator):
                 self.get_action_mask() if self.get_action_mask else None
             )
 
-            for idx in np.where(use_guide_policy)[0]:
+            for idx in np.where(use_guide_policy | use_zero_policy)[0]:
                 traj_builders[idx].step_no_add(rewards[idx], dones[idx], gamma)
             steps += np.sum(use_learning_policy)
             for step_idx, idx in enumerate(np.where(use_learning_policy)[0]):
@@ -190,3 +227,9 @@ class RandomGuidedLearnerRolloutGenerator(RolloutGenerator):
             subaction_mask=self.subaction_mask,
             action_plane_space=getattr(self.vec_env, "action_plane_space", None),
         )
+
+
+def has_actions(action_mask: np.ndarray) -> NDArray[np.bool_]:
+    if isinstance(action_mask[0], dict):
+        return np.array([any(m.any() for m in mask.values()) for mask in action_mask])
+    return action_mask.any(axis=tuple(range(1, len(action_mask.shape))))
