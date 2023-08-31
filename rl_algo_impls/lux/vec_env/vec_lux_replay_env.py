@@ -20,6 +20,7 @@ class VecLuxReplayEnv(VectorEnv):
         reward_weights: Optional[Dict[str, float]] = None,
         offset_env_starts: bool = False,
         is_npz_dir: bool = False,
+        compare_policy_action: bool = False,
         **kwargs,
     ) -> None:
         self.num_envs = num_envs
@@ -27,6 +28,7 @@ class VecLuxReplayEnv(VectorEnv):
         self.team_name = team_name
         self.offset_env_starts = offset_env_starts
         self.is_npz_dir = is_npz_dir
+        self.compare_policy_action = compare_policy_action
 
         self.replay_paths = []
         for dirpath, _, filenames in os.walk(replay_dir):
@@ -81,7 +83,10 @@ class VecLuxReplayEnv(VectorEnv):
         return rp
 
     def step(self, action: np.ndarray) -> VecEnvStepReturn:
-        step_returns = [env.step(a) for env, a in zip(self.envs, action)]
+        if self.compare_policy_action:
+            step_returns = [env.step(a) for env, a in zip(self.envs, action)]
+        else:
+            step_returns = [env.step(None) for env in self.envs]
         obs = np.stack([sr[0] for sr in step_returns])
         rewards = np.stack([sr[1] for sr in step_returns])
         dones = np.stack([sr[2] for sr in step_returns])

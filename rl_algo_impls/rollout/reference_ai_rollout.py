@@ -13,13 +13,33 @@ from rl_algo_impls.shared.tensor_utils import (
     batch_dict_keys,
     tensor_to_numpy,
 )
-from rl_algo_impls.wrappers.vectorable_wrapper import VecEnv
+from rl_algo_impls.wrappers.vectorable_wrapper import VecEnv, single_action_space
 
 
 class ReferenceAIRolloutGenerator(SyncStepRolloutGenerator):
+    def __init__(self, policy: ActorCritic, vec_env: VecEnv, **kwargs) -> None:
+        super().__init__(policy, vec_env, **kwargs)
+        if not self.include_logp:
+            if isinstance(self.actions, dict):
+                self.zero_action = np.array(
+                    [
+                        {
+                            k: np.zeros(v.shape[2:], dtype=v.dtype)
+                            for k, v in self.actions.items()
+                        }
+                        for _ in range(vec_env.num_envs)
+                    ]
+                )
+            else:
+                self.zero_action = np.zeros(
+                    (vec_env.num_envs,) + self.actions.shape[2:],
+                    dtype=self.actions.dtype,
+                )
+
     def rollout(self, gamma: NumOrArray, gae_lambda: NumOrArray) -> VecRollout:
         self.policy.eval()
         self.policy.reset_noise()
+
         for s in range(self.n_steps):
             if self.sde_sample_freq > 0 and s > 0 and s % self.sde_sample_freq == 0:
                 self.policy.reset_noise()
@@ -29,18 +49,23 @@ class ReferenceAIRolloutGenerator(SyncStepRolloutGenerator):
             if self.action_masks is not None:
                 fold_in(self.action_masks, self.next_action_masks, s)
 
-            (_, self.values[s], logprobs, clamped_policy_actions) = self.policy.step(
-                self.next_obs, action_masks=self.next_action_masks
-            )
             if self.include_logp:
-                self.logprobs = logprobs
+                (
+                    _,
+                    self.values[s],
+                    self.logprobs,
+                    step_actions,
+                ) = self.policy.step(self.next_obs, action_masks=self.next_action_masks)
+            else:
+                self.values[s] = self.policy.value(self.next_obs)
+                step_actions = self.zero_action
 
             (
                 self.next_obs,
                 self.rewards[s],
                 self.next_episode_starts,
                 _,
-            ) = self.vec_env.step(clamped_policy_actions)
+            ) = self.vec_env.step(step_actions)
             actions = batch_dict_keys(getattr(self.vec_env, "last_action"))
             fold_in(self.actions, actions, s)
 

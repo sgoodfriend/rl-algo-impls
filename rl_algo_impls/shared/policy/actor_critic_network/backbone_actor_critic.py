@@ -35,6 +35,7 @@ class BackboneActorCritic(ActorCriticNetwork):
         strides: Sequence[Union[int, Sequence[int]]] = (2, 2),
         output_activation_fn: str = "identity",
         subaction_mask: Optional[Dict[int, Dict[int, int]]] = None,
+        critic_shares_backbone: bool = True,
     ):
         if num_additional_critics and not additional_critic_activation_functions:
             additional_critic_activation_functions = [
@@ -59,6 +60,7 @@ class BackboneActorCritic(ActorCriticNetwork):
                 f"action_space {action_space.__class__.__name__} must be MultiDiscrete or gym Dict of MultiDiscrete"
             )
         self.subaction_mask = subaction_mask
+        self.critic_shares_backbone = critic_shares_backbone
 
         self.map_size = len(action_space_per_position.nvec) // len(action_plane_space.nvec)  # type: ignore
 
@@ -105,8 +107,13 @@ class BackboneActorCritic(ActorCriticNetwork):
                 else:
                     flattened_strides.append(s)
 
+            critic_in_channels = (
+                backbone_out_channels
+                if critic_shares_backbone
+                else observation_space.shape[0]  # type: ignore
+            )
             down_convs = down_conv(
-                backbone_out_channels, critic_channels, flattened_strides[0]
+                critic_in_channels, critic_channels, flattened_strides[0]
             )
             for s in flattened_strides[1:]:
                 down_convs.extend(down_conv(critic_channels, critic_channels, s))
@@ -169,15 +176,16 @@ class BackboneActorCritic(ActorCriticNetwork):
             else None,
         )
 
-        v = self.critic_heads(x)
+        v = self.critic_heads(x if self.critic_shares_backbone else o)
         if v.shape[-1] == 1:
             v = v.squeeze(-1)
 
         return ACNForward(pi_forward(pi, action), v)
 
     def value(self, obs: torch.Tensor) -> torch.Tensor:
-        o = self._preprocess(obs)
-        x = self.backbone(o)
+        x = self._preprocess(obs)
+        if self.critic_shares_backbone:
+            x = self.backbone(x)
         v = self.critic_heads(x)
         if v.shape[-1] == 1:
             v = v.squeeze(-1)
