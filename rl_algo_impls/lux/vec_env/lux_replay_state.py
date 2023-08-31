@@ -26,10 +26,15 @@ class Step(NamedTuple):
     opponent_score: float
 
 
+class ReplayPath(NamedTuple):
+    replay_path: str
+    team_name: str
+
+
 class LuxReplayState:
-    def __init__(self, replay_path: str, team_name: str) -> None:
-        self.replay_path = replay_path
-        self.team_name = team_name
+    def __init__(self, replay_path: ReplayPath) -> None:
+        self.replay_path = replay_path.replay_path
+        self.team_name = replay_path.team_name
 
     def step(self) -> Step:
         self.env_step += 1
@@ -61,9 +66,10 @@ class LuxReplayState:
             opponent_score,
         )
 
-    def reset(self, replay_path: str) -> LuxState:
-        self.replay_path = replay_path
-        with open(replay_path) as f:
+    def reset(self, replay_path: ReplayPath) -> LuxState:
+        self.replay_path = replay_path.replay_path
+        self.team_name = replay_path.team_name
+        with open(self.replay_path) as f:
             self.replay_dict = json.load(f)
 
         self.env_cfg = EnvConfig.from_dict(self.replay_dict["configuration"]["env_cfg"])

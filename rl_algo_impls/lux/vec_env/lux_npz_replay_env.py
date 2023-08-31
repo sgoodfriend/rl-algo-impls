@@ -10,6 +10,7 @@ from gym.spaces import MultiDiscrete
 
 from rl_algo_impls.lux.actions import ACTION_SIZES
 from rl_algo_impls.lux.replay_stats import ReplayActionStats
+from rl_algo_impls.lux.vec_env.lux_replay_state import ReplayPath
 
 
 class Replay(NamedTuple):
@@ -53,13 +54,13 @@ def sync_load_npz(file_path: str) -> Replay:
 class LuxNpzReplayEnv(Env):
     def __init__(
         self,
-        next_npz_path_fn: Callable[[], str],
+        next_npz_path_fn: Callable[[], ReplayPath],
     ) -> None:
         super().__init__()
         self.next_npz_path_fn = next_npz_path_fn
         self.initialized = False
 
-        self._load_request = async_load_npz.remote(next_npz_path_fn())
+        self._load_request = async_load_npz.remote(next_npz_path_fn().replay_path)
 
         self.action_stats = ReplayActionStats()
 
@@ -170,6 +171,6 @@ class LuxNpzReplayEnv(Env):
                 self.done,
                 self.action,
                 self.action_mask,
-            ) = sync_load_npz(self.next_npz_path_fn())
+            ) = sync_load_npz(self.next_npz_path_fn().replay_path)
         self.env_step = 0
-        self._load_request = async_load_npz.remote(self.next_npz_path_fn())
+        self._load_request = async_load_npz.remote(self.next_npz_path_fn().replay_path)

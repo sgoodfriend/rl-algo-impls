@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import Dict, Optional
+from typing import Dict, List, NamedTuple, Optional
 
 import numpy as np
 from gym.vector.vector_env import VectorEnv
@@ -8,15 +8,20 @@ from gym.vector.vector_env import VectorEnv
 from rl_algo_impls.lux.rewards import LuxRewardWeights
 from rl_algo_impls.lux.vec_env.lux_npz_replay_env import LuxNpzReplayEnv
 from rl_algo_impls.lux.vec_env.lux_replay_env import LuxReplayEnv
+from rl_algo_impls.lux.vec_env.lux_replay_state import ReplayPath
 from rl_algo_impls.wrappers.vectorable_wrapper import VecEnvObs, VecEnvStepReturn
+
+
+class ReplayDir(NamedTuple):
+    replay_dir: str
+    team_name: str
 
 
 class VecLuxReplayEnv(VectorEnv):
     def __init__(
         self,
         num_envs: int,
-        replay_dir: str,
-        team_name: str,
+        replay_dirs: List[Dict[str, str]],
         reward_weights: Optional[Dict[str, float]] = None,
         offset_env_starts: bool = False,
         is_npz_dir: bool = False,
@@ -24,22 +29,32 @@ class VecLuxReplayEnv(VectorEnv):
         **kwargs,
     ) -> None:
         self.num_envs = num_envs
-        self.replay_dir = replay_dir
-        self.team_name = team_name
+
+        self.replay_dirs = [ReplayDir(**rd) for rd in replay_dirs]
         self.offset_env_starts = offset_env_starts
         self.is_npz_dir = is_npz_dir
         self.compare_policy_action = compare_policy_action
 
         self.replay_paths = []
-        for dirpath, _, filenames in os.walk(replay_dir):
-            for fname in filenames:
-                basename, ext = os.path.splitext(fname)
-                if (
-                    ext != (".npz" if self.is_npz_dir else ".json")
-                    or not basename.isdigit()
-                ):
-                    continue
-                self.replay_paths.append(os.path.join(dirpath, fname))
+        for replay_dir, team_name in self.replay_dirs:
+            added_replay = False
+            for dirpath, _, filenames in os.walk(replay_dir):
+                for fname in filenames:
+                    basename, ext = os.path.splitext(fname)
+                    if (
+                        ext != (".npz" if self.is_npz_dir else ".json")
+                        or not basename.isdigit()
+                    ):
+                        continue
+                    self.replay_paths.append(
+                        ReplayPath(
+                            replay_path=os.path.join(dirpath, fname),
+                            team_name=team_name,
+                        )
+                    )
+                    added_replay = True
+            if not added_replay:
+                logging.warn(f"Could not find any replays in {replay_dir}")
         self.next_replay_idx = 0
         self.replay_idx_permutation = np.random.permutation(len(self.replay_paths))
 
@@ -74,7 +89,7 @@ class VecLuxReplayEnv(VectorEnv):
         self.metadata = single_env.metadata
         super().__init__(num_envs, single_observation_space, single_action_space)
 
-    def next_replay_path(self) -> str:
+    def next_replay_path(self) -> ReplayPath:
         rp = self.replay_paths[self.replay_idx_permutation[self.next_replay_idx]]
         self.next_replay_idx += 1
         if self.next_replay_idx == len(self.replay_idx_permutation):

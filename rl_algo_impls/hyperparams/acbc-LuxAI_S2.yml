@@ -7,8 +7,9 @@ LuxAI_S2-v0-squnet-iDeimos: &lux-squnet-ideimos
     vec_env_class: replay
     n_envs: 24
     make_kwargs: &lux-squnet-idemios-env-make-defaults
-      replay_dir: data/lux/lux-replays-deimos-npz
-      team_name: Deimos
+      replay_dirs:
+        - replay_dir: data/lux/lux-replays-deimos-npz
+          team_name: Deimos
       reward_weights:
         score_vs_opponent: 1
       offset_env_starts: true
@@ -71,8 +72,9 @@ LuxAI_S2-v0-squnet-flg: &lux-squnet-flg
     <<: *lux-squnet-idemios-env
     make_kwargs:
       <<: *lux-squnet-idemios-env-make-defaults
-      replay_dir: data/lux/lux-replays-flg-npz
-      team_name: flg
+      replay_dirs:
+        - replay_dir: data/lux/lux-replays-flg-npz
+          team_name: flg
 
 LuxAI_S2-v0-squnet-ry-andy: &lux-squnet-ry-andy
   <<: *lux-squnet-ideimos
@@ -80,8 +82,9 @@ LuxAI_S2-v0-squnet-ry-andy: &lux-squnet-ry-andy
     <<: *lux-squnet-idemios-env
     make_kwargs:
       <<: *lux-squnet-idemios-env-make-defaults
-      replay_dir: data/lux/lux-replays-ry_andy_-npz
-      team_name: ry_andy_
+      replay_dirs:
+        - replay_dir: data/lux/lux-replays-ry_andy_-npz
+          team_name: ry_andy_
 
 LuxAI_S2-v0-squnet-Tigga: &lux-squnet-tigga
   <<: *lux-squnet-ideimos
@@ -89,8 +92,9 @@ LuxAI_S2-v0-squnet-Tigga: &lux-squnet-tigga
     <<: *lux-squnet-idemios-env
     make_kwargs:
       <<: *lux-squnet-idemios-env-make-defaults
-      replay_dir: data/lux/lux-replays-tigga-npz
-      team_name: Tigga
+      replay_dirs:
+        - replay_dir: data/lux/lux-replays-tigga-npz
+          team_name: Tigga
 
 LuxAI_S2-v0-squnet-SiestaGuru: &lux-squnet-siestaguru
   <<: *lux-squnet-ideimos
@@ -98,8 +102,9 @@ LuxAI_S2-v0-squnet-SiestaGuru: &lux-squnet-siestaguru
     <<: *lux-squnet-idemios-env
     make_kwargs:
       <<: *lux-squnet-idemios-env-make-defaults
-      replay_dir: data/lux/lux-replays-siestaguru-npz
-      team_name: SiestaGuru
+      replay_dirs:
+        - replay_dir: data/lux/lux-replays-siestaguru-npz
+          team_name: SiestaGuru
 
 LuxAI_S2-v0-split-squnet-Deimos: &lux-split-squnet-deimos
   <<: *lux-squnet-ideimos
@@ -107,8 +112,28 @@ LuxAI_S2-v0-split-squnet-Deimos: &lux-split-squnet-deimos
     <<: *lux-squnet-ideimos-policy
     critic_shares_backbone: false
 
-LuxAI_S2-v0-debug:
+LuxAI_S2-v0-split-squnet-multi: &lux-split-squnet-multi
   <<: *lux-split-squnet-deimos
+  env_hyperparams:
+    <<: *lux-squnet-idemios-env
+    make_kwargs:
+      <<: *lux-squnet-idemios-env-make-defaults
+      replay_dir: null
+      team_name: null
+      replay_dirs:
+        - replay_dir: data/lux/lux-replays-deimos-npz
+          team_name: Deimos
+        - replay_dir: data/lux/lux-replays-flg-npz
+          team_name: flg
+        - replay_dir: data/lux/lux-replays-ry_andy_-npz
+          team_name: ry_andy_
+        - replay_dir: data/lux/lux-replays-tigga-npz
+          team_name: Tigga
+        - replay_dir: data/lux/lux-replays-siestaguru-npz
+          team_name: SiestaGuru
+
+LuxAI_S2-v0-debug:
+  <<: *lux-split-squnet-multi
   device: mps
   # eval_hyperparams:
   #   <<: *lux-eval-defaults

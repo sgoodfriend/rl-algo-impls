@@ -20,20 +20,19 @@ from rl_algo_impls.lux.observation import observation_and_action_mask
 from rl_algo_impls.lux.rewards import MIN_SCORE, LuxRewardWeights
 from rl_algo_impls.lux.shared import idx_to_pos, pos_to_idx
 from rl_algo_impls.lux.vec_env.lux_replay_state import LuxReplayState, LuxState
+from rl_algo_impls.lux.vec_env.lux_replay_state import ReplayPath
 
 
 class LuxReplayEnv(Env):
     def __init__(
         self,
-        next_replay_path_fn: Callable[[], str],
-        team_name: str,
+        next_replay_path_fn: Callable[[], ReplayPath],
         reward_weights: Optional[Dict[str, float]] = None,
         verify: bool = False,
         factory_ice_distance_buffer: Optional[int] = None,
     ) -> None:
         super().__init__()
         self.next_replay_path_fn = next_replay_path_fn
-        self.team_name = team_name
         self.reward_weights = (
             LuxRewardWeights.default_start()
             if reward_weights is None
@@ -42,7 +41,7 @@ class LuxReplayEnv(Env):
         self.verify = verify
         self.factory_ice_distance_buffer = factory_ice_distance_buffer
 
-        self.state = LuxReplayState(self.next_replay_path_fn(), self.team_name)
+        self.state = LuxReplayState(self.next_replay_path_fn())
         obs_state_dict, game_state, enqueued_actions, player = self.state.reset(
             self.next_replay_path_fn()
         )
