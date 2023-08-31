@@ -232,6 +232,13 @@ Microrts-squnet-d16-128-iMayari-map64-from32:
     load_run_path: sgoodfriend/rl-algo-impls-microrts-2023/16o4391r
     load_run_path_best: true
 
-Microrts-debug: &microrts-debug-defaults
+Microrts-short-squnet-map64: &microrts-short-squnet-map64
   <<: *microrts-squnet-d16-128-imayari-map64
+  policy_hyperparams:
+    <<: *microrts-squnet-d16-128-imayari-policy
+    encoder_residual_blocks_per_level: [2, 2, 4]
+    decoder_residual_blocks_per_level: [2, 2]
+
+Microrts-debug: &microrts-debug-defaults
+  <<: *microrts-short-squnet-map64
   device: mps

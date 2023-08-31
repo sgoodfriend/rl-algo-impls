@@ -108,7 +108,7 @@ LuxAI_S2-v0-squnet-SiestaGuru: &lux-squnet-siestaguru
 
 LuxAI_S2-v0-split-squnet-Deimos: &lux-split-squnet-deimos
   <<: *lux-squnet-ideimos
-  policy_hyperparams:
+  policy_hyperparams: &lux-split-squnet-deimos-policy
     <<: *lux-squnet-ideimos-policy
     critic_shares_backbone: false
 
@@ -132,8 +132,15 @@ LuxAI_S2-v0-split-squnet-multi: &lux-split-squnet-multi
         - replay_dir: data/lux/lux-replays-siestaguru-npz
           team_name: SiestaGuru
 
-LuxAI_S2-v0-debug:
+LuxAI_S2-v0-split-short-squnet-multi: &lux-split-short-squnet-multi
   <<: *lux-split-squnet-multi
+  policy_hyperparams:
+    <<: *lux-split-squnet-deimos-policy
+    encoder_residual_blocks_per_level: [2, 2, 4]
+    decoder_residual_blocks_per_level: [2, 2]
+
+LuxAI_S2-v0-debug:
+  <<: *lux-split-short-squnet-multi
   device: mps
   # eval_hyperparams:
   #   <<: *lux-eval-defaults
