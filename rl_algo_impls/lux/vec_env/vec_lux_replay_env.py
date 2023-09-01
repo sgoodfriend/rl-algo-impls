@@ -77,7 +77,7 @@ class VecLuxReplayEnv(VectorEnv):
                 e.initialize()
         else:
             self.envs = [
-                LuxReplayEnv(self.next_replay_path, team_name, reward_weights, **kwargs)
+                LuxReplayEnv(self.next_replay_path, reward_weights, **kwargs)
                 for _ in range(self.num_envs)
             ]
         single_env = self.envs[0]
