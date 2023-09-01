@@ -179,7 +179,7 @@ class RandomGuidedLearnerRolloutGenerator(RolloutGenerator):
 
             if self.episode_stats_writer:
                 self.episode_stats_writer.steps_per_step = np.sum(
-                    ~use_guide_policy
+                    use_learning_policy
                 ).item()
             self.next_obs, rewards, dones, _ = self.vec_env.step(step_clamped_actions)
             self.next_action_masks = (
