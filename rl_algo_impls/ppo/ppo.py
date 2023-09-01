@@ -123,6 +123,7 @@ class PPO(Algorithm):
         freeze_backbone: bool = False,
         switch_range: Optional[int] = None,
         guide_probability: Optional[float] = None,
+        normalize_advantages_after_scaling: bool = False,
     ) -> None:
         super().__init__(policy, device, tb_writer)
         self.policy = policy
@@ -163,6 +164,7 @@ class PPO(Algorithm):
 
         self.switch_range = switch_range
         self.guide_probability = guide_probability
+        self.normalize_advantages_after_scaling = normalize_advantages_after_scaling
 
     def learn(
         self: PPOSelf,
@@ -254,10 +256,16 @@ class PPO(Algorithm):
                         mb_returns,
                     ) = astuple(mb)
 
-                    if self.normalize_advantage:
-                        mb_adv = (mb_adv - mb_adv.mean(0)) / (mb_adv.std(0) + 1e-8)
-                    if multi_reward_weights is not None:
-                        mb_adv = mb_adv @ multi_reward_weights
+                    if self.normalize_advantages_after_scaling:
+                        if multi_reward_weights is not None:
+                            mb_adv = mb_adv @ multi_reward_weights
+
+                        mb_adv = (mb_adv - mb_adv.mean()) / (mb_adv.std() + 1e-8)
+                    else:
+                        if self.normalize_advantage:
+                            mb_adv = (mb_adv - mb_adv.mean(0)) / (mb_adv.std(0) + 1e-8)
+                        if multi_reward_weights is not None:
+                            mb_adv = mb_adv @ multi_reward_weights
 
                     new_logprobs, entropy, new_values = self.policy(
                         mb_obs, mb_actions, action_masks=mb_action_masks
