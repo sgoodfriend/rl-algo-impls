@@ -19,8 +19,11 @@ from rl_algo_impls.lux.kit.utils import my_turn_to_place_factory
 from rl_algo_impls.lux.observation import observation_and_action_mask
 from rl_algo_impls.lux.rewards import MIN_SCORE, LuxRewardWeights
 from rl_algo_impls.lux.shared import idx_to_pos, pos_to_idx
-from rl_algo_impls.lux.vec_env.lux_replay_state import LuxReplayState, LuxState
-from rl_algo_impls.lux.vec_env.lux_replay_state import ReplayPath
+from rl_algo_impls.lux.vec_env.lux_replay_state import (
+    LuxReplayState,
+    LuxState,
+    ReplayPath,
+)
 
 
 class LuxReplayEnv(Env):
@@ -103,9 +106,9 @@ class LuxReplayEnv(Env):
         )
         obs = self._from_lux_state(state)
 
-        score_delta = self_score - opponent_score
-        reward = score_delta / (self_score + opponent_score + 1 - 2 * MIN_SCORE)
         if done:
+            score_delta = self_score - opponent_score
+            reward = score_delta / (self_score + opponent_score + 1 - 2 * MIN_SCORE)
             if self_score > opponent_score:
                 win_loss = 1
             elif self_score < opponent_score:
@@ -124,6 +127,7 @@ class LuxReplayEnv(Env):
             }
             obs = self.reset()
         else:
+            reward = 0
             info = {}
         return (obs, reward, done, info)
 
