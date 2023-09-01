@@ -133,6 +133,7 @@ class LuxNpzReplayEnv(Env):
             }
             self.reset()
         else:
+            assert r == 0
             info = {}
         o = self.obs[self.env_step]
         self._action_mask = self.action_mask[self.env_step]
