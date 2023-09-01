@@ -1,7 +1,7 @@
 import dataclasses
 import logging
 from dataclasses import dataclass
-from typing import Dict, Optional, Tuple, Union
+from typing import Dict, NamedTuple, Optional, Tuple, Union
 
 import numpy as np
 
@@ -50,6 +50,11 @@ class UnitActionStats:
         }
 
 
+class UnitBuiltStats(NamedTuple):
+    built_light: int = 0
+    built_heavy: int = 0
+
+
 class ReplayActionStats:
     def __init__(self) -> None:
         self.replay_factory = FactoryActionStats()
@@ -72,7 +77,7 @@ class ReplayActionStats:
         replay_action: Dict[str, np.ndarray],
         policy_action: Optional[Dict[str, np.ndarray]],
         action_mask: Dict[str, np.ndarray],
-    ) -> None:
+    ) -> UnitBuiltStats:
         PER_POSITION_KEY = "per_position"
         r_action = replay_action[PER_POSITION_KEY]
         p_action = policy_action[PER_POSITION_KEY] if policy_action else None
@@ -101,6 +106,10 @@ class ReplayActionStats:
             self.matching.action_mismatch_cnt += (len(r_valid) - rp_unit_match) + (
                 len(rf_valid) - rp_factory_match
             )
+        return UnitBuiltStats(
+            built_light=rf_count[FactoryActionStats.ACTION_NAMES.index("built_light")],
+            built_heavy=rf_count[FactoryActionStats.ACTION_NAMES.index("built_heavy")],
+        )
 
 
 def factory_action_arrays(

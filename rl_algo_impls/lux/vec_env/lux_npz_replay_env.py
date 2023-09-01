@@ -9,7 +9,8 @@ from gym.spaces import Dict as DictSpace
 from gym.spaces import MultiDiscrete
 
 from rl_algo_impls.lux.actions import ACTION_SIZES
-from rl_algo_impls.lux.replay_stats import ReplayActionStats
+from rl_algo_impls.lux.replay_stats import ReplayActionStats, UnitBuiltStats
+from rl_algo_impls.lux.rewards import LuxRewardWeights
 from rl_algo_impls.lux.vec_env.lux_replay_state import ReplayPath
 
 
@@ -55,9 +56,23 @@ class LuxNpzReplayEnv(Env):
     def __init__(
         self,
         next_npz_path_fn: Callable[[], ReplayPath],
+        reward_weights: Optional[Dict[str, float]] = None,
     ) -> None:
         super().__init__()
         self.next_npz_path_fn = next_npz_path_fn
+        self.reward_weights = (
+            LuxRewardWeights(score_vs_opponent=1)
+            if reward_weights is None
+            else LuxRewardWeights(**reward_weights)
+        )
+        self.reward_weights.assert_non_zero_fields(
+            {
+                "score_vs_opponent",
+                "built_light_by_time_remaining",
+                "built_heavy_by_time_remaining",
+            }
+        )
+
         self.initialized = False
 
         self._load_request = async_load_npz.remote(next_npz_path_fn().replay_path)
@@ -107,18 +122,21 @@ class LuxNpzReplayEnv(Env):
         self, action: Optional[Dict[str, np.ndarray]]
     ) -> Tuple[np.ndarray, float, bool, Dict[str, Any]]:
         assert self.initialized
-        r = self.reward[self.env_step]
+        score_reward = self.reward[self.env_step]
         d = self.done[self.env_step]
+        last_unit_built_stats = (
+            self._last_unit_built_stats if self.env_step > 0 else UnitBuiltStats()
+        )
         self._last_action = self.action[self.env_step]
-        self.action_stats.update_action_stats(
+        self._last_unit_built_stats = self.action_stats.update_action_stats(
             self._last_action, action, self._action_mask
         )
         self.env_step += 1
 
         if d:
-            if r > 0:
+            if score_reward > 0:
                 win_loss = 1
-            elif r < 0:
+            elif score_reward < 0:
                 win_loss = -1
             else:
                 win_loss = 0
@@ -126,18 +144,34 @@ class LuxNpzReplayEnv(Env):
                 "stats": self.action_stats.stats_dict(),
                 "results": {
                     "WinLoss": win_loss,
-                    "win": r > 0,
-                    "loss": r < 0,
-                    "score_reward": r,
+                    "win": score_reward > 0,
+                    "loss": score_reward < 0,
+                    "score_reward": score_reward,
                 },
             }
             self.reset()
         else:
-            assert r == 0
+            assert score_reward == 0
             info = {}
         o = self.obs[self.env_step]
         self._action_mask = self.action_mask[self.env_step]
 
+        game_remaining = 1 - o[0, 0, -3]  # Third-to-last channel is game progress
+        weights = np.array(
+            [
+                self.reward_weights.score_vs_opponent,
+                self.reward_weights.built_light_by_time_remaining,
+                self.reward_weights.built_heavy_by_time_remaining,
+            ]
+        )
+        raw_rewards = np.array(
+            [
+                score_reward,
+                last_unit_built_stats.built_light * game_remaining,
+                last_unit_built_stats.built_heavy * game_remaining,
+            ]
+        )
+        r = weights.dot(raw_rewards)
         return (o, r, d, info)
 
     def get_action_mask(self) -> Dict[str, np.ndarray]:

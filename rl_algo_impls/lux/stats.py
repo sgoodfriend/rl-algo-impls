@@ -26,6 +26,8 @@ class AgentRunningStats:
         # Accumalation stats
         "ice_rubble_cleared",
         "ore_rubble_cleared",
+        "built_light_by_time_remaining",
+        "built_heavy_by_time_remaining",
         # Current value stats
         "factories_alive",
         "heavies_alive",
@@ -44,6 +46,9 @@ class AgentRunningStats:
         strain_ids = env.state.teams[agent].factory_strains
         agent_lichen_mask = np.isin(env.state.board.lichen_strains, strain_ids)
         lichen = env.state.board.lichen[agent_lichen_mask].sum()
+        game_remaining = (
+            env.state.env_cfg.max_episode_length - env.state.real_env_steps
+        ) / (env.state.env_cfg.max_episode_length)
 
         new_delta_stats = np.array(
             [
@@ -68,6 +73,8 @@ class AgentRunningStats:
                 update_rubble_cleared_off_positions(
                     env.state, agent, self.rubble_by_ore_pos
                 ),
+                delta[self.NAMES.index("built_light")] * game_remaining,
+                delta[self.NAMES.index("built_heavy")] * game_remaining,
             ]
         )
         new_accumulation_stats = (

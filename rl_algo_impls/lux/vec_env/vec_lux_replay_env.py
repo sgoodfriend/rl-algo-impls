@@ -71,7 +71,8 @@ class VecLuxReplayEnv(VectorEnv):
 
             ray.init(_system_config={"automatic_object_spilling_enabled": False})
             self.envs = [
-                LuxNpzReplayEnv(self.next_replay_path) for _ in range(self.num_envs)
+                LuxNpzReplayEnv(self.next_replay_path, reward_weights)
+                for _ in range(self.num_envs)
             ]
             for e in self.envs:
                 e.initialize()

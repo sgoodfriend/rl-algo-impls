@@ -1,4 +1,4 @@
-from typing import Any, Dict, NamedTuple, Type, TypeVar
+from typing import Any, Dict, NamedTuple, Set, Type, TypeVar
 
 import numpy as np
 
@@ -25,6 +25,8 @@ class LuxRewardWeights(NamedTuple):
     # Accumulation stats
     ice_rubble_cleared: float = 0
     ore_rubble_cleared: float = 0
+    built_light_by_time_remaining: float = 0
+    built_heavy_by_time_remaining: float = 0
     # Current value stats
     factories_alive: float = 0
     heavies_alive: float = 0
@@ -60,6 +62,11 @@ class LuxRewardWeights(NamedTuple):
         return cls(
             *interpolate(np.array(cls(**start)), np.array(cls(**end)), progress, method)
         )
+
+    def assert_non_zero_fields(self, allowed_fields: Set[str]):
+        for field, value in self._asdict().items():
+            if field not in allowed_fields and value != 0:
+                raise ValueError(f"Field {field} is not allowed to be non-zero")
 
 
 MIN_SCORE = -1000
