@@ -272,12 +272,10 @@ LuxAI_S2-v0-squnet-iDeimos: &lux-squnet-ideimos
     make_kwargs: &lux-squnet-ideimos-env-make-kwargs
       <<: *lux-env-make-defaults
       reward_weights:
-        built_light_by_time_remaining: 0.01
-        built_heavy_by_time_remaining: 0.1
+        score_vs_opponent: 1
       factory_ice_distance_buffer: null
     additional_win_loss_reward: true
-    score_reward_kwargs:
-      episode_end: true
+    score_reward_kwargs: null
     self_play_kwargs:
       <<: *lux-env-self-play
       save_steps: !!float 1e6
@@ -291,18 +289,18 @@ LuxAI_S2-v0-squnet-iDeimos: &lux-squnet-ideimos
         factory_ice_distance_buffer: null
   policy_hyperparams: &lux-squnet-ideimos-policy
     <<: *lux-squnet-policy
-    additional_critic_activation_functions: [tanh, tanh]
-    output_activation_fn: identity
+    additional_critic_activation_functions: [tanh]
+    output_activation_fn: tanh
     load_run_path: sgoodfriend/rl-algo-impls-lux-nips1/qil1np82
   algo_hyperparams: &lux-squnet-ideimos-algo
     <<: *lux-squnet-algo
-    multi_reward_weights: [0.1, 0.8, 0.1]
-    gamma: [0.9997, 0.9997, 0.9997]
-    gae_lambda: [0.95, 0.95, 0.95]
-    vf_coef: [0.33, 0.33, 0.33]
+    multi_reward_weights: [0.1, 0.9]
+    gamma: [0.9997, 0.9997]
+    gae_lambda: [0.99, 0.99]
+    vf_coef: [0.1, 0.4]
     learning_rate: !!float 1e-4
     ent_coef: 0.01
-    scale_loss_by_num_actions: false
+    scale_loss_by_num_actions: true
   hyperparam_transitions_kwargs: &lux-squnet-ideimos-hyperparam-transitions
     interpolate_method: cosine
     phases:
