@@ -70,14 +70,6 @@ class ActorCriticNetwork(nn.Module, ABC):
     def unfreeze(self):
         self.freeze(False, False, freeze_backbone=False)
 
-    def save(self, path: str) -> None:
-        torch.save(self.state_dict(), os.path.join(path, MODEL_FILENAME))
-
-    def load(self, path: str, device: Optional[torch.device]) -> None:
-        self.load_state_dict(
-            torch.load(os.path.join(path, MODEL_FILENAME), map_location=device)
-        )
-
 
 def default_hidden_sizes(obs_space: Space) -> Sequence[int]:
     if isinstance(obs_space, Box):
