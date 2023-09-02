@@ -12,6 +12,7 @@ from rl_algo_impls.lux.actions import (
     min_factory_resources,
 )
 from rl_algo_impls.lux.kit.utils import my_turn_to_place_factory
+from rl_algo_impls.lux.resource_distance_map import ice_distance_map
 from rl_algo_impls.lux.shared import (
     LuxEnvConfig,
     LuxFactory,
@@ -133,34 +134,9 @@ def get_action_mask_pick_position(
         return action_mask
 
     if factory_ice_distance_buffer is not None:
-        cfg = state.env_cfg
-
-        dist_map = np.full((cfg.map_size, cfg.map_size), np.inf)
-        ice_tile_locations = np.argwhere(state.board.ice)
-        queue = deque()
-        for loc in ice_tile_locations:
-            for dx in [-1, 0, 1]:
-                for dy in [-1, 0, 1]:
-                    dloc = loc + np.array([dx, dy])
-                    if not is_position_in_map(dloc, cfg):
-                        continue
-                    x, y = dloc
-                    dist_map[x, y] = 0
-                    queue.append((dloc, 0))
-        directions = move_deltas[1:]
-        while queue:
-            loc, distance = queue.popleft()
-            ndist = distance + 1
-            for d in directions:
-                nloc = loc + d
-                if not is_position_in_map(nloc, cfg):
-                    continue
-                nx, ny = nloc
-                if ndist < dist_map[nx, ny]:
-                    dist_map[nx, ny] = ndist
-                    queue.append((nloc, ndist))
-
-        dist_map = np.where(state.board.valid_spawns_mask, dist_map, np.inf)
+        dist_map = np.where(
+            state.board.valid_spawns_mask, ice_distance_map(state), np.inf
+        )
 
         valid_spawn_map = dist_map <= np.min(dist_map) + factory_ice_distance_buffer
         return np.expand_dims(valid_spawn_map.flatten(), 0)

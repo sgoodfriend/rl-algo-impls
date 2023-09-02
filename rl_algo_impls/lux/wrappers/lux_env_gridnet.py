@@ -17,6 +17,7 @@ from rl_algo_impls.lux.actions import (
 )
 from rl_algo_impls.lux.early import bid_action
 from rl_algo_impls.lux.observation import observation_and_action_mask
+from rl_algo_impls.lux.resource_distance_map import FactoryPlacementDistances
 from rl_algo_impls.lux.rewards import LuxRewardWeights, from_lux_rewards
 from rl_algo_impls.lux.stats import StatsTracking
 
@@ -90,6 +91,8 @@ class LuxEnvGridnet(Wrapper):
         lux_actions = self._to_lux_actions(action)
         lux_obs, lux_rewards, done, info = env.step(lux_actions)
 
+        self.factory_distances.record_placement(lux_actions)
+
         all_done = all(done.values())
         rewards = self._from_lux_rewards(lux_rewards, all_done, info)
 
@@ -113,6 +116,7 @@ class LuxEnvGridnet(Wrapper):
 
     def reset(self) -> np.ndarray:
         lux_obs, self.agents = reset_and_early_phase(self.unwrapped, self.bid_std_dev)
+        self.factory_distances = FactoryPlacementDistances(self.unwrapped.state)
         self._enqueued_actions = {}
         self.stats.reset(self.unwrapped, self.verify)
         return self._from_lux_observation(lux_obs)
@@ -169,6 +173,7 @@ class LuxEnvGridnet(Wrapper):
                         "actions_success": actions_success,
                         "actions_failed": actions_total - actions_success,
                     },
+                    **self.factory_distances.get_distances(agent),
                 }
                 if self.verify:
                     assert actions_total - actions_success == 0
