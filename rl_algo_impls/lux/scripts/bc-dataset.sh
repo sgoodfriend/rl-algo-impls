@@ -14,7 +14,7 @@ create_dataset() {
     cd ..
 }
 
-create_dataset lux-replays-deimos-npz
+create_dataset lux-replays-deimos-npz lux-replays-submission-deimos-npz
 create_dataset lux-replays-flg-npz
 create_dataset lux-replays-ry_andy_-npz lux-replays-ry-andy-npz
 create_dataset lux-replays-tigga-npz
