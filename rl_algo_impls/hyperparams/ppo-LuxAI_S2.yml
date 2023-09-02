@@ -471,9 +471,32 @@ LuxAI_S2-v0-squnet-Deimos-guided-random-fast: &lux-squnet-guided-random-fast
 
 LuxAI_S2-v0-squnet-Deimos-adv-norm-gfast: &lux-squnet-adv-norm-gfast
   <<: *lux-squnet-guided-random-fast
-  algo_hyperparams:
+  algo_hyperparams: &lux-squnet-adv-norm-gfast-algo
     <<: *lux-squnet-ideimos-algo
     normalize_advantages_after_scaling: true
+    scale_loss_by_num_actions: false
+
+LuxAI_S2-v0-squnet-acbc-robot: &lux-squnet-acbc-robot
+  <<: *lux-squnet-adv-norm-gfast
+  env_hyperparams:
+    <<: *lux-squnet-ideimos-env
+    make_kwargs:
+      <<: *lux-squnet-ideimos-env-make-kwargs
+      reward_weights:
+        built_light_by_time_remaining: 0.01
+        built_heavy_by_time_remaining: 0.1
+    score_reward_kwargs:
+      episode_end: true
+  policy_hyperparams:
+    <<: *lux-squnet-ideimos-policy
+    additional_critic_activation_functions: [tanh, tanh]
+    output_activation_fn: identity
+  algo_hyperparams:
+    <<: *lux-squnet-adv-norm-gfast-algo
+    multi_reward_weights: [0.1, 0.8, 0.1]
+    gamma: [0.9997, 0.9997, 0.9997]
+    gae_lambda: [0.95, 0.95, 0.95]
+    vf_coef: [0.33, 0.33, 0.33]
     scale_loss_by_num_actions: false
 
 LuxAI_S2-agent: &lux-agent
