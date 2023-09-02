@@ -7,7 +7,6 @@ import torch.nn as nn
 from gym.spaces import Box, Discrete, Space
 
 from rl_algo_impls.shared.actor import PiForward
-from rl_algo_impls.shared.policy.policy import MODEL_FILENAME
 from rl_algo_impls.shared.tensor_utils import TensorOrDict
 
 
