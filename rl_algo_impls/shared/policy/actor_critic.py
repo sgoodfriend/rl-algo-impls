@@ -12,6 +12,9 @@ from rl_algo_impls.shared.policy.actor_critic_network import (
     SeparateActorCriticNetwork,
     UNetActorCriticNetwork,
 )
+from rl_algo_impls.shared.policy.actor_critic_network.backbone_actor_critic import (
+    BackboneActorCritic,
+)
 from rl_algo_impls.shared.policy.actor_critic_network.double_cone import (
     DoubleConeActorCritic,
 )
@@ -294,10 +297,22 @@ class ActorCritic(OnPolicy):
             )
 
     def save_weights(self, path: str) -> None:
-        self.network.save(path)
+        if (
+            isinstance(self.network, BackboneActorCritic)
+            and not self.network.critic_shares_backbone
+        ):
+            self.network.save(path)
+        else:
+            super().save_weights(path)
 
     def load_weights(self, path: str) -> None:
-        self.network.load(path, self.device)
+        if (
+            isinstance(self.network, BackboneActorCritic)
+            and not self.network.critic_shares_backbone
+        ):
+            self.network.load(path, self.device)
+        else:
+            super().load_weights(path)
 
     def load(self, path: str) -> None:
         super().load(path)

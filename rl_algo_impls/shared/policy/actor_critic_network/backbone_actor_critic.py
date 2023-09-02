@@ -228,29 +228,27 @@ class BackboneActorCritic(ActorCriticNetwork):
             p.requires_grad = not freeze_backbone
 
     def save(self, path: str) -> None:
-        if self.critic_shares_backbone:
-            super().save(path)
-        else:
-            torch.save(
-                {
-                    "actor_head": self.actor_head.state_dict(),
-                    "backbone": self.backbone.state_dict(),
-                },
-                os.path.join(path, MODEL_FILENAME),
-            )
-            torch.save(
-                self.critic_heads.state_dict(), os.path.join(path, CRITIC_FILENAME)
-            )
+        assert (
+            not self.critic_shares_backbone
+        ), "Should not be called if sharing backbone"
+        torch.save(
+            {
+                "actor_head": self.actor_head.state_dict(),
+                "backbone": self.backbone.state_dict(),
+            },
+            os.path.join(path, MODEL_FILENAME),
+        )
+        torch.save(self.critic_heads.state_dict(), os.path.join(path, CRITIC_FILENAME))
 
     def load(self, path: str, device: Optional[torch.device]) -> None:
-        if self.critic_shares_backbone:
-            super().load(path, device)
-        else:
-            policy_weights = torch.load(
-                os.path.join(path, MODEL_FILENAME), map_location=device
-            )
-            self.backbone.load_state_dict(policy_weights["backbone"])
-            self.actor_head.load_state_dict(policy_weights["actor_head"])
-            self.critic_heads.load_state_dict(
-                torch.load(os.path.join(path, CRITIC_FILENAME), map_location=device)
-            )
+        assert (
+            not self.critic_shares_backbone
+        ), "Should not be called if sharing backbone"
+        policy_weights = torch.load(
+            os.path.join(path, MODEL_FILENAME), map_location=device
+        )
+        self.backbone.load_state_dict(policy_weights["backbone"])
+        self.actor_head.load_state_dict(policy_weights["actor_head"])
+        self.critic_heads.load_state_dict(
+            torch.load(os.path.join(path, CRITIC_FILENAME), map_location=device)
+        )
