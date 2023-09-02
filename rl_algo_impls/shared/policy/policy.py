@@ -57,6 +57,17 @@ class Policy(nn.Module, ABC):
     ) -> np.ndarray:
         ...
 
+    def save_weights(self, path: str) -> None:
+        torch.save(
+            self.state_dict(),
+            os.path.join(path, MODEL_FILENAME),
+        )
+
+    def load_weights(self, path: str) -> None:
+        self.load_state_dict(
+            torch.load(os.path.join(path, MODEL_FILENAME), map_location=self.device)
+        )
+
     def save(self, path: str) -> None:
         os.makedirs(path, exist_ok=True)
 
@@ -68,16 +79,11 @@ class Policy(nn.Module, ABC):
             )
         if self.norm_reward:
             self.norm_reward.save(os.path.join(path, NORMALIZE_REWARD_FILENAME))
-        torch.save(
-            self.state_dict(),
-            os.path.join(path, MODEL_FILENAME),
-        )
+        self.save_weights(path)
 
     def load(self, path: str) -> None:
         # VecNormalize load occurs in env.py
-        self.load_state_dict(
-            torch.load(os.path.join(path, MODEL_FILENAME), map_location=self.device)
-        )
+        self.load_weights(path)
         if self.norm_observation:
             self.norm_observation.load(
                 os.path.join(path, NORMALIZE_OBSERVATION_FILENAME)

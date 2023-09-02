@@ -1,3 +1,4 @@
+import os
 from abc import ABC, abstractmethod
 from typing import NamedTuple, Optional, Sequence, Tuple
 
@@ -6,6 +7,7 @@ import torch.nn as nn
 from gym.spaces import Box, Discrete, Space
 
 from rl_algo_impls.shared.actor import PiForward
+from rl_algo_impls.shared.policy.policy import MODEL_FILENAME
 from rl_algo_impls.shared.tensor_utils import TensorOrDict
 
 
@@ -67,6 +69,14 @@ class ActorCriticNetwork(nn.Module, ABC):
 
     def unfreeze(self):
         self.freeze(False, False, freeze_backbone=False)
+
+    def save(self, path: str) -> None:
+        torch.save(self.state_dict(), os.path.join(path, MODEL_FILENAME))
+
+    def load(self, path: str, device: Optional[torch.device]) -> None:
+        self.load_state_dict(
+            torch.load(os.path.join(path, MODEL_FILENAME), map_location=device)
+        )
 
 
 def default_hidden_sizes(obs_space: Space) -> Sequence[int]:

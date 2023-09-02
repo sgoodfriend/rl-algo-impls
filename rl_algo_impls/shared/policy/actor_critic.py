@@ -293,6 +293,12 @@ class ActorCritic(OnPolicy):
                 tensor_to_numpy(a), self.action_space, self.squash_output
             )
 
+    def save_weights(self, path: str) -> None:
+        self.network.save(path)
+
+    def load_weights(self, path: str) -> None:
+        self.network.load(path, self.device)
+
     def load(self, path: str) -> None:
         super().load(path)
         self.reset_noise()
