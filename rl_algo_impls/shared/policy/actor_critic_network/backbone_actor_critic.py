@@ -39,6 +39,7 @@ class BackboneActorCritic(ActorCriticNetwork):
         output_activation_fn: str = "identity",
         subaction_mask: Optional[Dict[int, Dict[int, int]]] = None,
         critic_shares_backbone: bool = True,
+        save_critic_separate: bool = False,
     ):
         if num_additional_critics and not additional_critic_activation_functions:
             additional_critic_activation_functions = [
@@ -64,6 +65,11 @@ class BackboneActorCritic(ActorCriticNetwork):
             )
         self.subaction_mask = subaction_mask
         self.critic_shares_backbone = critic_shares_backbone
+        self.save_critic_separate = save_critic_separate
+        if save_critic_separate:
+            assert (
+                not critic_shares_backbone
+            ), "Cannot save critic separate if sharing backbone"
 
         self.map_size = len(action_space_per_position.nvec) // len(action_plane_space.nvec)  # type: ignore
 

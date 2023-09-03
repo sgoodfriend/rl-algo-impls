@@ -299,7 +299,7 @@ class ActorCritic(OnPolicy):
     def save_weights(self, path: str) -> None:
         if (
             isinstance(self.network, BackboneActorCritic)
-            and not self.network.critic_shares_backbone
+            and self.network.save_critic_separate
         ):
             self.network.save(path)
         else:
@@ -308,7 +308,7 @@ class ActorCritic(OnPolicy):
     def load_weights(self, path: str) -> None:
         if (
             isinstance(self.network, BackboneActorCritic)
-            and not self.network.critic_shares_backbone
+            and self.network.save_critic_separate
         ):
             self.network.load(path, self.device)
         else:
