@@ -489,6 +489,14 @@ LuxAI_S2-v0-split-squnet-multi: &lux-split-squnet-multi
     <<: *lux-split-squnet-deimos-policy
     load_run_path: sgoodfriend/rl-algo-impls-lux-nips1/ntwvs6bc
 
+LuxAI_S2-v0-split-short-squnet-multi: &lux-split-short-squnet-multi
+  <<: *lux-split-squnet-multi
+  policy_hyperparams:
+    <<: *lux-split-squnet-deimos-policy
+    encoder_residual_blocks_per_level: [2, 2, 4]
+    decoder_residual_blocks_per_level: [2, 2]
+    load_run_path: sgoodfriend/rl-algo-impls-lux-nips1/ze7acdpc
+
 LuxAI_S2-v0-squnet-acbc-robot: &lux-squnet-acbc-robot
   <<: *lux-squnet-adv-norm-gfast
   env_hyperparams:
@@ -530,7 +538,7 @@ LuxAI_S2-agent: &lux-agent
         swap_steps: .inf
 
 LuxAI_S2-v0-debug:
-  <<: *lux-split-squnet-multi
+  <<: *lux-split-short-squnet-multi
   n_timesteps: !!float 1e6
   device: mps
   env_hyperparams:
