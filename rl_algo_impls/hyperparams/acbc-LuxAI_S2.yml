@@ -1,24 +1,21 @@
 LuxAI_S2-v0-squnet-iDeimos: &lux-squnet-ideimos
   env_id: LuxAI_S2-v0
-  n_timesteps: !!float 50e6
+  n_timesteps: !!float 40e6
   additional_keys_to_log: ["results", "stats"]
-  env_hyperparams: &lux-squnet-idemios-env
+  env_hyperparams: &lux-squnet-ideimos-env
     env_type: lux
     vec_env_class: replay
     n_envs: 24
-    make_kwargs: &lux-squnet-idemios-env-make-defaults
+    make_kwargs: &lux-squnet-ideimos-env-make-defaults
       replay_dirs:
         - replay_dir: data/lux/lux-replays-deimos-npz
           team_name: Deimos
       reward_weights:
-        built_light_by_time_remaining: 0.01
-        built_heavy_by_time_remaining: 0.1
+        score_vs_opponent: 1
       offset_env_starts: true
       is_npz_dir: true
       factory_ice_distance_buffer: null
     additional_win_loss_reward: true
-    score_reward_kwargs:
-      episode_end: true
   rollout_type: reference
   rollout_hyperparams: &lux-squnet-ideimos-rollout
     n_steps: 512
@@ -55,16 +52,16 @@ LuxAI_S2-v0-squnet-iDeimos: &lux-squnet-ideimos
     deconv_strides_per_level: [[2, 2], [2, 2]]
     encoder_residual_blocks_per_level: [3, 2, 4]
     decoder_residual_blocks_per_level: [2, 3]
-    additional_critic_activation_functions: [tanh, tanh]
-    output_activation_fn: identity
+    additional_critic_activation_functions: [tanh]
+    output_activation_fn: tanh
   algo_hyperparams: &lux-squnet-ideimos-algo
     learning_rate: !!float 1e-3
     learning_rate_decay: linear
     batch_size: 384
-    n_epochs: 1
-    gamma: [0.9997, 0.9997, 0.9997]
-    gae_lambda: [0.95, 0.95, 0.95]
-    vf_coef: [0.33, 0.33, 0.33]
+    n_epochs: 2
+    gamma: [0.9997, 0.9997]
+    gae_lambda: [0.99, 0.99]
+    vf_coef: [0.25, 0.25]
     max_grad_norm: 0.5
     gradient_accumulation: true
     scale_loss_by_num_actions: true
@@ -72,9 +69,9 @@ LuxAI_S2-v0-squnet-iDeimos: &lux-squnet-ideimos
 LuxAI_S2-v0-squnet-flg: &lux-squnet-flg
   <<: *lux-squnet-ideimos
   env_hyperparams:
-    <<: *lux-squnet-idemios-env
+    <<: *lux-squnet-ideimos-env
     make_kwargs:
-      <<: *lux-squnet-idemios-env-make-defaults
+      <<: *lux-squnet-ideimos-env-make-defaults
       replay_dirs:
         - replay_dir: data/lux/lux-replays-flg-npz
           team_name: flg
@@ -82,9 +79,9 @@ LuxAI_S2-v0-squnet-flg: &lux-squnet-flg
 LuxAI_S2-v0-squnet-ry-andy: &lux-squnet-ry-andy
   <<: *lux-squnet-ideimos
   env_hyperparams:
-    <<: *lux-squnet-idemios-env
+    <<: *lux-squnet-ideimos-env
     make_kwargs:
-      <<: *lux-squnet-idemios-env-make-defaults
+      <<: *lux-squnet-ideimos-env-make-defaults
       replay_dirs:
         - replay_dir: data/lux/lux-replays-ry_andy_-npz
           team_name: ry_andy_
@@ -92,9 +89,9 @@ LuxAI_S2-v0-squnet-ry-andy: &lux-squnet-ry-andy
 LuxAI_S2-v0-squnet-Tigga: &lux-squnet-tigga
   <<: *lux-squnet-ideimos
   env_hyperparams:
-    <<: *lux-squnet-idemios-env
+    <<: *lux-squnet-ideimos-env
     make_kwargs:
-      <<: *lux-squnet-idemios-env-make-defaults
+      <<: *lux-squnet-ideimos-env-make-defaults
       replay_dirs:
         - replay_dir: data/lux/lux-replays-tigga-npz
           team_name: Tigga
@@ -102,9 +99,9 @@ LuxAI_S2-v0-squnet-Tigga: &lux-squnet-tigga
 LuxAI_S2-v0-squnet-SiestaGuru: &lux-squnet-siestaguru
   <<: *lux-squnet-ideimos
   env_hyperparams:
-    <<: *lux-squnet-idemios-env
+    <<: *lux-squnet-ideimos-env
     make_kwargs:
-      <<: *lux-squnet-idemios-env-make-defaults
+      <<: *lux-squnet-ideimos-env-make-defaults
       replay_dirs:
         - replay_dir: data/lux/lux-replays-siestaguru-npz
           team_name: SiestaGuru
@@ -117,10 +114,10 @@ LuxAI_S2-v0-split-squnet-Deimos: &lux-split-squnet-deimos
 
 LuxAI_S2-v0-split-squnet-multi: &lux-split-squnet-multi
   <<: *lux-split-squnet-deimos
-  env_hyperparams:
-    <<: *lux-squnet-idemios-env
-    make_kwargs:
-      <<: *lux-squnet-idemios-env-make-defaults
+  env_hyperparams: &lux-split-squnet-multi-env
+    <<: *lux-squnet-ideimos-env
+    make_kwargs: &lux-split-squnet-multi-env-make-kwargs
+      <<: *lux-squnet-ideimos-env-make-defaults
       replay_dir: null
       team_name: null
       replay_dirs:
@@ -137,10 +134,34 @@ LuxAI_S2-v0-split-squnet-multi: &lux-split-squnet-multi
 
 LuxAI_S2-v0-split-short-squnet-multi: &lux-split-short-squnet-multi
   <<: *lux-split-squnet-multi
-  policy_hyperparams:
+  policy_hyperparams: &lux-split-short-squnet-multi-policy
     <<: *lux-split-squnet-deimos-policy
     encoder_residual_blocks_per_level: [2, 2, 4]
     decoder_residual_blocks_per_level: [2, 2]
+
+LuxAI_S2-v0-split-short-squnet-acbc-robot: &lux-split-short-squnet-acbc-robot
+  <<: *lux-squnet-adv-norm-gfast
+  n_timesteps: !!float 50e6
+  env_hyperparams:
+    <<: *lux-split-squnet-multi-env
+    make_kwargs:
+      <<: *lux-split-squnet-multi-env-make-kwargs
+      reward_weights:
+        built_light_by_time_remaining: 0.01
+        built_heavy_by_time_remaining: 0.1
+    score_reward_kwargs:
+      episode_end: true
+  policy_hyperparams:
+    <<: *lux-split-short-squnet-multi-policy
+    additional_critic_activation_functions: [tanh, tanh]
+    output_activation_fn: identity
+    save_critic_separate: true
+  algo_hyperparams:
+    <<: *lux-squnet-ideimos-algo
+    n_epochs: 1
+    gamma: [0.9997, 0.9997, 0.9997]
+    gae_lambda: [0.95, 0.95, 0.95]
+    vf_coef: [0.33, 0.33, 0.33]
 
 LuxAI_S2-v0-debug:
   <<: *lux-split-short-squnet-multi

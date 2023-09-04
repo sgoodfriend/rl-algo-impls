@@ -491,17 +491,17 @@ LuxAI_S2-v0-split-squnet-multi: &lux-split-squnet-multi
 
 LuxAI_S2-v0-split-short-squnet-multi: &lux-split-short-squnet-multi
   <<: *lux-split-squnet-multi
-  policy_hyperparams:
+  policy_hyperparams: &lux-split-short-squnet-multi-policy
     <<: *lux-split-squnet-deimos-policy
     encoder_residual_blocks_per_level: [2, 2, 4]
     decoder_residual_blocks_per_level: [2, 2]
     load_run_path: sgoodfriend/rl-algo-impls-lux-nips1/ze7acdpc
 
-LuxAI_S2-v0-squnet-acbc-robot: &lux-squnet-acbc-robot
+LuxAI_S2-v0-split-short-squnet-acbc-robot: &lux-split-short-squnet-acbc-robot
   <<: *lux-squnet-adv-norm-gfast
-  env_hyperparams:
+  env_hyperparams: &lux-split-short-squnet-acbc-robot-env
     <<: *lux-squnet-ideimos-env
-    make_kwargs:
+    make_kwargs: &lux-split-short-squnet-acbc-robot-env-make-kwargs
       <<: *lux-squnet-ideimos-env-make-kwargs
       reward_weights:
         built_light_by_time_remaining: 0.01
@@ -509,9 +509,11 @@ LuxAI_S2-v0-squnet-acbc-robot: &lux-squnet-acbc-robot
     score_reward_kwargs:
       episode_end: true
   policy_hyperparams:
-    <<: *lux-squnet-ideimos-policy
+    <<: *lux-split-short-squnet-multi-policy
     additional_critic_activation_functions: [tanh, tanh]
     output_activation_fn: identity
+    load_run_path: sgoodfriend/rl-algo-impls-lux-nips1/oupuah7y
+    save_critic_separate: true
   algo_hyperparams:
     <<: *lux-squnet-adv-norm-gfast-algo
     multi_reward_weights: [0.1, 0.8, 0.1]
@@ -538,12 +540,12 @@ LuxAI_S2-agent: &lux-agent
         swap_steps: .inf
 
 LuxAI_S2-v0-debug:
-  <<: *lux-split-short-squnet-multi
+  <<: *lux-split-short-squnet-acbc-robot
   n_timesteps: !!float 1e6
   device: mps
   env_hyperparams:
-    <<: *lux-squnet-ideimos-env
+    <<: *lux-split-short-squnet-acbc-robot-env
     make_kwargs:
-      <<: *lux-squnet-ideimos-env-make-kwargs
+      <<: *lux-split-short-squnet-acbc-robot-env-make-kwargs
       verbose: 3
       verify: true

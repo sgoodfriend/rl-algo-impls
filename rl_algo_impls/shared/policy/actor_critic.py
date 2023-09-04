@@ -135,6 +135,7 @@ class ActorCritic(OnPolicy):
         output_activation_fn: str = "identity",
         subaction_mask: Optional[Dict[int, Dict[int, int]]] = None,
         critic_shares_backbone: Optional[bool] = None,
+        save_critic_separate: Optional[bool] = None,
         **kwargs,
     ) -> None:
         super().__init__(env, **kwargs)
@@ -200,6 +201,9 @@ class ActorCritic(OnPolicy):
                 critic_shares_backbone=critic_shares_backbone
                 if critic_shares_backbone is not None
                 else True,
+                save_critic_separate=save_critic_separate
+                if save_critic_separate is not None
+                else False,
             )
         elif share_features_extractor:
             self.network = ConnectedTrioActorCriticNetwork(
