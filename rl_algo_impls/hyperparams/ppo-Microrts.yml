@@ -1321,7 +1321,6 @@ Microrts-squnet-d16-128-iMayari: &microrts-squnet-d16-128-imayari
     clip_range_vf: 0.1
     normalize_advantage: false
     kl_cutoff: 0.01
-    scale_loss_by_num_actions: true
   eval_hyperparams:
     <<: *microrts-squnet-map16-eval-defaults
     env_overrides:
@@ -1474,21 +1473,6 @@ Microrts-squnet-d16-128-map64-BC-finetune:
       - 0.23
       - 0.02
 
-Microrts-squnet-d16-128-map64-BC-finetune-scale-loss:
-  &microrts-squnet-d16-128-map64-bc-finetune-scale-loss
-  <<: *microrts-squnet-d16-128-map64-bc-finetune
-  algo_hyperparams: &microrts-squnet-d16-128-map64-bc-finetune-scale-loss-algo
-    <<: *microrts-squnet-d16-128-map64-bc-finetune-algo
-    scale_loss_by_num_actions: true
-    batch_size: 192
-
-Microrts-squnet-d16-128-map64-BC-finetune-sl-no-norm-adv:
-  &microrts-squnet-d16-128-map64-bc-finetune-sl-norm-adv
-  <<: *microrts-squnet-d16-128-map64-bc-finetune-scale-loss
-  algo_hyperparams:
-    <<: *microrts-squnet-d16-128-map64-bc-finetune-scale-loss-algo
-    normalize_advantage: false
-
 Microrts-squnet-d16-128-map64-BC-finetune-A10:
   &microrts-squnet-d16-128-map64-bc-finetune-a10
   <<: *microrts-squnet-d16-128-map64-bc-finetune
@@ -1625,13 +1609,6 @@ Microrts-squnet-d16-128-map16-sc-cos-ga-selfplay-a10:
   <<: *microrts-squnet-d16-128-sc-cos-ga-selfplay-a10
   env_hyperparams:
     <<: *microrts-squnet-d16-128-map16-env-defaults
-
-Microrts-squnet-d16-128-map16-sc-cos-ga-scale-loss-selfplay:
-  &microrts-squnet-d16-128-map16-sc-cos-ga-scale-loss-selfplay
-  <<: *microrts-squnet-d16-128-map16-sc-cos-ga-selfplay-a10
-  algo_hyperparams:
-    <<: *microrts-squnet-d16-128-sc-cos-ga-selfplay-a10-algo
-    scale_loss_by_num_actions: true
 
 Microrts-agent: &microrts-agent
   <<: *microrts-sp-dc-phases-defaults

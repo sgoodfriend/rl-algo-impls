@@ -300,7 +300,6 @@ LuxAI_S2-v0-squnet-iDeimos: &lux-squnet-ideimos
     vf_coef: [0.1, 0.4]
     learning_rate: !!float 1e-4
     ent_coef: 0.01
-    scale_loss_by_num_actions: true
   hyperparam_transitions_kwargs: &lux-squnet-ideimos-hyperparam-transitions
     interpolate_method: cosine
     phases:
@@ -474,7 +473,6 @@ LuxAI_S2-v0-squnet-Deimos-adv-norm-gfast: &lux-squnet-adv-norm-gfast
   algo_hyperparams: &lux-squnet-adv-norm-gfast-algo
     <<: *lux-squnet-ideimos-algo
     normalize_advantages_after_scaling: true
-    scale_loss_by_num_actions: false
 
 LuxAI_S2-v0-split-squnet-Deimos: &lux-split-squnet-deimos
   <<: *lux-squnet-adv-norm-gfast
@@ -520,7 +518,6 @@ LuxAI_S2-v0-split-short-squnet-acbc-robot: &lux-split-short-squnet-acbc-robot
     gamma: [0.9997, 0.9997, 0.9997]
     gae_lambda: [0.95, 0.95, 0.95]
     vf_coef: [0.33, 0.33, 0.33]
-    scale_loss_by_num_actions: false
 
 LuxAI_S2-agent: &lux-agent
   <<: *lux-squnet-ideimos

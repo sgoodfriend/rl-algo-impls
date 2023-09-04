@@ -117,7 +117,6 @@ class PPO(Algorithm):
         multi_reward_weights: Optional[List[int]] = None,
         gradient_accumulation: bool = False,
         kl_cutoff: Optional[float] = None,
-        scale_loss_by_num_actions: bool = False,
         freeze_policy_head: bool = False,
         freeze_value_head: bool = False,
         freeze_backbone: bool = False,
@@ -156,7 +155,6 @@ class PPO(Algorithm):
         )
         self.gradient_accumulation = gradient_accumulation
         self.kl_cutoff = kl_cutoff
-        self.scale_loss_by_num_actions = scale_loss_by_num_actions
 
         self.freeze_policy_head = freeze_policy_head
         self.freeze_value_head = freeze_value_head
@@ -271,13 +269,6 @@ class PPO(Algorithm):
                         mb_obs, mb_actions, action_masks=mb_action_masks
                     )
 
-                    if self.scale_loss_by_num_actions:
-                        new_logprobs = torch.where(
-                            mb_num_actions > 0, new_logprobs / mb_num_actions, 0
-                        )
-                        mb_logprobs = torch.where(
-                            mb_num_actions > 0, mb_logprobs / mb_num_actions, 0
-                        )
                     logratio = new_logprobs - mb_logprobs
                     ratio = torch.exp(logratio)
                     clipped_ratio = torch.clamp(ratio, min=1 - pi_clip, max=1 + pi_clip)
