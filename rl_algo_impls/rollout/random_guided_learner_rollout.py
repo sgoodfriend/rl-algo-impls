@@ -131,6 +131,9 @@ class RandomGuidedLearnerRolloutGenerator(RolloutGenerator):
                 np.random.rand(num_envs) >= self.guide_probability
             )
             use_guide_policy = ~use_zero_policy & ~use_learning_policy
+            assert np.all(
+                use_zero_policy + use_learning_policy + use_guide_policy == 1
+            ), f"Expected exactly one policy to be used, got {use_zero_policy}, {use_learning_policy}, {use_guide_policy}"
             if np.any(use_zero_policy):
                 step_clamped_actions[use_zero_policy] = self.zero_action[
                     use_zero_policy
