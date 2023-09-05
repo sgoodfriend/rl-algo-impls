@@ -115,8 +115,7 @@ def make_lux_env(
         envs.observation_space.seed(seed)
 
     envs = gym.wrappers.RecordEpisodeStatistics(envs)
-    if training:
-        assert tb_writer
+    if training and tb_writer:
         envs = EpisodeStatsWriter(
             envs,
             tb_writer,

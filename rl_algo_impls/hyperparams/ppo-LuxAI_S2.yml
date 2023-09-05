@@ -390,7 +390,7 @@ LuxAI_S2-v0-squnet-Deimos-jumpstart: &lux-squnet-deimos-jumpstart
 LuxAI_S2-v0-squnet-Deimos-guided-random: &lux-squnet-guided-random
   <<: *lux-squnet-ideimos
   rollout_type: guided_random
-  rollout_hyperparams:
+  rollout_hyperparams: &lux-squnet-guided-random-rollout
     <<: *lux-squnet-rollout
     guide_probability: 0
   eval_hyperparams:
@@ -519,6 +519,18 @@ LuxAI_S2-v0-split-short-squnet-acbc-robot: &lux-split-short-squnet-acbc-robot
     gae_lambda: [0.95, 0.95, 0.95]
     vf_coef: [0.33, 0.33, 0.33]
 
+LuxAI_S2-v0-ss-squnet-acbc-robot-rollout-reset:
+  &lux-ss-squnet-acbc-robot-rollout-reset
+  <<: *lux-split-short-squnet-acbc-robot
+  env_hyperparams: &lux-ss-squnet-acbc-robot-rollout-reset-env
+    <<: *lux-split-short-squnet-acbc-robot-env
+    n_envs: 22
+  rollout_hyperparams:
+    <<: *lux-squnet-guided-random-rollout
+    rollout_reset_vec_env:
+      n_envs: 2
+      self_play_kwargs: null
+
 LuxAI_S2-agent: &lux-agent
   <<: *lux-squnet-ideimos
   device: cpu
@@ -537,11 +549,11 @@ LuxAI_S2-agent: &lux-agent
         swap_steps: .inf
 
 LuxAI_S2-v0-debug:
-  <<: *lux-split-short-squnet-acbc-robot
+  <<: *lux-ss-squnet-acbc-robot-rollout-reset
   n_timesteps: !!float 1e6
   device: mps
   env_hyperparams:
-    <<: *lux-split-short-squnet-acbc-robot-env
+    <<: *lux-ss-squnet-acbc-robot-rollout-reset-env
     make_kwargs:
       <<: *lux-split-short-squnet-acbc-robot-env-make-kwargs
       verbose: 3
