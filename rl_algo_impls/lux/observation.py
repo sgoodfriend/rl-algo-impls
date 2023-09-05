@@ -112,7 +112,7 @@ def from_lux_observation(
                 for dy in range(-1, 2):
                     assert (
                         state.board.factory_occupancy_map[x + dx, y + dy]
-                        == f["unit_id"]
+                        == f["strain_id"]
                     )
         obs[ObservationFeature.FACTORY, x, y] = True
         if is_own:
