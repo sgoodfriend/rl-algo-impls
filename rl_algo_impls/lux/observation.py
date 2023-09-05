@@ -13,6 +13,7 @@ from rl_algo_impls.lux.action_mask import (
     valid_destination_map,
 )
 from rl_algo_impls.lux.actions import UNIT_ACTION_ENCODED_SIZE, UNIT_ACTION_SIZES
+from rl_algo_impls.lux.obs_feature import ObservationFeature, observation_feature_length
 from rl_algo_impls.lux.shared import LuxGameState, factory_water_cost
 
 ICE_FACTORY_MAX = 100_000
@@ -23,6 +24,8 @@ POWER_FACTORY_MAX = 50_000
 
 LICHEN_TILES_FACTORY_MAX = 128
 LICHEN_FACTORY_MAX = 128_000
+
+VERIFY = True
 
 
 class ObservationAndActionMask(NamedTuple):
@@ -56,6 +59,192 @@ def observation_and_action_mask(
 
 
 def from_lux_observation(
+    player: str,
+    lux_obs: ObservationStateDict,
+    state: LuxGameState,
+    enqueued_actions: Dict[str, Optional[np.ndarray]],
+    move_validity_map: np.ndarray,
+) -> np.ndarray:
+    env_cfg = state.env_cfg
+    map_size = env_cfg.map_size
+    LIGHT_ROBOT = env_cfg.ROBOTS["LIGHT"]
+    HEAVY_ROBOT = env_cfg.ROBOTS["HEAVY"]
+    WATER_CONSUMED_IN_DAY = env_cfg.FACTORY_WATER_CONSUMPTION * env_cfg.CYCLE_LENGTH
+
+    p1 = player
+    p2 = [p for p in state.teams if p != player][0]
+
+    obs = np.zeros((observation_feature_length, map_size, map_size), dtype=np.float32)
+    obs[ObservationFeature.X] = np.transpose(
+        np.tile(np.linspace(-1, 1, num=map_size), (map_size, 1))
+    )
+    obs[ObservationFeature.Y] = np.tile(np.linspace(-1, 1, num=map_size), (map_size, 1))
+
+    obs[ObservationFeature.ORE] = lux_obs["board"]["ore"]
+    obs[ObservationFeature.ICE] = lux_obs["board"]["ice"]
+
+    _rubble = lux_obs["board"]["rubble"]
+    obs[ObservationFeature.NON_ZERO_RUBBLE] = _rubble > 0
+    obs[ObservationFeature.RUBBLE] = _rubble / env_cfg.MAX_RUBBLE
+
+    _lichen = lux_obs["board"]["lichen"]
+    _non_zero_lichen = _lichen > 0
+    obs[ObservationFeature.NON_ZERO_LICHEN] = _non_zero_lichen
+    obs[ObservationFeature.LICHEN] = _lichen / env_cfg.MAX_LICHEN_PER_TILE
+    obs[ObservationFeature.SPREADABLE_LICHEN] = _lichen >= env_cfg.MIN_LICHEN_TO_SPREAD
+
+    _lichen_strains = lux_obs["board"]["lichen_strains"]
+    _own_lichen_strains = state.teams[p1].factory_strains
+    _opponent_lichen_strains = state.teams[p2].factory_strains
+    _own_lichen = np.isin(_lichen_strains, _own_lichen_strains)
+    obs[ObservationFeature.OWN_LICHEN] = _own_lichen
+    obs[ObservationFeature.OPPONENT_LICHEN] = _non_zero_lichen & ~_own_lichen
+
+    _lichen_counts = {
+        k: v for k, v in zip(*np.unique(_lichen_strains, return_counts=True))
+    }
+
+    def add_factory(f: FactoryStateDict, p_id: str, is_own: bool) -> None:
+        f_state = state.factories[p_id][f["unit_id"]]
+        x, y = f["pos"]
+        if VERIFY:
+            for dx in range(-1, 2):
+                for dy in range(-1, 2):
+                    assert (
+                        state.board.factory_occupancy_map[x + dx, y + dy]
+                        == f["unit_id"]
+                    )
+        obs[ObservationFeature.FACTORY, x, y] = True
+        if is_own:
+            obs[ObservationFeature.OWN_FACTORY, x, y] = True
+        else:
+            obs[ObservationFeature.OPPONENT_FACTORY, x, y] = True
+
+        _cargo = f["cargo"]
+        _ice = _cargo["ice"]
+        _water = _cargo["water"]
+        obs[ObservationFeature.ICE_FACTORY, x, y] = _ice / ICE_FACTORY_MAX
+        obs[ObservationFeature.WATER_FACTORY, x, y] = _water / WATER_FACTORY_MAX
+        obs[ObservationFeature.ORE_FACTORY, x, y] = _cargo["ore"] / ORE_FACTORY_MAX
+        obs[ObservationFeature.METAL_FACTORY, x, y] = (
+            _cargo["metal"] / METAL_FACTORY_MAX
+        )
+        obs[ObservationFeature.POWER_FACTORY, x, y] = f["power"] / POWER_FACTORY_MAX
+
+        obs[ObservationFeature.CAN_BUILD_LIGHT_ROBOT, x, y] = is_build_light_valid(
+            f_state, env_cfg
+        )
+        obs[ObservationFeature.CAN_BUILD_HEAVY_ROBOT, x, y] = is_build_heavy_valid(
+            f_state, env_cfg
+        )
+        _water_lichen_cost = factory_water_cost(f_state, state, env_cfg)
+        obs[ObservationFeature.CAN_WATER_LICHEN, x, y] = _water > _water_lichen_cost
+        _water_supply = _water + _ice / env_cfg.ICE_WATER_RATIO
+        obs[ObservationFeature.DAY_SURVIVE_FACTORY, x, y] = max(
+            _water_supply / WATER_CONSUMED_IN_DAY, 1
+        )
+        obs[ObservationFeature.OVER_DAY_SURVIVE_FACTORY, x, y] = (
+            _water_supply > WATER_CONSUMED_IN_DAY
+        )
+        obs[ObservationFeature.DAY_SURVIVE_WATER_FACTORY, x, y] = (
+            _water_supply - _water_lichen_cost > WATER_CONSUMED_IN_DAY
+        )
+        obs[ObservationFeature.CONNECTED_LICHEN_TILES, x, y] = (
+            _lichen_counts.get(f["strain_id"], 0) / LICHEN_TILES_FACTORY_MAX
+        )
+        obs[ObservationFeature.CONNECTED_LICHEN, x, y] = (
+            np.sum(np.where(_lichen_strains == f["strain_id"], _lichen, 0))
+            / LICHEN_FACTORY_MAX
+        )
+
+    for f in lux_obs["factories"][p1].values():
+        add_factory(f, p1, True)
+    for f in lux_obs["factories"][p2].values():
+        add_factory(f, p2, False)
+
+    obs[ObservationFeature.IS_FACTORY_TILE] = state.board.factory_occupancy_map != -1
+    obs[ObservationFeature.IS_OWN_FACTORY_TILE] = np.isin(
+        state.board.factory_occupancy_map, _own_lichen_strains
+    )
+    obs[ObservationFeature.IS_OPPONENT_FACTORY_TILE] = np.isin(
+        state.board.factory_occupancy_map, _opponent_lichen_strains
+    )
+
+    def add_unit(u: UnitStateDict, is_own: bool) -> None:
+        x, y = u["pos"]
+        obs[ObservationFeature.UNIT, x, y] = True
+        if is_own:
+            obs[ObservationFeature.OWN_UNIT, x, y] = True
+        else:
+            obs[ObservationFeature.OPPONENT_UNIT, x, y] = True
+        _is_heavy = u["unit_type"] == "HEAVY"
+        obs[ObservationFeature.UNIT_IS_HEAVY, x, y] = _is_heavy
+
+        _cargo_space = HEAVY_ROBOT.CARGO_SPACE if _is_heavy else LIGHT_ROBOT.CARGO_SPACE
+
+        def add_cargo(v: int, idx: int) -> None:
+            obs[idx : idx + 4, x, y] = (
+                v / HEAVY_ROBOT.CARGO_SPACE,
+                v / _cargo_space,
+                v > LIGHT_ROBOT.CARGO_SPACE,
+                v == _cargo_space,
+            )
+
+        _cargo = u["cargo"]
+        add_cargo(_cargo["ice"], ObservationFeature.ICE_UNIT)
+        add_cargo(_cargo["ore"], ObservationFeature.ORE_UNIT)
+        add_cargo(_cargo["water"], ObservationFeature.WATER_UNIT)
+        add_cargo(_cargo["metal"], ObservationFeature.METAL_UNIT)
+
+        _power = u["power"]
+        _bat_cap = (
+            HEAVY_ROBOT.BATTERY_CAPACITY if _is_heavy else LIGHT_ROBOT.BATTERY_CAPACITY
+        )
+        obs[ObservationFeature.POWER_UNIT : ObservationFeature.POWER_UNIT + 4, x, y] = (
+            _power / HEAVY_ROBOT.BATTERY_CAPACITY,
+            _power / _bat_cap,
+            _power > LIGHT_ROBOT.BATTERY_CAPACITY,
+            _power == _bat_cap,
+        )
+        _enqueued_action = enqueued_actions.get(u["unit_id"])
+        if _enqueued_action is not None:
+            obs[
+                ObservationFeature.ENQUEUED_ACTION : ObservationFeature.ENQUEUED_ACTION
+                + UNIT_ACTION_ENCODED_SIZE,
+                x,
+                y,
+            ] = unit_action_to_obs(_enqueued_action)
+
+    for u in lux_obs["units"][p1].values():
+        add_unit(u, True)
+    for u in lux_obs["units"][p2].values():
+        add_unit(u, False)
+
+    obs[ObservationFeature.CAN_COLLIDE_WITH_FRIENDLY_UNIT] = move_validity_map > 1
+
+    obs[ObservationFeature.GAME_PROGRESS] = (
+        lux_obs["real_env_steps"] / env_cfg.max_episode_length
+    )
+    _day_idx = lux_obs["real_env_steps"] % env_cfg.CYCLE_LENGTH
+    obs[ObservationFeature.DAY_CYCLE] = 1 - _day_idx / env_cfg.DAY_LENGTH
+
+    obs[ObservationFeature.FACTORIES_TO_PLACE] = (
+        lux_obs["teams"][p1]["factories_to_place"] / env_cfg.MAX_FACTORIES
+    )
+
+    obs = np.transpose(obs, (1, 2, 0))
+
+    if VERIFY:
+        old_obs = _old_from_lux_observation(
+            player, lux_obs, state, enqueued_actions, move_validity_map
+        )
+        diffs = np.where(obs != old_obs)
+        assert len(diffs[0]) == 0
+
+    return obs
+
+
+def _old_from_lux_observation(
     player: str,
     lux_obs: ObservationStateDict,
     state: LuxGameState,
