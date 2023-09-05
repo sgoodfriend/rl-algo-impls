@@ -237,7 +237,7 @@ class PPO(Algorithm):
                     self.freeze_value_head,
                     self.freeze_backbone,
                 )
-            for e in range(self.n_epochs):
+            for _ in range(self.n_epochs):
                 # Only record last epoch's stats
                 step_stats.clear()
                 for mb in r.minibatches(self.batch_size, self.device):
@@ -248,7 +248,7 @@ class PPO(Algorithm):
                         mb_logprobs,
                         mb_actions,
                         mb_action_masks,
-                        mb_num_actions,
+                        _,
                         mb_values,
                         mb_adv,
                         mb_returns,
