@@ -178,201 +178,203 @@ class PPO(Algorithm):
 
         timesteps_elapsed = start_timesteps
         while timesteps_elapsed < start_timesteps + train_timesteps:
-            start_time = perf_counter()
-
-            progress = timesteps_elapsed / total_timesteps
-            ent_coef = self.ent_coef_schedule(progress)
-            learning_rate = self.learning_rate_schedule(progress)
-            update_learning_rate(self.optimizer, learning_rate)
-            pi_clip = self.clip_range_schedule(progress)
-            gamma = self.gamma_schedule(progress)
-            chart_scalars = {
-                "learning_rate": self.optimizer.param_groups[0]["lr"],
-                "ent_coef": ent_coef,
-                "pi_clip": pi_clip,
-                "gamma": gamma,
-                "gae_lambda": self.gae_lambda,
-                "vf_coef": self.vf_coef,
-            }
-            if self.clip_range_vf_schedule:
-                v_clip = self.clip_range_vf_schedule(progress)
-                chart_scalars["v_clip"] = v_clip
-            else:
-                v_clip = None
-            if self.multi_reward_weights is not None:
-                chart_scalars["reward_weights"] = self.multi_reward_weights
-            if self.switch_range is not None:
-                assert hasattr(
-                    rollout_generator, "switch_range"
-                ), f"rollout_generator assumed to have switch_range attribute"
-                setattr(rollout_generator, "switch_range", self.switch_range)
-                chart_scalars["switch_range"] = self.switch_range
-            if self.guide_probability is not None:
-                assert hasattr(
-                    rollout_generator, "guide_probability"
-                ), f"rollout_generator assumed to have guide_probability attribute"
-                setattr(rollout_generator, "guide_probability", self.guide_probability)
-                chart_scalars["guide_probability"] = self.guide_probability
-            log_scalars(self.tb_writer, "charts", chart_scalars, timesteps_elapsed)
-
-            r = rollout_generator.rollout(gamma, self.gae_lambda)
+            should_continue = self.learn_epoch(
+                timesteps_elapsed, total_timesteps, rollout_generator, callbacks
+            )
             gc.collect()
-            timesteps_elapsed += r.total_steps
-
-            step_stats = []
-            multi_reward_weights = (
-                torch.Tensor(self.multi_reward_weights).to(self.device)
-                if self.multi_reward_weights is not None
-                else None
-            )
-            vf_coef = torch.Tensor(np.array(self.vf_coef)).to(self.device)
-            pi_coef = 1
-            if (
-                self.freeze_policy_head
-                or self.freeze_value_head
-                or self.freeze_backbone
-            ):
-                self.policy.freeze(
-                    self.freeze_policy_head,
-                    self.freeze_value_head,
-                    self.freeze_backbone,
-                )
-            for _ in range(self.n_epochs):
-                # Only record last epoch's stats
-                step_stats.clear()
-                for mb in r.minibatches(self.batch_size, self.device):
-                    self.policy.reset_noise(self.batch_size)
-
-                    (
-                        mb_obs,
-                        mb_logprobs,
-                        mb_actions,
-                        mb_action_masks,
-                        _,
-                        mb_values,
-                        mb_adv,
-                        mb_returns,
-                    ) = astuple(mb)
-
-                    if self.normalize_advantages_after_scaling:
-                        if multi_reward_weights is not None:
-                            mb_adv = mb_adv @ multi_reward_weights
-
-                        mb_adv = (mb_adv - mb_adv.mean()) / (mb_adv.std() + 1e-8)
-                    else:
-                        if self.normalize_advantage:
-                            mb_adv = (mb_adv - mb_adv.mean(0)) / (mb_adv.std(0) + 1e-8)
-                        if multi_reward_weights is not None:
-                            mb_adv = mb_adv @ multi_reward_weights
-
-                    new_logprobs, entropy, new_values = self.policy(
-                        mb_obs, mb_actions, action_masks=mb_action_masks
-                    )
-
-                    logratio = new_logprobs - mb_logprobs
-                    ratio = torch.exp(logratio)
-                    clipped_ratio = torch.clamp(ratio, min=1 - pi_clip, max=1 + pi_clip)
-                    pi_loss = -torch.min(ratio * mb_adv, clipped_ratio * mb_adv).mean()
-
-                    v_loss_unclipped = (new_values - mb_returns) ** 2
-                    if v_clip:
-                        v_loss_clipped = (
-                            mb_values
-                            + torch.clamp(new_values - mb_values, -v_clip, v_clip)
-                            - mb_returns
-                        ) ** 2
-                        v_loss = torch.max(v_loss_unclipped, v_loss_clipped).mean(0)
-                    else:
-                        v_loss = v_loss_unclipped.mean(0)
-
-                    if self.ppo2_vf_coef_halving:
-                        v_loss *= 0.5
-
-                    entropy_loss = -entropy.mean()
-                    with torch.no_grad():
-                        approx_kl = ((ratio - 1) - logratio).mean().cpu().numpy().item()
-                    if self.kl_cutoff is not None and approx_kl > self.kl_cutoff:
-                        pi_coef = 0
-
-                    loss = (
-                        pi_coef * pi_loss
-                        + ent_coef * entropy_loss
-                        + (vf_coef * v_loss).sum()
-                    )
-
-                    if self.gradient_accumulation:
-                        loss /= r.num_minibatches(self.batch_size)
-                    loss.backward()
-                    if not self.gradient_accumulation:
-                        self.optimizer_step()
-
-                    with torch.no_grad():
-                        clipped_frac = (
-                            ((ratio - 1).abs() > pi_clip)
-                            .float()
-                            .mean()
-                            .cpu()
-                            .numpy()
-                            .item()
-                        )
-                        val_clipped_frac = (
-                            ((new_values - mb_values).abs() > v_clip)
-                            .float()
-                            .mean(0)
-                            .cpu()
-                            .numpy()
-                            if v_clip
-                            else np.zeros(v_loss.shape)
-                        )
-
-                    step_stats.append(
-                        TrainStepStats(
-                            loss.item(),
-                            pi_loss.item(),
-                            v_loss.detach().cpu().numpy(),
-                            entropy_loss.item(),
-                            approx_kl,
-                            clipped_frac,
-                            val_clipped_frac,
-                        )
-                    )
-                if self.gradient_accumulation:
-                    self.optimizer_step()
-            if (
-                self.freeze_policy_head
-                or self.freeze_value_head
-                or self.freeze_backbone
-            ):
-                self.policy.unfreeze()
-
-            var_y = np.var(r.y_true).item()
-            explained_var = (
-                np.nan if var_y == 0 else 1 - np.var(r.y_true - r.y_pred).item() / var_y
-            )
-            TrainStats(step_stats, explained_var).write_to_tensorboard(
-                self.tb_writer, timesteps_elapsed
-            )
-
-            end_time = perf_counter()
-            rollout_steps = r.total_steps
-            self.tb_writer.add_scalar(
-                "train/steps_per_second",
-                rollout_steps / (end_time - start_time),
-                timesteps_elapsed,
-            )
-            # Clear out rollout because it can take significant memory
-            r = None
-
-            if callbacks:
-                if not all(
-                    c.on_step(timesteps_elapsed=rollout_steps) for c in callbacks
-                ):
-                    logging.info(
-                        f"Callback terminated training at {timesteps_elapsed} timesteps"
-                    )
-                    break
-
+            if not should_continue:
+                break
         return self
+
+    def learn_epoch(
+        self,
+        timesteps_elapsed: int,
+        total_timesteps: int,
+        rollout_generator: RolloutGenerator,
+        callbacks: Optional[List[Callback]] = None,
+    ) -> bool:
+        start_time = perf_counter()
+
+        progress = timesteps_elapsed / total_timesteps
+        ent_coef = self.ent_coef_schedule(progress)
+        learning_rate = self.learning_rate_schedule(progress)
+        update_learning_rate(self.optimizer, learning_rate)
+        pi_clip = self.clip_range_schedule(progress)
+        gamma = self.gamma_schedule(progress)
+        chart_scalars = {
+            "learning_rate": self.optimizer.param_groups[0]["lr"],
+            "ent_coef": ent_coef,
+            "pi_clip": pi_clip,
+            "gamma": gamma,
+            "gae_lambda": self.gae_lambda,
+            "vf_coef": self.vf_coef,
+        }
+        if self.clip_range_vf_schedule:
+            v_clip = self.clip_range_vf_schedule(progress)
+            chart_scalars["v_clip"] = v_clip
+        else:
+            v_clip = None
+        if self.multi_reward_weights is not None:
+            chart_scalars["reward_weights"] = self.multi_reward_weights
+        if self.switch_range is not None:
+            assert hasattr(
+                rollout_generator, "switch_range"
+            ), f"rollout_generator assumed to have switch_range attribute"
+            setattr(rollout_generator, "switch_range", self.switch_range)
+            chart_scalars["switch_range"] = self.switch_range
+        if self.guide_probability is not None:
+            assert hasattr(
+                rollout_generator, "guide_probability"
+            ), f"rollout_generator assumed to have guide_probability attribute"
+            setattr(rollout_generator, "guide_probability", self.guide_probability)
+            chart_scalars["guide_probability"] = self.guide_probability
+        log_scalars(self.tb_writer, "charts", chart_scalars, timesteps_elapsed)
+
+        r = rollout_generator.rollout(gamma, self.gae_lambda)
+        gc.collect()
+        timesteps_elapsed += r.total_steps
+
+        step_stats = []
+        multi_reward_weights = (
+            torch.Tensor(self.multi_reward_weights).to(self.device)
+            if self.multi_reward_weights is not None
+            else None
+        )
+        vf_coef = torch.Tensor(np.array(self.vf_coef)).to(self.device)
+        pi_coef = 1
+        if self.freeze_policy_head or self.freeze_value_head or self.freeze_backbone:
+            self.policy.freeze(
+                self.freeze_policy_head,
+                self.freeze_value_head,
+                self.freeze_backbone,
+            )
+        for _ in range(self.n_epochs):
+            # Only record last epoch's stats
+            step_stats.clear()
+            for mb in r.minibatches(self.batch_size, self.device):
+                self.policy.reset_noise(self.batch_size)
+
+                (
+                    mb_obs,
+                    mb_logprobs,
+                    mb_actions,
+                    mb_action_masks,
+                    _,
+                    mb_values,
+                    mb_adv,
+                    mb_returns,
+                ) = astuple(mb)
+
+                if self.normalize_advantages_after_scaling:
+                    if multi_reward_weights is not None:
+                        mb_adv = mb_adv @ multi_reward_weights
+
+                    mb_adv = (mb_adv - mb_adv.mean()) / (mb_adv.std() + 1e-8)
+                else:
+                    if self.normalize_advantage:
+                        mb_adv = (mb_adv - mb_adv.mean(0)) / (mb_adv.std(0) + 1e-8)
+                    if multi_reward_weights is not None:
+                        mb_adv = mb_adv @ multi_reward_weights
+
+                new_logprobs, entropy, new_values = self.policy(
+                    mb_obs, mb_actions, action_masks=mb_action_masks
+                )
+
+                logratio = new_logprobs - mb_logprobs
+                ratio = torch.exp(logratio)
+                clipped_ratio = torch.clamp(ratio, min=1 - pi_clip, max=1 + pi_clip)
+                pi_loss = -torch.min(ratio * mb_adv, clipped_ratio * mb_adv).mean()
+
+                v_loss_unclipped = (new_values - mb_returns) ** 2
+                if v_clip:
+                    v_loss_clipped = (
+                        mb_values
+                        + torch.clamp(new_values - mb_values, -v_clip, v_clip)
+                        - mb_returns
+                    ) ** 2
+                    v_loss = torch.max(v_loss_unclipped, v_loss_clipped).mean(0)
+                else:
+                    v_loss = v_loss_unclipped.mean(0)
+
+                if self.ppo2_vf_coef_halving:
+                    v_loss *= 0.5
+
+                entropy_loss = -entropy.mean()
+                with torch.no_grad():
+                    approx_kl = ((ratio - 1) - logratio).mean().cpu().numpy().item()
+                if self.kl_cutoff is not None and approx_kl > self.kl_cutoff:
+                    pi_coef = 0
+
+                loss = (
+                    pi_coef * pi_loss
+                    + ent_coef * entropy_loss
+                    + (vf_coef * v_loss).sum()
+                )
+
+                if self.gradient_accumulation:
+                    loss /= r.num_minibatches(self.batch_size)
+                loss.backward()
+                if not self.gradient_accumulation:
+                    self.optimizer_step()
+
+                with torch.no_grad():
+                    clipped_frac = (
+                        ((ratio - 1).abs() > pi_clip)
+                        .float()
+                        .mean()
+                        .cpu()
+                        .numpy()
+                        .item()
+                    )
+                    val_clipped_frac = (
+                        ((new_values - mb_values).abs() > v_clip)
+                        .float()
+                        .mean(0)
+                        .cpu()
+                        .numpy()
+                        if v_clip
+                        else np.zeros(v_loss.shape)
+                    )
+
+                step_stats.append(
+                    TrainStepStats(
+                        loss.item(),
+                        pi_loss.item(),
+                        v_loss.detach().cpu().numpy(),
+                        entropy_loss.item(),
+                        approx_kl,
+                        clipped_frac,
+                        val_clipped_frac,
+                    )
+                )
+            if self.gradient_accumulation:
+                self.optimizer_step()
+        if self.freeze_policy_head or self.freeze_value_head or self.freeze_backbone:
+            self.policy.unfreeze()
+
+        var_y = np.var(r.y_true).item()
+        explained_var = (
+            np.nan if var_y == 0 else 1 - np.var(r.y_true - r.y_pred).item() / var_y
+        )
+        TrainStats(step_stats, explained_var).write_to_tensorboard(
+            self.tb_writer, timesteps_elapsed
+        )
+
+        end_time = perf_counter()
+        rollout_steps = r.total_steps
+        self.tb_writer.add_scalar(
+            "train/steps_per_second",
+            rollout_steps / (end_time - start_time),
+            timesteps_elapsed,
+        )
+
+        if callbacks:
+            if not all(c.on_step(timesteps_elapsed=rollout_steps) for c in callbacks):
+                logging.info(
+                    f"Callback terminated training at {timesteps_elapsed} timesteps"
+                )
+                return False
+        return True
 
     def optimizer_step(self) -> None:
         nn.utils.clip_grad_norm_(self.policy.parameters(), self.max_grad_norm)
