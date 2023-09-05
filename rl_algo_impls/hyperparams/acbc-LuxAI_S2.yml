@@ -140,18 +140,18 @@ LuxAI_S2-v0-split-short-squnet-multi: &lux-split-short-squnet-multi
     decoder_residual_blocks_per_level: [2, 2]
 
 LuxAI_S2-v0-split-short-squnet-acbc-robot: &lux-split-short-squnet-acbc-robot
-  <<: *lux-squnet-adv-norm-gfast
+  <<: *lux-split-short-squnet-multi
   n_timesteps: !!float 50e6
-  env_hyperparams:
+  env_hyperparams: &lux-split-short-squnet-acbc-robot-env
     <<: *lux-split-squnet-multi-env
-    make_kwargs:
+    make_kwargs: &lux-split-short-squnet-acbc-robot-env-make-kwargs
       <<: *lux-split-squnet-multi-env-make-kwargs
       reward_weights:
         built_light_by_time_remaining: 0.01
         built_heavy_by_time_remaining: 0.1
     score_reward_kwargs:
       episode_end: true
-  policy_hyperparams:
+  policy_hyperparams: &lux-split-short-squnet-acbc-robot-policy
     <<: *lux-split-short-squnet-multi-policy
     additional_critic_activation_functions: [tanh, tanh]
     output_activation_fn: identity
@@ -163,8 +163,24 @@ LuxAI_S2-v0-split-short-squnet-acbc-robot: &lux-split-short-squnet-acbc-robot
     gae_lambda: [0.95, 0.95, 0.95]
     vf_coef: [0.33, 0.33, 0.33]
 
+LuxAI_S2-v0-short-squnet-rl-robot: &lux-short-squnet-rl-robot
+  <<: *lux-split-short-squnet-acbc-robot
+  policy_hyperparams:
+    <<: *lux-split-short-squnet-acbc-robot-policy
+    save_critic_separate: false
+    critic_shares_backbone: true
+  env_hyperparams:
+    <<: *lux-split-short-squnet-acbc-robot-env
+    make_kwargs:
+      <<: *lux-split-short-squnet-acbc-robot-env-make-kwargs
+      replay_dirs:
+        - replay_dir: data/lux/lux-replays-deimos-npz
+          team_name: Deimos
+        - replay_dir: data/lux/lux-replays-flg-npz
+          team_name: flg
+
 LuxAI_S2-v0-debug:
-  <<: *lux-split-short-squnet-multi
+  <<: *lux-short-squnet-rl-robot
   device: mps
   # eval_hyperparams:
   #   <<: *lux-eval-defaults

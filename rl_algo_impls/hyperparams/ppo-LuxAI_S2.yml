@@ -531,6 +531,13 @@ LuxAI_S2-v0-ss-squnet-acbc-robot-rollout-reset:
       n_envs: 2
       self_play_kwargs: null
 
+LuxAI_S2-v0-short-squnet-rl-robot: &lux-short-squnet-rl-robot
+  <<: *lux-ss-squnet-acbc-robot-rollout-reset
+  policy_hyperparams:
+    <<: *lux-split-short-squnet-multi-policy
+    save_critic_separate: false
+    critic_shares_backbone: true
+
 LuxAI_S2-agent: &lux-agent
   <<: *lux-squnet-ideimos
   device: cpu
