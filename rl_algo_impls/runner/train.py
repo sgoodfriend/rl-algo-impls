@@ -115,6 +115,7 @@ def train(args: TrainArgs):
         video_dir=config.videos_path,
         additional_keys_to_log=config.additional_keys_to_log,
         wandb_enabled=wandb_enabled,
+        latest_model_path=config.model_dir_path(best=False),
     )
     callbacks: List[Callback] = [eval_callback]
     if config.hyperparams.reward_decay_callback:

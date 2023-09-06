@@ -144,6 +144,7 @@ class EvalCallback(Callback):
         score_threshold: Optional[float] = None,
         skip_evaluate_at_start: bool = False,
         only_checkpoint_initial_policy: bool = False,
+        latest_model_path: Optional[str] = None,
     ) -> None:
         super().__init__()
         self.policy = policy
@@ -170,6 +171,7 @@ class EvalCallback(Callback):
         self.wandb_enabled = wandb_enabled
         self.score_threshold = score_threshold
         self.skip_evaluate_at_start = skip_evaluate_at_start
+        self.latest_model_path = latest_model_path
 
         self_play_reference_wrapper = find_wrapper(env, SelfPlayReferenceWrapper)
         if self_play_reference_wrapper:
@@ -232,6 +234,8 @@ class EvalCallback(Callback):
             is_best = not self.best or eval_stat >= self.best
             strictly_better = not self.best or eval_stat > self.best
 
+        if self.latest_model_path:
+            self.policy.save(self.latest_model_path)
         if is_best:
             self.best = eval_stat
             if self.save_best:
