@@ -304,7 +304,7 @@ def valid_pickup_resource_mask(
     has_capacity = np.concatenate(
         [
             np.array(astuple(unit.cargo)) < unit.cargo_space,
-            np.array([unit.power < unit.battery_capacity]),
+            (unit.power < unit.battery_capacity,),
         ]
     )
     has_power = np.array(
