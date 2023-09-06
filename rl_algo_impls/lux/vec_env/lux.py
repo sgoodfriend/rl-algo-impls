@@ -5,6 +5,7 @@ import gym
 from torch.utils.tensorboard.writer import SummaryWriter
 
 from rl_algo_impls.lux.vec_env.lux_async_vector_env import LuxAsyncVectorEnv
+from rl_algo_impls.lux.vec_env.lux_ray_vector_env import LuxRayVectorEnv
 from rl_algo_impls.lux.vec_env.vec_lux_env import VecLuxEnv
 from rl_algo_impls.lux.vec_env.vec_lux_replay_env import VecLuxReplayEnv
 from rl_algo_impls.lux.wrappers.lux_env_gridnet import LuxEnvGridnet
@@ -96,6 +97,12 @@ def make_lux_env(
         envs = VecLuxEnv(num_envs, **make_kwargs)
     elif vec_env_class == "replay":
         envs = VecLuxReplayEnv(num_envs, **make_kwargs)
+    elif vec_env_class == "ray":
+        envs = (
+            LuxRayVectorEnv(num_envs, **make_kwargs)
+            if num_envs > 2
+            else VecLuxEnv(num_envs, **make_kwargs)
+        )
     else:
         envs = LuxAsyncVectorEnv([make(i) for i in range(n_envs)], copy=False)
 

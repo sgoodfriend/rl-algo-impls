@@ -576,6 +576,12 @@ LuxAI_S2-v0-ss-squnet-rl-robot-half-guidance:
       - 0.18
       - 0.02
 
+LuxAI_S2-v0-ss-squnet-ray: &lux-ss-squnet-ray
+  <<: *lux-ss-squnet-rl-robot-half-guidance
+  env_hyperparams: &lux-ss-squnet-ray-env
+    <<: *lux-ss-squnet-acbc-robot-rollout-reset-env
+    vec_env_class: ray
+
 LuxAI_S2-v0-short-squnet-rl-robot: &lux-short-squnet-rl-robot
   <<: *lux-ss-squnet-acbc-robot-rollout-reset
   policy_hyperparams:
@@ -601,11 +607,11 @@ LuxAI_S2-agent: &lux-agent
         swap_steps: .inf
 
 LuxAI_S2-v0-debug:
-  <<: *lux-ss-squnet-rl-robot-half-guidance
+  <<: *lux-ss-squnet-ray
   n_timesteps: !!float 1e6
   device: mps
   env_hyperparams:
-    <<: *lux-ss-squnet-acbc-robot-rollout-reset-env
+    <<: *lux-ss-squnet-ray-env
     make_kwargs:
       <<: *lux-split-short-squnet-acbc-robot-env-make-kwargs
       verbose: 3
