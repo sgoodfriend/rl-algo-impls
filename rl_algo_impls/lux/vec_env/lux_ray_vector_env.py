@@ -36,10 +36,12 @@ class LuxRayVectorEnv(VectorEnv):
         super().__init__(num_envs, single_observation_space, single_action_space)
 
     def step(self, action: np.ndarray) -> VecEnvStepReturn:
-        step_returns = [
-            ray.get(env.step.remote(action[2 * idx : 2 * idx + 2]))
-            for idx, env in enumerate(self.envs)
-        ]
+        step_returns = ray.get(
+            [
+                env.step.remote(action[2 * idx : 2 * idx + 2])
+                for idx, env in enumerate(self.envs)
+            ]
+        )
         obs = np.concatenate([sr.step_return[0] for sr in step_returns])
         rewards = np.concatenate([sr.step_return[1] for sr in step_returns])
         dones = np.concatenate([sr.step_return[2] for sr in step_returns])
@@ -48,7 +50,7 @@ class LuxRayVectorEnv(VectorEnv):
         return obs, rewards, dones, infos
 
     def reset(self) -> VecEnvObs:
-        reset_returns = [ray.get(env.reset.remote()) for env in self.envs]
+        reset_returns = ray.get([env.reset.remote() for env in self.envs])
         obs = np.concatenate([sr.obs for sr in reset_returns])
         self._action_masks = np.concatenate([sr.action_mask for sr in reset_returns])
         return obs
@@ -72,7 +74,7 @@ class LuxRayVectorEnv(VectorEnv):
             for e in self.envs:
                 e.render.remote(mode, **kwargs)
         elif mode == "rgb_array":
-            imgs = [ray.get(e.render.remote(mode, **kwargs)) for e in self.envs]
+            imgs = ray.get([e.render.remote(mode, **kwargs) for e in self.envs])
             bigimg = tile_images(imgs)
             return bigimg
         else:
