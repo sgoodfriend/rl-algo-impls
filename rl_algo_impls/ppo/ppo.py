@@ -2,7 +2,7 @@ import gc
 import logging
 from dataclasses import asdict, astuple, dataclass
 from time import perf_counter
-from typing import List, NamedTuple, Optional, TypeVar, Union
+from typing import List, NamedTuple, Optional, Tuple, TypeVar, Union
 
 import numpy as np
 import torch
@@ -178,7 +178,7 @@ class PPO(Algorithm):
 
         timesteps_elapsed = start_timesteps
         while timesteps_elapsed < start_timesteps + train_timesteps:
-            should_continue = self.learn_epoch(
+            timesteps_elapsed, should_continue = self.learn_epoch(
                 timesteps_elapsed, total_timesteps, rollout_generator, callbacks
             )
             gc.collect()
@@ -192,7 +192,7 @@ class PPO(Algorithm):
         total_timesteps: int,
         rollout_generator: RolloutGenerator,
         callbacks: Optional[List[Callback]] = None,
-    ) -> bool:
+    ) -> Tuple[int, bool]:
         start_time = perf_counter()
 
         progress = timesteps_elapsed / total_timesteps
@@ -373,8 +373,8 @@ class PPO(Algorithm):
                 logging.info(
                     f"Callback terminated training at {timesteps_elapsed} timesteps"
                 )
-                return False
-        return True
+                return timesteps_elapsed, False
+        return timesteps_elapsed, True
 
     def optimizer_step(self) -> None:
         nn.utils.clip_grad_norm_(self.policy.parameters(), self.max_grad_norm)
