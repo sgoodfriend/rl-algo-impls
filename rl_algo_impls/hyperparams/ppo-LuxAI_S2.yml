@@ -549,6 +549,33 @@ LuxAI_S2-v0-ss-squnet-rl-robot-no-guidance: &lux-ss-squnet-rl-robot-no-guidance
       - 0.18
       - 0.02
 
+LuxAI_S2-v0-ss-squnet-rl-robot-half-guidance:
+  &lux-ss-squnet-rl-robot-half-guidance
+  <<: *lux-ss-squnet-rl-robot-no-guidance
+  hyperparam_transitions_kwargs:
+    interpolate_method: cosine
+    phases:
+      - learning_rate: !!float 1e-6
+        ent_coef: 0.001
+        guide_probability: 0.5
+      - learning_rate: !!float 3e-5
+        ent_coef: 0.001
+        guide_probability: 0.5
+      - learning_rate: !!float 3e-5
+        ent_coef: 0.001
+        guide_probability: 0
+      - learning_rate: !!float 1e-6
+        ent_coef: 0.0001
+        guide_probability: 0
+    durations:
+      - 0
+      - 0.1
+      - 0
+      - 0.1
+      - 0.6
+      - 0.18
+      - 0.02
+
 LuxAI_S2-v0-short-squnet-rl-robot: &lux-short-squnet-rl-robot
   <<: *lux-ss-squnet-acbc-robot-rollout-reset
   policy_hyperparams:
@@ -574,7 +601,7 @@ LuxAI_S2-agent: &lux-agent
         swap_steps: .inf
 
 LuxAI_S2-v0-debug:
-  <<: *lux-ss-squnet-rl-robot-no-guidance
+  <<: *lux-ss-squnet-rl-robot-half-guidance
   n_timesteps: !!float 1e6
   device: mps
   env_hyperparams:
