@@ -231,11 +231,12 @@ def from_lux_observation(
         lux_obs["teams"][p1]["factories_to_place"] / env_cfg.MAX_FACTORIES
     )
 
-    obs = np.transpose(obs, (1, 2, 0))
-
     if VERIFY:
-        old_obs = _old_from_lux_observation(
-            player, lux_obs, state, enqueued_actions, move_validity_map
+        old_obs = np.transpose(
+            _old_from_lux_observation(
+                player, lux_obs, state, enqueued_actions, move_validity_map
+            ),
+            (2, 0, 1),
         )
         diffs = np.where(obs != old_obs)
         assert len(diffs[0]) == 0

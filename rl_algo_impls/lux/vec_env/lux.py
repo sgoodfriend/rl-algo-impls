@@ -99,7 +99,6 @@ def make_lux_env(
     else:
         envs = LuxAsyncVectorEnv([make(i) for i in range(n_envs)], copy=False)
 
-    envs = HwcToChwObservation(envs)
     if self_play_reference_kwargs:
         envs = SelfPlayReferenceWrapper(envs, **self_play_reference_kwargs)
     if self_play_kwargs:
