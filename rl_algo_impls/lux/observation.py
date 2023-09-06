@@ -25,7 +25,7 @@ POWER_FACTORY_MAX = 50_000
 LICHEN_TILES_FACTORY_MAX = 128
 LICHEN_FACTORY_MAX = 128_000
 
-VERIFY = True
+VERIFY = False
 
 
 class ObservationAndActionMask(NamedTuple):
