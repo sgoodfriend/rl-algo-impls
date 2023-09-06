@@ -36,6 +36,7 @@ class RandomGuidedLearnerRolloutGenerator(RolloutGenerator):
         subaction_mask: Optional[Dict[int, Dict[int, int]]] = None,
         skip_no_action_steps: bool = False,
         rollout_reset_vec_env: Optional[VecEnv] = None,
+        zero_probability: float = 0.0,
     ) -> None:
         super().__init__()
         self.learning_policy = learning_policy
@@ -57,6 +58,7 @@ class RandomGuidedLearnerRolloutGenerator(RolloutGenerator):
         self.subaction_mask = subaction_mask
         self.skip_no_action_steps = skip_no_action_steps
         self.rollout_reset_vec_env = rollout_reset_vec_env
+        self.zero_probability = zero_probability
 
         self.get_action_mask = getattr(vec_env, "get_action_mask", None)
 
@@ -153,6 +155,8 @@ class RandomGuidedLearnerRolloutGenerator(RolloutGenerator):
                 if self.skip_no_action_steps and action_masks is not None
                 else np.full(num_envs, False)
             )
+            if self.zero_probability > 0.0:
+                use_zero_policy |= np.random.rand(num_envs) < self.zero_probability
             use_learning_policy = ~use_zero_policy & (
                 np.random.rand(num_envs) >= self.guide_probability
             )

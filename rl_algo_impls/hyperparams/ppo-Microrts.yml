@@ -1234,6 +1234,12 @@ Microrts-squnet-d16-128-map16-finetune: &microrts-squnet-d16-128-map16-finetune
   hyperparam_transitions_kwargs:
     <<: *shaped-finetuning-hyperparam-transitions
 
+Microrts-squnet-d16-128-map16-sc-cos-ga-selfplay-a10:
+  &microrts-squnet-d16-128-map16-sc-cos-ga-selfplay-a10
+  <<: *microrts-squnet-d16-128-sc-cos-ga-selfplay-a10
+  env_hyperparams:
+    <<: *microrts-squnet-d16-128-map16-env-defaults
+
 Microrts-squnet-d16-128-map32-finetune: &microrts-squnet-d16-128-map32-finetune
   <<: *microrts-squnet-d16-128-map16-finetune
   env_hyperparams:
@@ -1604,11 +1610,20 @@ Microrts-squnet-d16-128-map64-guided-random-fast:
       - 0.3
       - 0.05
 
-Microrts-squnet-d16-128-map16-sc-cos-ga-selfplay-a10:
-  &microrts-squnet-d16-128-map16-sc-cos-ga-selfplay-a10
-  <<: *microrts-squnet-d16-128-sc-cos-ga-selfplay-a10
-  env_hyperparams:
-    <<: *microrts-squnet-d16-128-map16-env-defaults
+Microrts-squnet-d16-128-map64-zero-action:
+  &microrts-squnet-d16-128-map64-zero-action
+  <<: *microrts-squnet-d16-128-map64-guided-random
+  rollout_hyperparams:
+    <<: *microrts-squnet-d16-128-map64-guided-random-rollout
+    guide_probability: 0
+    zero_probability: 0.9
+  hyperparam_transitions_kwargs:
+    interpolate_method: cosine
+    phases:
+      - learning_rate: !!float 2.5e-5
+        ent_coef: 0.001
+    durations:
+      - 1
 
 Microrts-agent: &microrts-agent
   <<: *microrts-sp-dc-phases-defaults
@@ -1643,9 +1658,26 @@ Microrts-agent: &microrts-agent
         #   use_paper_obs: true
 
 Microrts-debug: &microrts-debug-defaults
-  <<: *microrts-squnet-d16-128-map64-guided-random-fast
+  <<: *microrts-squnet-d16-128-map64-zero-action
   n_timesteps: !!float 1e6
   device: mps
   eval_hyperparams:
     <<: *microrts-squnet-d16-128-map64-bc-finetune-eval
     skip_evaluate_at_start: true
+  # hyperparam_transitions_kwargs:
+  #   interpolate_method: cosine
+  #   phases:
+  #     - learning_rate: !!float 1e-6
+  #       ent_coef: 0.001
+  #       freeze_policy_head: false
+  #       freeze_backbone: false
+  #       guide_probability: 0.5
+  #     - learning_rate: !!float 3e-5
+  #       ent_coef: 0.001
+  #       freeze_policy_head: false
+  #       freeze_backbone: false
+  #       guide_probability: 0.5
+  #   durations:
+  #     - 0
+  #     - 0.2
+  #     - 0.8
