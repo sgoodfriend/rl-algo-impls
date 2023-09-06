@@ -208,12 +208,11 @@ def from_lux_observation(
         )
         _enqueued_action = enqueued_actions.get(u["unit_id"])
         if _enqueued_action is not None:
-            obs[
-                ObservationFeature.ENQUEUED_ACTION : ObservationFeature.ENQUEUED_ACTION
-                + UNIT_ACTION_ENCODED_SIZE,
-                x,
-                y,
-            ] = unit_action_to_obs(_enqueued_action)
+            a_idx = 0
+            for a, a_sz in zip(_enqueued_action, UNIT_ACTION_SIZES):
+                if a >= 0:
+                    obs[ObservationFeature.ENQUEUED_ACTION + a_idx + a, x, y] = 1
+                a_idx += a_sz
 
     for u in lux_obs["units"][p1].values():
         add_unit(u, True)
