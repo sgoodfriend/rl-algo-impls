@@ -5,6 +5,8 @@ import numpy as np
 from rl_algo_impls.rollout.trajectory import Trajectory, batch_actions
 from rl_algo_impls.shared.tensor_utils import prepend_dims_to_match
 
+VERIFY = False
+
 
 class DiscreteSkipsTrajectoryBuilder:
     def __init__(self) -> None:
@@ -75,7 +77,9 @@ class DiscreteSkipsTrajectoryBuilder:
         logprobs = np.array(self.logprobs)
         actions = batch_actions(self.actions)
         action_masks = batch_actions(self.action_masks)
-        steps_elapsed = np.array(self.steps_elapsed)
+        steps_elapsed = np.array(self.steps_elapsed, dtype=np.int32)
+        if VERIFY:
+            assert np.all(steps_elapsed > 0), f"All steps_elapsed should be > 0"
 
         advantages = np.zeros_like(rewards)
         last_advantage = np.zeros_like(advantages[-1])
