@@ -1625,6 +1625,20 @@ Microrts-squnet-d16-128-map64-zero-action:
     durations:
       - 1
 
+Microrts-squnet-d16-128-map64-half-guided:
+  &microrts-squnet-d16-128-map64-half-guided
+  <<: *microrts-squnet-d16-128-map64-guided-random
+  rollout_hyperparams:
+    <<: *microrts-squnet-d16-128-map64-guided-random-rollout
+    guide_probability: 0.5
+  hyperparam_transitions_kwargs:
+    interpolate_method: cosine
+    phases:
+      - learning_rate: !!float 2.5e-5
+        ent_coef: 0.001
+    durations:
+      - 1
+
 Microrts-agent: &microrts-agent
   <<: *microrts-sp-dc-phases-defaults
   device: cpu
@@ -1658,7 +1672,7 @@ Microrts-agent: &microrts-agent
         #   use_paper_obs: true
 
 Microrts-debug: &microrts-debug-defaults
-  <<: *microrts-squnet-d16-128-map64-zero-action
+  <<: *microrts-squnet-d16-128-map64-half-guided
   n_timesteps: !!float 1e6
   device: mps
   eval_hyperparams:
