@@ -99,7 +99,7 @@ def get_action_mask_per_position(
         valid_action_types = np.array(
             [
                 np.any(move_mask),
-                np.any(transfer_direction_mask) and np.any(transfer_resource_mask),
+                np.any(transfer_resource_mask),
                 np.any(pickup_resource_mask),
                 is_dig_valid(u, state, enqueued_action),
                 if_self_destruct_valid(u, state, enqueued_action),
