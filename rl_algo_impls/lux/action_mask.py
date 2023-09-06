@@ -335,7 +335,7 @@ def is_dig_valid(
     lichen_strain = state.board.lichen_strains[pos[0], pos[1]]
     if (
         lichen_strain != -1
-        and f"factory_{lichen_strain}" not in state.factories[agent_id(unit)]
+        and lichen_strain not in state.teams[agent_id(unit)].factory_strains
     ):
         return True
     return False
@@ -350,8 +350,16 @@ def if_self_destruct_valid(
     if unit.power < power_cost:
         return False
     pos = pos_to_numpy(unit.pos)
+    # Self-destructing on one's own factory is useless
     factory_id = state.board.factory_occupancy_map[pos[0], pos[1]]
     if factory_id != -1:
+        return False
+    # Don't self-destruct on own lichen
+    lichen_strain = state.board.lichen_strains[pos[0], pos[1]]
+    if (
+        lichen_strain != -1
+        and lichen_strain in state.teams[agent_id(unit)].factory_strains
+    ):
         return False
     return True
 
