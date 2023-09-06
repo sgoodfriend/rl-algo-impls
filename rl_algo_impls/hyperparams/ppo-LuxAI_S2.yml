@@ -531,6 +531,24 @@ LuxAI_S2-v0-ss-squnet-acbc-robot-rollout-reset:
       n_envs: 2
       self_play_kwargs: null
 
+LuxAI_S2-v0-ss-squnet-rl-robot-no-guidance: &lux-ss-squnet-rl-robot-no-guidance
+  <<: *lux-ss-squnet-acbc-robot-rollout-reset
+  hyperparam_transitions_kwargs:
+    interpolate_method: cosine
+    phases:
+      - learning_rate: !!float 1e-6
+        ent_coef: 0.001
+      - learning_rate: !!float 3e-5
+        ent_coef: 0.001
+      - learning_rate: !!float 1e-6
+        ent_coef: 0.0001
+    durations:
+      - 0
+      - 0.1
+      - 0.7
+      - 0.18
+      - 0.02
+
 LuxAI_S2-v0-short-squnet-rl-robot: &lux-short-squnet-rl-robot
   <<: *lux-ss-squnet-acbc-robot-rollout-reset
   policy_hyperparams:
@@ -556,7 +574,7 @@ LuxAI_S2-agent: &lux-agent
         swap_steps: .inf
 
 LuxAI_S2-v0-debug:
-  <<: *lux-ss-squnet-acbc-robot-rollout-reset
+  <<: *lux-ss-squnet-rl-robot-no-guidance
   n_timesteps: !!float 1e6
   device: mps
   env_hyperparams:
