@@ -29,13 +29,7 @@ class LuxRayVectorEnv(VectorEnv):
         assert num_envs % 2 == 0, f"{num_envs} must be even"
         assert num_envs > 2, "Use VecLuxEnv instead"
 
-        seeds = get_seeds(num_envs, kwargs.get("seed"))
-        if "seed" in kwargs:
-            del kwargs["seed"]
-
-        self.all_envs = [
-            LuxRayEnv.remote(seed=seeds[i], **kwargs) for i in range(num_envs)
-        ]
+        self.all_envs = [LuxRayEnv.remote(**kwargs) for i in range(num_envs)]
         self.envs = self.all_envs[: num_envs // 2]
         self.pending_resets = deque(
             PendingReset(e, e.reset.remote()) for e in self.all_envs[num_envs // 2 :]
@@ -104,8 +98,12 @@ class LuxRayVectorEnv(VectorEnv):
         self._action_masks = np.concatenate([sr.action_mask for sr in reset_returns])
         return obs
 
-    def seed(self, seeds: Optional[Union[int, List[int]]]) -> None:
-        for e, s in zip(self.all_envs, get_seeds(len(self.all_envs), seeds)):
+    def seed(self, seed: Optional[int]) -> None:
+        seed_rng = np.random.RandomState(seed)
+        for e, s in zip(
+            self.all_envs,
+            seed_rng.randint(0, np.iinfo(np.int32).max, size=len(self.all_envs)),
+        ):
             e.seed.remote(s)
 
     def close_extras(self, **kwargs):
@@ -137,17 +135,3 @@ class LuxRayVectorEnv(VectorEnv):
         self._reward_weights = reward_weights
         for e in self.envs:
             e.set_reward_weights.remote(reward_weights)
-
-
-def get_seeds(
-    num_envs: int, seeds: Optional[Union[int, List[int]]]
-) -> List[Optional[int]]:
-    if seeds is None:
-        return [None] * num_envs
-    elif isinstance(seeds, int):
-        return [seeds + i for i in range(num_envs)]
-    elif len(seeds) != num_envs:
-        logging.warn(f"Seeds length {len(seeds)} should be {num_envs}")
-        return [seeds[0] + i for i in range(num_envs)]
-    else:
-        return seeds  # type: ignore

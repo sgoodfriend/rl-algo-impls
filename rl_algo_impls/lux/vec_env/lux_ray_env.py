@@ -37,7 +37,6 @@ class LuxRayEnv(Wrapper):
         reward_weights: Optional[Dict[str, float]] = None,
         verify: bool = False,
         factory_ice_distance_buffer: Optional[int] = None,
-        seed: Optional[int] = None,
         **kwargs,
     ) -> None:
         super().__init__(
@@ -47,7 +46,6 @@ class LuxRayEnv(Wrapper):
                 reward_weights=reward_weights,
                 verify=verify,
                 factory_ice_distance_buffer=factory_ice_distance_buffer,
-                seed=seed,
                 reset_on_done=False,
             )
         )

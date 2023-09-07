@@ -30,7 +30,6 @@ class LuxEnvGridnet(Wrapper):
         reward_weights: Optional[Dict[str, float]] = None,
         verify: bool = False,
         factory_ice_distance_buffer: Optional[int] = None,
-        seed: Optional[int] = None,
         reset_on_done: bool = True,
     ) -> None:
         super().__init__(env)
@@ -41,7 +40,7 @@ class LuxEnvGridnet(Wrapper):
             self.reward_weights = LuxRewardWeights(**reward_weights)
         self.verify = verify
         self.factory_ice_distance_buffer = factory_ice_distance_buffer
-        self.seed(seed)
+        self.seed(None)
         self.reset_on_done = reset_on_done
         self.map_size = self.unwrapped.env_cfg.map_size
 

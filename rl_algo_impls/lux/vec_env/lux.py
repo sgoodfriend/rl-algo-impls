@@ -117,6 +117,7 @@ def make_lux_env(
             envs = SelfPlayWrapper(envs, config, **self_play_kwargs)
 
     if seed is not None:
+        envs.seed(seed)
         envs.action_space.seed(seed)
         envs.observation_space.seed(seed)
 

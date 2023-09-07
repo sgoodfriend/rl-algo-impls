@@ -56,9 +56,12 @@ class VecLuxEnv(VectorEnv):
         env_obervations = [env.reset() for env in self.envs]
         return np.concatenate(env_obervations)
 
-    def seed(self, seeds=None):
-        # TODO: Seeds aren't supported in LuxAI_S2
-        pass
+    def seed(self, seed: Optional[int] = None):
+        seed_rng = np.random.RandomState(seed)
+        for e, s in zip(
+            self.envs, seed_rng.randint(0, np.iinfo(np.int32).max, len(self.envs))
+        ):
+            e.seed(s)
 
     def close_extras(self, **kwargs):
         for env in self.envs:
