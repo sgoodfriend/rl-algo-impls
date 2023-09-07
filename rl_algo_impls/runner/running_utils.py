@@ -152,6 +152,9 @@ def set_device_optimizations(
 ) -> None:
     if device.type == "cuda":
         if set_float32_matmul_precision:
+            logging.info(
+                f"Setting torch.set_float32_matmul_precision to {set_float32_matmul_precision}"
+            )
             torch.set_float32_matmul_precision(set_float32_matmul_precision)
 
 
