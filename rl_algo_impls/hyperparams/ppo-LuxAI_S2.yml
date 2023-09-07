@@ -600,6 +600,30 @@ LuxAI_S2-v0-short-squnet-cuda-opt: &lux-short-squnet-cuda-opt
   algo_hyperparams:
     <<: *lux-short-squnet-rl-robot-algo
     autocast_loss: true
+    batch_size: 768
+  hyperparam_transitions_kwargs:
+    interpolate_method: cosine
+    phases:
+      - learning_rate: !!float 1e-6
+        ent_coef: 0.001
+        guide_probability: 0.5
+      - learning_rate: !!float 1.5e-5
+        ent_coef: 0.001
+        guide_probability: 0.5
+      - learning_rate: !!float 1.5e-5
+        ent_coef: 0.001
+        guide_probability: 0
+      - learning_rate: !!float 1e-6
+        ent_coef: 0.0001
+        guide_probability: 0
+    durations:
+      - 0
+      - 0.1
+      - 0
+      - 0.1
+      - 0.6
+      - 0.18
+      - 0.02
 
 LuxAI_S2-agent: &lux-agent
   <<: *lux-squnet-ideimos
