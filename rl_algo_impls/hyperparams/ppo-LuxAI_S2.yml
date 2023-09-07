@@ -506,13 +506,13 @@ LuxAI_S2-v0-split-short-squnet-acbc-robot: &lux-split-short-squnet-acbc-robot
         built_heavy_by_time_remaining: 0.1
     score_reward_kwargs:
       episode_end: true
-  policy_hyperparams:
+  policy_hyperparams: &lux-split-short-squnet-acbc-robot-policy
     <<: *lux-split-short-squnet-multi-policy
     additional_critic_activation_functions: [tanh, tanh]
     output_activation_fn: identity
     load_run_path: sgoodfriend/rl-algo-impls-lux-nips1/oupuah7y
     save_critic_separate: true
-  algo_hyperparams:
+  algo_hyperparams: &lux-split-short-squnet-acbc-robot-algo
     <<: *lux-squnet-adv-norm-gfast-algo
     multi_reward_weights: [0.1, 0.8, 0.1]
     gamma: [0.9997, 0.9997, 0.9997]
@@ -583,11 +583,15 @@ LuxAI_S2-v0-ss-squnet-ray: &lux-ss-squnet-ray
     vec_env_class: ray
 
 LuxAI_S2-v0-short-squnet-rl-robot: &lux-short-squnet-rl-robot
-  <<: *lux-ss-squnet-acbc-robot-rollout-reset
+  <<: *lux-ss-squnet-ray
   policy_hyperparams:
-    <<: *lux-split-short-squnet-multi-policy
+    <<: *lux-split-short-squnet-acbc-robot-policy
     save_critic_separate: false
     critic_shares_backbone: true
+    load_run_path: sgoodfriend/rl-algo-impls-lux-nips1/gtt6hr2c
+  algo_hyperparams:
+    <<: *lux-split-short-squnet-acbc-robot-algo
+    vf_coef: [0.2, 0.2, 0.2]
 
 LuxAI_S2-agent: &lux-agent
   <<: *lux-squnet-ideimos
@@ -607,7 +611,7 @@ LuxAI_S2-agent: &lux-agent
         swap_steps: .inf
 
 LuxAI_S2-v0-debug:
-  <<: *lux-ss-squnet-ray
+  <<: *lux-short-squnet-rl-robot
   n_timesteps: !!float 1e6
   device: mps
   env_hyperparams:
