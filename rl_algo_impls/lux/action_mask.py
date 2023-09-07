@@ -365,8 +365,8 @@ def if_self_destruct_valid(
 
 
 def is_recharge_valid(unit: LuxUnit, enqueued_action: Optional[np.ndarray]) -> bool:
-    if (
-        enqueued_action is None or enqueued_action[0] != 5
-    ) and unit.power < unit.unit_cfg.ACTION_QUEUE_POWER_COST:
+    if enqueued_action is None:
+        return True
+    if enqueued_action[0] != 5 and unit.power < unit.unit_cfg.ACTION_QUEUE_POWER_COST:
         return False
     return True
