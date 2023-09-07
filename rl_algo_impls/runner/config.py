@@ -89,6 +89,7 @@ class Hyperparams:
     )
     rollout_hyperparams: Dict[str, Any] = dataclasses.field(default_factory=dict)
     rollout_type: Optional[str] = None
+    device_hyperparams: Dict[str, Any] = dataclasses.field(default_factory=dict)
 
     @classmethod
     def from_dict_with_extra_fields(
@@ -143,6 +144,10 @@ class Config:
     @property
     def rollout_type(self) -> Optional[str]:
         return self.hyperparams.rollout_type
+
+    @property
+    def device_hyperparams(self) -> Dict[str, Any]:
+        return self.hyperparams.device_hyperparams
 
     def eval_callback_params(self) -> Dict[str, Any]:
         eval_hyperparams = self.eval_hyperparams.copy()

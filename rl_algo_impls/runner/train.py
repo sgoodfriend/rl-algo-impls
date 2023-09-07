@@ -28,6 +28,7 @@ from rl_algo_impls.runner.running_utils import (
     load_hyperparams,
     make_policy,
     plot_eval_callback,
+    set_device_optimizations,
     set_seeds,
 )
 from rl_algo_impls.shared.callbacks.callback import Callback
@@ -79,6 +80,7 @@ def train(args: TrainArgs):
         config, EnvHyperparams(**config.env_hyperparams), tb_writer=tb_writer
     )
     device = get_device(config, env)
+    set_device_optimizations(device, **config.device_hyperparams)
     policy = make_policy(config, env, device, **config.policy_hyperparams)
     algo = ALGOS[args.algo](policy, device, tb_writer, **config.algo_hyperparams)
 

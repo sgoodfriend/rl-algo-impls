@@ -147,6 +147,14 @@ def get_device(config: Config, env: VecEnv) -> torch.device:
     return torch.device(device)
 
 
+def set_device_optimizations(
+    device: torch.device, set_float32_matmul_precision: Optional[str] = None
+) -> None:
+    if device.type == "cuda":
+        if set_float32_matmul_precision:
+            torch.set_float32_matmul_precision(set_float32_matmul_precision)
+
+
 def set_seeds(seed: Optional[int], use_deterministic_algorithms: bool) -> None:
     if seed is None:
         return
