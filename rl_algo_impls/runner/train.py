@@ -1,5 +1,7 @@
 # Support for PyTorch mps mode (https://pytorch.org/docs/stable/notes/mps.html)
+import logging
 import os
+import sys
 
 from rl_algo_impls.rollout.guided_learner_rollout import GuidedLearnerRolloutGenerator
 from rl_algo_impls.rollout.random_guided_learner_rollout import (
@@ -50,9 +52,10 @@ class TrainArgs(RunArgs):
 
 
 def train(args: TrainArgs):
-    print(args)
+    logging.basicConfig(stream=sys.stdout, level=logging.INFO)
+    logging.info(args)
     hyperparams = load_hyperparams(args.algo, args.env)
-    print(hyperparams)
+    logging.info(hyperparams)
     config = Config(args, hyperparams, os.getcwd())
 
     wandb_enabled = bool(args.wandb_project_name)
