@@ -48,6 +48,7 @@ class LuxRayEnv(Wrapper):
                 verify=verify,
                 factory_ice_distance_buffer=factory_ice_distance_buffer,
                 seed=seed,
+                reset_on_done=False,
             )
         )
 

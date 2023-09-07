@@ -31,6 +31,7 @@ class LuxEnvGridnet(Wrapper):
         verify: bool = False,
         factory_ice_distance_buffer: Optional[int] = None,
         seed: Optional[int] = None,
+        reset_on_done: bool = True,
     ) -> None:
         super().__init__(env)
         self.bid_std_dev = bid_std_dev
@@ -41,6 +42,7 @@ class LuxEnvGridnet(Wrapper):
         self.verify = verify
         self.factory_ice_distance_buffer = factory_ice_distance_buffer
         self.seed(seed)
+        self.reset_on_done = reset_on_done
         self.map_size = self.unwrapped.env_cfg.map_size
 
         self.stats = StatsTracking()
@@ -98,10 +100,11 @@ class LuxEnvGridnet(Wrapper):
         all_done = all(done.values())
         rewards = self._from_lux_rewards(lux_rewards, all_done, info)
 
-        if all_done:
+        if all_done and self.reset_on_done:
             obs = self.reset()
         else:
-            assert not any(done.values()), "All or none should be done"
+            if self.reset_on_done:
+                assert not any(done.values()), "All or none should be done"
             self._enqueued_actions = {
                 u_id: enqueued_action_from_obs(u["action_queue"])
                 for p in self.agents

@@ -1,4 +1,6 @@
-from typing import List, Optional, Union
+import logging
+from collections import deque
+from typing import List, NamedTuple, Optional, Union
 
 import numpy as np
 import ray
@@ -17,12 +19,27 @@ except ImportError:
     raise ImportError("Please install ray to use this class: `pip install ray`")
 
 
+class PendingReset(NamedTuple):
+    env: ray.ObjectRef  # [LuxRayEnv]
+    reset_future: ray.ObjectRef  # [LuxRayResetReturn]
+
+
 class LuxRayVectorEnv(VectorEnv):
     def __init__(self, num_envs: int, **kwargs) -> None:
         assert num_envs % 2 == 0, f"{num_envs} must be even"
         assert num_envs > 2, "Use VecLuxEnv instead"
 
-        self.envs = [LuxRayEnv.remote(**kwargs) for _ in range(num_envs // 2)]
+        seeds = get_seeds(num_envs, kwargs.get("seed"))
+        if "seed" in kwargs:
+            del kwargs["seed"]
+
+        self.all_envs = [
+            LuxRayEnv.remote(seed=seeds[i], **kwargs) for i in range(num_envs)
+        ]
+        self.envs = self.all_envs[: num_envs // 2]
+        self.pending_resets = deque(
+            PendingReset(e, e.reset.remote()) for e in self.all_envs[num_envs // 2 :]
+        )
 
         (
             map_dim,
@@ -42,27 +59,53 @@ class LuxRayVectorEnv(VectorEnv):
                 for idx, env in enumerate(self.envs)
             ]
         )
-        obs = np.concatenate([sr.step_return[0] for sr in step_returns])
-        rewards = np.concatenate([sr.step_return[1] for sr in step_returns])
-        dones = np.concatenate([sr.step_return[2] for sr in step_returns])
-        infos = [info for sr in step_returns for info in sr.step_return[3]]
-        self._action_masks = np.concatenate([sr.action_mask for sr in step_returns])
-        return obs, rewards, dones, infos
+        obs = []
+        rewards = []
+        dones = []
+        infos = []
+        action_masks = []
+        reset_future_indexes = []
+        reset_futures = []
+        for idx, ((o, r, d, i), am) in enumerate(step_returns):
+            if d.any():
+                assert d.all(), "All dones should be True if any done is True"
+                self.pending_resets.append(
+                    PendingReset(self.envs[idx], self.envs[idx].reset.remote())
+                )
+                self.envs[idx], reset_future = self.pending_resets.popleft()
+                reset_future_indexes.append(idx)
+                reset_futures.append(reset_future)
+            obs.append(o)
+            rewards.append(r)
+            dones.append(d)
+            infos.extend(i)
+            action_masks.append(am)
+        reset_returns = ray.get(reset_futures)
+        for idx, (o, am) in zip(reset_future_indexes, reset_returns):
+            obs[idx] = o
+            action_masks[idx] = am
+        self._action_masks = np.concatenate(action_masks)
+        return (
+            np.concatenate(obs),
+            np.concatenate(rewards),
+            np.concatenate(dones),
+            infos,
+        )
 
     def reset(self) -> VecEnvObs:
-        reset_returns = ray.get([env.reset.remote() for env in self.envs])
+        self.pending_resets.extend(
+            [PendingReset(e, e.reset.remote()) for e in self.envs]
+        )
+
+        resets = [self.pending_resets.popleft() for _ in range(len(self.envs))]
+        self.envs = [r.env for r in resets]
+        reset_returns = ray.get([r.reset_future for r in resets])
         obs = np.concatenate([sr.obs for sr in reset_returns])
         self._action_masks = np.concatenate([sr.action_mask for sr in reset_returns])
         return obs
 
-    def seed(self, seeds: Optional[Union[int, List[int]]]):
-        if seeds is None:
-            _seeds = [None] * len(self.envs)
-        elif isinstance(seeds, int):
-            _seeds = [seeds + i for i in range(len(self.envs))]
-        else:
-            _seeds = seeds
-        for e, s in zip(self.envs, _seeds):
+    def seed(self, seeds: Optional[Union[int, List[int]]]) -> None:
+        for e, s in zip(self.all_envs, get_seeds(len(self.all_envs), seeds)):
             e.seed.remote(s)
 
     def close_extras(self, **kwargs):
@@ -94,3 +137,17 @@ class LuxRayVectorEnv(VectorEnv):
         self._reward_weights = reward_weights
         for e in self.envs:
             e.set_reward_weights.remote(reward_weights)
+
+
+def get_seeds(
+    num_envs: int, seeds: Optional[Union[int, List[int]]]
+) -> List[Optional[int]]:
+    if seeds is None:
+        return [None] * num_envs
+    elif isinstance(seeds, int):
+        return [seeds + i for i in range(num_envs)]
+    elif len(seeds) != num_envs:
+        logging.warn(f"Seeds length {len(seeds)} should be {num_envs}")
+        return [seeds[0] + i for i in range(num_envs)]
+    else:
+        return seeds  # type: ignore
