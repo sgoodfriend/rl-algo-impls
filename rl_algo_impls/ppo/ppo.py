@@ -1,5 +1,6 @@
 import gc
 import logging
+from contextlib import contextmanager
 from dataclasses import asdict, astuple, dataclass
 from time import perf_counter
 from typing import List, NamedTuple, Optional, Tuple, TypeVar, Union
@@ -123,6 +124,7 @@ class PPO(Algorithm):
         switch_range: Optional[int] = None,
         guide_probability: Optional[float] = None,
         normalize_advantages_after_scaling: bool = False,
+        autocast_loss: bool = False,
     ) -> None:
         super().__init__(policy, device, tb_writer)
         self.policy = policy
@@ -163,6 +165,8 @@ class PPO(Algorithm):
         self.switch_range = switch_range
         self.guide_probability = guide_probability
         self.normalize_advantages_after_scaling = normalize_advantages_after_scaling
+
+        self.autocast_loss = autocast_loss
 
     def learn(
         self: PPOSelf,
@@ -276,43 +280,44 @@ class PPO(Algorithm):
                     if multi_reward_weights is not None:
                         mb_adv = mb_adv @ multi_reward_weights
 
-                new_logprobs, entropy, new_values = self.policy(
-                    mb_obs, mb_actions, action_masks=mb_action_masks
-                )
+                with maybe_autocast(self.autocast_loss, self.device):
+                    new_logprobs, entropy, new_values = self.policy(
+                        mb_obs, mb_actions, action_masks=mb_action_masks
+                    )
 
-                logratio = new_logprobs - mb_logprobs
-                ratio = torch.exp(logratio)
-                clipped_ratio = torch.clamp(ratio, min=1 - pi_clip, max=1 + pi_clip)
-                pi_loss = -torch.min(ratio * mb_adv, clipped_ratio * mb_adv).mean()
+                    logratio = new_logprobs - mb_logprobs
+                    ratio = torch.exp(logratio)
+                    clipped_ratio = torch.clamp(ratio, min=1 - pi_clip, max=1 + pi_clip)
+                    pi_loss = -torch.min(ratio * mb_adv, clipped_ratio * mb_adv).mean()
 
-                v_loss_unclipped = (new_values - mb_returns) ** 2
-                if v_clip:
-                    v_loss_clipped = (
-                        mb_values
-                        + torch.clamp(new_values - mb_values, -v_clip, v_clip)
-                        - mb_returns
-                    ) ** 2
-                    v_loss = torch.max(v_loss_unclipped, v_loss_clipped).mean(0)
-                else:
-                    v_loss = v_loss_unclipped.mean(0)
+                    v_loss_unclipped = (new_values - mb_returns) ** 2
+                    if v_clip:
+                        v_loss_clipped = (
+                            mb_values
+                            + torch.clamp(new_values - mb_values, -v_clip, v_clip)
+                            - mb_returns
+                        ) ** 2
+                        v_loss = torch.max(v_loss_unclipped, v_loss_clipped).mean(0)
+                    else:
+                        v_loss = v_loss_unclipped.mean(0)
 
-                if self.ppo2_vf_coef_halving:
-                    v_loss *= 0.5
+                    if self.ppo2_vf_coef_halving:
+                        v_loss *= 0.5
 
-                entropy_loss = -entropy.mean()
-                with torch.no_grad():
-                    approx_kl = ((ratio - 1) - logratio).mean().cpu().numpy().item()
-                if self.kl_cutoff is not None and approx_kl > self.kl_cutoff:
-                    pi_coef = 0
+                    entropy_loss = -entropy.mean()
+                    with torch.no_grad():
+                        approx_kl = ((ratio - 1) - logratio).mean().cpu().numpy().item()
+                    if self.kl_cutoff is not None and approx_kl > self.kl_cutoff:
+                        pi_coef = 0
 
-                loss = (
-                    pi_coef * pi_loss
-                    + ent_coef * entropy_loss
-                    + (vf_coef * v_loss).sum()
-                )
+                    loss = (
+                        pi_coef * pi_loss
+                        + ent_coef * entropy_loss
+                        + (vf_coef * v_loss).sum()
+                    )
 
-                if self.gradient_accumulation:
-                    loss /= r.num_minibatches(self.batch_size)
+                    if self.gradient_accumulation:
+                        loss /= r.num_minibatches(self.batch_size)
                 loss.backward()
                 if not self.gradient_accumulation:
                     self.optimizer_step()
@@ -380,3 +385,12 @@ class PPO(Algorithm):
         nn.utils.clip_grad_norm_(self.policy.parameters(), self.max_grad_norm)
         self.optimizer.step()
         self.optimizer.zero_grad()
+
+
+@contextmanager
+def maybe_autocast(autocast_enabled: bool, device: torch.device):
+    if autocast_enabled and device.type == "cuda" and torch.cuda.is_bf16_supported():
+        with torch.autocast(device.type, dtype=torch.bfloat16):
+            yield
+    else:
+        yield
