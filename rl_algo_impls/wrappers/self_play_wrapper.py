@@ -30,6 +30,7 @@ class SelfPlayWrapper(VectorableWrapper):
         swap_window_size: int = 2,
         selfplay_bots: Optional[Dict[str, Any]] = None,
         bot_always_player_2: bool = False,
+        first_window_orig_policy: bool = False,
     ) -> None:
         super().__init__(env)
         assert num_old_policies % 2 == 0, f"num_old_policies must be even"
@@ -44,6 +45,7 @@ class SelfPlayWrapper(VectorableWrapper):
         self.swap_window_size = swap_window_size
         self.selfplay_bots = selfplay_bots
         self.bot_always_player_2 = bot_always_player_2
+        self.first_window_orig_policy = first_window_orig_policy
 
         self.policies: Deque[Policy] = deque(maxlen=window)
         self.policy_assignments: List[Optional[Policy]] = [None] * env.num_envs
@@ -132,7 +134,11 @@ class SelfPlayWrapper(VectorableWrapper):
         info = [i for i, b in zip(info, orig_learner_indexes) if b]
 
         self.steps_since_swap += 1
-        for idx in range(0, self.num_old_policies * 2, 2 * self.swap_window_size):
+        for idx in range(
+            2 * self.swap_window_size if self.first_window_orig_policy else 0,
+            self.num_old_policies * 2,
+            2 * self.swap_window_size,
+        ):
             if self.steps_since_swap[idx] > self.swap_steps:
                 self.swap_policy(idx, self.swap_window_size)
 

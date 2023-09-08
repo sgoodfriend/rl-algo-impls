@@ -276,7 +276,7 @@ LuxAI_S2-v0-squnet-iDeimos: &lux-squnet-ideimos
       factory_ice_distance_buffer: null
     additional_win_loss_reward: true
     score_reward_kwargs: null
-    self_play_kwargs:
+    self_play_kwargs: &lux-squnet-ideimos-env-self-play
       <<: *lux-env-self-play
       save_steps: !!float 1e6
       window: 50
@@ -525,9 +525,10 @@ LuxAI_S2-v0-ss-squnet-acbc-robot-rollout-reset:
   env_hyperparams: &lux-ss-squnet-acbc-robot-rollout-reset-env
     <<: *lux-split-short-squnet-acbc-robot-env
     n_envs: 22
-  rollout_hyperparams:
+  rollout_hyperparams: &lux-ss-squnet-acbc-robot-rollout-reset-rollout
     <<: *lux-squnet-guided-random-rollout
     rollout_reset_vec_env:
+      &lux-ss-squnet-acbc-robot-rollout-reset-rollout-reset-vec-env
       n_envs: 2
       self_play_kwargs: null
 
@@ -625,6 +626,21 @@ LuxAI_S2-v0-short-squnet-cuda-opt: &lux-short-squnet-cuda-opt
       - 0.18
       - 0.02
 
+LuxAI_S2-v0-short-squnet-48-envs: &lux-short-squnet-48-envs
+  <<: *lux-short-squnet-cuda-opt
+  env_hyperparams: &lux-short-squnet-48-envs-env
+    <<: *lux-ss-squnet-ray-env
+    n_envs: 40
+    self_play_kwargs:
+      <<: *lux-squnet-ideimos-env-self-play
+      num_old_policies: 16
+      first_window_orig_policy: true
+  rollout_hyperparams:
+    <<: *lux-ss-squnet-acbc-robot-rollout-reset-rollout
+    rollout_reset_vec_env:
+      <<: *lux-ss-squnet-acbc-robot-rollout-reset-rollout-reset-vec-env
+      n_envs: 8
+
 LuxAI_S2-agent: &lux-agent
   <<: *lux-squnet-ideimos
   device: cpu
@@ -643,11 +659,11 @@ LuxAI_S2-agent: &lux-agent
         swap_steps: .inf
 
 LuxAI_S2-v0-debug:
-  <<: *lux-short-squnet-cuda-opt
+  <<: *lux-short-squnet-48-envs
   n_timesteps: !!float 1e6
   device: mps
   env_hyperparams:
-    <<: *lux-ss-squnet-ray-env
+    <<: *lux-short-squnet-48-envs-env
     make_kwargs:
       <<: *lux-split-short-squnet-acbc-robot-env-make-kwargs
       verbose: 3
