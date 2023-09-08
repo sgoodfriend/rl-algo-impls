@@ -117,7 +117,7 @@ class LuxRayVectorEnv(VectorEnv):
         reset_returns = ray.get(reset_futures)
         obs = np.concatenate([sr.obs for sr in reset_returns])
         action_masks = np.concatenate([sr.action_mask for sr in reset_returns])
-        self._action_masks[mapped_mask] = action_masks
+        self._action_masks[env_mask] = action_masks
         return VecEnvMaskedResetReturn(obs, self._action_masks)
 
     def seed(self, seed: Optional[int]) -> None:
