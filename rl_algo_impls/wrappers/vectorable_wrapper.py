@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Tuple, Type, TypeVar, Union
+from typing import Dict, List, NamedTuple, Optional, Tuple, Type, TypeVar, Union
 
 import numpy as np
 from gym import Env, Space, Wrapper
@@ -6,6 +6,11 @@ from stable_baselines3.common.vec_env import VecEnv as SB3VecEnv
 
 VecEnvObs = Union[np.ndarray, Dict[str, np.ndarray], Tuple[np.ndarray, ...]]
 VecEnvStepReturn = Tuple[VecEnvObs, np.ndarray, np.ndarray, List[Dict]]
+
+
+class VecEnvMaskedResetReturn(NamedTuple):
+    obs: np.ndarray
+    action_mask: np.ndarray
 
 
 class VectorableWrapper(Wrapper):
@@ -21,6 +26,9 @@ class VectorableWrapper(Wrapper):
 
     def reset(self) -> VecEnvObs:
         return self.env.reset()
+
+    def masked_reset(self, env_mask: np.ndarray) -> VecEnvMaskedResetReturn:
+        return self.env.masked_reset(env_mask)
 
 
 VecEnv = Union[VectorableWrapper, SB3VecEnv]

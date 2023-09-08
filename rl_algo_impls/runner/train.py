@@ -161,19 +161,6 @@ def train(args: TrainArgs):
                 **config.policy_hyperparams,
                 **rollout_hyperparams.get("guide_policy", {}),
             }
-            rollout_reset_vec_env_kwargs = rollout_hyperparams.get(
-                "rollout_reset_vec_env"
-            )
-            if rollout_reset_vec_env_kwargs:
-                if not isinstance(rollout_reset_vec_env_kwargs, dict):
-                    rollout_reset_vec_env_kwargs = {}
-                rollout_hyperparams["rollout_reset_vec_env"] = make_env(
-                    config,
-                    EnvHyperparams(
-                        **{**config.env_hyperparams, **rollout_reset_vec_env_kwargs}
-                    ),
-                    tb_writer=None,
-                )
             rollout_hyperparams["guide_policy"] = make_policy(
                 config, env, device, **guide_policy_hyperparams
             )

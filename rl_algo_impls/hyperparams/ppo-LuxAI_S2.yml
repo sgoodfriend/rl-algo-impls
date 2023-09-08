@@ -527,10 +527,7 @@ LuxAI_S2-v0-ss-squnet-acbc-robot-rollout-reset:
     n_envs: 22
   rollout_hyperparams: &lux-ss-squnet-acbc-robot-rollout-reset-rollout
     <<: *lux-squnet-guided-random-rollout
-    rollout_reset_vec_env:
-      &lux-ss-squnet-acbc-robot-rollout-reset-rollout-reset-vec-env
-      n_envs: 2
-      self_play_kwargs: null
+    num_envs_reset_every_rollout: 2
 
 LuxAI_S2-v0-ss-squnet-rl-robot-no-guidance: &lux-ss-squnet-rl-robot-no-guidance
   <<: *lux-ss-squnet-acbc-robot-rollout-reset
@@ -637,9 +634,7 @@ LuxAI_S2-v0-short-squnet-48-envs: &lux-short-squnet-48-envs
       first_window_orig_policy: true
   rollout_hyperparams: &lux-short-squnet-48-envs-rollout
     <<: *lux-ss-squnet-acbc-robot-rollout-reset-rollout
-    rollout_reset_vec_env: &lux-short-squnet-48-envs-rollout-reset-vec-env
-      <<: *lux-ss-squnet-acbc-robot-rollout-reset-rollout-reset-vec-env
-      n_envs: 8
+    num_envs_reset_every_rollout: 8
 
 LuxAI_S2-v0-short-squnet-78-envs: &lux-short-squnet-78-envs
   <<: *lux-short-squnet-48-envs
@@ -653,9 +648,7 @@ LuxAI_S2-v0-short-squnet-78-envs: &lux-short-squnet-78-envs
       swap_window_size: 6
   rollout_hyperparams:
     <<: *lux-short-squnet-48-envs-rollout
-    rollout_reset_vec_env:
-      <<: *lux-short-squnet-48-envs-rollout-reset-vec-env
-      n_envs: 12
+    num_envs_reset_every_rollout: 12
 
 LuxAI_S2-agent: &lux-agent
   <<: *lux-squnet-ideimos

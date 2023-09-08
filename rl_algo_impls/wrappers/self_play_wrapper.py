@@ -9,6 +9,7 @@ from rl_algo_impls.shared.policy.policy import Policy
 from rl_algo_impls.shared.tensor_utils import batch_dict_keys
 from rl_algo_impls.wrappers.action_mask_wrapper import find_action_masker
 from rl_algo_impls.wrappers.vectorable_wrapper import (
+    VecEnvMaskedResetReturn,
     VecEnvObs,
     VecEnvStepReturn,
     VectorableWrapper,
@@ -149,6 +150,15 @@ class SelfPlayWrapper(VectorableWrapper):
         self.next_obs = super().reset()
         self.next_action_masks = self.env.get_action_mask()
         return self.next_obs[self.learner_indexes()]
+
+    def masked_reset(self, env_mask: np.ndarray) -> VecEnvMaskedResetReturn:
+        learning_mask = np.array(self.learner_indexes(), dtype=np.bool_)
+        mapped_mask = np.zeros_like(learning_mask)
+        mapped_mask[learning_mask] = env_mask
+        assert np.all(
+            mapped_mask[::2] == mapped_mask[1::2]
+        ), f"Expect mapped_mask to be the same for player 1 and 2: {mapped_mask}"
+        return self.env.masked_reset(mapped_mask)
 
     def __getattr__(self, name):
         attr = super().__getattr__(name)

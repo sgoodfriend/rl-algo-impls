@@ -9,7 +9,11 @@ from stable_baselines3.common.vec_env.base_vec_env import tile_images
 
 from rl_algo_impls.lux.rewards import LuxRewardWeights
 from rl_algo_impls.lux.vec_env.lux_ray_env import LuxRayEnv
-from rl_algo_impls.wrappers.vectorable_wrapper import VecEnvObs, VecEnvStepReturn
+from rl_algo_impls.wrappers.vectorable_wrapper import (
+    VecEnvMaskedResetReturn,
+    VecEnvObs,
+    VecEnvStepReturn,
+)
 
 try:
     import ray
@@ -97,6 +101,24 @@ class LuxRayVectorEnv(VectorEnv):
         obs = np.concatenate([sr.obs for sr in reset_returns])
         self._action_masks = np.concatenate([sr.action_mask for sr in reset_returns])
         return obs
+
+    def masked_reset(self, env_mask: np.ndarray) -> VecEnvMaskedResetReturn:
+        assert np.all(
+            env_mask[::2] == env_mask[1::2]
+        ), f"Expect env_mask to be the same for player 1 and 2: {env_mask}"
+        mapped_mask = env_mask[::2]
+        reset_futures = []
+        for idx, (env, m) in enumerate(zip(self.envs, mapped_mask)):
+            if not m:
+                continue
+            self.pending_resets.append(PendingReset(env, env.reset.remote()))
+            self.envs[idx], reset_future = self.pending_resets.popleft()
+            reset_futures.append(reset_future)
+        reset_returns = ray.get(reset_futures)
+        obs = np.concatenate([sr.obs for sr in reset_returns])
+        action_masks = np.concatenate([sr.action_mask for sr in reset_returns])
+        self._action_masks[mapped_mask] = action_masks
+        return VecEnvMaskedResetReturn(obs, self._action_masks)
 
     def seed(self, seed: Optional[int]) -> None:
         seed_rng = np.random.RandomState(seed)

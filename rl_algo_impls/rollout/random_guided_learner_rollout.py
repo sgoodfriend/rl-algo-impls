@@ -35,7 +35,7 @@ class RandomGuidedLearnerRolloutGenerator(RolloutGenerator):
         include_logp: bool = True,
         subaction_mask: Optional[Dict[int, Dict[int, int]]] = None,
         skip_no_action_steps: bool = False,
-        rollout_reset_vec_env: Optional[VecEnv] = None,
+        num_envs_reset_every_rollout: int = 0,
     ) -> None:
         super().__init__()
         self.learning_policy = learning_policy
@@ -56,7 +56,7 @@ class RandomGuidedLearnerRolloutGenerator(RolloutGenerator):
             )
         self.subaction_mask = subaction_mask
         self.skip_no_action_steps = skip_no_action_steps
-        self.rollout_reset_vec_env = rollout_reset_vec_env
+        self.num_envs_reset_every_rollout = num_envs_reset_every_rollout
 
         self.get_action_mask = getattr(vec_env, "get_action_mask", None)
 
@@ -64,23 +64,6 @@ class RandomGuidedLearnerRolloutGenerator(RolloutGenerator):
         self.next_action_masks = (
             self.get_action_mask() if self.get_action_mask else None
         )
-        if self.rollout_reset_vec_env:
-            assert isinstance(
-                self.next_obs, np.ndarray
-            ), "VecEnv must return np.ndarray"
-            self.next_obs = np.concatenate(
-                [self.next_obs, self.rollout_reset_vec_env.reset()]
-            )
-            if self.get_action_mask:
-                self.get_reset_env_action_mask = getattr(
-                    self.rollout_reset_vec_env, "get_action_mask"
-                )
-                self.next_action_masks = np.concatenate(
-                    [
-                        self.next_action_masks,
-                        self.get_reset_env_action_mask(),
-                    ]
-                )
 
         self.episode_stats_writer = find_wrapper(vec_env, EpisodeStatsWriter)
 
@@ -107,10 +90,7 @@ class RandomGuidedLearnerRolloutGenerator(RolloutGenerator):
 
     @property
     def num_envs(self) -> int:
-        num_envs = self.vec_env.num_envs
-        if self.rollout_reset_vec_env:
-            num_envs += self.rollout_reset_vec_env.num_envs
-        return num_envs
+        return self.vec_env.num_envs
 
     def rollout(self, gamma: NumOrArray, gae_lambda: NumOrArray) -> Rollout:
         self.learning_policy.eval()
@@ -210,27 +190,10 @@ class RandomGuidedLearnerRolloutGenerator(RolloutGenerator):
             if self.episode_stats_writer:
                 self.episode_stats_writer.steps_per_step = learning_steps
 
-            self.next_obs, rewards, dones, _ = self.vec_env.step(
-                step_clamped_actions[: self.vec_env.num_envs]
-            )
+            self.next_obs, rewards, dones, _ = self.vec_env.step(step_clamped_actions)
             self.next_action_masks = (
                 self.get_action_mask() if self.get_action_mask else None
             )
-            if self.rollout_reset_vec_env:
-                (
-                    reset_env_next_obs,
-                    reset_env_rewards,
-                    reset_env_dones,
-                    _,
-                ) = self.rollout_reset_vec_env.step(
-                    step_clamped_actions[self.vec_env.num_envs :]
-                )
-                self.next_obs = np.concatenate([self.next_obs, reset_env_next_obs])
-                rewards = np.concatenate([rewards, reset_env_rewards])
-                dones = np.concatenate([dones, reset_env_dones])
-                self.next_action_masks = np.concatenate(
-                    [self.next_action_masks, self.get_reset_env_action_mask()]
-                )
 
             for idx in np.where(use_guide_policy | use_zero_policy)[0]:
                 traj_builders[idx].step_no_add(rewards[idx], dones[idx], gamma)
@@ -267,12 +230,15 @@ class RandomGuidedLearnerRolloutGenerator(RolloutGenerator):
         ]
         traj_builders = None
 
-        if self.rollout_reset_vec_env:
-            self.next_obs[self.vec_env.num_envs :] = self.rollout_reset_vec_env.reset()
+        if self.num_envs_reset_every_rollout > 0:
+            masked_reset_mask = np.zeros(self.num_envs, dtype=np.bool_)
+            masked_reset_mask[-self.num_envs_reset_every_rollout :] = True
+            next_obs, action_mask = self.vec_env.masked_reset(masked_reset_mask)
+            self.next_obs[-self.num_envs_reset_every_rollout :] = next_obs
             if self.next_action_masks is not None:
                 self.next_action_masks[
-                    self.vec_env.num_envs :
-                ] = self.get_reset_env_action_mask()
+                    -self.num_envs_reset_every_rollout :
+                ] = action_mask
 
         gc.collect()
         return TrajectoryRollout(
