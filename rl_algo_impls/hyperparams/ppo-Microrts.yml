@@ -1610,21 +1610,6 @@ Microrts-squnet-d16-128-map64-guided-random-fast:
       - 0.3
       - 0.05
 
-Microrts-squnet-d16-128-map64-zero-action:
-  &microrts-squnet-d16-128-map64-zero-action
-  <<: *microrts-squnet-d16-128-map64-guided-random
-  rollout_hyperparams:
-    <<: *microrts-squnet-d16-128-map64-guided-random-rollout
-    guide_probability: 0
-    zero_probability: 0.9
-  hyperparam_transitions_kwargs:
-    interpolate_method: cosine
-    phases:
-      - learning_rate: !!float 2.5e-5
-        ent_coef: 0.001
-    durations:
-      - 1
-
 Microrts-squnet-d16-128-map64-half-guided:
   &microrts-squnet-d16-128-map64-half-guided
   <<: *microrts-squnet-d16-128-map64-guided-random
