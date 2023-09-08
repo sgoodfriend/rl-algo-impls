@@ -118,7 +118,7 @@ class LuxRayVectorEnv(VectorEnv):
         obs = np.concatenate([sr.obs for sr in reset_returns])
         action_masks = np.concatenate([sr.action_mask for sr in reset_returns])
         self._action_masks[env_mask] = action_masks
-        return VecEnvMaskedResetReturn(obs, self._action_masks)
+        return VecEnvMaskedResetReturn(obs, action_masks)
 
     def seed(self, seed: Optional[int]) -> None:
         seed_rng = np.random.RandomState(seed)
