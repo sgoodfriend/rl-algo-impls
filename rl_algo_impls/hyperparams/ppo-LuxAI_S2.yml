@@ -524,7 +524,7 @@ LuxAI_S2-v0-ss-squnet-acbc-robot-rollout-reset:
   <<: *lux-split-short-squnet-acbc-robot
   env_hyperparams: &lux-ss-squnet-acbc-robot-rollout-reset-env
     <<: *lux-split-short-squnet-acbc-robot-env
-    n_envs: 22
+    n_envs: 24
   rollout_hyperparams: &lux-ss-squnet-acbc-robot-rollout-reset-rollout
     <<: *lux-squnet-guided-random-rollout
     num_envs_reset_every_rollout: 2
@@ -627,7 +627,7 @@ LuxAI_S2-v0-short-squnet-48-envs: &lux-short-squnet-48-envs
   <<: *lux-short-squnet-cuda-opt
   env_hyperparams: &lux-short-squnet-48-envs-env
     <<: *lux-ss-squnet-ray-env
-    n_envs: 40
+    n_envs: 48
     self_play_kwargs: &lux-short-squnet-48-envs-env-self-play
       <<: *lux-squnet-ideimos-env-self-play
       num_old_policies: 16
@@ -640,7 +640,7 @@ LuxAI_S2-v0-short-squnet-78-envs: &lux-short-squnet-78-envs
   <<: *lux-short-squnet-48-envs
   env_hyperparams: &lux-short-squnet-78-envs-env
     <<: *lux-short-squnet-48-envs-env
-    n_envs: 66
+    n_envs: 78
     self_play_kwargs:
       <<: *lux-short-squnet-48-envs-env-self-play
       num_old_policies: 24
@@ -668,11 +668,11 @@ LuxAI_S2-agent: &lux-agent
         swap_steps: .inf
 
 LuxAI_S2-v0-debug:
-  <<: *lux-short-squnet-78-envs
+  <<: *lux-short-squnet-48-envs
   n_timesteps: !!float 1e6
   device: mps
   env_hyperparams:
-    <<: *lux-short-squnet-78-envs-env
+    <<: *lux-short-squnet-48-envs-env
     make_kwargs:
       <<: *lux-split-short-squnet-acbc-robot-env-make-kwargs
       verbose: 3
