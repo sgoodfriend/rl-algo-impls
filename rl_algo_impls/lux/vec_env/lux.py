@@ -14,7 +14,9 @@ from rl_algo_impls.wrappers.additional_win_loss_reward import (
     AdditionalWinLossRewardWrapper,
 )
 from rl_algo_impls.wrappers.episode_stats_writer import EpisodeStatsWriter
-from rl_algo_impls.wrappers.hwc_to_chw_observation import HwcToChwObservation
+from rl_algo_impls.wrappers.mask_resettable_episode_statistics import (
+    MaskResettableEpisodeStatistics,
+)
 from rl_algo_impls.wrappers.score_reward_wrapper import ScoreRewardWrapper
 from rl_algo_impls.wrappers.self_play_eval_wrapper import SelfPlayEvalWrapper
 from rl_algo_impls.wrappers.self_play_reference_wrapper import SelfPlayReferenceWrapper
@@ -121,7 +123,7 @@ def make_lux_env(
         envs.action_space.seed(seed)
         envs.observation_space.seed(seed)
 
-    envs = gym.wrappers.RecordEpisodeStatistics(envs)
+    envs = MaskResettableEpisodeStatistics(envs)
     if training and tb_writer:
         envs = EpisodeStatsWriter(
             envs,

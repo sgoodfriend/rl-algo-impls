@@ -5,8 +5,8 @@ import numpy as np
 
 from rl_algo_impls.shared.policy.policy import Policy
 from rl_algo_impls.shared.tensor_utils import batch_dict_keys
-from rl_algo_impls.wrappers.self_play_wrapper import SelfPlayWrapper
 from rl_algo_impls.wrappers.vectorable_wrapper import (
+    VecEnvMaskedResetReturn,
     VecEnvObs,
     VecEnvStepReturn,
     VectorableWrapper,
@@ -51,6 +51,15 @@ class AbstractSelfPlayReferenceWrapper(VectorableWrapper, ABC):
         self.next_action_masks = self.env.get_action_mask()  # type: ignore
         _, indexes = self._assignment_and_indexes()
         return self.next_obs[indexes]  # type: ignore
+
+    def masked_reset(self, env_mask: np.ndarray) -> VecEnvMaskedResetReturn:
+        _, learner_indexes = self._assignment_and_indexes()
+        mapped_mask = np.zeros_like(learner_indexes)
+        mapped_mask[learner_indexes] = env_mask
+        assert np.all(
+            mapped_mask[::2] == mapped_mask[1::2]
+        ), f"Expected mapped_mask to be the same for player 1 and 2: {mapped_mask}"
+        return self.env.masked_reset(mapped_mask)
 
     def get_action_mask(self) -> Optional[np.ndarray]:
         _, indexes = self._assignment_and_indexes()

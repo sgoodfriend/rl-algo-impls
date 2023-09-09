@@ -7,7 +7,11 @@ from stable_baselines3.common.vec_env.base_vec_env import tile_images
 
 from rl_algo_impls.lux.rewards import LuxRewardWeights
 from rl_algo_impls.lux.wrappers.lux_env_gridnet import LuxEnvGridnet
-from rl_algo_impls.wrappers.vectorable_wrapper import VecEnvObs, VecEnvStepReturn
+from rl_algo_impls.wrappers.vectorable_wrapper import (
+    VecEnvMaskedResetReturn,
+    VecEnvObs,
+    VecEnvStepReturn,
+)
 
 VecLuxEnvSelf = TypeVar("VecLuxEnvSelf", bound="VecLuxEnv")
 
@@ -55,6 +59,17 @@ class VecLuxEnv(VectorEnv):
     def reset(self) -> VecEnvObs:
         env_obervations = [env.reset() for env in self.envs]
         return np.concatenate(env_obervations)
+
+    def masked_reset(self, env_mask: np.ndarray) -> VecEnvMaskedResetReturn:
+        mapped_mask = env_mask[::2]
+        assert np.all(
+            mapped_mask == env_mask[1::2]
+        ), "env_mask must be the same for player 1 and 2: {env_mask}"
+        masked_envs = [env for env, m in zip(self.envs, mapped_mask) if m]
+        return VecEnvMaskedResetReturn(
+            obs=np.concatenate([env.reset() for env in masked_envs]),
+            action_mask=np.concatenate([env.get_action_mask() for env in masked_envs]),
+        )
 
     def seed(self, seed: Optional[int] = None):
         seed_rng = np.random.RandomState(seed)
