@@ -673,7 +673,7 @@ LuxAI_S2-v0-short-squnet-78-envs: &lux-short-squnet-78-envs
       - 0.12
       - 0
       - 0.12
-      - 0.54
+      - 0.56
       - 0.18
       - 0.02
 
