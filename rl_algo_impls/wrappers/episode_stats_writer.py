@@ -81,6 +81,3 @@ class EpisodeStatsWriter(VectorableWrapper):
                     f"{rolling_stats}"
                 )
                 self.last_episode_cnt_print += self.rolling_length
-
-    def reset(self) -> VecEnvObs:
-        return self.env.reset()
