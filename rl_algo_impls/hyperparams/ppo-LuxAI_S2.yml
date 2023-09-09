@@ -652,6 +652,30 @@ LuxAI_S2-v0-short-squnet-78-envs: &lux-short-squnet-78-envs
   algo_hyperparams:
     <<: *lux-short-squnet-cuda-opt-algo
     batch_size: 832
+    vf_coef: [0.16, 0.17, 0.16]
+  hyperparam_transitions_kwargs:
+    interpolate_method: cosine
+    phases:
+      - learning_rate: !!float 1e-6
+        ent_coef: 0.001
+        guide_probability: 0.5
+      - learning_rate: !!float 1e-5
+        ent_coef: 0.001
+        guide_probability: 0.5
+      - learning_rate: !!float 1e-5
+        ent_coef: 0.001
+        guide_probability: 0
+      - learning_rate: !!float 1e-6
+        ent_coef: 0.0001
+        guide_probability: 0
+    durations:
+      - 0
+      - 0.12
+      - 0
+      - 0.12
+      - 0.54
+      - 0.18
+      - 0.02
 
 LuxAI_S2-agent: &lux-agent
   <<: *lux-squnet-ideimos
@@ -671,11 +695,11 @@ LuxAI_S2-agent: &lux-agent
         swap_steps: .inf
 
 LuxAI_S2-v0-debug:
-  <<: *lux-short-squnet-48-envs
+  <<: *lux-short-squnet-78-envs
   n_timesteps: !!float 1e6
   device: mps
   env_hyperparams:
-    <<: *lux-short-squnet-48-envs-env
+    <<: *lux-short-squnet-78-envs-env
     make_kwargs:
       <<: *lux-split-short-squnet-acbc-robot-env-make-kwargs
       verbose: 3
