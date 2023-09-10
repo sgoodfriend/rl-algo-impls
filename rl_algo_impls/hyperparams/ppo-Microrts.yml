@@ -1441,7 +1441,7 @@ Microrts-squnet-d16-128-map64-BC-finetune:
       num_old_policies: 12
   policy_hyperparams:
     <<: *microrts-squnet-d16-128-imayari-policy
-    load_run_path: sgoodfriend/rl-algo-impls-microrts-2023/9yrvchxe
+    load_run_path: sgoodfriend/rl-algo-impls-microrts-2023/uksp6znl
   eval_hyperparams: &microrts-squnet-d16-128-map64-bc-finetune-eval
     <<: *microrts-squnet-map64-eval-defaults
   algo_hyperparams: &microrts-squnet-d16-128-map64-bc-finetune-algo
