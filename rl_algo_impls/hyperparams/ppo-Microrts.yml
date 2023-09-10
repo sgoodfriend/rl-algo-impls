@@ -1615,14 +1615,25 @@ Microrts-squnet-d16-128-map64-half-guided:
   <<: *microrts-squnet-d16-128-map64-guided-random
   rollout_hyperparams:
     <<: *microrts-squnet-d16-128-map64-guided-random-rollout
-    guide_probability: 0.5
+    guide_probability: 0
   hyperparam_transitions_kwargs:
     interpolate_method: cosine
     phases:
       - learning_rate: !!float 2.5e-5
         ent_coef: 0.001
+        guide_probability: 0.5
+      - learning_rate: !!float 2.5e-5
+        ent_coef: 0.001
+        guide_probability: 0
+      - learning_rate: !!float 1e-6
+        ent_coef: 0.0001
+        guide_probability: 0
     durations:
-      - 1
+      - 0.1
+      - 0.1
+      - 0.65
+      - 0.1
+      - 0.05
 
 Microrts-agent: &microrts-agent
   <<: *microrts-sp-dc-phases-defaults
