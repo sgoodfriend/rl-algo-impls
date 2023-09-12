@@ -14,6 +14,7 @@ from rl_algo_impls.wrappers.additional_win_loss_reward import (
     AdditionalWinLossRewardWrapper,
 )
 from rl_algo_impls.wrappers.episode_stats_writer import EpisodeStatsWriter
+from rl_algo_impls.wrappers.hwc_to_chw_observation import HwcToChwObservation
 from rl_algo_impls.wrappers.mask_resettable_episode_statistics import (
     MaskResettableEpisodeStatistics,
 )
@@ -99,6 +100,7 @@ def make_lux_env(
         envs = VecLuxEnv(num_envs, **make_kwargs)
     elif vec_env_class == "replay":
         envs = VecLuxReplayEnv(num_envs, **make_kwargs)
+        envs = HwcToChwObservation(envs)
     elif vec_env_class == "ray":
         envs = (
             LuxRayVectorEnv(num_envs, **make_kwargs)
@@ -107,6 +109,7 @@ def make_lux_env(
         )
     else:
         envs = LuxAsyncVectorEnv([make(i) for i in range(n_envs)], copy=False)
+        envs = HwcToChwObservation(envs)
 
     if self_play_reference_kwargs:
         envs = SelfPlayReferenceWrapper(envs, **self_play_reference_kwargs)
