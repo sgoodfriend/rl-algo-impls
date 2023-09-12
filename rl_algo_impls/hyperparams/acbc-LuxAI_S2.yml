@@ -189,8 +189,26 @@ LuxAI_S2-v0-short-squnet-deimos: &lux-short-squnet-deimos
         - replay_dir: data/lux/lux-replays-deimos-npz
           team_name: Deimos
 
+LuxAI_S2-v0-short-squnet-multi: &lux-short-squnet-multi
+  <<: *lux-short-squnet-rl-robot
+  env_hyperparams:
+    <<: *lux-short-squnet-rl-robot-env
+    make_kwargs:
+      <<: *lux-short-squnet-rl-robot-env-make-kwargs
+      replay_dirs:
+        - replay_dir: data/lux/lux-replays-deimos-npz
+          team_name: Deimos
+        - replay_dir: data/lux/lux-replays-flg-npz
+          team_name: flg
+        - replay_dir: data/lux/lux-replays-ry_andy_-npz
+          team_name: ry_andy_
+        - replay_dir: data/lux/lux-replays-tigga-npz
+          team_name: Tigga
+        - replay_dir: data/lux/lux-replays-siestaguru-npz
+          team_name: SiestaGuru
+
 LuxAI_S2-v0-debug:
-  <<: *lux-short-squnet-deimos
+  <<: *lux-short-squnet-multi
   device: mps
   # eval_hyperparams:
   #   <<: *lux-eval-defaults
