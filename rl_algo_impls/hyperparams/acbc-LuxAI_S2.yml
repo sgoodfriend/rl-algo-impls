@@ -169,9 +169,9 @@ LuxAI_S2-v0-short-squnet-rl-robot: &lux-short-squnet-rl-robot
     <<: *lux-split-short-squnet-acbc-robot-policy
     save_critic_separate: false
     critic_shares_backbone: true
-  env_hyperparams:
+  env_hyperparams: &lux-short-squnet-rl-robot-env
     <<: *lux-split-short-squnet-acbc-robot-env
-    make_kwargs:
+    make_kwargs: &lux-short-squnet-rl-robot-env-make-kwargs
       <<: *lux-split-short-squnet-acbc-robot-env-make-kwargs
       replay_dirs:
         - replay_dir: data/lux/lux-replays-deimos-npz
@@ -179,8 +179,18 @@ LuxAI_S2-v0-short-squnet-rl-robot: &lux-short-squnet-rl-robot
         - replay_dir: data/lux/lux-replays-flg-npz
           team_name: flg
 
-LuxAI_S2-v0-debug:
+LuxAI_S2-v0-short-squnet-deimos: &lux-short-squnet-deimos
   <<: *lux-short-squnet-rl-robot
+  env_hyperparams:
+    <<: *lux-short-squnet-rl-robot-env
+    make_kwargs:
+      <<: *lux-short-squnet-rl-robot-env-make-kwargs
+      replay_dirs:
+        - replay_dir: data/lux/lux-replays-deimos-npz
+          team_name: Deimos
+
+LuxAI_S2-v0-debug:
+  <<: *lux-short-squnet-deimos
   device: mps
   # eval_hyperparams:
   #   <<: *lux-eval-defaults
