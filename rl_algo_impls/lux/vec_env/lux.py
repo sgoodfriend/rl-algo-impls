@@ -108,6 +108,7 @@ def make_lux_env(
             else VecLuxEnv(num_envs, **make_kwargs)
         )
     else:
+        # DEPRECATED
         envs = LuxAsyncVectorEnv([make(i) for i in range(n_envs)], copy=False)
         envs = HwcToChwObservation(envs)
 
