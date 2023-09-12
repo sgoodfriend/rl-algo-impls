@@ -69,7 +69,10 @@ class VecLuxReplayEnv(VectorEnv):
         if self.is_npz_dir:
             import ray
 
-            ray.init(_system_config={"automatic_object_spilling_enabled": False})
+            ray.init(
+                _system_config={"automatic_object_spilling_enabled": False},
+                ignore_reinit_error=True,
+            )
             self.envs = [
                 LuxNpzReplayEnv(self.next_replay_path, reward_weights)
                 for _ in range(self.num_envs)
