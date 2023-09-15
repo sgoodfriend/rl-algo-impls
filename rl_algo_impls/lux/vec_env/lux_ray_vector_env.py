@@ -129,8 +129,8 @@ class LuxRayVectorEnv(VectorEnv):
             e.seed.remote(s)
 
     def close_extras(self, **kwargs):
+        ray.get([e.close.remote() for e in self.all_envs])
         ray.shutdown()
-        return super().close_extras(**kwargs)
 
     def render(self, mode: str = "human", **kwargs):
         if mode == "human":
