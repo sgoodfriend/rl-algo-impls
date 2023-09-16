@@ -670,10 +670,10 @@ LuxAI_S2-v0-short-squnet-78-envs: &lux-short-squnet-78-envs
         guide_probability: 0
     durations:
       - 0
-      - 0.12
+      - 0.1
       - 0
-      - 0.12
-      - 0.56
+      - 0.2
+      - 0.5
       - 0.18
       - 0.02
 
