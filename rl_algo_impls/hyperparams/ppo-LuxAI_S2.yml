@@ -502,8 +502,8 @@ LuxAI_S2-v0-split-short-squnet-acbc-robot: &lux-split-short-squnet-acbc-robot
     make_kwargs: &lux-split-short-squnet-acbc-robot-env-make-kwargs
       <<: *lux-squnet-ideimos-env-make-kwargs
       reward_weights:
-        built_light_by_time_remaining: 0.01
-        built_heavy_by_time_remaining: 0.1
+        built_light_by_time_remaining: 0.008
+        built_heavy_by_time_remaining: 0.12
     score_reward_kwargs:
       episode_end: true
   policy_hyperparams: &lux-split-short-squnet-acbc-robot-policy
