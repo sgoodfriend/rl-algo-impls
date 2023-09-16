@@ -582,7 +582,7 @@ LuxAI_S2-v0-ss-squnet-ray: &lux-ss-squnet-ray
 
 LuxAI_S2-v0-short-squnet-rl-robot: &lux-short-squnet-rl-robot
   <<: *lux-ss-squnet-ray
-  policy_hyperparams:
+  policy_hyperparams: &lux-short-squnet-rl-robot-policy
     <<: *lux-split-short-squnet-acbc-robot-policy
     save_critic_separate: false
     critic_shares_backbone: true
@@ -677,6 +677,18 @@ LuxAI_S2-v0-short-squnet-78-envs: &lux-short-squnet-78-envs
       - 0.18
       - 0.02
 
+LuxAI_S2-v0-short-squnet-78-envs-deimos: &lux-short-squnet-78-envs-deimos
+  <<: *lux-short-squnet-78-envs
+  policy_hyperparams:
+    <<: *lux-short-squnet-rl-robot-policy
+    load_run_path: sgoodfriend/rl-algo-impls-lux-nips1/act6rrp0
+
+LuxAI_S2-v0-short-squnet-78-envs-multi: &lux-short-squnet-78-envs-multi
+  <<: *lux-short-squnet-78-envs
+  policy_hyperparams:
+    <<: *lux-short-squnet-rl-robot-policy
+    load_run_path: sgoodfriend/rl-algo-impls-lux-nips1/i0s75uqy
+
 LuxAI_S2-agent: &lux-agent
   <<: *lux-squnet-ideimos
   device: cpu
@@ -695,7 +707,7 @@ LuxAI_S2-agent: &lux-agent
         swap_steps: .inf
 
 LuxAI_S2-v0-debug:
-  <<: *lux-short-squnet-78-envs
+  <<: *lux-short-squnet-78-envs-deimos
   n_timesteps: !!float 1e6
   device: mps
   env_hyperparams:
