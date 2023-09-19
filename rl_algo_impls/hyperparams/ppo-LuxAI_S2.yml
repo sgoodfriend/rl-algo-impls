@@ -649,7 +649,7 @@ LuxAI_S2-v0-short-squnet-78-envs: &lux-short-squnet-78-envs
   rollout_hyperparams:
     <<: *lux-short-squnet-48-envs-rollout
     num_envs_reset_every_rollout: 12
-  algo_hyperparams:
+  algo_hyperparams: &lux-short-squnet-78-envs-algo
     <<: *lux-short-squnet-cuda-opt-algo
     batch_size: 832
     vf_coef: [0.16, 0.17, 0.16]
@@ -737,6 +737,13 @@ LuxAI_S2-v0-short-squnet-78-envs-deimos-lighter-robots:
         built_light_by_time_remaining: 0.009
         built_heavy_by_time_remaining: 0.11
 
+LuxAI_S2-v0-short-squnet-78-envs-deimos-old-adv-scale:
+  &lux-short-squnet-78-envs-deimos-old-adv-scale
+  <<: *lux-short-squnet-78-envs-deimos-lighter-robots
+  algo_hyperparams: &lux-short-squnet-78-envs-deimos-old-adv-scale-algo
+    <<: *lux-short-squnet-78-envs-algo
+    normalize_advantages_after_scaling: false
+
 LuxAI_S2-agent: &lux-agent
   <<: *lux-squnet-ideimos
   device: cpu
@@ -755,7 +762,7 @@ LuxAI_S2-agent: &lux-agent
         swap_steps: .inf
 
 LuxAI_S2-v0-debug:
-  <<: *lux-short-squnet-78-envs-deimos-robots
+  <<: *lux-short-squnet-78-envs-deimos-old-adv-scale
   n_timesteps: !!float 1e6
   device: mps
   env_hyperparams:
