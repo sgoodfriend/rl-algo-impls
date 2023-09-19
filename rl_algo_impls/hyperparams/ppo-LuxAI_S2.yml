@@ -726,6 +726,17 @@ LuxAI_S2-v0-short-squnet-78-envs-deimos-robots:
       - 0.18
       - 0.02
 
+LuxAI_S2-v0-short-squnet-78-envs-deimos-lighter-robots:
+  &lux-short-squnet-78-envs-deimos-lighter-robots
+  <<: *lux-short-squnet-78-envs-deimos-robots
+  env_hyperparams: &lux-short-squnet-78-envs-deimos-lighter-robots-env
+    <<: *lux-short-squnet-78-envs-env
+    make_kwargs: &lux-short-squnet-78-envs-deimos-lighter-robots-env-make-kwargs
+      <<: *lux-split-short-squnet-acbc-robot-env-make-kwargs
+      reward_weights:
+        built_light_by_time_remaining: 0.009
+        built_heavy_by_time_remaining: 0.11
+
 LuxAI_S2-agent: &lux-agent
   <<: *lux-squnet-ideimos
   device: cpu
@@ -748,8 +759,8 @@ LuxAI_S2-v0-debug:
   n_timesteps: !!float 1e6
   device: mps
   env_hyperparams:
-    <<: *lux-short-squnet-78-envs-env
+    <<: *lux-short-squnet-78-envs-deimos-lighter-robots-env
     make_kwargs:
-      <<: *lux-split-short-squnet-acbc-robot-env-make-kwargs
+      <<: *lux-short-squnet-78-envs-deimos-lighter-robots-env-make-kwargs
       verbose: 3
       verify: true
