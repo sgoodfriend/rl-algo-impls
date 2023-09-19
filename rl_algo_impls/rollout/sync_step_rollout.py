@@ -1,4 +1,4 @@
-from typing import Dict, Optional, TypeVar
+from typing import Dict, Optional, TypeVar, Union
 
 import numpy as np
 
@@ -24,6 +24,7 @@ class SyncStepRolloutGenerator(RolloutGenerator):
         full_batch_off_accelerator: bool = False,
         include_logp: bool = True,
         subaction_mask: Optional[Dict[int, Dict[int, int]]] = None,
+        num_envs_reset_every_rollout: int = 0,
     ) -> None:
         super().__init__()
         self.policy = policy
@@ -34,6 +35,7 @@ class SyncStepRolloutGenerator(RolloutGenerator):
         self.full_batch_off_accelerator = full_batch_off_accelerator
         self.include_logp = include_logp
         self.subaction_mask = subaction_mask
+        self.num_envs_reset_every_rollout = num_envs_reset_every_rollout
 
         self.get_action_mask = getattr(vec_env, "get_action_mask", None)
         if self.get_action_mask:
@@ -123,6 +125,18 @@ class SyncStepRolloutGenerator(RolloutGenerator):
 
         self.policy.train()
         assert isinstance(self.next_obs, np.ndarray)
+        if self.num_envs_reset_every_rollout > 0:
+            masked_reset_mask = np.zeros(self.vec_env.num_envs, dtype=np.bool_)
+            masked_reset_mask[-self.num_envs_reset_every_rollout :] = True
+            next_obs, action_mask = self.vec_env.masked_reset(masked_reset_mask)
+            self.next_obs[-self.num_envs_reset_every_rollout :] = next_obs
+            if self.next_action_masks is not None:
+                fold_in(
+                    self.next_action_masks,
+                    batch_dict_keys(action_mask),
+                    masked_reset_mask,
+                )
+
         return VecRollout(
             next_episode_starts=self.next_episode_starts,
             next_values=next_values,
@@ -145,7 +159,7 @@ class SyncStepRolloutGenerator(RolloutGenerator):
 ND = TypeVar("ND", np.ndarray, Dict[str, np.ndarray])
 
 
-def fold_in(destination: ND, subset: ND, idx: int):
+def fold_in(destination: ND, subset: ND, idx: Union[int, np.ndarray]):
     def fn(_d: np.ndarray, _s: np.ndarray):
         _d[idx] = _s
 
