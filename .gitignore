@@ -150,3 +150,12 @@ tournament_[0-9]*
 tournament_*_[0-9]*
 
 data/*
+
+# LaTeX
+papers/*/*.aux
+papers/*/*.bbl
+papers/*/*.blg
+papers/*/*.fdb_latexmk
+papers/*/*.fls
+papers/*/*.out
+papers/*/*.synctex.gz

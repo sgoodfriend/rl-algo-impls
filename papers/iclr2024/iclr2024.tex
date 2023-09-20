@@ -1,0 +1,77 @@
+\documentclass{article}
+\usepackage{iclr2024_conference}
+\begin{document}
+\title{A Competition Winning Deep Reinforcement Learning Agent in microRTS}
+\author{Scott Goodfriend$^{1}$ \\
+$^{1}$ goodfriend.scott@gmail.com \\
+}
+\maketitle
+\begin{abstract}
+    Scripted solutions with pathfinding algorithms have predominantly won the five
+    previous iterations of the IEEE microRTS ($\mu$RTS) competitions hosted at CIG and
+    CoG. Despite Deep Reinforcement Learning (DRL) algorithms making significant strides
+    in RTS-style games, their adoption has been limited in this primarily academic
+    competition due to the considerable training resources required and the complexity
+    inherent in creating and debugging such agents. The RAISocketAI, as part of the
+    IEEE-CoG2023 microRTS competition, has emerged as the first winning DRL agent. In a
+    non-performance constrained environment, RAISocketAI regularly defeated the two
+    preceding competition winners. This first competition-winning DRL submission can be
+    a benchmark for future microRTS competitions and a starting point for future DRL
+    research. In particular, this submission successfully used fine-tuning a base model
+    to perform significantly better on specific maps. Further work in Behavior Cloning
+    has proven promising as an even more economical way to bootstrap a model.
+\end{abstract}
+\section{Introduction}
+Deep reinforcement learning has proven to be a powerful tool for solving complex
+problems requiring several steps to achieve a goal, such as Atari games \citep{DBLP:journals/corr/MnihKSGAWR13}, continuous
+control tasks \citep{DBLP:journals/corr/LillicrapHPHETS15}, and even real-time strategy
+(RTS) games. AlphaStar is a famous example of an agent trained with DRL on StarCraft
+II to defeat professional players \citep{Vinyals2019GrandmasterLI}. However, AlphaStar was trained with thousands of
+CPUs and GPUs/TPUs for several weeks. RTS games are particularly challenging for DRL for
+several reasons:
+\begin{enumerate}
+    \item the state and action spaces are large and varied with different terrain and
+        unit types;
+    \item each unit type can have different actions and abilities;
+    \item each action can control several units;
+    \item rewards are sparse (win, loss, or tie) and delayed by possibly several
+    thousand timesteps;
+    \item winning requires combining tactical (micro) and strategic (macro) decisions;
+    \item actions must be taken in real-time (i.e., the game won't wait for the agent to
+        take an action);
+    \item the agent might not have full visibility of the game state (i.e., fog of war); and
+    \item events in the game might be non-deterministic.
+\end{enumerate}
+
+microRTS (stylized as $\mu$RTS) is a minimalist, open-source RTS game testbed designed for research
+purposes \citep{Ontan2013TheCM}. It includes many aspects of RTS games, simplified: different unit types, unit-specific
+actions terrain, resource collection and consuptiom to build units, and unit-to-unit combat
+where units have different strengths and weaknesses. microRTS also supports fog of war
+and non-determinism; however, these were disabled for the IEEE-CoG2023 microRTS
+competition.
+
+The IEEE microRTS competition has been hosted at the Conference on Games (CoG) nearly
+every year since 2019 and at the Conference on Computational Intelligence and Games
+(CIG) before that since 2017 \citep{Ontañón_Barriga_Silva_Moraes_Lelis_2018}.
+Competitors submit an agent that plays against other agents in a round-robin tournament
+on 12 maps with different distributions of terrain, resources, and starting units and
+buildings. 8 "Open" maps are known beforehand and are used to determine the competition winner.
+The other 4 "Hidden" maps are not revealed to participants until after the competition.
+These hidden maps are meant to test the generalization ability of the agents, but aren't
+part of the competition to allow organizers to participate. Hidden map results are also
+released.
+
+This paper describes the RAISocketAI agent, which won the IEEE-CoG2023 microRTS
+competition and is the first DRL agent to win a microRTS competition. RAISocketAI
+extends the work of MicroRTS-Py (formally Gym-$\mu$RTS/Gym-MicroRTS) to be competitive
+in the Open competition maps. MicroRTS-Py is an OpenAI Gym environment for microRTS,
+which makes it easier to train DRL agents \citep{DBLP:journals/corr/abs-2105-13807}.
+MicroRTS-Py also includes a DRL training framework using Proximal Policy Optimization
+(PPO) \citep{DBLP:journals/corr/SchulmanWDRK17}, state and action space vectorization,
+invalid action masking, and environment vectorization.
+
+\section{Related Work}
+
+\bibliography{iclr2024}
+\bibliographystyle{iclr2024_conference}
+\end{document}
