@@ -33,81 +33,39 @@ from rl_algo_impls.utils.timing import measure_time
 MAX_TORCH_THREADS = 8
 
 AGENT_ARGS_BY_TERRAIN_MD5 = {
-    "ac3b5a19643ee5816a1df17f2fadaae3": [
-        PickerArgs(
-            algo="ppo",
-            env="Microrts-finetuned-NoWhereToRun",
-            seed=1,
-            best=True,
-            use_paper_obs=True,
-            size=12,
-            map_name="maps/NoWhereToRun9x8.xml",
-            is_final_valid_model=True,
-        )
-    ],
-    "f112aaf99e09861a5d6c6ec195130fa7": [
-        PickerArgs(
-            algo="ppo",
-            env="Microrts-finetuned-DoubleGame-shaped",
-            seed=1,
-            best=True,
-            use_paper_obs=True,
-            size=24,
-            map_name="maps/DoubleGame24x24.xml",
-            is_final_valid_model=True,
-        )
-    ],
-    "ee6e75dae5051fe746a68b39112921c4": [
-        PickerArgs(
-            algo="ppo",
-            env="Microrts-finetuned-DistantResources-shaped",
-            seed=1,
-            best=True,
-            use_paper_obs=True,
-            size=32,
-            map_name="maps/BWDistantResources32x32.xml",
-        ),
-        PickerArgs(
-            algo="ppo",
-            env="Microrts-squnet-DistantResources-128ch-finetuned",
-            seed=1,
-            best=True,
-            use_paper_obs=False,
-            size=32,
-            map_name="maps/BWDistantResources32x32.xml",
-            is_final_valid_model=True,
-        ),
-    ],
+    # "ac3b5a19643ee5816a1df17f2fadaae3": [],  # maps/NoWhereToRun9x8.xml
+    # "f112aaf99e09861a5d6c6ec195130fa7": [],  # maps/DoubleGame24x24.xml
+    # "ee6e75dae5051fe746a68b39112921c4": [],  # maps/BWDistantResources32x32.xml
     # "686eb7e687e50729cb134d3958d7814d": [],  # maps/BroodWar/(4)BloodBath.scmB.xml
 }
 
 AGENT_ARGS_BY_MAP_SIZE = {
     16: [
         PickerArgs(
-            algo="ppo",
-            env="Microrts-A6000-finetuned-coac-mayari",
+            algo="acbc",
+            env="Microrts-squnet-d16-128-iMayari-nondeterministic",
             seed=1,
-            best=True,
-            use_paper_obs=True,
+            best=False,
+            use_paper_obs=False,
             size=16,
         )
     ],
     32: [
         PickerArgs(
-            algo="ppo",
-            env="Microrts-squnet-map32-128ch-selfplay",
+            algo="acbc",
+            env="Microrts-squnet-d16-128-iMayari-map32",
             seed=1,
-            best=True,
+            best=False,
             use_paper_obs=False,
             size=32,
         )
     ],
     64: [
         PickerArgs(
-            algo="ppo",
-            env="Microrts-squnet-map64-64ch-selfplay",
+            algo="acbc",
+            env="Microrts-squnet-d16-128-iMayari-map64-from32",
             seed=1,
-            best=True,
+            best=False,
             use_paper_obs=False,
             size=64,
         )

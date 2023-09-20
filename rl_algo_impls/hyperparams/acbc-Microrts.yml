@@ -135,6 +135,15 @@ Microrts-squnet-d16-128-iMayari: &microrts-squnet-d16-128-imayari
     include_logp: false
   rollout_type: reference
 
+Microrts-squnet-d16-128-iMayari-nondeterministic:
+  &microrts-squnet-d16-128-imayari-non-deterministic
+  <<: *microrts-squnet-d16-128-imayari
+  env_hyperparams:
+    <<: *microrts-squnet-d16-128-imayari-env
+    make_kwargs:
+      <<: *microrts-squnet-d16-128-imayari-env-make-kwargs
+      non_deterministic: true
+
 Microrts-squnet-d16-128-iMayari-batch: &microrts-squnet-d16-128-imayari-batch
   <<: *microrts-squnet-d16-128-imayari
   algo_hyperparams:
