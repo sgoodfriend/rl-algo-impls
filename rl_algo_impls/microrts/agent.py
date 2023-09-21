@@ -42,8 +42,8 @@ AGENT_ARGS_BY_TERRAIN_MD5 = {
 AGENT_ARGS_BY_MAP_SIZE = {
     16: [
         PickerArgs(
-            algo="acbc",
-            env="Microrts-squnet-d16-128-iMayari-nondeterministic",
+            algo="ppo",
+            env="Microrts-squnet-d16-128-BC-finetune",
             seed=1,
             best=False,
             use_paper_obs=False,
@@ -52,8 +52,8 @@ AGENT_ARGS_BY_MAP_SIZE = {
     ],
     32: [
         PickerArgs(
-            algo="acbc",
-            env="Microrts-squnet-d16-128-iMayari-map32",
+            algo="ppo",
+            env="Microrts-squnet-d16-128-map32-BC-finetune-A10",
             seed=1,
             best=False,
             use_paper_obs=False,
@@ -62,8 +62,8 @@ AGENT_ARGS_BY_MAP_SIZE = {
     ],
     64: [
         PickerArgs(
-            algo="acbc",
-            env="Microrts-squnet-d16-128-iMayari-map64-from32",
+            algo="ppo",
+            env="Microrts-squnet-d16-128-map64-BC-finetune-A10",
             seed=1,
             best=False,
             use_paper_obs=False,

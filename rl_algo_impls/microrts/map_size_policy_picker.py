@@ -154,12 +154,14 @@ class MapSizePolicyPicker(Policy):
                 del policy_hyperparams["load_run_path"]
             if "load_run_path_best" in policy_hyperparams:
                 del policy_hyperparams["load_run_path_best"]
+            if "load_path" in policy_hyperparams:
+                del policy_hyperparams["load_path"]
             self.logger.debug(f"Loading policy {args.env}")
             return make_policy(
                 args.config,
                 vec_env,
                 device,
-                args.model_path,
+                load_path=args.model_path,
                 **policy_hyperparams,
             )
 
