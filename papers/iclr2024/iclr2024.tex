@@ -69,8 +69,34 @@ which makes it easier to train DRL agents \citep{DBLP:journals/corr/abs-2105-138
 MicroRTS-Py also includes a DRL training framework using Proximal Policy Optimization
 (PPO) \citep{DBLP:journals/corr/SchulmanWDRK17}, state and action space vectorization,
 invalid action masking, and environment vectorization.
+\citet{DBLP:journals/corr/abs-2105-13807} only trained an agent for one of the smaller
+maps. RAISocketAI extends the DRL training framework to be competitive on other, more
+complicated maps.
+
+Models in the IEEE microRTS competition are supposed to submit actions for each timestep
+within 100ms. Without GPU acceleration, this is a significant constraint for deep neural
+network agents. Being a Python agent, RAISocketAI also had to communicate with the Java
+microRTS efficiently, which required optimizing the data representation.
+
+Despite these constraints, RAISocketAI won the IEEE-CoG2023 microRTS competition. The
+agent consists of 7 trained neural networks. It took about 70 GPU-days to train these
+models, which is within budget for researchers, though possibly outside of budget for
+students. However, 4 of these neural networks were trained from an existing model. These
+transfer learning models were used to make the models perform better on specific maps.
+These transfer learning models took in total 18 GPU-days to train.
+
+While microRTS doesn't support human players. The IEEE microRTS competition means there
+are several agents available to use imitation learning on. Work following the
+competition shows that behavior cloning and fine-tuning with PPO can be used to train a
+competitive agent more economically. Using the same playthroughs to train the critic
+heads on win-loss rewards means that PPO can be trained with just sparse win-loss
+rewards, eliminating the need for a difficult to tune human reward function.
 
 \section{Related Work}
+
+
+\section{Method}
+\subsection{RAISocketAI}
 
 \bibliography{iclr2024}
 \bibliographystyle{iclr2024_conference}
