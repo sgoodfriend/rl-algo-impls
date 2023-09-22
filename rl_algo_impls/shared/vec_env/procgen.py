@@ -55,6 +55,7 @@ def make_procgen_env(
         _,  # video_frames_per_second,
         _,  # reference_bot,
         _, # self_play_reference_kwargs,
+        _,  # additional_win_loss_smoothing_factor,
     ) = astuple(hparams)
 
     seed = config.seed(training=training)

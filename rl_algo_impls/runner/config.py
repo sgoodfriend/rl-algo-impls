@@ -65,6 +65,7 @@ class EnvHyperparams:
     video_frames_per_second: Optional[int] = None
     reference_bot: Optional[str] = None
     self_play_reference_kwargs: Optional[Dict[str, Any]] = None
+    additional_win_loss_smoothing_factor: Optional[float] = None
 
 
 HyperparamsSelf = TypeVar("HyperparamsSelf", bound="Hyperparams")

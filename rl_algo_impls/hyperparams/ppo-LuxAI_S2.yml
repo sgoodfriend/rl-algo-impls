@@ -744,6 +744,13 @@ LuxAI_S2-v0-short-squnet-78-envs-deimos-old-adv-scale:
     <<: *lux-short-squnet-78-envs-algo
     normalize_advantages_after_scaling: false
 
+LuxAI_S2-v0-sSqunet-78env-deimos-win-loss-smoothing:
+  &lux-ssqunet-78envs-deimos-win-loss-smoothing
+  <<: *lux-short-squnet-78-envs-deimos-old-adv-scale
+  env_hyperparams: &lux-ssqunet-78envs-deimos-win-loss-smoothing-env
+    <<: *lux-short-squnet-78-envs-deimos-lighter-robots-env
+    additional_win_loss_smoothing_factor: 0.9
+
 LuxAI_S2-v0-sSqunet-78env-multi-fine-tune: &lux-ssqunet-78envs-multi-fine-tune
   <<: *lux-short-squnet-78-envs-deimos-lighter-robots
   rollout_type: sync
@@ -795,11 +802,11 @@ LuxAI_S2-agent: &lux-agent
         swap_steps: .inf
 
 LuxAI_S2-v0-debug:
-  <<: *lux-ssqunet-78envs-multi-fine-tune
+  <<: *lux-ssqunet-78envs-deimos-win-loss-smoothing
   n_timesteps: !!float 1e6
   device: mps
   env_hyperparams:
-    <<: *lux-short-squnet-78-envs-deimos-lighter-robots-env
+    <<: *lux-ssqunet-78envs-deimos-win-loss-smoothing-env
     make_kwargs:
       <<: *lux-short-squnet-78-envs-deimos-lighter-robots-env-make-kwargs
       verbose: 3

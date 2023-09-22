@@ -65,6 +65,7 @@ def make_lux_env(
         _,  # video_frames_per_second,
         _,  # reference_bot,
         self_play_reference_kwargs,
+        additional_win_loss_smoothing_factor,
     ) = astuple(hparams)
 
     seed = config.seed(training=training)
@@ -138,7 +139,9 @@ def make_lux_env(
         )
 
     if additional_win_loss_reward:
-        envs = AdditionalWinLossRewardWrapper(envs)
+        envs = AdditionalWinLossRewardWrapper(
+            envs, label_smoothing_factor=additional_win_loss_smoothing_factor
+        )
     if score_reward_kwargs:
         envs = ScoreRewardWrapper(envs, **score_reward_kwargs)
 

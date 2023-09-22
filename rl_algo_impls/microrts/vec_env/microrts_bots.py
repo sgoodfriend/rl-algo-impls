@@ -65,7 +65,8 @@ def make_microrts_bots_env(
         _,  # time_budget_ms,
         video_frames_per_second,
         reference_bot,
-        _, # self_play_reference_kwargs,
+        _,  # self_play_reference_kwargs,
+        _,  # additional_win_loss_smoothing_factor,
     ) = astuple(hparams)
 
     seed = config.seed(training=training)
