@@ -1,5 +1,5 @@
 \documentclass{article}
-\usepackage{iclr2024_conference}
+\usepackage{iclr2024_conference,times}
 \begin{document}
 \title{A Competition Winning Deep Reinforcement Learning Agent in microRTS}
 \author{Scott Goodfriend$^{1}$ \\
@@ -43,7 +43,7 @@ several reasons:
     \item events in the game might be non-deterministic.
 \end{enumerate}
 
-microRTS (stylized as $\mu$RTS) is a minimalist, open-source RTS game testbed designed for research
+microRTS (stylized as $\mu$RTS) is a minimalist, open-source, two-player, zero-sum RTS game testbed designed for research
 purposes \citep{Ontan2013TheCM}. It includes many aspects of RTS games, simplified: different unit types, unit-specific
 actions terrain, resource collection and consuptiom to build units, and unit-to-unit combat
 where units have different strengths and weaknesses. microRTS also supports fog of war
@@ -93,7 +93,92 @@ heads on win-loss rewards means that PPO can be trained with just sparse win-los
 rewards, eliminating the need for a difficult to tune human reward function.
 
 \section{Related Work}
+\subsection{MicroRTS-Py}
+MicroRTS-Py\footnote{https://github.com/Farama-Foundation/MicroRTS-Py} is an OpenAI Gym
+wrapper for microRTS and includes a Proximal Policy Optimization (PPO) implementation
+trained on 1 of the Open maps (\texttt{16x16basesWorkers}). Starting from a PPO
+implementation matching \textit{openai/baselines},
+\citet{DBLP:journals/corr/abs-2105-13807} added action composition, a shaped reward function, invalid action
+masking, IMPALA-CNN (a convolutional neural network with residual blocks), and trained
+against a diverse set of scripted agents. The agent was trained on a single map for 300
+million game steps, which took less than 3 GPU-days. The agent achieved a
+91\% win rate against a diverse set of competition bots.
 
+\citet{DBLP:journals/corr/abs-2105-13807} ran ablation studies across their additions.
+They found invalid action masking was essential to have an agent that could compete at
+the most basic level (82\% win rate with invalid action masking, 0\% without). Using the
+residual block network IMPALA-CNN architecture instead of the network used by
+\citet{DBLP:journals/corr/MnihKSGAWR13} got the win rate up the rest of the way.
+
+They also tried two different ways to issue player actions: Unit Action Simulation (UAS)
+and GridNet \citep{pmlr-v97-han19a}. UAS calls the policy iteratively on each unit, simulating the game state
+after each unit action before issuing all unit actions combined to the game. GridNet
+computes the actions for all units in a single policy call by computing unit action
+logits for all grid positions and using a player action mask to ignore cells that don't
+have any units owned by the player. UAS performed better than GridNet (91\% vs 89\%).
+Despite UAS's better performance, MicroRTS-Py is deprecating UAS in favor of GridNet
+because UAS's more complex implementation and difficulty to incorporate selfplay and
+imitation learning, both features important in the current and future versions of
+RAISocketAI.
+
+\citet{DBLP:journals/corr/abs-2105-13807} also tried selfplay, training the policy in
+games where the policy played itself. They found that selfplay didn't improve win rate,
+either when only using selfplay or when training with half selfplay and half scripted
+bots. The other policies were trained as only the first player while selfplay required
+the policy train as both players, so the comparison might not be fair.
+
+RAISocketAI reimplements must of MicroRTS-Py, including the PPO implementation, action
+composition, shaped reward function, invalid action masking, GridNet, selfplay, and
+scripted bot training. RAISocketAI extended the observation space to support walls and
+made the invalid action mask more strict. RAISocketAI and MicroRTS-Py were trained with partial
+observability and non-determinism disabled.
+
+\subsection{DeepMind AlphaStar}
+\citet{Vinyals2019GrandmasterLI}'s AlphaStar is a grandmaster-level AI trained with DRL to play the RTS game
+StarCraft II. AlphaStar was trained with a combination of supervised learning using
+games sampled from a dataset of human replays and reinforcement learning using a
+league-based system to train multiple agents against each other. The supervised agent
+was rated in the top 16\% of human players and was used as starting points for
+reinforcement learning. Reinforcement learning is used to train agents, which are
+checkpointed to a league intermittently. The training framework trains 3 types of agents
+for each of the 3 in-game races: a main agent, agents trained to defeat the main agent, and agents
+trained against the league to find exploits in those policies trained so far.
+
+AlphaStar used a custom, but similar interface to the StarCraft II Learning Environment
+(PySC2). Observations are a list of units with attributes visible to the agent. Enemy
+units outside of the visiblity of agent's units are not included in the observation.
+Enemy units outside of the agent's camera view have certain attributes hidden. Agent
+actions are similar to the actions available to human players, which differs from
+microRTS which expects per game step actions to each unit.
+
+AlphaStar was trained on 3072 TPU cores and 50,400 preemptible CPU cores for a duration of 44 days. The
+league-sytem to enforce a diversity of strategies meant several policies were being
+trained at once. Additionally, StarCraft II itself is a more expensive game to
+simulate, requiring extensive resources to run games in parallel.
+
+microRTS is a much simpler game where several instances of the game can easily be run
+simultaneously. On a single GPU computer, RAISocketAI trained at over 360 game
+steps/second. While RAISocketAI didn't use supervised learning to bootstrap the agent,
+following work has used behavior cloning to train a competitive agent in a fraction of
+the time of the from-scratch trained RAISocketAI.
+
+\subsection{Lux AI Kaggle Competitions}
+Kaggle has hosted many Simulations competitions. In Simulation competitions, competitors
+submit agents that play against other submitted agents in some turn-based game
+environment. The first Lux AI competition was the first major Kaggle competition that a
+DRL agent won \citep{lux-ai-2021}. Lux is a resource management game where agents
+control worker and city units to gather resources, build more units, and control the
+board. Similar to microRTS, Lux is represented as a grid of cells with units, cities,
+and resources occupying cells. The winning agent by \citet{lux-ai-2021-winner} used a
+similar grid representation for the observation, GridNet action space, and reward
+shaping. The agent was trained with IMPALA with UPGO and TD-lambda loss terms. Instead
+of training with a shaped reward function through the entirety of training, \citet{lux-ai-2021-winner}
+used shaped rewards on a smaller map before transitioning to sparse win-loss rewards on
+larger and competition-size maps.
+
+The top DRL agent in the Lux AI Season 2 competition placed 4th overall, beaten out by 3
+human scripted agents. \citet{Ferdinand2021doublecone} used a "DoubleCone" network where
+residual blocks
 
 \section{Method}
 \subsection{RAISocketAI}
