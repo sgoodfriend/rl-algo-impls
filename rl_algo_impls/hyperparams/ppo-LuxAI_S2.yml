@@ -654,6 +654,7 @@ LuxAI_S2-v0-short-squnet-78-envs: &lux-short-squnet-78-envs
     batch_size: 832
     vf_coef: [0.16, 0.17, 0.16]
   hyperparam_transitions_kwargs:
+    &lux-short-squnet-78-envs-hyperparam-transitions
     interpolate_method: cosine
     phases:
       - learning_rate: !!float 1e-6
@@ -753,9 +754,25 @@ LuxAI_S2-v0-sSqunet-78env-deimos-win-loss-smoothing:
 
 LuxAI_S2-v0-sSqunet-78env-deimos-lower-vf: &lux-ssqunet-78envs-deimos-lower-vf
   <<: *lux-ssqunet-78envs-deimos-win-loss-smoothing
-  algo_hyperparams:
+  algo_hyperparams: &lux-ssqunet-78envs-deimos-lower-vf-algo
     <<: *lux-short-squnet-78-envs-deimos-old-adv-scale-algo
     vf_coef: [0.1, 0.1, 0.1]
+
+LuxAI_S2-v0-sSqunet-78env-deimos-constant-robots-2:
+  &lux-ssqunet-78envs-deimos-constant-robots-2
+  <<: *lux-ssqunet-78envs-deimos-lower-vf
+  algo_hyperparams: &lux-ssqunet-78envs-deimos-constant-robots-2-algo
+    <<: *lux-ssqunet-78envs-deimos-lower-vf-algo
+    multi_reward_weights: [0.2, 0.7, 0.1]
+  hyperparam_transitions_kwargs:
+    <<: *lux-short-squnet-78-envs-hyperparam-transitions
+
+LuxAI_S2-v0-sSqunet-78env-deimos-constant-robots-3:
+  &lux-ssqunet-78envs-deimos-constant-robots-3
+  <<: *lux-ssqunet-78envs-deimos-constant-robots-2
+  algo_hyperparams:
+    <<: *lux-ssqunet-78envs-deimos-constant-robots-2-algo
+    multi_reward_weights: [0.3, 0.6, 0.1]
 
 LuxAI_S2-v0-sSqunet-78env-multi-fine-tune: &lux-ssqunet-78envs-multi-fine-tune
   <<: *lux-short-squnet-78-envs-deimos-lighter-robots
@@ -808,7 +825,7 @@ LuxAI_S2-agent: &lux-agent
         swap_steps: .inf
 
 LuxAI_S2-v0-debug:
-  <<: *lux-ssqunet-78envs-deimos-lower-vf
+  <<: *lux-ssqunet-78envs-deimos-constant-robots-3
   n_timesteps: !!float 1e6
   device: mps
   env_hyperparams:
