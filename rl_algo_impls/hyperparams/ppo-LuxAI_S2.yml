@@ -781,36 +781,28 @@ LuxAI_S2-v0-sSqunet-78env-deimos-gamma-1: &lux-ssqunet-78envs-deimos-gamma-1
     gamma: [1, 1, 1]
 
 LuxAI_S2-v0-sSqunet-78env-multi-fine-tune: &lux-ssqunet-78envs-multi-fine-tune
-  <<: *lux-short-squnet-78-envs-deimos-lighter-robots
+  <<: *lux-ssqunet-78envs-deimos-gamma-1
   rollout_type: sync
   rollout_hyperparams:
     <<: *lux-squnet-rollout
     num_envs_reset_every_rollout: 12
   policy_hyperparams:
     <<: *lux-short-squnet-78-envs-deimos-policy
-    load_run_path: sgoodfriend/rl-algo-impls-lux-nips1/nxk03g99
+    load_run_path: sgoodfriend/rl-algo-impls-lux-nips1/bwc9aold
   hyperparam_transitions_kwargs:
     interpolate_method: cosine
     phases:
       - learning_rate: !!float 1e-6
-        multi_reward_weights: [0.4, 0.5, 0.1]
         ent_coef: 0.001
       - learning_rate: !!float 1e-5
-        multi_reward_weights: [0.4, 0.5, 0.1]
-        ent_coef: 0.001
-      - learning_rate: !!float 1e-5
-        multi_reward_weights: [0.1, 0.8, 0.1]
         ent_coef: 0.001
       - learning_rate: !!float 1e-6
-        multi_reward_weights: [0.1, 0.8, 0.1]
         ent_coef: 0.0001
     durations:
       - 0
       - 0.1
-      - 0
-      - 0.6
-      - 0
-      - 0.25
+      - 0.55
+      - 0.3
       - 0.05
 
 LuxAI_S2-agent: &lux-agent
@@ -831,7 +823,7 @@ LuxAI_S2-agent: &lux-agent
         swap_steps: .inf
 
 LuxAI_S2-v0-debug:
-  <<: *lux-ssqunet-78envs-deimos-gamma-1
+  <<: *lux-ssqunet-78envs-multi-fine-tune
   n_timesteps: !!float 1e6
   device: mps
   env_hyperparams:
