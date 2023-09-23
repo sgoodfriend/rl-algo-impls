@@ -215,7 +215,7 @@ pool and a couple of densely connected layers:
 ```mermaid
 graph TD
 	subgraph squnet64Value["squnet64 Value Head"]
-		Backbone_64[/"Backbone, 128×L×L"/]
+		Backbone_64[/"Backbone, 64×L×L"/]
 		Conv1_64["Conv 3×3, stride=2, GELU, 64"]
 		Conv2_64["Conv 4×4, stride=4, GELU, 64"]
 		Conv3_64["Conv 4×4, stride=4, GELU, 64"]
