@@ -1,5 +1,14 @@
 \documentclass{article}
-\usepackage{iclr2024_conference,times}
+\usepackage{iclr2024_conference}
+\usepackage{iclr2024_anonymization}
+\usepackage{times}
+\usepackage{graphicx}
+\usepackage{array}
+\usepackage{paralist}
+\usepackage{float}
+\usepackage[utf8]{inputenc}
+\usepackage{threeparttable}
+
 \begin{document}
 \title{A Competition Winning Deep Reinforcement Learning Agent in microRTS}
 \author{Scott Goodfriend$^{1}$ \\
@@ -12,9 +21,9 @@ $^{1}$ goodfriend.scott@gmail.com \\
     CoG. Despite Deep Reinforcement Learning (DRL) algorithms making significant strides
     in RTS-style games, their adoption has been limited in this primarily academic
     competition due to the considerable training resources required and the complexity
-    inherent in creating and debugging such agents. The RAISocketAI, as part of the
-    IEEE-CoG2023 microRTS competition, has emerged as the first winning DRL agent. In a
-    non-performance constrained environment, RAISocketAI regularly defeated the two
+    inherent in creating and debugging such agents. \agentName\ is the first DRL agent
+    to win the IEEE microRTS competition. In a
+    non-performance constrained environment, \agentName\ regularly defeated the two
     preceding competition winners. This first competition-winning DRL submission can be
     a benchmark for future microRTS competitions and a starting point for future DRL
     research. In particular, this submission successfully used fine-tuning a base model
@@ -29,7 +38,7 @@ control tasks \citep{DBLP:journals/corr/LillicrapHPHETS15}, and even real-time s
 II to defeat professional players \citep{Vinyals2019GrandmasterLI}. However, AlphaStar was trained with thousands of
 CPUs and GPUs/TPUs for several weeks. RTS games are particularly challenging for DRL for
 several reasons:
-\begin{enumerate}
+\begin{inparaenum}[(1)]
     \item the state and action spaces are large and varied with different terrain and
         unit types;
     \item each unit type can have different actions and abilities;
@@ -41,7 +50,7 @@ several reasons:
         take an action);
     \item the agent might not have full visibility of the game state (i.e., fog of war); and
     \item events in the game might be non-deterministic.
-\end{enumerate}
+\end{inparaenum}
 
 microRTS (stylized as $\mu$RTS) is a minimalist, open-source, two-player, zero-sum RTS game testbed designed for research
 purposes \citep{Ontan2013TheCM}. It includes many aspects of RTS games, simplified: different unit types, unit-specific
@@ -61,8 +70,8 @@ These hidden maps are meant to test the generalization ability of the agents, bu
 part of the competition to allow organizers to participate. Hidden map results are also
 released.
 
-This paper describes the RAISocketAI agent, which won the IEEE-CoG2023 microRTS
-competition and is the first DRL agent to win a microRTS competition. RAISocketAI
+This paper describes the \agentName\ agent\footnote{\raiMicroRTSGitHubUrl}, which won the IEEE-CoG2023 microRTS
+competition and is the first DRL agent to win a microRTS competition. \agentName\
 extends the work of MicroRTS-Py (formally Gym-$\mu$RTS/Gym-MicroRTS) to be competitive
 in the Open competition maps. MicroRTS-Py is an OpenAI Gym environment for microRTS,
 which makes it easier to train DRL agents \citep{DBLP:journals/corr/abs-2105-13807}.
@@ -70,15 +79,15 @@ MicroRTS-Py also includes a DRL training framework using Proximal Policy Optimiz
 (PPO) \citep{DBLP:journals/corr/SchulmanWDRK17}, state and action space vectorization,
 invalid action masking, and environment vectorization.
 \citet{DBLP:journals/corr/abs-2105-13807} only trained an agent for one of the smaller
-maps. RAISocketAI extends the DRL training framework to be competitive on other, more
+maps. \agentName\ extends the DRL training framework to be competitive on other, more
 complicated maps.
 
 Models in the IEEE microRTS competition are supposed to submit actions for each timestep
 within 100ms. Without GPU acceleration, this is a significant constraint for deep neural
-network agents. Being a Python agent, RAISocketAI also had to communicate with the Java
+network agents. Being a Python agent, \agentName\ also had to communicate with the Java
 microRTS efficiently, which required optimizing the data representation.
 
-Despite these constraints, RAISocketAI won the IEEE-CoG2023 microRTS competition. The
+Despite these constraints, \agentName\ won the IEEE-CoG2023 microRTS competition. The
 agent consists of 7 trained neural networks. It took about 70 GPU-days to train these
 models, which is within budget for researchers, though possibly outside of budget for
 students. However, 4 of these neural networks were trained from an existing model. These
@@ -119,7 +128,7 @@ have any units owned by the player. UAS performed better than GridNet (91\% vs 8
 Despite UAS's better performance, MicroRTS-Py is deprecating UAS in favor of GridNet
 because UAS's more complex implementation and difficulty to incorporate selfplay and
 imitation learning, both features important in the current and future versions of
-RAISocketAI.
+\agentName.
 
 \citet{DBLP:journals/corr/abs-2105-13807} also tried selfplay, training the policy in
 games where the policy played itself. They found that selfplay didn't improve win rate,
@@ -127,10 +136,10 @@ either when only using selfplay or when training with half selfplay and half scr
 bots. The other policies were trained as only the first player while selfplay required
 the policy train as both players, so the comparison might not be fair.
 
-RAISocketAI reimplements must of MicroRTS-Py, including the PPO implementation, action
+\agentName\ reimplements must of MicroRTS-Py, including the PPO implementation, action
 composition, shaped reward function, invalid action masking, GridNet, selfplay, and
-scripted bot training. RAISocketAI extended the observation space to support walls and
-made the invalid action mask more strict. RAISocketAI and MicroRTS-Py were trained with partial
+scripted bot training. \agentName\ extended the observation space to support walls and
+made the invalid action mask more strict. \agentName\ and MicroRTS-Py were trained with partial
 observability and non-determinism disabled.
 
 \subsection{DeepMind AlphaStar}
@@ -157,10 +166,10 @@ trained at once. Additionally, StarCraft II itself is a more expensive game to
 simulate, requiring extensive resources to run games in parallel.
 
 microRTS is a much simpler game where several instances of the game can easily be run
-simultaneously. On a single GPU computer, RAISocketAI trained at over 360 game
-steps/second. While RAISocketAI didn't use supervised learning to bootstrap the agent,
+simultaneously. On a single GPU computer, \agentName\ trained at over 360 game
+steps/second. While \agentName\ didn't use supervised learning to bootstrap the agent,
 following work has used behavior cloning to train a competitive agent in a fraction of
-the time of the from-scratch trained RAISocketAI.
+the time of the from-scratch trained \agentName.
 
 \subsection{Lux AI Kaggle competitions}
 Kaggle has hosted many Simulations competitions. In Simulation competitions, competitors
@@ -189,8 +198,189 @@ used a shaped reward in a setup phase before switching to sparse win-loss reward
 during training.
 
 \section{Methods}
+\subsection{\agentName}
+To participate in the competition, \agentName\ has a Java class that handles turn
+handling and resetting commands from the Java competition code. This Java class starts a
+Python process and game state data is passed between the Java and Python processes using
+binary data over a pipe. This differs from the suggested solution to use a socket and
+JSON or XML data as a performance optimization for the larger maps.
 
+The submission version of the Python process loads 7 different policy networks, only one network is used
+for a given map (Table~\ref{tab:policy-networks}). Networks are chosen by prioritizing
+the compatible networks and then picking the highest priority network that is capable of
+running within the allotted time on the current hardware. Map-specific networks are
+prioritized higher than size-specific networks. Multiple networks can be prioritized for
+the same map or map size. While microRTS supports any map size (even non-square), policy networks were trained on
+powers of 2 map sizes starting from 16x16 (i.e., 16x16, 32x32, 64x64). When running an
+observation through a policy network, the observation is padded to the next power of 2.
+
+\subsection{Training}
+\agentName\ reimplements much of MicroRTS-Py, including the PPO implementation, action
+composition, shaped reward function, invalid action masking, GridNet, selfplay, and
+scripted bot training. The codebase\footnote{\rlAlgoImplsGitHubUrl} supports multiple environments and reimplementation
+allowed the environment to fit into the existing codebase. The observation
+representation was extended in two ways: (1) walls were added to the observation as two
+boolean flags per grid point and (2) added the destination of units as invalid move
+targets in the invalid action mask (only the unit's current location was considered
+invalid in MicroRTS-Py; however, the microRTS environment wouldn't allow units to move
+where another unit is moving into). Padding of maps was handled by making all padding
+gridpoint into walls. We also fixed a bug where resources (which are unowned) were being counted as owned by
+the opponent if the agent was the second player\footnote{\unownedFixGitHubCommit}.
+
+Instead of any of the architectures used by MicroRTS-Py, we used the DoubleCone(4,6,4)
+architecture from \citet{Ferdinand2021doublecone}'s winning solution (Figure~\ref{fig:doublecone}). This neural
+architecture supported variable map sizes (a multiple of 4), which allows transfer
+learning a model trained on one size to another.
+
+For larger maps, we used a different architecture, squnet, which recursively downscales
+twice more than DoubleCone (Figure~\ref{fig:squnet}). This creates a network shaped like U-Net (thus the name
+Squeeze U Network); however, the network is much more similar to DoubleCone than U-Net.
+This aggressive downscaling reduces the number of operations necessary during inference,
+especially for larger maps (Table~\ref{table:architectureBreakdown}).
+
+Instead of 1 value head, \agentName\ uses 3 values heads for 3 different value
+functions:
+\begin{inparaenum}[(1)]
+    \item dense shaped reward similar to MicroRTS-Py except each combat unit type is
+    scaled by build-time (thus rewarding ranged and heavy units more),
+    \item win-loss sparse reward at game end, and
+    \item different in units based on cost ()
+\end{inparaenum}
 
 \bibliography{iclr2024}
 \bibliographystyle{iclr2024_conference}
+
+\clearpage
+
+\appendix
+\section{Competition details}
+\begin{table}[H]
+    \centering
+    \begin{threeparttable}
+        \caption{Open competition maps. Representation column is the size of the vectorized observation in \agentName.}
+        \label{tab:open-maps}
+            \begin{tabular}{>{\centering\arraybackslash}m{4cm}>{\centering\arraybackslash}m{2cm}>{\centering\arraybackslash}m{2cm}>{\centering\arraybackslash}m{2.25cm}}
+                \multicolumn{1}{c}{\bf Name}  &\multicolumn{1}{c}{\bf Size}
+                &\multicolumn{1}{c}{\bf Representation}
+                &\multicolumn{1}{c}{\bf Start} \\ \hline
+                basesWorkers8x8A & 8x8 & 16x16 &
+                \includegraphics[width=2.25cm]{supplemental/vsMayari/basesWorkers8x8A.png} \\
+                FourBasesWorkers8x8 & 8x8 & 16x16 &
+                \includegraphics[width=2.25cm]{supplemental/vsMayari/FourBasesWorkers8x8.png} \\
+                NoWhereToRun9x8 & 9x8 & 16x16 &
+                \includegraphics[width=2.25cm]{supplemental/vsMayari/NoWhereToRun9x8.png} \\
+                basesWorkers16x16A & 16x16 & 16x16 &
+                \includegraphics[width=2.25cm]{supplemental/vsMayari/basesWorkers16x16A.png} \\
+                TwoBasesBarracks16x16 & 16x16 & 16x16 &
+                \includegraphics[width=2.25cm]{supplemental/vsMayari/TwoBasesBarracks16x16.png}
+                \\
+                DoubleGame24x24 & 24x24 & 24x24\tnote{*} or 32x32\tnote{\P} &
+                \includegraphics[width=2.25cm]{supplemental/vsMayari/DoubleGame24x24.png} \\
+                BWDistantResources32x32 & 32x32 & 32x32 &
+                \includegraphics[width=2.25cm]{supplemental/vsMayari/BWDistantResources32x32.png}
+                \\
+                (4)BloodBath.scmB & 64x64 & 64x64 &
+                \includegraphics[width=2.25cm]{supplemental/vsMayari/(4)BloodBath.png} \\
+            \end{tabular}
+            \begin{tablenotes}
+                \item[*] ppo-Microrts-finetuned-DoubleGame-shaped-S1-best uses a 24x24
+                    representation.
+                \item[\P] ppo-Microrts-squnet-map32-128ch-selfplay-S1-best pads the
+                    observation to 32x32.
+            \end{tablenotes}
+    \end{threeparttable}
+\end{table}
+
+\begin{table}[h]
+    \caption{Policy networks used by \agentName}
+    \label{tab:policy-networks}
+    \begin{center}
+        \begin{tabular}{|p{0.5\linewidth}|p{0.5\linewidth}|}
+            \multicolumn{1}{c}{\bf Network}  &\multicolumn{1}{c}{\bf Usage} \\
+            \hline
+            ppo-Microrts-finetuned-NoWhereToRun-S1-best & NoWhereToRun9x8 \\ \hline
+            ppo-Microrts-A6000-finetuned-coac-mayari-S1-best & All other maps of size 16x16 and smaller \\ \hline
+            ppo-Microrts-finetuned-DoubleGame-shaped-S1-best & DoubleGame24x24 \\ \hline
+            ppo-Microrts-finetuned-DistantResources-shaped-S1-best & BWDistantResources32x32 if completion time under 75 ms \\ \hline
+            ppo-Microrts-squnet-DistantResources-128ch-finetuned-S1-best & BWDistantResources32x32 if completion time above 75 ms \\ \hline
+            ppo-Microrts-squnet-map32-128ch-selfplay-S1-best & All other maps where longest dimension is between 17-32 \\ \hline
+            ppo-Microrts-squnet-map64-64ch-selfplay-S1-best & Maps where the longest
+            dimension is over 32 \\
+            \hline
+        \end{tabular}
+    \end{center}
+\end{table}
+
+\section{Neural network architecture}
+\begin{figure}[H]
+    \begin{center}
+        \includegraphics[width=0.4\linewidth]{figures/DoubleCone.png}
+    \end{center}
+    \caption{DoubleCone(4,6,4) neural network architecture.}
+    \label{fig:doublecone}
+\end{figure}
+
+\begin{figure}[h]
+    \begin{center}
+        \includegraphics[width=0.3\linewidth]{figures/SqueezeExcitation.png}
+    \end{center}
+    \caption{ResBlock used in DoubleCone, squnet32, and squnet64. The residual block is similar to a standard residual block but inserts a Squeeze-Excitation block after the convolutional layers and before the residual connection.}
+    \label{fig:squeezeexcitation}
+\end{figure}
+
+\begin{figure}[H]
+    \begin{center}
+        \includegraphics[width=0.55\linewidth]{figures/squnet64.png}
+    \end{center}
+    \caption{squnet64 neural network architecture. Instead of one downscaling block as in DoubleCone, this network downscales 3 times. This aggressive downscaling reduces the number of computations for larger maps, while theoretically supporting a large receptive field.}
+    \label{fig:squnet}
+\end{figure}
+        
+\begin{table}[h]
+    \centering
+    \begin{threeparttable}
+        \caption{Comparison of different architectures}
+        \label{table:architectureBreakdown}
+        \begin{tabular}{cccc}
+            & \textbf{DoubleCone} & \textbf{squnet-map32\tnote{\P}} & \textbf{squnet-map64} \\ [0.5ex] 
+            \hline
+            Levels & 2 & 4 & 4 \\
+            \hline
+            Encoder residual blocks/level & [4, 6] & [1, 1, 1, 1] & [1, 1, 1, 1] \\
+            \hline
+            Decoder residual blocks/level & [4] & [1, 1, 1] & [1, 1, 1] \\
+            \hline
+            Stride/level & [4] & [2, 2, 4] & [2, 4, 4] \\
+            \hline
+            Deconvolution strides/level & [[2, 2]\tnote{*}] & [2, 2, 4] & [2, 4, 4] \\
+            \hline
+            Channels/level & [128, 128] & [128, 128, 128, 128] & [64, 64, 64, 64] \\
+            \hline
+            Trainable parameters & 5,014,865 & 3,584,657 & 1,420,625 \\
+            \hline
+            MACs\tnote{\dag} & \begin{tabular}[c]{@{}c@{}}0.70B (16x16)\tnote{\ddag} \\ 0.40B (12x12)\tnote{\S} \\ 1.58B (24x24) \\ 2.81B (32x32)\end{tabular} & 1.16B (32x32) & 1.41B (64x64) \\ 
+            \hline
+        \end{tabular}
+        \begin{tablenotes}
+            \item[\P] Used by ppo-Microrts-squnet-DistantResources-128ch-finetuned-S1-best and ppo-Microrts-squnet-map32-128ch-selfplay-S1-best. 
+            \item[*] 2 stride-2 transpose convolutions to match the 1 stride-4 convolution.
+            \item[\dag] Multiply-Accumulates for computing actions for a single observation.
+            \item[\ddag] All maps smaller than 16x16 (except NoWhereToRun9x8) are padded with walls up to 16x16. 
+            \item[\S] NoWhereToRun9x8 is padded with walls up to 12x12.
+        \end{tablenotes}
+    \end{threeparttable}
+\end{table}
+
+\begin{figure}[h]
+    \begin{center}
+        \includegraphics[width=0.7\linewidth]{figures/ValueHeads.png}
+    \end{center}
+    \caption{Value heads used in (from left to right) DoubleCone, squnet32, and
+    squnet64. The AdaptiveAvgPool2d layer allows the network to be used on other map
+    sizes.}
+    \label{fig:valueheads}
+\end{figure}
+
+\section{Training details}
+
 \end{document}
