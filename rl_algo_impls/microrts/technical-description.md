@@ -115,7 +115,7 @@ graph TD
 The "squnet" models are similar to DoubleCone in the use of residual blocks with
 squeeze-and-excitation and residual connections across convolution-deconvolution blocks.
 However, squnet more mimics a U-net architecture through nested
-convolution-deconvolution blocks to increase receptive field.
+strided convolution-deconvolution blocks to increase receptive field.
 
 ```mermaid
 graph TD
@@ -286,7 +286,7 @@ learning rate was controlled through a schedule. The schedule specified phases w
 these values are set. Transitions between phases occur linearly over a number of steps
 
 The DoubleCone model used by ppo-Microrts-A6000-finetuned-coac-mayari-S1-best was
-trained once and then fine-tuned repeatidly as improvements and fixes were made to the
+trained once and then fine-tuned repeatedly as improvements and fixes were made to the
 model, environment representation, and training:
 
 | Parameter                   |                                                                                                                                 Initial Training |     Shaped Fine-Tuning |     Sparse Fine-Tuning |
@@ -308,7 +308,7 @@ model, environment representation, and training:
 | Maps                        | basesWorkers16x16A<br>TwoBasesBarracks16x16<br>basesWorkers8x8A<br>FourBasesWorkers8x8<br>NoWhereToRun9x8<br>EightBasesWorkers16x16<sup>\*</sup> |                      ″ |                      ″ |
 
 ″ Same value as cell to left.
-<sup>†</sup> Value per value head (dense, sparse, cost-based).
+<sup>†</sup> Value per value head (shaped, win-loss, cost-based).
 <sup>‡</sup> Multiply v<sub>loss</sub> by 0.5, [as done in CleanRL](https://github.com/vwxyzjn/cleanrl/blob/f62ad1f942890db7b752f4ad79b65be53917d3c2/cleanrl/ppo.py#L276).
 <sup>\*</sup> Map not used in competition.
 
@@ -324,7 +324,7 @@ following schedule:
 | learning_rate              |              1e-4 |                             |          1e-4 |                             |            5e-5 |
 
 <sup>\*</sup> Values are linearly interpolated between phases based on step count.
-<sup>†</sup> Value per value head (dense, sparse, cost-based).
+<sup>†</sup> Value per value head (shaped, win-loss, cost-based).
 
 [The model outputted by initial training won 91%](https://wandb.ai/sgoodfriend/rl-algo-impls-benchmarks/runs/df4flrs4) of games on basesWorkers16x16A against
 the same collection of opponents as [[2]](#Huang2021Gym). However, it only beat CoacAI
@@ -386,7 +386,7 @@ had an additional fine-tuning run using sparse rewards.
 
 |                | Start           | Transition →1<sup>\*</sup> |         Phase 1 | Transition 1→2<sup>\*</sup> |         Phase 2 |
 | -------------- | --------------- | -------------------------: | --------------: | --------------------------: | --------------: |
-| Steps          | 5M              |                            |             30M |                         20M |             45M |
+| Steps          |                 |                         5M |             30M |                         20M |             45M |
 | reward_weights | [0, 0.99, 0.01] |                            | [0.4, 0.5, 0.1] |                             | [0, 0.99, 0.01] |
 | vf_coef        | [0.2, 0.4, 0.2] |                            | [0.3, 0.4, 0.1] |                             |   [0, 0.5, 0.1] |
 | ent_coef       | 0.01            |                            |            0.01 |                             |          0.0001 |
@@ -440,9 +440,10 @@ DoubleCone. squnet-map64 has 60% fewer parameters and makes 90% fewer mulitply-a
 on 64×64 maps. squnet-map64 averages 70 ms per turn on Google Colab CPUs.
 
 These speed gains came at the cost of model capacity. DoubleCone has 18 convolutional
-layers at full map resolution (8 residual blocks plus input and output convolutions).
-squnet has 6 (2 residual blocks). In total, DoubleCone has 16 residual blocks. squnet has 7.
-squnet-64 uses only 64 channels instead of 128 used by DoubleCone and squnet-32.
+layers at full map resolution (8 residual blocks plus input and output convolutional
+layers). squnet has 6 full-resolution convolutional layers (2 residual blocks). In
+total, DoubleCone has 16 residual blocks. squnet has 7. squnet-64 uses only 64 channels
+instead of 128 used by DoubleCone and squnet-32.
 
 While squnet-16 (not used in the competition) did learn to beat advanced scripts with 200
 million steps of training, squnet-32 and squnet-64 managed only a 40% win-rate, never
