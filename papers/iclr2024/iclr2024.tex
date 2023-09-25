@@ -214,27 +214,39 @@ the same map or map size. While microRTS supports any map size (even non-square)
 powers of 2 map sizes starting from 16x16 (i.e., 16x16, 32x32, 64x64). When running an
 observation through a policy network, the observation is padded to the next power of 2.
 
-\subsection{Training}
-\agentName\ reimplements much of MicroRTS-Py, including the PPO implementation, action
-composition, shaped reward function, invalid action masking, GridNet, selfplay, and
-scripted bot training. The codebase\footnote{\rlAlgoImplsGitHubUrl} supports multiple environments and reimplementation
-allowed the environment to fit into the existing codebase. The observation
-representation was extended in two ways: (1) walls were added to the observation as two
-boolean flags per grid point and (2) added the destination of units as invalid move
-targets in the invalid action mask (only the unit's current location was considered
-invalid in MicroRTS-Py; however, the microRTS environment wouldn't allow units to move
-where another unit is moving into). Padding of maps was handled by making all padding
-gridpoint into walls. We also fixed a bug where resources (which are unowned) were being counted as owned by
-the opponent if the agent was the second player\footnote{\unownedFixGitHubCommit}.
+\subsection{Neural network architecture}
+\agentName\ uses two different neural network architectures: DoubleCone(4, 6, 4) and a smaller, deeper network
+we call squnet. DoubleCone(4, 6, 4) consists of
+\begin{inparaenum}[(1)]
+    \item 4 residual blocks;
+    \item a downscaled residual block consisting of a stride-4 convolution, 6 residual blocks, and
+        2 stride-2 transpose convolutions;
+    \item 4 residual blocks; and
+    \item actor and value heads (Figure~\ref{fig:doublecone}).
+\end{inparaenum}
+Each residual block includes a squeeze-excitation layer after the second convoluational
+layer (Figure~\ref{fig:squeezeexcitation}). The actor head is a convoluational layer
+that outputs logits for unit actions at every position. A unit action is composed of
+independent discrete subactions: $D = \{a_{action\ type},$ $a_{move\ direction},$ $a_{harvest\
+direction},$ $a_{return\ direction},$ $a_{produce\ direction},$ $a_{produce\ type},$ $a_{relative\
+attack\ position}\}$. This amounts to 78 logits per position. Every position Invalid action masking sets
+logits to a very large negative number (thus zeroing probabilities and gradients) for actions that are
+illegal or would accomplish nothing (e.g., moving a unit to an occupied or reserved
+position) \citep{DBLP:journals/corr/abs-2006-14171}. This masking significantly reduces the action space per turn, thus making
+training more efficient. The values heads are each 
+\begin{inparaenum}[(1)]
+    \item 2 stride-2 convolutions,
+    \item an adaptive average pooling layer,
+    \item flattened,
+    \item 2 densely connected layers, and
+    \item an activation function (Identity [no] or Tanh) to a single, scalar value (Figure~\ref{fig:valueheads}).
+\end{inparaenum}
+The adaptive average pooling layer allows the network to be used on different map sizes.
 
-Instead of any of the architectures used by MicroRTS-Py, we used the DoubleCone(4,6,4)
-architecture from \citet{Ferdinand2021doublecone}'s winning solution (Figure~\ref{fig:doublecone}). This neural
-architecture supported variable map sizes (a multiple of 4), which allows transfer
-learning a model trained on one size to another.
-
-For larger maps, we used a different architecture, squnet, which recursively downscales
-twice more than DoubleCone (Figure~\ref{fig:squnet}). This creates a network shaped like U-Net (thus the name
-Squeeze U Network); however, the network is much more similar to DoubleCone than U-Net.
+While DoubleCone could support any map size, inference would likely exceed 100
+milliseconds for larger maps. Therefore, for larger maps, we used a different
+architecture, squnet, which nests 3 downscaling blocks (Figure~\ref{fig:squnet}). This 
+creates a network shaped like U-Net; however, the network is much more similar to DoubleCone than U-Net.
 This aggressive downscaling reduces the number of operations necessary during inference,
 especially for larger maps (Table~\ref{table:architectureBreakdown}).
 
@@ -242,10 +254,31 @@ Instead of 1 value head, \agentName\ uses 3 values heads for 3 different value
 functions:
 \begin{inparaenum}[(1)]
     \item dense shaped reward similar to MicroRTS-Py except each combat unit type is
-    scaled by build-time (thus rewarding ranged and heavy units more),
-    \item win-loss sparse reward at game end, and
-    \item different in units based on cost (similar to the reward function used by \citet{Winter2021}).
+    scaled by build-time (thus rewarding more expensive units),
+    \item win-loss sparse reward at game end (Tanh activation), and
+    \item in-game difference in units based on cost (similar to the reward function used
+    by \citet{Winter2021}).
 \end{inparaenum}
+These 3 value heads are used to mix-and-match rewards over the course of training,
+generally starting with dense rewards using heads (1) and (3) and finishing with only
+win-loss sparase rewards by the end.
+
+\subsection{Training}
+\agentName\ reimplements much of MicroRTS-Py, including the PPO implementation, action
+composition, shaped reward function, invalid action masking, GridNet, selfplay, and
+scripted bot training. \agentName's codebase\footnote{\rlAlgoImplsGitHubUrl} supports 
+multiple environments and reimplementation allowed the environment to fit into the 
+existing codebase. The observation representation was extended in two ways: (1) walls 
+were added to the observation as two boolean flags per position and (2) added the 
+destination of units as invalid move targets in the invalid action mask (only the unit's current location was considered
+invalid in MicroRTS-Py; however, the microRTS environment doesn't allow units to move into
+where another unit is moving into). Padding of maps was handled by making all padding
+positions into walls. We also fixed a bug where resources (which are unowned) were being counted as owned by
+the opponent if the agent was the second player\footnote{\unownedFixGitHubCommit}.
+
+Unlike MicroRTS-Py, \agentName\ varied reward weights, value head loss coefficients, the
+entropy cofficient, and the learning rate over the course of training with a schedule.
+
 
 \bibliography{iclr2024}
 \bibliographystyle{iclr2024_conference}
@@ -328,6 +361,16 @@ functions:
     \label{fig:squeezeexcitation}
 \end{figure}
 
+\begin{figure}[h]
+    \begin{center}
+        \includegraphics[width=0.7\linewidth]{figures/ValueHeads.png}
+    \end{center}
+    \caption{Value heads used in (from left to right) DoubleCone, squnet32, and
+    squnet64. The AdaptiveAvgPool2d layer allows the network to be used on other map
+    sizes.}
+    \label{fig:valueheads}
+\end{figure}
+
 \begin{figure}[H]
     \begin{center}
         \includegraphics[width=0.55\linewidth]{figures/squnet64.png}
@@ -370,16 +413,6 @@ functions:
         \end{tablenotes}
     \end{threeparttable}
 \end{table}
-
-\begin{figure}[h]
-    \begin{center}
-        \includegraphics[width=0.7\linewidth]{figures/ValueHeads.png}
-    \end{center}
-    \caption{Value heads used in (from left to right) DoubleCone, squnet32, and
-    squnet64. The AdaptiveAvgPool2d layer allows the network to be used on other map
-    sizes.}
-    \label{fig:valueheads}
-\end{figure}
 
 \section{Training details}
 
