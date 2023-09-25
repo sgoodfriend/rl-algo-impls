@@ -776,9 +776,16 @@ LuxAI_S2-v0-sSqunet-78env-deimos-constant-robots-3:
 
 LuxAI_S2-v0-sSqunet-78env-deimos-gamma-1: &lux-ssqunet-78envs-deimos-gamma-1
   <<: *lux-ssqunet-78envs-deimos-constant-robots-3
-  algo_hyperparams:
+  algo_hyperparams: &lux-ssqunet-78envs-deimos-gamma-1-algo
     <<: *lux-ssqunet-78envs-deimos-constant-robots-3-algo
     gamma: [1, 1, 1]
+
+LuxAI_S2-v0-sSqunet-78env-deimos-lower-lichen:
+  &lux-ssqunet-78envs-deimos-lower-lichen
+  <<: *lux-ssqunet-78envs-deimos-gamma-1
+  algo_hyperparams: &lux-ssqunet-78envs-deimos-lower-lichen-algo
+    <<: *lux-ssqunet-78envs-deimos-gamma-1-algo
+    multi_reward_weights: [0.25, 0.7, 0.05]
 
 LuxAI_S2-v0-sSqunet-78env-multi-fine-tune: &lux-ssqunet-78envs-multi-fine-tune
   <<: *lux-ssqunet-78envs-deimos-gamma-1
@@ -823,7 +830,7 @@ LuxAI_S2-agent: &lux-agent
         swap_steps: .inf
 
 LuxAI_S2-v0-debug:
-  <<: *lux-ssqunet-78envs-multi-fine-tune
+  <<: *lux-ssqunet-78envs-deimos-lower-lichen
   n_timesteps: !!float 1e6
   device: mps
   env_hyperparams:
