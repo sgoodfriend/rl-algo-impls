@@ -8,6 +8,8 @@
 \usepackage{float}
 \usepackage[utf8]{inputenc}
 \usepackage{threeparttable}
+\usepackage{amssymb}
+\usepackage{amsmath}
 
 \begin{document}
 \title{A Competition Winning Deep Reinforcement Learning Agent in microRTS}
@@ -263,7 +265,7 @@ These 3 value heads are used to mix-and-match rewards over the course of trainin
 generally starting with dense rewards using heads (1) and (3) and finishing with only
 win-loss sparase rewards by the end.
 
-\subsection{Training}
+\subsection{Initial Training}
 \agentName\ reimplements much of MicroRTS-Py, including the PPO implementation, action
 composition, shaped reward function, invalid action masking, GridNet, selfplay, and
 scripted bot training. \agentName's codebase\footnote{\rlAlgoImplsGitHubUrl} supports 
@@ -276,9 +278,74 @@ where another unit is moving into). Padding of maps was handled by making all pa
 positions into walls. We also fixed a bug where resources (which are unowned) were being counted as owned by
 the opponent if the agent was the second player\footnote{\unownedFixGitHubCommit}.
 
-Unlike MicroRTS-Py, \agentName\ varied reward weights, value head loss coefficients, the
-entropy cofficient, and the learning rate over the course of training with a schedule.
+Training uses the PPO loss function from
+\citet{DBLP:journals/corr/SchulmanWDRK17}:
+\begin{align}
+    L^{CLIP+VF+S}(\theta) &= \hat{\mathbb{E}}_t \left[ L^{CLIP}(\theta) - c_1 L^{VF}(\theta) + c_2 S\left[\pi_\theta\right](s_t) \right], \\
+    L^{CLIP}(\theta) &= \min \left( \frac{\pi_\theta(a_t|s_t)}{\pi_{\theta_{old}}(a_t|s_t)} \hat{A}_t, \text{clip}\left( \frac{\pi_\theta(a_t|s_t)}{\pi_{\theta_{old}}(a_t|s_t)}, 1-\epsilon, 1+\epsilon \right) \hat{A}_t \right), \\
+    L^{VF}(\theta) &= \frac{1}{2} \left( V_\theta(s_t) - \hat{V}_t \right)^2,
+\end{align}
+where $c_1$ is the value loss coefficient, $c_2$ is the entropy coefficient, $S$ is an
+entropy bonus function, $\pi_\theta$ is the stochastic policy, $\pi_{\theta_{old}}$ is the rollout policy, $a_t$
+is the action taken at time $t$, $s_t$ is the observation at time $t$, $\hat{A}_t$
+is the advantage estimate,  $\epsilon$ is the clipping coefficient, $V_\theta$ is the
+value function, $\hat{V}_t$ is the return estimate. The advantage estimate is computed
+using Generalized Advantage Estimation (GAE) \citep{DBLP:journals/corr/SchulmanMLJA15}.
+We compute a separate advantage for each of the 3 rewards with each advantage estimate
+using independent $\gamma$ (discount factor) and $\lambda$ (exponetial weight discount)
+values. The 3 advantages are weighted summed together to get the final advantage
+estimate.
 
+Over the course of training, the reward weights, value loss coefficients (each value
+head has its own loss coefficient), entropy coefficient, and learning rate are varied on
+a schedule. At the start of training, the policy loss heavily weights the dense, shaped 
+reward advantage, and the value loss similar weights the dense shaped value head. Over
+the course of training, both losses are weighted more towards the win-loss sparse and
+eventually take no contribution from the shaped reward. The entropy coefficient is also
+lowered at the end of training to discourage the agent from making random moves as the
+learning rate is also lowered.
+
+We first trained \agentName\ with selfplay both against itself and against prior
+versions of itself. We reached a 91\% win rate against the same bots MicroRTS-Py was
+benchmarked against. However, it only beat CoacAI (the 2020 competition winner) in 20\%
+of games. The best performing agent of MicroRTS-Py nearly always beat CoacAI, though
+the best versions of GridNet also usually lost against CoacAI. Therefore, we fine-tuned
+the model through 3 iterations:
+\begin{inparaenum}[(1)]
+    \item one-half of environments trained against CoacAI, replacing prior
+    versions of itself;
+    \item one-half of environments trained against CoacAI or Mayari (2021 competition
+    winner) split evenly and primarily trained on win-loss rewards; and
+    \item same as (2) but included action mask improvements and added a GELU activation
+    after the stride-4 convolution to match \citet{Ferdinand2021doublecone}'s DoubleCone.
+\end{inparaenum}
+By the end of fine-tuning, the model was winning 98\% of games, including about 90\%
+against each of CoacAI and Mayari.
+
+\subsection{Transfer learning}
+The model so far had been trained on the 5 smaller competition Open maps. Using the
+fine-tuned model as a starting pint, we trained 3 additional model weights exclusively
+on 3 of the competition Open maps.
+\begin{inparaenum}[(1)]
+    \item \texttt{NoWhereToRun9x8} was one of the 6 maps the base model trained on;
+    however, the base agent couldn't beat CoacAI or Mayari on this map. The map was very
+    different from the other 5 maps consisting of a wall of resources in the middle
+    separated opponents.
+    \item \texttt{DoubleGame24x24} was larger than the maps the base model trained on
+    and
+    \item \texttt{BWDistantResources32x32} was larger still.
+\end{inparaenum}
+All 3 transfer learning runs used the same schedule:
+\begin{inparaenum}[(1)]
+    \item warmup of sparse, win-loss reward weights linearly transitioned to a mixture
+    of both shaped and sparse rewards,
+    \item middle phase of mixed rewards,
+    \item end phase of sparse rewards again at a lower learning rate.
+\end{inparaenum}
+\texttt{NoWhereToRun9x8} had an additional fine-tuning using only the win-loss reward.
+These transfer learned agents exceeded 90\% win-rate on their respective maps,
+significant improvements over the base model (especially on
+\texttt{BWDistantResources32x32} which started below 10\%)
 
 \bibliography{iclr2024}
 \bibliographystyle{iclr2024_conference}
@@ -300,14 +367,14 @@ entropy cofficient, and the learning rate over the course of training with a sch
                 \includegraphics[width=2.25cm]{supplemental/vsMayari/basesWorkers8x8A.png} \\
                 FourBasesWorkers8x8 & 8x8 & 16x16 &
                 \includegraphics[width=2.25cm]{supplemental/vsMayari/FourBasesWorkers8x8.png} \\
-                NoWhereToRun9x8 & 9x8 & 16x16 &
+                NoWhereToRun9x8 & 9x8 & 12x12\tnote{*} or 16x16\tnote{\P} &
                 \includegraphics[width=2.25cm]{supplemental/vsMayari/NoWhereToRun9x8.png} \\
                 basesWorkers16x16A & 16x16 & 16x16 &
                 \includegraphics[width=2.25cm]{supplemental/vsMayari/basesWorkers16x16A.png} \\
                 TwoBasesBarracks16x16 & 16x16 & 16x16 &
                 \includegraphics[width=2.25cm]{supplemental/vsMayari/TwoBasesBarracks16x16.png}
                 \\
-                DoubleGame24x24 & 24x24 & 24x24\tnote{*} or 32x32\tnote{\P} &
+                DoubleGame24x24 & 24x24 & 24x24\tnote{\dag} or 32x32\tnote{\ddag} &
                 \includegraphics[width=2.25cm]{supplemental/vsMayari/DoubleGame24x24.png} \\
                 BWDistantResources32x32 & 32x32 & 32x32 &
                 \includegraphics[width=2.25cm]{supplemental/vsMayari/BWDistantResources32x32.png}
@@ -316,9 +383,12 @@ entropy cofficient, and the learning rate over the course of training with a sch
                 \includegraphics[width=2.25cm]{supplemental/vsMayari/(4)BloodBath.png} \\
             \end{tabular}
             \begin{tablenotes}
-                \item[*] ppo-Microrts-finetuned-DoubleGame-shaped-S1-best uses a 24x24
+                \item[*] ppo-Microrts-finetuned-NoWhereToRun-S1-best uses a 12x12
+                representation
+                \item[\P] ppo-Microrts-A6000-finetuned-coac-mayari-S1-best
+                \item[\dag] ppo-Microrts-finetuned-DoubleGame-shaped-S1-best uses a 24x24
                     representation.
-                \item[\P] ppo-Microrts-squnet-map32-128ch-selfplay-S1-best pads the
+                \item[\ddag] ppo-Microrts-squnet-map32-128ch-selfplay-S1-best pads the
                     observation to 32x32.
             \end{tablenotes}
     \end{threeparttable}
