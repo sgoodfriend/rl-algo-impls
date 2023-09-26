@@ -383,11 +383,49 @@ was possible to train an agent that
     \item could be trained in fewer steps and less time, and
     \item could defeat prior competition winners on the largest maps.
 \end{inparaenum}
-We opted for a model between DoubleCone and squnet: a single-nested downscaling residual
-block each of stride 4, so the bottom block scales the input down to $\frac{1}{16}$th the original
+We opted for a neural architecture between DoubleCone and squnet: a single-nested downscaling residual
+block each of stride 4, so the bottom block scales the input down to 1/16th the original
 size. At each downscaling level, there was multiple residual blocks (6 at full
 resolution, split evenly by the downscaling block; 4 at 1/4 resolution, split evenly by
-the 1/16 downscaling block; and 4 at 1/16 resolution)
+the 1/16 downscaling block; and 4 at 1/16 resolution). This architecture theoretically
+has a 128x128 receptive field while using 25\% fewer operations at inference time. On
+the largest competition Open map (\texttt{(4)BloodBath.scmB}), this is 6x more
+computations than squnet-64. Therefore, this neural architecture won't be usable in a
+competition given the same hardware constraints as the 2023 competition.
+
+Initially, we tried a similar training strategy to \agentName\ where the model is
+trained on 16x16 maps and then reusing that model as a starting point to transer to
+larger maps. However, we only managed a 60\% win-rate on
+\texttt{BWDistantResources32x32} and less than 20\% win-rate on
+\texttt{(4)BloodBath.scmB} before terminating training.
+
+Instead, similar to \citet{Vinyals2019GrandmasterLI}, we used behavior cloning to
+bootstrap the model. Instead of 3 rewards and value heads, we used only the win-loss
+reward. However, microRTS doesn't have human replays, so we used playthroughs of the
+2021 competition winner (Mayari) playing against Mayari, CoacAI (2020 competition
+winner), and lightRush (baseline scripted bot and 2017 competition winner). Instead of
+generating an offline replay dataset, we set the microRTS environment to play bots
+against each other and these observations and actions were fed into rollouts used for
+behavior cloning the policy and fitting the value heads:
+\begin{align}
+    L^{BC+VF}(\theta) &= \left[ L^{BC}(\theta) - c_1 L^{VF} \right], \\
+    L^{BC}(\theta) &= \frac{1}{\|a_t\|} \log \pi_{\theta}(a_t|s_t),
+\end{align}
+where $c_1$ and $L^{VF}$ are the same as in the PPO loss function. The policy behavior
+cloning loss is the cross-entropy loss between the policy logits and the actions taken
+by the Mayari bot. We found scaling the loss by the number of units that could take an
+action critical for behavior cloning to train.
+
+We trained 3 behavior cloned models for the 3 Open competition maps sizes (16x16,
+32x32, and 64x64) using the same maps for each map size as \agentName\ training. The
+64x64 model used the weights of the 32x32 model as a starting point, while the other two
+models were randomly initialized. We then used PPO to fine-tune the behavior cloned
+models on the same maps.
+
+\section{Results}
+\subsection{IEEE-CoG2023 microRTS competition results}
+\agentName\ was declared the winner despite not beating the 2021 competition winner
+(Mayari) or a baseline model submitted by a competition organizer (2L)
 
 \bibliography{iclr2024}
 \bibliographystyle{iclr2024_conference}
@@ -707,6 +745,34 @@ the 1/16 downscaling block; and 4 at 1/16 resolution)
     \begin{tablenotes}
        \item[*] Values are linearly interpolated between phases based on step count.
        \item[†] Listed weights are for the shaped, win-loss, cost-based values, respectively.
+    \end{tablenotes}
+    \end{threeparttable}
+\end{table}
+
+\section{Behavior cloning bootstrapped training details}
+\begin{table}[H]
+    \centering
+    \begin{threeparttable}
+    \caption{Neural architecture for behavior cloning and PPO fine-tuned training}
+    \label{tab:bc-architecture}
+    \begin{tabular}{lc}
+    \toprule
+                                 & deep16-128 \\
+    \midrule
+    Levels                      & 3  \\
+    Encoder residual blocks/level & [3, 2, 4] \\
+    Decoder residual blocks/level & [3, 2] \\
+    Stride per level            & [4, 4] \\
+    Deconvolution strides per level & [[2, 2], [2, 2]]$^{*}$\\
+    Channels per level          & [128, 128, 128] \\
+    Trainable parameters        & 5,027,279 \\
+    MACs$^{†}$ (16x16)          & 0.52B \\
+    MACs$^{†}$ (64x64)          & 8.40B \\
+    \bottomrule
+    \end{tabular}
+    \begin{tablenotes}
+       \item[*] 2 stride-2 transpose convolutions to match the 1 stride-4 convolution.
+       \item[†] Multiply-Accumulates for computing actions for a single observation.
     \end{tablenotes}
     \end{threeparttable}
 \end{table}
