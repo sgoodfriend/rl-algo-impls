@@ -451,7 +451,7 @@ beating CoacAI or Mayari.
 
 squnet-DistantResources was able to learn better by fine-tuning from squnet-32's best
 model and training on only one map. It achieved 85% win-rate, beating Mayari half the
-time. It never beat CoacAI. In a similar round-robin tournament playing each of
+time. It never beat CoacAI. In a single-player round-robin tournament tournament playing each of
 WorkerRush, LightRush, CoacAI, and Mayari 20 times on
 BWDistantResources32x32, the squnet model beat WorkerRush, LightRush, and Mayari better
 than even, but not CoacAI:
@@ -468,18 +468,19 @@ at 4x down-scaled resolution).
 Given the above, my next model architecture has more residual blocks than DoubleCone,
 but does a second 4x down-scaling to get a 128×128 receptive field:
 
-|                                 | deep16-128      |
-| ------------------------------- | --------------- |
-| Levels                          | 3               |
-| Encoder residual blocks/level   | [3, 2, 4]       |
-| Decoder residual blocks/level   | [3, 2]          |
-| Stride per level                | [4, 4]          |
-| Deconvolution strides per level | [4, 4]          |
-| Channels per level              | [128, 128, 128] |
-| Trainable parameters            | 5,691,089       |
-| MACs<sup>†</sup> (16x16)        | 0.52B           |
-| MACs<sup>†</sup> (64x64)        | 8.40B           |
+|                                 | deep16-128                    |
+| ------------------------------- | ----------------------------- |
+| Levels                          | 3                             |
+| Encoder residual blocks/level   | [3, 2, 4]                     |
+| Decoder residual blocks/level   | [3, 2]                        |
+| Stride per level                | [4, 4]                        |
+| Deconvolution strides per level | [[2, 2], [2, 2]<sup>\*<\sup>] |
+| Channels per level              | [128, 128, 128]               |
+| Trainable parameters            | 5,691,089                     |
+| MACs<sup>†</sup> (16x16)        | 0.52B                         |
+| MACs<sup>†</sup> (64x64)        | 8.40B                         |
 
+<sup>\*</sup>2 stride-2 transpose convolutions to match the 1 stride-4 convolution.
 <sup>†</sup>Multiply-Accumulates for computing actions for a single observation.
 
 Despite 8.40B MACs being 25% less than DoubleCone, this is 6x squnet-64, which itself

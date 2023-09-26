@@ -1,6 +1,8 @@
 \documentclass{article}
 \usepackage{iclr2024_conference}
-\usepackage{iclr2024_anonymization}
+\input{math_commands.tex}
+\usepackage{hyperref}
+\usepackage{url}
 \usepackage{times}
 \usepackage{graphicx}
 \usepackage{array}
@@ -10,12 +12,26 @@
 \usepackage{threeparttable}
 \usepackage{amssymb}
 \usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage[T1]{fontenc}
+\usepackage{textcomp}
+\usepackage{tabularx}
+\usepackage{ragged2e}
+
+\title{A Competition Winning Deep Reinforcement Learning Agent in microRTS}
+
+\author{Scott Goodfriend \\
+\texttt{goodfriend.scott@gmail.com} \\
+}
+
+\newcommand{\fix}{\marginpar{FIX}}
+\newcommand{\new}{\marginpar{NEW}}
+
+% \iclrfinalcopy % Uncomment for camera-ready version, but NOT for submission.
+\usepackage{iclr2024_anonymization}
 
 \begin{document}
-\title{A Competition Winning Deep Reinforcement Learning Agent in microRTS}
-\author{Scott Goodfriend$^{1}$ \\
-$^{1}$ goodfriend.scott@gmail.com \\
-}
+
 \maketitle
 \begin{abstract}
     Scripted solutions with pathfinding algorithms have predominantly won the five
@@ -105,7 +121,7 @@ rewards, eliminating the need for a difficult to tune human reward function.
 
 \section{Related Work}
 \subsection{MicroRTS-Py}
-MicroRTS-Py\footnote{https://github.com/Farama-Foundation/MicroRTS-Py} is an OpenAI Gym
+MicroRTS-Py\footnote{\url{https://github.com/Farama-Foundation/MicroRTS-Py}} is an OpenAI Gym
 wrapper for microRTS and includes a Proximal Policy Optimization (PPO) implementation
 trained on 1 of the Open maps (\texttt{16x16basesWorkers}). Starting from a PPO
 implementation matching \textit{openai/baselines},
@@ -347,6 +363,32 @@ These transfer learned agents exceeded 90\% win-rate on their respective maps,
 significant improvements over the base model (especially on
 \texttt{BWDistantResources32x32} which started below 10\%)
 
+\subsection{squnet training}
+We trained the squnet moels with fewer steps because of time-constraints and skipped the
+predominantely cost-based reward phase because it didn't seem to help with training the
+base model. The 2 models trained from randomly initialized weights for maps of up to 32 (map32)
+and 64 (map64) managed only a 40\% win-rate, never beating CoacAI or Mayari. These
+models were polies of last resort.
+
+We also fine-tuned the squnet-map32 model on \texttt{BWDistantResources32x32}
+exclusively using the same sparse fine-tuning schedule. This fine-tuned model achieved
+85\% win-rate, beating Mayari half the time, but never beating CoacAI.
+
+\subsection{Behavior cloning bootstrapped training}
+We submitted \agentName\ with the above initially randomized training followed up with
+fine-tuning and transfer learning. However, in follow-up work, we wanted to see if it
+was possible to train an agent that
+\begin{inparaenum}[(1)]
+    \item didn't require the shaped rewards and reward scheduling,
+    \item could be trained in fewer steps and less time, and
+    \item could defeat prior competition winners on the largest maps.
+\end{inparaenum}
+We opted for a model between DoubleCone and squnet: a single-nested downscaling residual
+block each of stride 4, so the bottom block scales the input down to $\frac{1}{16}$th the original
+size. At each downscaling level, there was multiple residual blocks (6 at full
+resolution, split evenly by the downscaling block; 4 at 1/4 resolution, split evenly by
+the 1/16 downscaling block; and 4 at 1/16 resolution)
+
 \bibliography{iclr2024}
 \bibliographystyle{iclr2024_conference}
 
@@ -417,9 +459,9 @@ significant improvements over the base model (especially on
 \section{Neural network architecture}
 \begin{figure}[H]
     \begin{center}
-        \includegraphics[width=0.4\linewidth]{figures/DoubleCone.png}
+        \includegraphics[width=0.6\linewidth]{figures/DoubleCone.png}
     \end{center}
-    \caption{DoubleCone(4,6,4) neural network architecture.}
+    \caption{DoubleCone(4, 6, 4) neural network architecture.}
     \label{fig:doublecone}
 \end{figure}
 
@@ -484,6 +526,189 @@ significant improvements over the base model (especially on
     \end{threeparttable}
 \end{table}
 
-\section{Training details}
+\section{Initial training details}
+
+\begin{table}[H]
+    \centering
+    \begin{threeparttable}
+    \caption{Comparison of Initial Training, Shaped Fine-Tuning, and Sparse Fine-Tuning Parameters}
+    \label{tab:training-parameters}
+    \begin{tabular}{lccc}
+    \toprule
+    Parameter & Initial Training & Shaped Fine-Tuning & Sparse Fine-Tuning \\
+    \midrule
+    Steps & 300M &   100M &   100M \\
+    n\_envs & 24 &    \textquotedbl &    \textquotedbl \\
+    Rollout Steps Per Env & 512 &   \textquotedbl &   \textquotedbl \\
+    Minibatch Size & 4096 &   \textquotedbl &   \textquotedbl \\
+    Epochs Per Rollout & 2 &   \textquotedbl &   \textquotedbl \\
+    Gamma & [0.99, 0.999, 0.999]\tnote{*} &   \textquotedbl &   \textquotedbl \\
+    gae\_lambda & [0.95, 0.99, 0.99]\tnote{\P} &   \textquotedbl &   \textquotedbl \\
+    Clip Range & 0.1 &   \textquotedbl &   \textquotedbl \\
+    Clip Range VF & 0.1 &    \textquotedbl &   \textquotedbl \\
+    VF Coef Halving\tnote{‡} & True  &    \textquotedbl &   \textquotedbl \\
+    Max Grad Norm &  0.5 &   \textquotedbl &   \textquotedbl \\   
+    Latest Selfplay Envs   &   12 &                      \textquotedbl &                      \textquotedbl \\
+    Old Selfplay Envs   &   12 &                      0 &                      0 \\
+    Bots   &   none & CoacAI: 12 & \begin{tabular}[c]{@{}c}CoacAI: 6\\ Mayari: 6\end{tabular} \\
+    Maps   &   \begin{tabular}[c]{@{}c}basesWorkers16x16A \\ TwoBasesBarracks16x16 \\
+    basesWorkers8x8A \\ FourBasesWorkers8x8 \\ NoWhereToRun9x8 \\
+    EightBasesWorkers16x16\tnote{\dag} \end{tabular} &  \textquotedbl & \textquotedbl \\
+    \bottomrule
+    \end{tabular}
+    \begin{tablenotes}
+    \item[\textquotedbl] Same value as cell to left.
+    \item[*] Value per value head (shaped, win-loss, cost-based).
+    \item[\P] Multiply v\_{loss} by 0.5, as done in CleanRL.
+    \item[\dag] Map not used in competition.
+    \end{tablenotes}
+    \end{threeparttable}
+\end{table}
+
+\begin{table}[H]
+    \centering
+    \begin{threeparttable}
+    \caption{Initial Training schedule from a randomly initialized model}
+    \label{tab:initial-training-schedule}
+    \begin{tabular}{lccccr}
+    \toprule
+     & Phase 1 & Transition 1→2\tnote{*} & Phase 2 & Transition 2→3\tnote{*} & Phase 3 \\
+    \midrule
+    steps & 90M & 60M & 30M & 60M & 60M \\
+    reward weights\tnote{†} & [0.8, 0.01, 0.19] &  & [0, 0.5, 0.5] &  & [0, 0.99, 0.01] \\
+    $c_1$ (value loss coef)\tnote{†} & [0.5, 0.1, 0.2] &  & [0, 0.4, 0.4] &  & [0, 0.5, 0.1]\\
+    $c_2$ (entropy coef)& 0.01 & & 0.01 & & 0.001 \\
+    learning rate & $10^{-4}$ & & $10^{-4}$ & & $5 \times 10^{-5}$\\
+    \bottomrule
+    \end{tabular}
+    \begin{tablenotes}
+       \item[*] Values are linearly interpolated between phases based on step count.
+       \item[†] Listed weights are for the shaped, win-loss, cost-based values, respectively.
+    \end{tablenotes}
+    \end{threeparttable}
+\end{table}
+
+\begin{table}[H]
+    \centering
+    \begin{threeparttable}
+    \caption{Shaped Fine-tuning schedule starting with weights from Initial Training output}
+    \label{tab:shaped-finetuning-schedule}
+    \begin{tabular}{lccccc}
+    \toprule
+     & Start & Transition →1\tnote{*} & Phase 1 & Transition 1→2\tnote{*} & Phase 2 \\
+     \midrule
+    steps & & 5M & 30M & 20M & 45M \\
+    reward weights\tnote{†} & [0, 0.99, 0.01] & & [0, 0.5, 0.5] & & [0, 0.99, 0.01] \\
+    $c_1$ (value loss coef)\tnote{†} & [0, 0.4, 0.2] & & [0, 0.4, 0.4] & & [0, 0.5, 0.1]\\
+    $c_2$ (entropy coef) & 0.01 & & 0.01 & & 0.001 \\
+    learning rate & $10^{-5}$ & & $5 \times 10^{-5}$ & & $5 \times 10^{-5}$\\
+    \bottomrule
+    \end{tabular}
+    \begin{tablenotes}
+       \item[*] Values are linearly interpolated between phases based on step count.
+       \item[†] Listed weights are for the shaped, win-loss, cost-based values, respectively.
+    \end{tablenotes}
+    \end{threeparttable}
+\end{table}
+
+\begin{table}[H]
+    \centering
+    \begin{threeparttable}
+    \caption{Sparse Fine-tuning schedule starting with weights from Shaped Fine-tuning output}
+    \label{tab:sparse-finetuning-schedule}
+    \begin{tabular}{lcccc}
+    \toprule
+     & Phase 1 & Transition 1→2\tnote{*} & Phase 2 \\
+     \midrule
+    steps & 30M & 40M & 30M \\
+    reward weights\tnote{†} & [0, 0.99, 0.01] &  & [0, 0.99, 0.01] \\
+    $c_1$ (value loss coef)\tnote{†} & [0, 0.5, 0.1] &  & [0, 0.5, 0.1]\\
+    $c_2$ (entropy coef)) & 0.001 & & 0.0001 \\
+    learning rate & $5 \times 10^{-5}$ & & $10^{-5}$ \\
+    \bottomrule
+    \end{tabular}
+    \begin{tablenotes}
+       \item[*] Values are linearly interpolated between phases based on step count.
+       \item[†] Listed weights are for the shaped, win-loss, cost-based values, respectively.
+    \end{tablenotes}
+    \end{threeparttable}
+\end{table}
+
+\section{Transfer learning details}
+
+\begin{table}[H]
+    \centering
+    \begin{threeparttable}
+    \caption{Transfer learning schedule starting from ppo-Microrts-A6000-finetuned-coac-mayari-S1-best model}
+    \label{tab:transfer-learning-schedule}
+    \begin{tabular}{lccccc}
+    \toprule
+     & Start & Transition →1\tnote{*} & Phase 1 & Transition 1→2\tnote{*} & Phase 2 \\
+     \midrule
+    steps & & 5M & 30M & 20M & 45M \\
+    reward weights\tnote{†} & [0, 0.99, 0.01] & & [0.4, 0.5, 0.1] & & [0, 0.99, 0.01] \\
+    $c_1$ (value loss coef)\tnote{†} & [0.2, 0.4, 0.2] & & [0.3, 0.4, 0.1] & & [0, 0.5, 0.1]\\
+    $c_2$ (entropy coef) & 0.01 & & 0.01 & & 0.0001 \\
+    learning rate & $5 \times 10^{-5}$ & & $7 \times 10^{-5}$ & & $10^{-5}$ \\
+    \bottomrule
+    \end{tabular}
+    \begin{tablenotes}
+       \item[*] Values are linearly interpolated between phases based on step count.
+       \item[†] Listed weights are for the shaped, win-loss, cost-based values, respectively.
+    \end{tablenotes}
+    \end{threeparttable}
+\end{table}
+
+\section{squnet learning details}
+\begin{table}[H]
+    \centering
+    \begin{threeparttable}
+    \caption{squnet training parameters}
+    \label{tab:squnet-training-parameters}
+    \begin{tabular}{lccc}
+    \toprule
+    Parameter & map32 & map32-DistantResources & map64 \\
+    \midrule
+    Steps & 200M & 100M & 200M \\
+    n\_envs & 24 & \textquotedbl & \textquotedbl \\
+    Rollout Steps Per Env & 512 & 512 & 256 \\
+    Minibatch Size & 2048 & 2048 & 258 \\
+    Clip Range & 0.1 & \textquotedbl & \textquotedbl \\
+    Clip Range VF & none & \textquotedbl & \textquotedbl \\
+    Latest Selfplay Envs & 12 & \textquotedbl & \textquotedbl \\
+    Old Selfplay Envs & 6 & 6 & 4 \\
+    Bots & \begin{tabular}[c]{@{}c}coacAI: 3 \\ mayari: 3 \end{tabular} & \begin{tabular}[c]{@{}c}coacAI: 3 \\ mayari: 3 \end{tabular} & \begin{tabular}[c]{@{}c}coacAI: 4 \\ mayari: 4 \end{tabular} \\
+    Maps & \begin{tabular}[c]{@{}c}DoubleGame24x24 \\ BWDistantResources32x32 \\ chambers32x32\tnote{*} \end{tabular} & BWDistantResources32x32 & \begin{tabular}[c]{@{}c}BloodBath.scmB \\ BloodBath.scmE\tnote{*}\end{tabular} \\   
+    \bottomrule
+    \end{tabular}
+    \begin{tablenotes}
+    \item[\textquotedbl] Same value as cell to left.
+    \item[*] Not compeition Open maps.
+    \end{tablenotes}
+    \end{threeparttable}
+\end{table}
+
+\begin{table}[H]
+    \centering
+    \begin{threeparttable}
+    \caption{squnet training schedule starting with randomly initialized weights}
+    \label{tab:squnet-training-schedule}
+    \begin{tabular}{lcccc}
+    \toprule
+     & Phase 1 & Transition 1→2\tnote{*} & Phase 2 \\
+     \midrule
+    steps & 100M & 60M & 40M \\
+    reward weights\tnote{†} & [0.8, 0.01, 0.19] &  & [0, 0.99, 0.01] \\
+    $c_1$ (value loss coef)\tnote{†} & [0.5, 0.1, 0.2] &  & [0, 0.5, 0.1]\\
+    $c_2$ (entropy coef) & 0.01 & & 0.001 \\
+    learning rate & $10^{-4}$ & & $5 \times 10^{-5}$ \\
+    \bottomrule
+    \end{tabular}
+    \begin{tablenotes}
+       \item[*] Values are linearly interpolated between phases based on step count.
+       \item[†] Listed weights are for the shaped, win-loss, cost-based values, respectively.
+    \end{tablenotes}
+    \end{threeparttable}
+\end{table}
 
 \end{document}
