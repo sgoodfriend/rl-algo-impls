@@ -627,20 +627,20 @@ tournmanent as \agentName; however, playing only each opponent on each map in 20
     \begin{center}
     \begin{tabular}{lcccc|c}
     \toprule
-     & POWorkerRush & POLightRush & CoacAI & Mayari & Overall \\
+    & POWorkerRush & POLightRush & CoacAI & Mayari & Overall \\
     \midrule
-    basesWorkers8x8A & \textbf{100} & \textbf{100} & \textbf{85} & \textbf{100} & \textbf{96} \\
+    basesWorkers8x8A & \textbf{92} & \textbf{100} & \textbf{85} & \textbf{100} & \textbf{94} \\
     FourBasesWorkers8x8 & \textbf{100} & \textbf{100} & \textbf{100} & \textbf{100} & \textbf{100} \\
-    NoWhereToRun9x8 & \textbf{100} & \textbf{100} & \textbf{88} & \textbf{85} & \textbf{93} \\
-    basesWorkers16x16A & \textbf{100} & \textbf{100} & \textbf{95} & \textbf{100} & \textbf{99} \\
-    TwoBasesBarracks16x16 & \textbf{100} & 0 & \textbf{100} & \textbf{100} & \textbf{75} \\
-    DoubleGame24x24 & \textbf{95} & \textbf{90} & \textbf{100} & \textbf{100} & \textbf{96} \\
-    BWDistantResources32x32 & \textbf{100} & \textbf{95} & \textbf{90} & \textbf{100} & \textbf{96} \\
-    (4)BloodBath.scmB & \textbf{100} & \textbf{95} & 0 & 0 & 49 \\
+    NoWhereToRun9x8 & \textbf{100} & \textbf{100} & \textbf{90} & \textbf{80} & \textbf{92} \\
+    basesWorkers16x16A & \textbf{100} & \textbf{100} & \textbf{95} & \textbf{95} & \textbf{98} \\
+    TwoBasesBarracks16x16 & \textbf{100} & 0 & \textbf{100} & \textbf{95} & \textbf{74} \\
+    DoubleGame24x24 & \textbf{98} & \textbf{85} & \textbf{100} & \textbf{100} & \textbf{96} \\
+    BWDistantResources32x32 & \textbf{100} & \textbf{100} & \textbf{95} & \textbf{100} & \textbf{99} \\
+    (4)BloodBath.scmB & \textbf{100} & \textbf{88} & 0 & 5 & \textbf{48} \\
     \hline
-    AI Total & \textbf{100} & \textbf{85} & \textbf{82} & \textbf{86} & \textbf{88} \\
+    AI Total & \textbf{99} & \textbf{84} & \textbf{83} & \textbf{84} & \textbf{88} \\
     \end{tabular}
-\end{center}
+    \end{center}
 \end{table}
 
 Table~\ref{tab:bc-winrate} shows \bcAgent\ had a 71\% win rate doing extremly well
@@ -675,7 +675,28 @@ organizers):
     instabilities.
 \end{inparaenum}
 For DoubleCone, \citet{Ferdinand2021doublecone} found using OpenVINO could have made
-inference 2-3 times faster in the LUX competition. 
+inference 2-3 times faster in the LUX competition. This performance gain would likely
+make running DoubleCone or the larger squnet models on all maps except the largest
+feasible for the competition. An overtime budget for an entire match instead of a 20 ms
+per turn buffer will help agents deal with environment instabilities. For example,
+\bcPPOAgent\ timedout in 11\% of games on \texttt{(4)BloodBath.scmB}, despite averaging
+55.1 ms/turn and going over 100 ms in only 0.016\% of turns (averaging less than 1 over
+100 ms turn per game). An overage budget of even 1 second per game would likely prevent
+most timeouts.
+
+\subsection{Training on larger maps}
+None of the agents managed to reliably defeat the prior two competition winners on 
+\texttt{(4)BloodBath.scmB}. The Mayari behavior cloning \bcAgent\ did best beating
+CoacAI and Mayari only 20\% and 40\%, respectively. \texttt{(4)BloodBath.scmB} is a
+likely particularly challenging map for reinforcement learning because game lengths are
+significantly longer than on smaller maps (\bcPPOAgent\ averaged 3,500 steps per game on
+\texttt{(4)BloodBath.scmB} compared to around 925 steps on the next largest map
+\texttt{BWDistantResources32x32}). RL must learn to propagate rewards over longer time
+periods, and the observation-action space is so large that RL can only hope to explore a
+fraction of it.
+
+\subsection{Behavior cloning, transfer learning, and academic competitions}
+
 
 \bibliography{iclr2024}
 \bibliographystyle{iclr2024_conference}
