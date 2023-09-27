@@ -124,11 +124,15 @@ if __name__ == "__main__":
     print(execution_time.rename(index=maps_by_idx))
 
     df["score"] = 0
+    df["winrate"] = 0
     df["opponent"] = 0
     df.loc[(df["ai1"] == 0) & (df["winner"] == 0), "score"] = 1
     df.loc[(df["ai1"] == 0) & (df["winner"] == 1), "score"] = -1
     df.loc[(df["ai2"] == 0) & (df["winner"] == 1), "score"] = 1
     df.loc[(df["ai2"] == 0) & (df["winner"] == 0), "score"] = -1
+    df.loc[(df["ai1"] == 0) & (df["winner"] == 0), "winrate"] = 100
+    df.loc[(df["ai2"] == 0) & (df["winner"] == 1), "winrate"] = 100
+    df.loc[(df["winner"] == -1)] = 50
     df.loc[df["ai1"] == 0, "opponent"] = df["ai2"]
     df.loc[df["ai2"] == 0, "opponent"] = df["ai1"]
     score_table = df.pivot_table(
@@ -137,6 +141,11 @@ if __name__ == "__main__":
     score_table.loc["AI Total"] = score_table.mean(axis=0)
     score_table["Map Total"] = score_table.mean(axis=1)
     print(score_table.rename(index=maps_by_idx, columns=ais_by_idx).round(2))
+
+    winrate_table = df.pivot_table(
+        index="map", columns="opponent", values="winrate", aggfunc="mean", fill_value=0
+    )
+    print(winrate_table.rename(index=maps_by_idx, columns=ais_by_idx).round(0))
 
     if args.out_filepath:
         filepath = os.path.expanduser(args.out_filepath)
@@ -170,6 +179,12 @@ if __name__ == "__main__":
                             score_table.rename(
                                 index=maps_by_idx, columns=ais_by_idx
                             ).round(2)
+                        ),
+                        "RAISocketAI WinRate",
+                        format_df(
+                            winrate_table.rename(
+                                index=maps_by_idx, columns=ais_by_idx
+                            ).round(0)
                         ),
                     ]
                 )
