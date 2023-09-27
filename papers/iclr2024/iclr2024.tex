@@ -693,10 +693,73 @@ significantly longer than on smaller maps (\bcPPOAgent\ averaged 3,500 steps per
 \texttt{(4)BloodBath.scmB} compared to around 925 steps on the next largest map
 \texttt{BWDistantResources32x32}). RL must learn to propagate rewards over longer time
 periods, and the observation-action space is so large that RL can only hope to explore a
-fraction of it.
+fraction of it. A rushing strategy of sending attack units and surplus workers towards
+the enemy as soon as possible is a strong strategy on all but the largest map.
+\texttt{(4)BloodBath.scmB} seems to reward a build up of forces before attacking, which
+RL is struggling to learn.
+
+Behavior cloning was meant to bootstrap training by starting with a model that is able
+to generate non-zero win-loss rewards and reasonable observation-action pairs. However,
+while the training policy started by winning 40-50\% of games (1/6 of training
+environments are against scripted bots and 1/4 are against older model weights of itself), this dropped to 20\%
+midway through training. The training policy eventually recovers to winning 40\% of
+games; however, the training policy had a worse evaluation win rate than the initial 
+behavior cloned policy. This training curve differs from the smaller map training where the training
+policy quickly reaches winning 60\% of training games and maintained before improving
+upon the evaluation win rate.
+
+PPO (and RL algorithms in general) have many hyperparameters that need to be tuned
+before a model is able to learn. Hyperparameter search is ongoing. At the same time,
+other algorithms might perform better from a behavior cloned start. For example,
+Advantage Actor Critic (A2C) \citep{DBLP:journals/corr/MnihBMGLHSK16} uses a loss
+function similar to behavior cloning, and thus policy training might more smoothly
+transition from behavior cloning to RL.
 
 \subsection{Behavior cloning, transfer learning, and academic competitions}
+Training \agentName\ from random weights to multiple policies for different map sizes and fine-tuned
+on certain maps took 70 GPU-days. Behavior cloning and PPO fine-tuning \bcPPOAgent\
+took 73 GPU-days (\bcAgent\ took 23 GPU-days). These are significant amounts of compute
+for a mostly academic competition like microRTS.
 
+There are several ways to make training deep neural networks more feasible in a
+competition and educational setting:
+\begin{inparaenum}[(1)]
+    \item focus on smaller maps,
+    \item fine-tuning existing models that have been trained (possibly through BC, RL,
+    or some other method),
+    \item transfer an existing model to new maps, and
+    \item use a significantly smaller neural architecture.
+\end{inparaenum}
+The largest map took 19 GPU-days to train for \agentName, 15 GPU-days for \bcAgent, and
+34 GPU-days for \bcPPOAgent. Over two-thirds of training time for \bcPPOAgent\ was spent
+training on the larget map to little benefit. \citet{DBLP:journals/corr/abs-2105-13807}
+trained an agent for a player 1 on a single 16x16 map in 60 hours. \bcPPOAgent\ trained
+on the 5 competition maps up to size 16x16 in about 7.5 days.
+
+Fine-tuning and transfer learning was critical to making \agentName\ competitive. Both
+took significantly less time than training from randomly initialized weights because the
+policy already takes reasonable tactical actions and the critic can already make
+reasonable value estimates.  While fine-tuning and transfer learning \agentName\ on the same maps
+might not be took productive, both can be useful if the competition Open maps change and
+could be useful for \bcPPOAgent\, which didn't do any single map training. Other agents,
+such as the new baseline \texttt{2L}, could be behavior cloned and fine-tuned to
+generate DRL agents with new behaviors.
+
+\agentName's DoubleCone and \bcPPOAgent's deep squnet are relatively large neural
+networks, each at around 5 million parameters.
+\citet{DBLP:journals/corr/abs-2105-13807}'s best performing policies each used fewer
+than 1 million parameters. These smaller networks are quicker to train and have faster
+inference time, and there's no definitive evidence so far that they are worse than
+larger networks.
+
+\section{Conclusion}
+\agentName\ is the first DRL agent to win a microRTS competition. It demonstrates an
+iterative training process of fine-tuning and transfer learning is effective for
+creating competitive DRL agents. Such a training process can be used by 
+resource-constrained researchers and students to create novel DRL agents for future 
+competitions and experiments. Fine-tuning behavior cloning with PPO is a promising way
+to create competitive DRL agents with desired behaviors without needing to handcraft a reward
+function.
 
 \bibliography{iclr2024}
 \bibliographystyle{iclr2024_conference}
