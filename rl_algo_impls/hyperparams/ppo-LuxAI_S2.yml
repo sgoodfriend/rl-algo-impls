@@ -839,6 +839,58 @@ LuxAI_S2-v0-sSqunet-78env-deimos-lr4: &lux-ssqunet-78envs-deimos-high-lr4
       - 0.18
       - 0.02
 
+LuxAI_S2-v0-sSqunet-78env-deimos-lr8: &lux-ssqunet-78envs-deimos-high-lr8
+  <<: *lux-ssqunet-78envs-deimos-lower-lichen
+  hyperparam_transitions_kwargs:
+    interpolate_method: cosine
+    phases:
+      - learning_rate: !!float 1e-6
+        ent_coef: 0.001
+        guide_probability: 0.5
+      - learning_rate: !!float 8e-5
+        ent_coef: 0.001
+        guide_probability: 0.5
+      - learning_rate: !!float 8e-5
+        ent_coef: 0.001
+        guide_probability: 0
+      - learning_rate: !!float 1e-6
+        ent_coef: 0.0001
+        guide_probability: 0
+    durations:
+      - 0
+      - 0.1
+      - 0
+      - 0.2
+      - 0.5
+      - 0.18
+      - 0.02
+
+LuxAI_S2-v0-sSqunet-78env-deimos-lr16: &lux-ssqunet-78envs-deimos-high-lr16
+  <<: *lux-ssqunet-78envs-deimos-lower-lichen
+  hyperparam_transitions_kwargs:
+    interpolate_method: cosine
+    phases:
+      - learning_rate: !!float 1e-6
+        ent_coef: 0.001
+        guide_probability: 0.5
+      - learning_rate: !!float 1.6e-4
+        ent_coef: 0.001
+        guide_probability: 0.5
+      - learning_rate: !!float 1.6e-4
+        ent_coef: 0.001
+        guide_probability: 0
+      - learning_rate: !!float 1e-6
+        ent_coef: 0.0001
+        guide_probability: 0
+    durations:
+      - 0
+      - 0.1
+      - 0
+      - 0.2
+      - 0.5
+      - 0.18
+      - 0.02
+
 LuxAI_S2-v0-sSqunet-78env-deimos-lrH: &lux-ssqunet-78envs-deimos-high-lrh
   <<: *lux-ssqunet-78envs-deimos-lower-lichen
   hyperparam_transitions_kwargs:
@@ -934,7 +986,7 @@ LuxAI_S2-agent: &lux-agent
         swap_steps: .inf
 
 LuxAI_S2-v0-debug:
-  <<: *lux-ssqunet-78envs-deimos-high-lrq
+  <<: *lux-ssqunet-78envs-deimos-high-lr16
   n_timesteps: !!float 1e6
   device: mps
   env_hyperparams:
