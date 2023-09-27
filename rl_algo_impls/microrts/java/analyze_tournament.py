@@ -132,7 +132,7 @@ if __name__ == "__main__":
     df.loc[(df["ai2"] == 0) & (df["winner"] == 0), "score"] = -1
     df.loc[(df["ai1"] == 0) & (df["winner"] == 0), "winrate"] = 100
     df.loc[(df["ai2"] == 0) & (df["winner"] == 1), "winrate"] = 100
-    df.loc[(df["winner"] == -1)] = 50
+    df.loc[(df["winner"] == -1), "winrate"] = 50
     df.loc[df["ai1"] == 0, "opponent"] = df["ai2"]
     df.loc[df["ai2"] == 0, "opponent"] = df["ai1"]
     score_table = df.pivot_table(
@@ -145,6 +145,8 @@ if __name__ == "__main__":
     winrate_table = df.pivot_table(
         index="map", columns="opponent", values="winrate", aggfunc="mean", fill_value=0
     )
+    winrate_table.loc["AI Total"] = winrate_table.mean(axis=0)
+    winrate_table["Map Total"] = winrate_table.mean(axis=1)
     print(winrate_table.rename(index=maps_by_idx, columns=ais_by_idx).round(0))
 
     if args.out_filepath:
