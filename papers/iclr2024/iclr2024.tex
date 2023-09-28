@@ -36,7 +36,7 @@
 
 \maketitle
 \begin{abstract}
-    Scripted solutions with pathfinding algorithms have predominantly won the five
+    Scripted agents have predominantly won the five
     previous iterations of the IEEE microRTS ($\mu$RTS) competitions hosted at CIG and
     CoG. Despite Deep Reinforcement Learning (DRL) algorithms making significant strides
     in RTS-style games, their adoption has been limited in this primarily academic
@@ -46,23 +46,24 @@
     non-performance constrained environment, \agentName\ regularly defeated the two
     preceding competition winners. This first competition-winning DRL submission can be
     a benchmark for future microRTS competitions and a starting point for future DRL
-    research. In particular, this submission successfully used fine-tuning a base model
-    to perform significantly better on specific maps. Further work in Behavior Cloning
-    has proven promising as an even more economical way to bootstrap a model.
+    research. Iteratively fine-tuning the base policy and transfer learning to specific maps was 
+    critical to \agentName's winning performance, strategies that could be used in
+    economically training future DRL agents. Further work in Behavior Cloning and
+    fine-tuning such models with DRL has proven promising as an even more economical way
+    to bootstrap a model.
 \end{abstract}
 \section{Introduction}
-Deep reinforcement learning has proven to be a powerful tool for solving complex
+Deep reinforcement learning (DRL) has proven a powerful tool for solving complex
 problems requiring several steps to achieve a goal, such as Atari games \citep{DBLP:journals/corr/MnihKSGAWR13}, continuous
 control tasks \citep{DBLP:journals/corr/LillicrapHPHETS15}, and even real-time strategy
-(RTS) games. AlphaStar is a famous example of an agent trained with DRL on StarCraft
-II to defeat professional players \citep{Vinyals2019GrandmasterLI}. However, AlphaStar was trained with thousands of
+(RTS) games like StarCraft II by AlphaStar \citep{Vinyals2019GrandmasterLI}. However, AlphaStar was trained with thousands of
 CPUs and GPUs/TPUs for several weeks. RTS games are particularly challenging for DRL for
 several reasons:
 \begin{inparaenum}[(1)]
-    \item the state and action spaces are large and varied with different terrain and
+    \item the observation and action spaces are large and varied with different terrain and
         unit types;
     \item each unit type can have different actions and abilities;
-    \item each action can control several units;
+    \item each action can control several units at once;
     \item rewards are sparse (win, loss, or tie) and delayed by possibly several
     thousand timesteps;
     \item winning requires combining tactical (micro) and strategic (macro) decisions;
@@ -74,168 +75,146 @@ several reasons:
 
 microRTS (stylized as $\mu$RTS) is a minimalist, open-source, two-player, zero-sum RTS game testbed designed for research
 purposes \citep{Ontan2013TheCM}. It includes many aspects of RTS games, simplified: different unit types, unit-specific
-actions terrain, resource collection and consuptiom to build units, and unit-to-unit combat
+actions, terrain, resource collection and consuptiom to build units, and unit-to-unit combat
 where units have different strengths and weaknesses. microRTS also supports fog of war
 and non-determinism; however, these were disabled for the IEEE-CoG2023 microRTS
 competition.
 
-The IEEE microRTS competition has been hosted at the Conference on Games (CoG) nearly
+The IEEE microRTS competitions have been hosted at the Conference on Games (CoG) nearly
 every year since 2019 and at the Conference on Computational Intelligence and Games
 (CIG) before that since 2017 \citep{Ontañón_Barriga_Silva_Moraes_Lelis_2018}.
-Competitors submit an agent that plays against other agents in a round-robin tournament
+Competitors submit an agent that plays against other submissions and baselines in a round-robin tournament
 on 12 maps with different distributions of terrain, resources, and starting units and
 buildings. 8 "Open" maps are known beforehand and are used to determine the competition winner.
 The other 4 "Hidden" maps are not revealed to participants until after the competition.
 These hidden maps are meant to test the generalization ability of the agents, but aren't
-part of the competition to allow organizers to participate. Hidden map results are also
-released.
-
-This paper describes the \agentName\ agent\footnote{\raiMicroRTSGitHubUrl}, which won the IEEE-CoG2023 microRTS
-competition and is the first DRL agent to win a microRTS competition. \agentName\
-extends the work of MicroRTS-Py (formally Gym-$\mu$RTS/Gym-MicroRTS) to be competitive
-in the Open competition maps. MicroRTS-Py is an OpenAI Gym environment for microRTS,
-which makes it easier to train DRL agents \citep{DBLP:journals/corr/abs-2105-13807}.
-MicroRTS-Py also includes a DRL training framework using Proximal Policy Optimization
-(PPO) \citep{DBLP:journals/corr/SchulmanWDRK17}, state and action space vectorization,
-invalid action masking, and environment vectorization.
-\citet{DBLP:journals/corr/abs-2105-13807} only trained an agent for one of the smaller
-maps. \agentName\ extends the DRL training framework to be competitive on other, more
-complicated maps.
-
-Models in the IEEE microRTS competition are supposed to submit actions for each timestep
+part of determining the winner to allow organizers to participate. Hidden map results are also
+released. Models in the IEEE microRTS competition are supposed to submit actions for each timestep
 within 100ms. Without GPU acceleration, this is a significant constraint for deep neural
-network agents. Being a Python agent, \agentName\ also had to communicate with the Java
-microRTS efficiently, which required optimizing the data representation.
+network agents. Nonetheless, we won through a combination of runtime optimizations and choosing
+small enough architectures.
 
-Despite these constraints, \agentName\ won the IEEE-CoG2023 microRTS competition. The
-agent consists of 7 trained neural networks. It took about 70 GPU-days to train these
-models, which is within budget for researchers, though possibly outside of budget for
-students. However, 4 of these neural networks were trained from an existing model. These
-transfer learning models were used to make the models perform better on specific maps.
-These transfer learning models took in total 18 GPU-days to train.
+This paper describes how the \agentName\ agent\footnote{\raiMicroRTSGitHubUrl} was
+trained and became the first DRL agent to win a microRTS competition by winning at CoG
+in 2023. The agent consists of 7 trained neural networks, taking 70
+GPU-days to train. This significant training time combined with the general difficulty
+in debugging and fine-tuning a DRL implementation could explain why DRL hasn't been
+competitive so far. However, we demonstrate that transfer learning to specific maps was
+critical to winning the competition and more economical than training from randomly
+initialized weights. This strategy and the training framework can be a starting
+point for future research and competition agents.
 
-While microRTS doesn't support human players, the IEEE microRTS competition means there
-are several agents available to use imitation learning on. Work following the
-competition shows that behavior cloning and fine-tuning with PPO can be used to train a
+While microRTS doesn't support human players, the competitions have made several agents
+available to use for imitation learning. Work following the
+competition shows that behavior cloning and fine-tuning with DRL can be used to train a
 competitive agent more economically. Using the same playthroughs to train the critic
-heads on win-loss rewards means that PPO can be trained with just sparse win-loss
-rewards, eliminating the need for a difficult to tune human reward function.
+heads on win-loss rewards means that DRL can be trained with just sparse win-loss
+rewards, eliminating the handcrated reward function required to train with DRL in microRTS.
 
 \section{Related Work}
 \subsection{MicroRTS-Py}
-MicroRTS-Py\footnote{\url{https://github.com/Farama-Foundation/MicroRTS-Py}} is an OpenAI Gym
-wrapper for microRTS and includes a Proximal Policy Optimization (PPO) implementation
-trained on 1 of the Open maps (\texttt{16x16basesWorkers}). Starting from a PPO
-implementation matching \textit{openai/baselines},
-\citet{DBLP:journals/corr/abs-2105-13807} added action composition, a shaped reward function, invalid action
+\citet{DBLP:journals/corr/abs-2105-13807} released MicroRTS-Py\footnote{\url{https://github.com/Farama-Foundation/MicroRTS-Py}}, an OpenAI Gym
+wrapper for microRTS that includes a Proximal Policy Optimization (PPO, \citet{DBLP:journals/corr/SchulmanWDRK17}) implementation
+trained on 1 of the Open maps (\texttt{16x16basesWorkers}). They added action composition, a shaped reward function, invalid action
 masking, IMPALA-CNN (a convolutional neural network with residual blocks), and trained
-against a diverse set of scripted agents. The agent was trained on a single map for 300
-million game steps, which took less than 3 GPU-days. The agent achieved a
-91\% win rate against a diverse set of competition bots.
+against a diverse set of scripted agents. The agent achieved a
+91\% win rate on a single map against a diverse set of competition bots.
 
-\citet{DBLP:journals/corr/abs-2105-13807} ran ablation studies across their additions.
-They found invalid action masking was essential to have an agent that could compete at
+In their ablation studies, they found invalid action masking was essential to have an agent that could compete at
 the most basic level (82\% win rate with invalid action masking, 0\% without). Using the
 residual block network IMPALA-CNN architecture instead of the network used by
 \citet{DBLP:journals/corr/MnihKSGAWR13} got the win rate up the rest of the way.
 
-They also tried two different ways to issue player actions: Unit Action Simulation (UAS)
+They experimented with two different ways to issue player actions: Unit Action Simulation (UAS)
 and GridNet \citep{pmlr-v97-han19a}. UAS calls the policy iteratively on each unit, simulating the game state
-after each unit action before issuing all unit actions combined to the game. GridNet
+after each unit action before issuing all unit actions combined to the game engine. GridNet
 computes the actions for all units in a single policy call by computing unit action
 logits for all grid positions and using a player action mask to ignore cells that don't
 have any units owned by the player. UAS performed better than GridNet (91\% vs 89\%).
 Despite UAS's better performance, MicroRTS-Py is deprecating UAS in favor of GridNet
 because UAS's more complex implementation and difficulty to incorporate selfplay and
-imitation learning, both features important in the current and future versions of
-\agentName.
+imitation learning, both features important in \agentName\ and our further work.
 
-\citet{DBLP:journals/corr/abs-2105-13807} also tried selfplay, training the policy in
-games where the policy played itself. They found that selfplay didn't improve win rate,
+They also tried selfplay, training the policy in games where the policy played itself. 
+They found that selfplay didn't improve win rate,
 either when only using selfplay or when training with half selfplay and half scripted
 bots. The other policies were trained as only the first player while selfplay required
-the policy train as both players, so the comparison might not be fair.
+the policy train as both players, so the comparison might not be equivalent.
 
-\agentName\ reimplements must of MicroRTS-Py, including the PPO implementation, action
-composition, shaped reward function, invalid action masking, GridNet, selfplay, and
-scripted bot training. \agentName\ extended the observation space to support walls and
-made the invalid action mask more strict. \agentName\ and MicroRTS-Py were trained with partial
-observability and non-determinism disabled.
+We reimplement much of MicroRTS-Py and extend its capabilities to support training on
+more maps, fix selfplay, and add imitation learning.
 
 \subsection{DeepMind AlphaStar}
 \citet{Vinyals2019GrandmasterLI}'s AlphaStar is a grandmaster-level AI trained with DRL to play the RTS game
-StarCraft II. AlphaStar was trained with a combination of supervised learning using
-games sampled from a dataset of human replays and reinforcement learning using a
-league-based system to train multiple agents against each other. The supervised agent
-was rated in the top 16\% of human players and was used as starting points for
-reinforcement learning. Reinforcement learning is used to train agents, which are
-checkpointed to a league intermittently. The training framework trains 3 types of agents
-for each of the 3 in-game races: a main agent, agents trained to defeat the main agent, and agents
-trained against the league to find exploits in those policies trained so far.
+StarCraft II. They created an initial set of agents through imitation learning: supervised learning
+using a dataset of observations, actions, and rewards to train a policy to mimic actions
+from the dataset. The dataset was created by sampling replays by top-quartile human
+players. The supervised agent was rated in the top 16\% of human players and used as
+starting points for DRL. They created a league-based framework to train multiple agents
+in parallel, each with different opponents to beat, thus creating a diverse set of
+training agents. AlphaStar was trained on 3072 TPU cores and 50,400 preemptible CPU
+cores for a duration of 44 days.
 
-AlphaStar used a custom, but similar interface to the StarCraft II Learning Environment
-(PySC2). Observations are a list of units with attributes visible to the agent. Enemy
-units outside of the visiblity of agent's units are not included in the observation.
-Enemy units outside of the agent's camera view have certain attributes hidden. Agent
-actions are similar to the actions available to human players, which differs from
-microRTS which expects per game step actions to each unit.
+microRTS is a much simpler game than StarCraft II, both in game mechanics and simulation
+cost. \citet{DBLP:journals/corr/abs-2105-13807} trained on a single map for 300 million
+steps in less than 3 GPU-days. \agentName\ trained on 10 maps for 1.5 billion steps in
+70 GPU-days. While \agentName\ didn't use supervised learning to bootstrap the agent,
+our following work uses behavior cloning to train a competitive agent.
 
-AlphaStar was trained on 3072 TPU cores and 50,400 preemptible CPU cores for a duration of 44 days. The
-league-sytem to enforce a diversity of strategies meant several policies were being
-trained at once. Additionally, StarCraft II itself is a more expensive game to
-simulate, requiring extensive resources to run games in parallel.
-
-microRTS is a much simpler game where several instances of the game can easily be run
-simultaneously. On a single GPU computer, \agentName\ trained at over 360 game
-steps/second. While \agentName\ didn't use supervised learning to bootstrap the agent,
-following work has used behavior cloning to train a competitive agent in a fraction of
-the time of the from-scratch trained \agentName.
+AlphaStar's observation and action space is significantly different from microRTS. The
+StarCraft II Learning Environment (PySC2) is made to be similar to what a human player
+observes and a human's controls. An AlphaStar action is 
+\begin{inparaenum}[(1)]
+    \item selecting an action type,
+    \item selecting a subset of units to perform the action to, and
+    \item selecting a target for the action (either a map location or visible unit).
+\end{inparaenum}
+Once supplied an action and target, units will perform the action until the action is complete or the unit is interrupted.
+microRTS requires the agent to give single step actions for each unit at each timestep.
 
 \subsection{Lux AI Kaggle competitions}
-Kaggle has hosted many Simulations competitions. In Simulation competitions, competitors
+The competition platform Kaggle hosts Simulation competitions where competitors
 submit agents that play against other submitted agents in some turn-based game
-environment. The first Lux AI competition was the first major Kaggle competition that a
-DRL agent won \citep{lux-ai-2021}. Lux is a resource management game where agents
-control worker and city units to gather resources, build more units, and control the
-board. Similar to microRTS, Lux is represented as a grid of cells with units, cities,
-and resources occupying cells. The winning agent by \citet{lux-ai-2021-winner} used a
-similar grid representation for the observation, GridNet action space, and reward
-shaping. The agent was trained with IMPALA with UPGO and TD-lambda loss terms. Instead
+environment. About once a year since 2020, Kaggle features an RTS-like Simulation competition:
+Halite, Lux AI, Kore, and Lux AI Season 2. Rules-based agents won Halite, Kore, and Lux
+AI Season 2. The first season Lux AI winning DRL agent by \citet{lux-ai-2021-winner} 
+has many similarities to MicroRTS-Py: GridNet action space, reward shaping, and
+actor-critic training algorithm (IMPALA with additional UPGO and TD($\lambda$) loss
+terms, instead of PPO). Instead
 of training with a shaped reward function through the entirety of training, \citet{lux-ai-2021-winner}
 used shaped rewards on a smaller map before transitioning to sparse win-loss rewards on
 larger and competition-size maps.
 
-The top DRL agent in the Lux AI Season 2 competition placed 4th overall, beaten out by 3
-human scripted agents. \citet{Ferdinand2021doublecone} used a "DoubleCone" neural
+The top DRL agent by \citet{Ferdinand2021doublecone} in the Lux AI Season 2 competition was beaten out by 3
+human scripted agents. They used a "DoubleCone" neural
 network backbone with critic and actor heads. Similar to ResNet with a series of
-residual blocks, DoubleCone ran the middle residual blocks of the network downscaled 4x
-before upscaling back up to full resolution, adding a residual connection from the
-beginning of downscaling to the end of upscaling. The submission agent used
-DoubleCone(4, 6, 4): 4 residual blocks from the input, 6 blocks downscaled, followed by
-4 resdiaul blocks at full resolution. This downscaling was a performance optimization at
+residual blocks, DoubleCone downscaled the middle residual blocks 4x
+before upscaling back up to full resolution, adding a residual connection around the
+downscaled blocks. This downscaling was a performance optimization at
 inference time. Similar to the first season's winner, \citet{Ferdinand2021doublecone}
-used a shaped reward in a setup phase before switching to sparse win-loss rewards. MicroRTS uses the DoubleCone architecture and switching from shaped to sparse rewards
+used a shaped reward in a setup phase before switching to sparse win-loss rewards. 
+\agentName\ uses the DoubleCone architecture and switching from shaped to sparse rewards
 during training.
 
 \section{Methods}
 \subsection{\agentName}
 To participate in the competition, \agentName\ has a Java class that handles turn
-handling and resetting commands from the Java competition code. This Java class starts a
-Python process and game state data is passed between the Java and Python processes using
-binary data over a pipe. This differs from the suggested solution to use a socket and
-JSON or XML data as a performance optimization for the larger maps.
+handling and resetting commands from the Java game engine. While earlier Python
+solutions  passed JSON or XML data over a socket\footnote{\url{https://github.com/douglasrizzo/python-microRTS}}, \agentName\ passes
+binary data over a pipe to the Python process as a performance optimization for the
+larger maps.
 
 The submission version of the Python process loads 7 different policy networks, only one network is used
 for a given map (Table~\ref{tab:policy-networks}). Networks are chosen by prioritizing
 the compatible networks and then picking the highest priority network that is capable of
 running within the allotted time on the current hardware. Map-specific networks are
 prioritized higher than size-specific networks. Multiple networks can be prioritized for
-the same map or map size. While microRTS supports any map size (even non-square), policy networks were trained on
-powers of 2 map sizes starting from 16x16 (i.e., 16x16, 32x32, 64x64). When running an
-observation through a policy network, the observation is padded to the next power of 2.
+the same map or map size. While microRTS supports any map size (even non-square),
+observations are padded to fit the policy network. Policy actions are clipped to fit the
+map size.
 
 \subsection{Neural network architecture}
-\agentName\ uses two different neural network architectures: DoubleCone(4, 6, 4) and a smaller, deeper network
+\agentName\ uses two different neural network architectures: \citet{Ferdinand2021doublecone}'s DoubleCone(4, 6, 4) and a smaller, deeper network
 we call squnet. DoubleCone(4, 6, 4) consists of
 \begin{inparaenum}[(1)]
     \item 4 residual blocks;
@@ -249,32 +228,32 @@ layer (Figure~\ref{fig:squeezeexcitation}). The actor head is a convoluational l
 that outputs logits for unit actions at every position. A unit action is composed of
 independent discrete subactions: $D = \{a_{action\ type},$ $a_{move\ direction},$ $a_{harvest\
 direction},$ $a_{return\ direction},$ $a_{produce\ direction},$ $a_{produce\ type},$ $a_{relative\
-attack\ position}\}$. This amounts to 78 logits per position. Every position Invalid action masking sets
+attack\ position}\}$. This amounts to 78 logits per position. Invalid action masking sets
 logits to a very large negative number (thus zeroing probabilities and gradients) for actions that are
 illegal or would accomplish nothing (e.g., moving a unit to an occupied or reserved
-position) \citep{DBLP:journals/corr/abs-2006-14171}. This masking significantly reduces the action space per turn, thus making
-training more efficient. The values heads are each 
+position) \citep{DBLP:journals/corr/abs-2006-14171}. This masking significantly reduces
+the action space per turn and makes training more efficient. The values heads are each 
 \begin{inparaenum}[(1)]
     \item 2 stride-2 convolutions,
     \item an adaptive average pooling layer,
     \item flattened,
     \item 2 densely connected layers, and
-    \item an activation function (Identity [no] or Tanh) to a single, scalar value (Figure~\ref{fig:valueheads}).
+    \item an activation function (Identity [no activation] or Tanh) to a single, scalar value (Figure~\ref{fig:valueheads}).
 \end{inparaenum}
 The adaptive average pooling layer allows the network to be used on different map sizes.
 
 While DoubleCone could support any map size, inference would likely exceed 100
 milliseconds for larger maps. Therefore, for larger maps, we used a different
 architecture, squnet, which nests 3 downscaling blocks (Figure~\ref{fig:squnet}). This 
-creates a network shaped like U-Net; however, the network is much more similar to DoubleCone than U-Net.
+creates a network shaped like U-Net, but functionally similar to DoubleCone.
 This aggressive downscaling reduces the number of operations necessary during inference,
 especially for larger maps (Table~\ref{table:architectureBreakdown}).
 
 Instead of 1 value head, \agentName\ uses 3 values heads for 3 different value
 functions:
 \begin{inparaenum}[(1)]
-    \item dense shaped reward similar to MicroRTS-Py except each combat unit type is
-    scaled by build-time (thus rewarding more expensive units),
+    \item shaped reward similar to MicroRTS-Py except each combat unit type is
+    scaled by build-time (rewarding expensive units more),
     \item win-loss sparse reward at game end (Tanh activation), and
     \item in-game difference in units based on cost (similar to the reward function used
     by \citet{Winter2021}).
@@ -283,8 +262,8 @@ These 3 value heads are used to mix-and-match rewards over the course of trainin
 generally starting with dense rewards using heads (1) and (3) and finishing with only
 win-loss sparase rewards by the end.
 
-\subsection{Initial Training}
-\agentName\ reimplements much of MicroRTS-Py, including the PPO implementation, action
+\subsection{Base model training}
+We reimplement much of MicroRTS-Py, including the PPO implementation, action
 composition, shaped reward function, invalid action masking, GridNet, selfplay, and
 scripted bot training. \agentName's codebase\footnote{\rlAlgoImplsGitHubUrl} supports 
 multiple environments and reimplementation allowed the environment to fit into the 
@@ -292,12 +271,11 @@ existing codebase. The observation representation was extended in two ways: (1) 
 were added to the observation as two boolean flags per position and (2) added the 
 destination of units as invalid move targets in the invalid action mask (only the unit's current location was considered
 invalid in MicroRTS-Py; however, the microRTS environment doesn't allow units to move into
-where another unit is moving into). Padding of maps was handled by making all padding
-positions into walls. We also fixed a bug where resources (which are unowned) were being counted as owned by
-the opponent if the agent was the second player\footnote{\unownedFixGitHubCommit}.
+where another unit is moving into). Padded positions were represented as walls, which
+are impassable and noninteractive. We also fixed a bug where resources (which are unowned) were being counted as
+owned by the opponent if the agent was the second player\footnote{\unownedFixGitHubCommit}.
 
-Training uses the PPO loss function from
-\citet{DBLP:journals/corr/SchulmanWDRK17}:
+We train using the PPO loss function from \citet{DBLP:journals/corr/SchulmanWDRK17}:
 \begin{align}
     L^{CLIP+VF+S}(\theta) &= \hat{\mathbb{E}}_t \left[ L^{CLIP}(\theta) - c_1 L^{VF}(\theta) + c_2 S\left[\pi_\theta\right](s_t) \right], \\
     L^{CLIP}(\theta) &= \min \left( \frac{\pi_\theta(a_t|s_t)}{\pi_{\theta_{old}}(a_t|s_t)} \hat{A}_t, \text{clip}\left( \frac{\pi_\theta(a_t|s_t)}{\pi_{\theta_{old}}(a_t|s_t)}, 1-\epsilon, 1+\epsilon \right) \hat{A}_t \right), \\
@@ -307,33 +285,34 @@ where $c_1$ is the value loss coefficient, $c_2$ is the entropy coefficient, $S$
 entropy bonus function, $\pi_\theta$ is the stochastic policy, $\pi_{\theta_{old}}$ is the rollout policy, $a_t$
 is the action taken at time $t$, $s_t$ is the observation at time $t$, $\hat{A}_t$
 is the advantage estimate,  $\epsilon$ is the clipping coefficient, $V_\theta$ is the
-value function, $\hat{V}_t$ is the return estimate. The advantage estimate is computed
+value function, $\hat{V}_t$ is the return estimate. We estimate the advantage
 using Generalized Advantage Estimation (GAE) \citep{DBLP:journals/corr/SchulmanMLJA15}.
-We compute a separate advantage for each of the 3 rewards with each advantage estimate
-using independent $\gamma$ (discount factor) and $\lambda$ (exponetial weight discount)
-values. The 3 advantages are weighted summed together to get the final advantage
-estimate.
+We compute a separate advantage for each of the 3 rewards with independent $\gamma$
+(discount factor) and $\lambda$ (exponential weight discount) for each reward. The 3 
+advantages are weighted summed together to get the final advantage estimate, which is
+used in computing the policy loss ($L^{CLIP}$).
 
-Over the course of training, the reward weights, value loss coefficients (each value
+The reward weights, value loss coefficients (each value
 head has its own loss coefficient), entropy coefficient, and learning rate are varied on
-a schedule. At the start of training, the policy loss heavily weights the dense, shaped 
-reward advantage, and the value loss similar weights the dense shaped value head. Over
-the course of training, both losses are weighted more towards the win-loss sparse and
-eventually take no contribution from the shaped reward. The entropy coefficient is also
+a schedule. At the start of training, the policy loss heavily weighs the shaped 
+reward advantage, and the value loss similarly weighs the shaped value head. By the end
+of training, both losses are weighed more towards the win-loss sparse reward. The entropy coefficient is also
 lowered at the end of training to discourage the agent from making random moves as the
-learning rate is also lowered.
+learning rate is also lowered. The schedule specifies phases where these values are set and
+transitions between phases where values are changed linearly based on timesteps.
 
 We first trained \agentName\ with selfplay both against itself and against prior
-versions of itself. We reached a 91\% win rate against the same bots MicroRTS-Py was
+versions of itself (Table~\ref{tab:training-parameters},
+Table~\ref{tab:initial-training-schedule}). We reached a 91\% win rate against the same bots MicroRTS-Py was
 benchmarked against. However, it only beat CoacAI (the 2020 competition winner) in 20\%
-of games. The best performing agent of MicroRTS-Py nearly always beat CoacAI, though
-the best versions of GridNet also usually lost against CoacAI. Therefore, we fine-tuned
+of games. The best performing agent of MicroRTS-Py nearly always beat CoacAI; however,
+the best versions using GridNet also usually lost against CoacAI. We fine-tuned
 the model through 3 iterations:
 \begin{inparaenum}[(1)]
-    \item one-half of environments trained against CoacAI, replacing prior
-    versions of itself;
+    \item one-half of environments trained against CoacAI (no longer trains against
+    prior versions of itself) (Table~\ref{tab:shaped-finetuning-schedule});
     \item one-half of environments trained against CoacAI or Mayari (2021 competition
-    winner) split evenly and primarily trained on win-loss rewards; and
+    winner) split evenly and primarily trained on win-loss rewards (Table~\ref{tab:sparse-finetuning-schedule}); and
     \item same as (2) but included action mask improvements and added a GELU activation
     after the stride-4 convolution to match \citet{Ferdinand2021doublecone}'s DoubleCone.
 \end{inparaenum}
@@ -341,13 +320,13 @@ By the end of fine-tuning, the model was winning 98\% of games, including about 
 against each of CoacAI and Mayari.
 
 \subsection{Transfer learning}
-The model so far had been trained on the 5 smaller competition Open maps. Using the
-fine-tuned model as a starting pint, we trained 3 additional model weights exclusively
-on 3 of the competition Open maps.
+The model so far had been trained on the 5 smaller Open maps. Using the
+fine-tuned model as a starting point, we trained additional models each trained exclusively
+on 1 of 3 Open maps:
 \begin{inparaenum}[(1)]
-    \item \texttt{NoWhereToRun9x8} was one of the 6 maps the base model trained on;
-    however, the base agent couldn't beat CoacAI or Mayari on this map. The map was very
-    different from the other 5 maps consisting of a wall of resources in the middle
+    \item \texttt{NoWhereToRun9x8} is one of the maps the base model already trained on;
+    however, the base agent couldn't beat CoacAI or Mayari on this map. The map is very
+    different from the other maps consisting of a wall of resources in the middle
     separated opponents.
     \item \texttt{DoubleGame24x24} was larger than the maps the base model trained on
     and
@@ -899,11 +878,12 @@ function.
 \end{table}
 
 \section{Initial training details}
+\agentName\ was trained with partial observability and environment non-determinism disabled.
 
 \begin{table}[H]
     \centering
     \begin{threeparttable}
-    \caption{Comparison of Initial Training, Shaped Fine-Tuning, and Sparse Fine-Tuning Parameters}
+    \caption{Comparison of initial training, shaped fine-tuning, and sparse fine-tuning parameters}
     \label{tab:training-parameters}
     \begin{tabular}{lccc}
     \toprule
@@ -940,7 +920,7 @@ function.
 \begin{table}[H]
     \centering
     \begin{threeparttable}
-    \caption{Initial Training schedule from a randomly initialized model}
+    \caption{Initial training schedule from a randomly initialized model}
     \label{tab:initial-training-schedule}
     \begin{tabular}{lccccr}
     \toprule
@@ -963,7 +943,7 @@ function.
 \begin{table}[H]
     \centering
     \begin{threeparttable}
-    \caption{Shaped Fine-tuning schedule starting with weights from Initial Training output}
+    \caption{Shaped fine-tuning schedule starting}
     \label{tab:shaped-finetuning-schedule}
     \begin{tabular}{lccccc}
     \toprule
@@ -1113,7 +1093,7 @@ function.
 
 \section{Additional IEEE-CoG2023 microRTS competition details}
 \begin{table}[H]
-    \caption{Win rates of all agents in the IEEE-CoG 2023 microRTS competition.  Player 1 is the row agent and player 2 is the column agent. Each win rate value is the percentage of games won by player 1 (the row agent).}
+    \caption{Win rates of all agents in the IEEE-CoG 2023 microRTS competition on Open maps.  Player 1 is the row agent and player 2 is the column agent. Each win rate value is the percentage of games won by player 1 (the row agent).}
     \label{tab:your_label}
     \begin{center}
     \begin{tabular}{lccccccccccccccccc|c}
