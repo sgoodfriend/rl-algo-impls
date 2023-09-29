@@ -613,7 +613,7 @@ training on the largest map to little benefit. \citet{DBLP:journals/corr/abs-210
 trained an agent for player 1 on a single 16x16 map in 60 hours. \bcPPOAgent\ trained
 on the 5 Open maps up to size 16x16 in about 7.5 days.
 
-Fine-tuning and transfer learning was critical to making \agentName\ competitive. Both
+Fine-tuning and transfer learning were critical to making \agentName\ competitive. Both
 took significantly less time than training from randomly initialized weights because the
 policy already makes reasonable tactical actions and the critic already makes
 reasonable value estimates. If future competitions change the Open maps, fine-tuning and transfer learning
@@ -651,7 +651,8 @@ single player round-robin tournaments for \agentName\
 The microRTS competition requires agents to be open sourced. Our open-sourced code
 repository includes a link to the archive used for the competition submission and
 instructions on how to run the submission in the competition
-environment\footnote{\raiMicroRTSGitHubUrl}.
+environment\footnote{\raiMicroRTSGitHubUrl}. Supplementary Material includes an
+anonymized code repository; however, links had to be removed or broken.  
 
 \bibliography{iclr2024}
 \bibliographystyle{iclr2024_conference}
@@ -704,9 +705,9 @@ environment\footnote{\raiMicroRTSGitHubUrl}.
     \caption{Policy networks used by \agentName}
     \label{tab:policy-networks}
     \begin{center}
-        \begin{tabular}{|p{0.5\linewidth}|p{0.5\linewidth}|}
+        \begin{tabular}{p{0.5\linewidth}p{0.5\linewidth}}
             \multicolumn{1}{c}{\bf Network}  &\multicolumn{1}{c}{\bf Usage} \\
-            \hline
+            \midrule
             ppo-Microrts-finetuned-NoWhereToRun-S1-best & NoWhereToRun9x8 \\ \hline
             ppo-Microrts-A6000-finetuned-coac-mayari-S1-best & All other maps of size 16x16 and smaller \\ \hline
             ppo-Microrts-finetuned-DoubleGame-shaped-S1-best & DoubleGame24x24 \\ \hline
@@ -715,7 +716,6 @@ environment\footnote{\raiMicroRTSGitHubUrl}.
             ppo-Microrts-squnet-map32-128ch-selfplay-S1-best & All other maps where longest dimension is between 17-32 \\ \hline
             ppo-Microrts-squnet-map64-64ch-selfplay-S1-best & Maps where the longest
             dimension is over 32 \\
-            \hline
         \end{tabular}
     \end{center}
 \end{table}
@@ -796,24 +796,16 @@ The adaptive average pooling layer allows the network to be used on different ma
         \caption{Comparison of different architectures}
         \label{table:architectureBreakdown}
         \begin{tabular}{cccc}
-            & \textbf{DoubleCone} & \textbf{squnet-map32\tnote{\P}} & \textbf{squnet-map64} \\ [0.5ex] 
-            \hline
+            & \textbf{DoubleCone} & \textbf{squnet-map32\tnote{\P}} & \textbf{squnet-map64} \\
+            \midrule
             Levels & 2 & 4 & 4 \\
-            \hline
             Encoder residual blocks/level & [4, 6] & [1, 1, 1, 1] & [1, 1, 1, 1] \\
-            \hline
             Decoder residual blocks/level & [4] & [1, 1, 1] & [1, 1, 1] \\
-            \hline
             Stride/level & [4] & [2, 2, 4] & [2, 4, 4] \\
-            \hline
             Deconvolution strides/level & [[2, 2]\tnote{*}] & [2, 2, 4] & [2, 4, 4] \\
-            \hline
             Channels/level & [128, 128] & [128, 128, 128, 128] & [64, 64, 64, 64] \\
-            \hline
             Trainable parameters & 5,014,865 & 3,584,657 & 1,420,625 \\
-            \hline
             MACs\tnote{\dag} & \begin{tabular}[c]{@{}c@{}}0.70B (16x16)\tnote{\ddag} \\ 0.40B (12x12)\tnote{\S} \\ 1.58B (24x24) \\ 2.81B (32x32)\end{tabular} & 1.16B (32x32) & 1.41B (64x64) \\ 
-            \hline
         \end{tabular}
         \begin{tablenotes}
             \item[\P] Used by ppo-Microrts-squnet-DistantResources-128ch-finetuned-S1-best and ppo-Microrts-squnet-map32-128ch-selfplay-S1-best. 
@@ -835,16 +827,15 @@ The adaptive average pooling layer allows the network to be used on different ma
     \caption{Comparison of initial training, shaped fine-tuning, and sparse fine-tuning parameters}
     \label{tab:training-parameters}
     \begin{tabular}{lccc}
-    \toprule
     Parameter & Initial Training & Shaped Fine-Tuning & Sparse Fine-Tuning \\
     \midrule
     Steps & 300M &   100M &   100M \\
-    n\_envs & 24 &    \textquotedbl &    \textquotedbl \\
+    Number of Environments & 24 &    \textquotedbl &    \textquotedbl \\
     Rollout Steps Per Env & 512 &   \textquotedbl &   \textquotedbl \\
     Minibatch Size & 4096 &   \textquotedbl &   \textquotedbl \\
     Epochs Per Rollout & 2 &   \textquotedbl &   \textquotedbl \\
-    Gamma & [0.99, 0.999, 0.999]\tnote{*} &   \textquotedbl &   \textquotedbl \\
-    gae\_lambda & [0.95, 0.99, 0.99]\tnote{\P} &   \textquotedbl &   \textquotedbl \\
+    $\gamma$ (Discount Factor) & [0.99, 0.999, 0.999]\tnote{*} &   \textquotedbl &   \textquotedbl \\
+    GAE $\lambda$ & [0.95, 0.99, 0.99]\tnote{\P} &   \textquotedbl &   \textquotedbl \\
     Clip Range & 0.1 &   \textquotedbl &   \textquotedbl \\
     Clip Range VF & 0.1 &    \textquotedbl &   \textquotedbl \\
     VF Coef Halving\tnote{‡} & True  &    \textquotedbl &   \textquotedbl \\
@@ -855,7 +846,6 @@ The adaptive average pooling layer allows the network to be used on different ma
     Maps   &   \begin{tabular}[c]{@{}c}basesWorkers16x16A \\ TwoBasesBarracks16x16 \\
     basesWorkers8x8A \\ FourBasesWorkers8x8 \\ NoWhereToRun9x8 \\
     EightBasesWorkers16x16\tnote{\dag} \end{tabular} &  \textquotedbl & \textquotedbl \\
-    \bottomrule
     \end{tabular}
     \begin{tablenotes}
     \item[\textquotedbl] Same value as cell to left.
@@ -1044,6 +1034,191 @@ The adaptive average pooling layer allows the network to be used on different ma
     \end{threeparttable}
 \end{table}
 
+\begin{table}[H]
+    \caption{Behavior cloning training parameters. \textquotedbl\ means same value as the cell to the left.}
+    \label{tab:bc-training-parameters}
+    \begin{center}
+    \begin{tabular}{lccc}
+    Map Size & 16x16 & 32x32 & 64x64 \\
+    \midrule
+    Steps & 100M & \textquotedbl & \textquotedbl \\
+    Number of Environments & 36 & 24 & 24 \\
+    Rollout Steps Per Env & 512 & \textquotedbl & \textquotedbl \\
+    Minibatch Size & 3072 & 768 & 192 \\
+    Epochs Per Rollout & 2 & \textquotedbl & \textquotedbl \\
+    $\gamma$ (Discount Factor) & 0.999 & 0.9996 & 0.999 \\
+    GAE $\lambda$ & 0.99 & 0.996 & 0.999 \\
+    Max Grad Norm & 0.5 & \textquotedbl & \textquotedbl \\
+    Gradient Accumulation & FALSE & FALSE & TRUE \\
+    Scale Loss by \# Actions & TRUE & \textquotedbl & \textquotedbl \\
+    \hline
+    Bots & \begin{tabular}[c]{@{}c@{}}Mayari: 12\\ CoacAI: 12\\ POLightRush:
+    12\end{tabular} & \begin{tabular}[c]{@{}c@{}}Mayari: 12\\ CoacAI: 6\\ POLightRush:
+    6\end{tabular} & \begin{tabular}[c]{@{}c@{}}Mayari: 8\\ CoacAI: 8\\ POLightRush:
+    8\end{tabular} \\
+    \hline
+    Maps & \begin{tabular}[c]{@{}c@{}}basesWorkers16x16A\\ TwoBasesBarracks16x16\\
+    basesWorkers8x8A\\ FourBasesWorkers8x8\\ NoWhereToRun9x8\\
+    EightBasesWorkers16x16\end{tabular} & \begin{tabular}[c]{@{}c@{}}DoubleGame24x24\\
+    BWDistantResources32x32\\ chambers32x32\end{tabular} &
+    \begin{tabular}[c]{@{}c@{}}(4)BloodBath.scmB\\ (4)BloodBath.scmE\end{tabular}
+    \end{tabular}
+\end{center}
+\end{table}
+
+\begin{table}[H]
+    \caption{Training parameters for PPO of behavior cloned models. \textquotedbl\ means same value as the cell to the left.}
+    \label{tab:bc-ppo-training-parameters}
+    \begin{center}
+    \begin{tabular}{lccc}
+    Map Size & 16x16 & 32x32 & 64x64 \\
+    \midrule
+    Steps & 100M & 200M & 200M \\
+    Number of Environments & 36 & 24 & 48 \\
+    Rollout Steps Per Env & 512 & \textquotedbl & \textquotedbl \\
+    Minibatch Size & 3072 & 768 & 192 \\
+    Epochs Per Rollout & 2 & \textquotedbl & \textquotedbl \\
+    {\color[HTML]{1A1A1A} $\gamma$ (Discount Factor)} & 0.999 & 0.9996 & 0.99983 \\
+    GAE $\lambda$ & 0.99 & 0.996 & 0.9983 \\
+    Clip Range & 0.1 & \textquotedbl & \textquotedbl \\
+    Clip Range VF & none & \textquotedbl & \textquotedbl \\
+    VF Coef Halving‡ & TRUE & \textquotedbl & \textquotedbl \\
+    Max Grad Norm & 0.5 & \textquotedbl & \textquotedbl \\
+    Gradient Accumulation & FALSE & TRUE & TRUE \\
+    Latest Selfplay Envs & 12 & 12 & 28 \\
+    Old Selfplay Envs & 12 & 6 & 12 \\
+    Bots & \begin{tabular}[c]{@{}c@{}}Mayari: 6\\ CoacAI: 6\end{tabular} & \begin{tabular}[c]{@{}c@{}}Mayari: 3\\ CoacAI: 3\end{tabular} & \begin{tabular}[c]{@{}c@{}}Mayari: 2\\ CoacAI: 2\\ POLightRush: 2\\ POWorkerRush: 2\end{tabular} \\
+    Maps & \begin{tabular}[c]{@{}c@{}}basesWorkers16x16A\\ TwoBasesBarracks16x16\\ basesWorkers8x8A\\ FourBasesWorkers8x8\\ NoWhereToRun9x8\\ EightBasesWorkers16x16\end{tabular} & \begin{tabular}[c]{@{}c@{}}DoubleGame24x24\\ BWDistantResources32x32\\ chambers32x32\end{tabular} & \begin{tabular}[c]{@{}c@{}}(4)BloodBath.scmB\\ (4)BloodBath.scmE\end{tabular}
+    \end{tabular}
+\end{center}
+\end{table}
+
+\begin{table}[H]
+    \caption{Behavior cloning schedule for 32x32 and 64x64 maps. Values in transitions are cosine interpolated.}
+    \label{tab:bc-schedule}
+    \begin{center}
+    \begin{tabular}{lccccc}
+    & Start & Transition →1 & Phase 1 & Transition 1→2 & Phase 2 \\
+    \midrule
+    &  & 5M & 5M & 85M & 5M \\
+    learning rate & $10^{-5}$ &  & $8 \times 10^{-5}$ &  & $10^{-6}$
+    \end{tabular}
+\end{center}
+\end{table}
+
+\begin{table}[H]
+    \caption{Schedule for PPO fine-tuning of behavior cloned model for 16x16 map. Transition values are cosine interpolated.}
+    \label{tab:bc-ppo-schedule-map16}
+    \begin{center}
+    \begin{tabular}{lccccc}
+    & Start & Transition →1 & Phase 1 & Transition 1→2 & Phase 2 \\
+    \midrule
+    &  & 5M & 5M & 85M & 5M \\
+    $c_2$ (entropy coef) & 0.001 &  & 0.001 &  & 0.0001 \\
+    learning rate & $10^{-5}$ &  & $5 \times 10^{-5}$ &  & $10^{-5}$ \\
+    \end{tabular}
+\end{center}
+\end{table}
+
+\begin{table}[H]
+    \caption{Schedule for PPO fine-tuning of behavior cloned model for 32x32 map. Transition values are cosine interpolated.}
+    \label{tab:bc-ppo-schedule-map32}
+    \begin{center}
+    \begin{tabular}{lccccc}
+    & Start & Transition →1 & Phase 1 & Transition 1→2 & Phase 2 \\
+    \midrule
+    &  & 10M & 80M & 70M & 40M \\
+    $c_2$ (entropy coef) & 0.001 &  & 0.001 &  & 0.0001 \\
+    learning rate & $10^{-5}$ &  & $5 \times 10^{-5}$ &  & $10^{-5}$ \\
+    \end{tabular}
+\end{center}
+\end{table}
+
+\begin{table}[H]
+    \caption{Schedule for PPO fine-tuning of behavior cloned model for 64x64 map. Transition values are cosine interpolated. Transition 1→2 being empty means values jump from Phase 1 to Phase 2.}
+    \label{tab:bc-ppo-schedule-map64}
+    \begin{center}
+        \begin{tabular}{lccccccccc}
+            & \begin{sideways} Start \end{sideways} & \begin{sideways} Transition →1
+            \end{sideways} & \begin{sideways} Phase 1 \end{sideways} & \begin{sideways}
+            Transition 1→2 \end{sideways} & \begin{sideways} Phase 2 \end{sideways} &
+            \begin{sideways} Transition 2→3 \end{sideways} & \begin{sideways} Phase 3
+            \end{sideways} & \begin{sideways} Transition 3→4 \end{sideways} &
+            \begin{sideways} Phase 4 \end{sideways} \\
+            \midrule
+            &  & 10M &  &  &  & 40M & 80M & 66M & 4M \\
+           $c_2$ (entropy coef) & 0 &  & 0 &  & 0.001 &  & 0.001 &  & 0.0001 \\
+           learning rate & $10^{-6}$ &  & $5 \times 10^{-5}$ & & $10^{-6}$ &  & $5 \times 10^{-5}$ &  & $10^{-6}$ \\
+           \begin{tabular}[c]{@{}l@{}}freeze backbone \\ and policy head\end{tabular} & TRUE &  & TRUE &  & FALSE &  & FALSE &  & FALSE
+    \end{tabular}
+\end{center}
+\end{table}
+
+\section{Training durations}
+\label{appendix:training-durations}
+\begin{table}[H]
+    \caption{\agentName\ training durations. Blank models are intermediate models that
+    lead to the next row. For example, the first 3 runs are intermediate models for
+    16x16. Runs are uploaded to the \wbProject, except
+    for squnet-DistantResources (\microRTSWBProjectPath).}
+    \label{tab:training-durations}
+    \begin{center}
+    \begin{tabular}{ccc}
+        Model & Run ID & Days Training \\
+        \midrule
+         & \texttt{df4flrs4} & 12.5 \\
+         & \texttt{9bz7wsuv} & 2.7 \\
+         & \texttt{tff7xk4b} & 4.1 \\
+        16x16 & \texttt{1ilo9yae} & 4.3 \\
+        \hline
+         & \texttt{hpp5pffx} & 1.9 \\
+        NoWhereToRun9x8 & \texttt{vmns9sbe} & 1.7 \\
+        \hline
+        DoubleGame24x24 & \texttt{unnxtprk} & 5.3 \\
+        \hline
+        BWDistantResources32x32 & \texttt{x4tg80vk} & 3.6 \\
+        \hline
+        32x32 & \texttt{tga53t25} & 10.2 \\
+        squnet-DistantResources & \texttt{jl8zkpfr} & 5.0 \\
+        \hline
+        64x64 & \texttt{nh5pdv4o} & 19.0 \\
+        \hline
+         &  & 70.4
+    \end{tabular}
+\end{center}
+\end{table}
+
+\begin{table}[H]
+    \caption{Behavior cloning training durations. Runs are uploaded to the \microRTSWBProject.}
+    \label{tab:bc-training-durations}
+    \begin{center}
+    \begin{tabular}{llc}
+        Map Size & Run ID & Days Training \\
+        \midrule
+        16x16 & \texttt{lhs1b2gj} & 3.5 \\
+        32x32 & \texttt{16o4391r} & 4.7 \\
+        64x64 & \texttt{uksp6znl} & 15.1 \\
+        \hline
+        \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & 23.3
+    \end{tabular}
+\end{center}
+\end{table}
+
+\begin{table}[H]
+    \caption{Training durations for PPO fine-tuning of behavior cloned models. Runs are uploaded to the \microRTSWBProject.}
+    \label{tab:bc-ppo-training-durations}
+    \begin{center}
+    \begin{tabular}{llc}
+        Map Size & Run ID & Days Training \\
+        \midrule
+        16x16 & \texttt{a4efzeug} & 4.0 \\
+        32x32 & \texttt{042rwd8p} & 11.3 \\
+        64x64 & \texttt{9l2debnz} & 33.9 \\
+        \hline
+        \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & 49.1
+    \end{tabular}
+\end{center}
+\end{table}
 
 \section{Single player round-robin benchmark setup}
 \label{appendix:single-player-benchmark-setup}
