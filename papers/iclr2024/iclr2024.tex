@@ -36,21 +36,21 @@
 
 \maketitle
 \begin{abstract}
-    Scripted agents have predominantly won the five
-    previous iterations of the IEEE microRTS ($\mu$RTS) competitions hosted at CIG and
-    CoG. Despite Deep Reinforcement Learning (DRL) algorithms making significant strides
-    in RTS-style games, their adoption has been limited in this primarily academic
-    competition due to the considerable training resources required and the complexity
-    inherent in creating and debugging such agents. \agentName\ is the first DRL agent
-    to win the IEEE microRTS competition. In a benchmark without performance
-    constraints, \agentName\ regularly defeated the two
-    prior competition winners. This first competition-winning DRL submission can be
-    a benchmark for future microRTS competitions and a starting point for future DRL
-    research. Iteratively fine-tuning the base policy and transfer learning to specific maps was 
-    critical to \agentName's winning performance, strategies that could be used in
-    economically training future DRL agents. Further work in Imitation Learning using Behavior Cloning and
-    fine-tuning such models with DRL has proven promising as an even more efficient way
-    to bootstrap models with novel behaviors.
+Scripted agents have predominantly won the five
+previous iterations of the IEEE microRTS ($\mu$RTS) competitions hosted at CIG and
+CoG. Despite Deep Reinforcement Learning (DRL) algorithms making significant strides
+in RTS-style games, their adoption has been limited in this primarily academic
+competition due to the considerable training resources required and the complexity
+inherent in creating and debugging such agents. \agentName\ is the first DRL agent
+to win the IEEE microRTS competition. In a benchmark without performance
+constraints, \agentName\ regularly defeated the two
+prior competition winners. This first competition-winning DRL submission can be
+a benchmark for future microRTS competitions and a starting point for future DRL
+research. Iteratively fine-tuning the base policy and transfer learning to specific maps was 
+critical to \agentName's winning performance, strategies that could be used in
+economically training future DRL agents. Further work in Imitation Learning using Behavior Cloning and
+fine-tuning such models with DRL has proven promising as an even more efficient way
+to bootstrap models with novel behaviors.
 \end{abstract}
 \section{Introduction}
 Deep reinforcement learning (DRL) has proven to be powerful at solving complex
@@ -75,7 +75,7 @@ several reasons:
 
 microRTS (stylized as $\mu$RTS) is a minimalist, open-source, two-player, zero-sum RTS game testbed designed for research
 purposes \citep{Ontan2013TheCM}. It includes many aspects of RTS games, simplified: different unit types, unit-specific
-actions, terrain, resource collection and consuptiom to build units, and unit-to-unit combat
+actions, terrain, resource collection and utilization to build units, and unit-to-unit combat
 where units have different strengths and weaknesses. microRTS also supports fog of war
 and non-determinism; however, these were disabled for the IEEE-CoG2023 microRTS
 competition.
@@ -104,7 +104,7 @@ available to use for imitation learning. Work following the
 competition shows that behavior cloning and fine-tuning with DRL can be used to train a
 competitive agent more economically. Using the same playthroughs to train the critic
 heads on win-loss rewards means that DRL can be trained with just sparse win-loss
-rewards, eliminating the handcrated reward function required to train with DRL in microRTS.
+rewards, eliminating the handcrafted reward function required to train with DRL in microRTS.
 
 \section{Related Work}
 \subsection{MicroRTS-Py}
@@ -185,6 +185,7 @@ middle residual blocks are downscaled 4x to reduce inference time.
 
 
 \section{Methods}
+\label{sec:methods}
 \subsection{Neural network architecture}
 We reimplement much of MicroRTS-Py, including the PPO implementation, action
 composition, shaped reward function, invalid action masking, GridNet, self-play, and
@@ -241,7 +242,7 @@ functions:
 \end{inparaenum}
 These 3 value heads are used to mix-and-match rewards over the course of training,
 generally starting with dense rewards using heads (1) and (3) and finishing with only
-win-loss sparase rewards by the end.
+win-loss sparse rewards by the end.
 
 \subsection{Base model training}
 We train using the PPO loss function from \citet{DBLP:journals/corr/SchulmanWDRK17}:
@@ -402,7 +403,7 @@ In a single player round-robin benchmark on the Open maps (Table~\ref{tab:single
 beat the competition winners of 2021 (Mayari), 2020 (CoacAI), and 2017 (POLightRush,
 baseline) on 7 of the 8 maps (winning over 96\% of games on these maps). \agentName\
 could only beat the POWorkerRush baseline bot on the largest map,
-\texttt{(4)BloodBath.scmB}. The DistantResources-finetuned squnet model performed worse than the DoubleCone model
+\texttt{(4)BloodBath.scmB}. The DistantResources fine-tuned squnet model performed worse than the DoubleCone model
 across all opponents, but maintained an over 50\% win rate against all but CoacAI. Timeouts didn't affect results significantly.
 
 \subsection{IEEE-CoG2023 microRTS competition results}
@@ -445,7 +446,7 @@ two baselines, \agentName\ had an over 50\% win rate versus every opponent inclu
     \label{tab:competition-winrate}
     \begin{center}
     \begin{tabular}{lcccccc|c}
-    & \begin{sideways} mayari \end{sideways} 
+    & \begin{sideways} Mayari \end{sideways} 
     & \begin{sideways} 2L \end{sideways} 
     & \begin{sideways} \textbf{\agentName} \end{sideways} 
     & \begin{sideways} ObiBotKenobi \end{sideways} 
@@ -453,7 +454,7 @@ two baselines, \agentName\ had an over 50\% win rate versus every opponent inclu
     & \begin{sideways} POWorkerRush \end{sideways} 
     & \begin{sideways} Overall \end{sideways} \\
     \midrule
-    mayari (2021 winner) & - & \textbf{53} & 32 & \textbf{73} & \textbf{88} & \textbf{75} & 82 \\
+    Mayari (2021 winner) & - & \textbf{53} & 32 & \textbf{73} & \textbf{88} & \textbf{75} & 82 \\
     2L (baseline) & 51 & - & 39 & \textbf{50} & \textbf{75} & \textbf{88} & 76 \\
     \textbf{\agentName} (2023 winner) & \textbf{62} & \textbf{59} & - & \textbf{49} & \textbf{64} & \textbf{78} & 72 \\
     ObiBotKenobi (2023 2nd place) & 39 & 29 & 47 & - & \textbf{58} & \textbf{65} & 66 \\
@@ -468,16 +469,16 @@ two baselines, \agentName\ had an over 50\% win rate versus every opponent inclu
     \label{tab:competition-winrate-by-map}
     \begin{center}
     \begin{tabular}{lccccc|c}
-    & \begin{sideways}POWorkerRush\end{sideways} & \begin{sideways}POLightRush\end{sideways} & \begin{sideways}ObiBotKenobi\end{sideways} & \begin{sideways}2L\end{sideways} & \begin{sideways}mayari\end{sideways} & \begin{sideways}Overall\end{sideways}\\ 
+    & \begin{sideways}POWorkerRush\end{sideways} & \begin{sideways}POLightRush\end{sideways} & \begin{sideways}ObiBotKenobi\end{sideways} & \begin{sideways}2L\end{sideways} & \begin{sideways}Mayari\end{sideways} & \begin{sideways}Overall\end{sideways}\\ 
     \midrule
-    basesWorkers8x8A & \textbf{60} & \textbf{70} & \textbf{60} & \textbf{60} & \textbf{60} & \textbf{66}\\ 
-    FourBasesWorkers8x8 & \textbf{100} & \textbf{100} & 21 & \textbf{97} & \textbf{100} & \textbf{95}\\ 
-    NoWhereToRun9x8 & \textbf{90} & \textbf{85} & \textbf{83} & \textbf{70} & \textbf{70} & \textbf{84}\\
-    basesWorkers16x16A & \textbf{100} & \textbf{100} & \textbf{95} & \textbf{100} & \textbf{100} & \textbf{100}\\
-    TwoBasesBarracks16x16 & \textbf{80} & \textbf{80} & 10 & \textbf{70} & \textbf{80} & \textbf{75}\\
-    DoubleGame24x24 & \textbf{80} & \textbf{75} & \textbf{78} & \textbf{80} & \textbf{75} & \textbf{80}\\ 
-    BWDistantResources32x32 & 50 & 30 & 35 & 3 & 35 & \textbf{54}\\
-    (4)BloodBath.scmB & \textbf{70} & 0 & 28 & 0 & 0 & 34\\ 
+    \texttt{basesWorkers8x8A} & \textbf{60} & \textbf{70} & \textbf{60} & \textbf{60} & \textbf{60} & \textbf{66}\\ 
+    \texttt{FourBasesWorkers8x8} & \textbf{100} & \textbf{100} & 21 & \textbf{97} & \textbf{100} & \textbf{95}\\ 
+    \texttt{NoWhereToRun9x8} & \textbf{90} & \textbf{85} & \textbf{83} & \textbf{70} & \textbf{70} & \textbf{84}\\
+    \texttt{basesWorkers16x16A} & \textbf{100} & \textbf{100} & \textbf{95} & \textbf{100} & \textbf{100} & \textbf{100}\\
+    \texttt{TwoBasesBarracks16x16} & \textbf{80} & \textbf{80} & 10 & \textbf{70} & \textbf{80} & \textbf{75}\\
+    \texttt{DoubleGame24x24} & \textbf{80} & \textbf{75} & \textbf{78} & \textbf{80} & \textbf{75} & \textbf{80}\\ 
+    \texttt{BWDistantResources32x32} & 50 & 30 & 35 & 3 & 35 & \textbf{54}\\
+    \texttt{(4)BloodBath.scmB} & \textbf{70} & 0 & 28 & 0 & 0 & 34\\ 
     \hline
     AI Average & \textbf{79} & \textbf{68} & \textbf{51} & \textbf{60} & \textbf{65} & \textbf{74}\\ 
     \end{tabular}
@@ -490,16 +491,17 @@ smaller maps and dismally on the largest maps
 underperformed against agents already benchmarked in the single player round-robin
 (14-19\% lower win rate against each agent), even accounting for the likely use of
 the weaker squnet model on \texttt{BWDistantResources32x32}.  Breaking down by map, 
-\agentName\ underperformed against benchmarked agents by 20-40\% on 6 maps.
+\agentName\ underperformed against benchmarked agents by 20-40\% on 5 maps.
 
 The competition ran the tournament in jobs splitting each map into 5 or 10 jobs where
 each job would run a complete round-robin with all agents on that map playing 2 or 1
 games as player 1 and 2 each. For \texttt{basesWorkers8x8A}, on which \agentName\
 underperformed by almost 40\%, the competition had 5 jobs. On the first 3 jobs,
 \agentName\ won nearly every game. On the last 2 jobs, \agentName\ lost nearly every
-game. This suggests \agentName's performance could depend on the job environment.
+game. 1 or 2 jobs per underperforming map appear to have outlier low win rates
+for \agentName\ (Table~\ref{tab:outlier-winrate}).
 
-\subsection{Behavior cloning}
+\subsection{Behavior cloning results}
 \label{sec:behavior-cloning-results}
 We created 2 additional agents from the behavior cloning (\bcAgent) and the following
 PPO fine-tuning (\bcPPOAgent). Each agent consisted of the models trained on their
@@ -514,14 +516,14 @@ map-specific models.
     \begin{tabular}{lcccc|c}
     & POWorkerRush & POLightRush & CoacAI & Mayari & Overall \\
     \midrule
-    basesWorkers8x8A & \textbf{92} & \textbf{100} & \textbf{85} & \textbf{100} & \textbf{94} \\
-    FourBasesWorkers8x8 & \textbf{100} & \textbf{100} & \textbf{100} & \textbf{100} & \textbf{100} \\
-    NoWhereToRun9x8 & \textbf{100} & \textbf{100} & \textbf{90} & \textbf{80} & \textbf{92} \\
-    basesWorkers16x16A & \textbf{100} & \textbf{100} & \textbf{95} & \textbf{95} & \textbf{98} \\
-    TwoBasesBarracks16x16 & \textbf{100} & 0 & \textbf{100} & \textbf{95} & \textbf{74} \\
-    DoubleGame24x24 & \textbf{98} & \textbf{85} & \textbf{100} & \textbf{100} & \textbf{96} \\
-    BWDistantResources32x32 & \textbf{100} & \textbf{100} & \textbf{95} & \textbf{100} & \textbf{99} \\
-    (4)BloodBath.scmB & \textbf{100} & \textbf{88} & 0 & 5 & 48 \\
+    \texttt{basesWorkers8x8A} & \textbf{92} & \textbf{100} & \textbf{85} & \textbf{100} & \textbf{94} \\
+    \texttt{FourBasesWorkers8x8} & \textbf{100} & \textbf{100} & \textbf{100} & \textbf{100} & \textbf{100} \\
+    \texttt{NoWhereToRun9x8} & \textbf{100} & \textbf{100} & \textbf{90} & \textbf{80} & \textbf{92} \\
+    \texttt{basesWorkers16x16A} & \textbf{100} & \textbf{100} & \textbf{95} & \textbf{95} & \textbf{98} \\
+    \texttt{TwoBasesBarracks16x16} & \textbf{100} & 0 & \textbf{100} & \textbf{95} & \textbf{74} \\
+    \texttt{DoubleGame24x24} & \textbf{98} & \textbf{85} & \textbf{100} & \textbf{100} & \textbf{96} \\
+    \texttt{BWDistantResources32x32} & \textbf{100} & \textbf{100} & \textbf{95} & \textbf{100} & \textbf{99} \\
+    \texttt{(4)BloodBath.scmB} & \textbf{100} & \textbf{88} & 0 & 5 & 48 \\
     \hline
     AI Average & \textbf{99} & \textbf{84} & \textbf{83} & \textbf{84} & \textbf{88} \\
     \end{tabular}
@@ -595,7 +597,7 @@ transition from behavior cloning to DRL.
 
 \subsection{Behavior cloning, transfer learning, and academic competitions}
 Training multiple models for \agentName\ took 70 GPU-days. Imitation learning \bcAgent\
-trained for 23 GPU-days, and PPO fine-tuning \bcPPOAgent\ took another 50 GPU-days. 
+trained for 23 GPU-days, and PPO fine-tuning \bcPPOAgent\ took another 49 GPU-days. 
 These are significant amounts of compute for a mostly academic competition.
 
 There are several ways to make DRL more feasible in a competition and educational setting:
@@ -636,7 +638,22 @@ to create competitive DRL agents with desired behaviors without needing to handc
 shaped reward functions.
 
 \section{Reproducibility Statement}
-
+Our Methods section describes the architecture and training process for \agentName,
+\bcAgent, and \bcPPOAgent. We give additional details in Appendices:
+\begin{inparaenum}[]
+    \item Appendix~\ref{appendix:architecture} neural network architectures,
+    \item Appendix~\ref{appendix:initial-training-details} initial training details,
+    \item Appendix~\ref{appendix:transfer-learning-details} transfer learning details,
+    \item Appendix~\ref{appendix:squnet-learning-details} squnet learning details, and
+    \item Appendix~\ref{appendix:behavior-cloning-details} behavior cloning details.
+\end{inparaenum}
+Appendix~\ref{appendix:single-player-benchmark-setup} describes the setup of the
+single player round-robin tournaments for \agentName\
+(Section~\ref{sec:single-player-benchmark}), \bcAgent, and \bcPPOAgent\ (Section~\ref{sec:behavior-cloning-results}).
+The microRTS competition requires agents to be open sourced. Our open-sourced code
+repository includes a link to the archive used for the competition submission and
+instructions on how to run the submission in the competition
+environment\footnote{\raiMicroRTSGitHubUrl}.
 
 \bibliography{iclr2024}
 \bibliographystyle{iclr2024_conference}
@@ -721,6 +738,7 @@ choosing DoubleCone if it computed actions within 75 ms on average.
 
 
 \section{Neural network architecture}
+\label{appendix:architecture}
 DoubleCone(4, 6, 4) (\citep{Ferdinand2021doublecone}) consists of
 \begin{inparaenum}[(1)]
     \item 4 residual blocks;
@@ -810,6 +828,7 @@ The adaptive average pooling layer allows the network to be used on different ma
 \end{table}
 
 \section{Initial training details}
+\label{appendix:initial-training-details}
 \agentName\ was trained with partial observability and environment non-determinism disabled.
 
 \begin{table}[H]
@@ -919,6 +938,7 @@ The adaptive average pooling layer allows the network to be used on different ma
 \end{table}
 
 \section{Transfer learning details}
+\label{appendix:transfer-learning-details}
 
 \begin{table}[H]
     \centering
@@ -944,6 +964,8 @@ The adaptive average pooling layer allows the network to be used on different ma
 \end{table}
 
 \section{squnet learning details}
+\label{appendix:squnet-learning-details}
+
 \begin{table}[H]
     \centering
     \begin{threeparttable}
@@ -961,7 +983,7 @@ The adaptive average pooling layer allows the network to be used on different ma
     Clip Range VF & none & \textquotedbl & \textquotedbl \\
     Latest Self-play Envs & 12 & \textquotedbl & \textquotedbl \\
     Old Self-play Envs & 6 & 6 & 4 \\
-    Bots & \begin{tabular}[c]{@{}c}coacAI: 3 \\ mayari: 3 \end{tabular} & \begin{tabular}[c]{@{}c}coacAI: 3 \\ mayari: 3 \end{tabular} & \begin{tabular}[c]{@{}c}coacAI: 4 \\ mayari: 4 \end{tabular} \\
+    Bots & \begin{tabular}[c]{@{}c}CoacAI: 3 \\ Mayari: 3 \end{tabular} & \begin{tabular}[c]{@{}c}CoacAI: 3 \\ Mayari: 3 \end{tabular} & \begin{tabular}[c]{@{}c}CoacAI: 4 \\ Mayari: 4 \end{tabular} \\
     Maps & \begin{tabular}[c]{@{}c}DoubleGame24x24 \\ BWDistantResources32x32 \\ chambers32x32\tnote{*} \end{tabular} & BWDistantResources32x32 & \begin{tabular}[c]{@{}c}BloodBath.scmB \\ BloodBath.scmE\tnote{*}\end{tabular} \\   
     \bottomrule
     \end{tabular}
@@ -995,7 +1017,8 @@ The adaptive average pooling layer allows the network to be used on different ma
     \end{threeparttable}
 \end{table}
 
-\section{Behavior cloning bootstrapped training details}
+\section{Behavior cloning details}
+\label{appendix:behavior-cloning-details}
 \begin{table}[H]
     \centering
     \begin{threeparttable}
@@ -1025,6 +1048,7 @@ The adaptive average pooling layer allows the network to be used on different ma
 
 
 \section{Single player round-robin benchmark setup}
+\label{appendix:single-player-benchmark-setup}
 In Section~\ref{sec:single-player-benchmark}, \agentName\ plays on the 8 Open maps
 against 4 opponents:
 \begin{inparaenum}[(1)]
@@ -1052,8 +1076,7 @@ In Section~\ref{sec:behavior-cloning-results}, \bcAgent\ and \bcPPOAgent\ play e
     \label{tab:all-competition-winrate}
     \begin{center}
     \begin{tabular}{lccccccccccccccccc|c}
-    \toprule
-    & \begin{sideways} mayari \end{sideways} & \begin{sideways} 2L \end{sideways} 
+    & \begin{sideways} Mayari \end{sideways} & \begin{sideways} 2L \end{sideways} 
     & \begin{sideways} \textbf{\agentName} \end{sideways} & \begin{sideways} ObiBotKenobi \end{sideways} 
     & \begin{sideways} Aggrobot \end{sideways} & \begin{sideways} sophia \end{sideways} 
     & \begin{sideways} bRHEAdBot \end{sideways} & \begin{sideways} Ragnar \end{sideways} 
@@ -1063,7 +1086,7 @@ In Section~\ref{sec:behavior-cloning-results}, \bcAgent\ and \bcPPOAgent\ play e
     & \begin{sideways} NIlSiBot \end{sideways} & \begin{sideways} Predator \end{sideways} 
     & \begin{sideways} RandomBiasedAI \end{sideways} & \begin{sideways} Overall \end{sideways} \\
     \midrule
-    mayari         & -      & 53 & 32          & 73           & 78       & 93     & 95        & 64     & 88          & 93            & 75           & 78            & 100       & 100   & 100      & 100      & 100            & 82      \\
+    Mayari         & -      & 53 & 32          & 73           & 78       & 93     & 95        & 64     & 88          & 93            & 75           & 78            & 100       & 100   & 100      & 100      & 100            & 82      \\
     2L             & 51     & -  & 39          & 50           & 69       & 63     & 93        & 56     & 75          & 98            & 88           & 81            & 76        & 94    & 94       & 95       & 96             & 76      \\
     \textbf{\agentName}    & 62     & 59 & -           & 49           & 64       & 71     & 64        & 64     & 64          & 78            & 78           & 76            & 84        & 94    & 73       & 87       & 87             & 72      \\
     ObiBotKenobi   & 39     & 29 & 47          & -            & 47       & 69     & 60        & 56     & 58          & 83            & 65           & 76            & 72        & 99    & 79       & 85       & 100            & 66      \\
@@ -1082,8 +1105,42 @@ In Section~\ref{sec:behavior-cloning-results}, \bcAgent\ and \bcPPOAgent\ play e
     RandomBiasedAI & 0      & 1  & 15          & 0            & 4        & 15     & 6
     & 9      & 4           & 52            & 4            & 13            & 18        &
     85    & 39       & 39       & - & 19 \\
-    \bottomrule
     \end{tabular}
+\end{center}
+\end{table}
+
+\begin{table}[H]
+    \caption{\agentName\ win rates split by competition job. Each map has 5 or 10 jobs that runs a round robin tournament of all agents for 2 or 1 iterations, respectively. "Outlier" jobs are bolded. "Average" is the average win rate for all jobs. "Average Removing Outliers" is the average win rate for all jobs excluding "outlier" jobs.}
+    \label{tab:outlier-winrate}
+    \begin{center}
+    \begin{tabular}{r|rrrrrrrr|l}
+    & \begin{sideways}\texttt{basesWorkers8x8A}\end{sideways} &
+    \begin{sideways}\texttt{FourBasesWorkers8x8}\end{sideways} &
+    \begin{sideways}\texttt{NoWhereToRun9x8}\end{sideways} &
+    \begin{sideways}\texttt{basesWorkers16x16A}\end{sideways} &
+    \begin{sideways}\texttt{TwoBasesBarracks16x16}\end{sideways} &
+    \begin{sideways}\texttt{DoubleGame24x24}\end{sideways} &
+    \begin{sideways}\texttt{BWDistantResources32x32}\end{sideways} &
+    \begin{sideways}\texttt{(4)BloodBath.scmB}\end{sideways} & 
+    \begin{sideways}Overall\end{sideways}\\
+    \midrule
+    & 98 & 97 & 97 & 100 & 94 & 99 & 49 & 34 &  \\
+    & 100 & 94 & 97 & 100 & \textbf{4} & 96 & 53 & 38 &  \\
+    & 100 & 95 & \textbf{33} & 100 & 92 & 100 & 54 & 38 &  \\
+    & \textbf{5} & 92 & 94 & 98 & 94 & 97 & 58 & 39 &  \\
+    & \textbf{28} & 95 & 100 & 100 & 94 & \textbf{9} & 58 & \textbf{19} &  \\
+    & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & 100 & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & 39 &  \\
+    & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & 97 & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \textbf{19} &  \\
+    & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \textbf{30} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & 44 &  \\
+    & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & 97 & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & 36 &  \\
+    & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & 95 & \multicolumn{1}{l}{} &
+    \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & 36 &  \\
+    \hline
+   Average & 66 & 95 & 84 & 100 & 75 & 80 & 54 & 34 & \multicolumn{1}{r}{74} \\
+    Average Removing Outliers & 99 & 95 & 97 & 100 & 93 & 98 & 54 & 38 & \multicolumn{1}{r}{84} \\
+    \end{tabular}
+\end{center}
+\end{table}
 
 \section{Additional behavior cloning benchmarks}
 \begin{table}[H]
@@ -1093,19 +1150,17 @@ In Section~\ref{sec:behavior-cloning-results}, \bcAgent\ and \bcPPOAgent\ play e
     \begin{tabular}{lcccc|c}
      & POWorkerRush & POLightRush & CoacAI & Mayari & Overall \\
     \midrule
-    basesWorkers8x8A & \textbf{60} & \textbf{100} & \textbf{90} & 50 & \textbf{75} \\
-    FourBasesWorkers8x8 & \textbf{100} & \textbf{100} & \textbf{85} & \textbf{65} & \textbf{88} \\
-    NoWhereToRun9x8 & \textbf{100} & \textbf{100} & \textbf{83} & \textbf{55} & \textbf{85} \\
-    basesWorkers16x16A & 10 & \textbf{100} & \textbf{100} & 28 & \textbf{60} \\
-    TwoBasesBarracks16x16 & \textbf{100} & \textbf{100} & 43 & 20 & \textbf{66} \\
-    DoubleGame24x24 & 0 & \textbf{100} & \textbf{100} & 30 & \textbf{58} \\
-    BWDistantResources32x32 & 48 & \textbf{100} & \textbf{100} & \textbf{65} & \textbf{78} \\
-    (4)BloodBath.scmB & \textbf{100} & \textbf{63} & 20 & 40 & \textbf{56} \\
+    \texttt{basesWorkers8x8A} & \textbf{60} & \textbf{100} & \textbf{90} & 50 & 75 \\
+    \texttt{FourBasesWorkers8x8} & \textbf{100} & \textbf{100} & \textbf{85} & \textbf{65} & 88 \\
+    \texttt{NoWhereToRun9x8} & \textbf{100} & \textbf{100} & \textbf{83} & \textbf{55} & 85 \\
+    \texttt{basesWorkers16x16A} & 10 & \textbf{100} & \textbf{100} & 28 & 60 \\
+    \texttt{TwoBasesBarracks16x16} & \textbf{100} & \textbf{100} & 43 & 20 & 66 \\
+    \texttt{DoubleGame24x24} & 0 & \textbf{100} & \textbf{100} & 30 & 58 \\
+    \texttt{BWDistantResources32x32} & 48 & \textbf{100} & \textbf{100} & \textbf{65} & 78 \\
+    \texttt{(4)BloodBath.scmB} & \textbf{100} & \textbf{63} & 20 & 40 & 56 \\
     \hline
     AI Average & \textbf{65} & \textbf{96} & \textbf{78} & 44 & 71 \\
     \end{tabular}
     \end{center}
-\end{table}
-\end{center}
 \end{table}
 \end{document}
