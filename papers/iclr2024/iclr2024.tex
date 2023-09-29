@@ -39,17 +39,17 @@
 Scripted agents have predominantly won the five
 previous iterations of the IEEE microRTS ($\mu$RTS) competitions hosted at CIG and
 CoG. Despite Deep Reinforcement Learning (DRL) algorithms making significant strides
-in RTS-style games, their adoption has been limited in this primarily academic
-competition due to the considerable training resources required and the complexity
+in real-time strategy (RTS) games, their adoption in this primarily academic
+competition has been limited  due to the considerable training resources required and the complexity
 inherent in creating and debugging such agents. \agentName\ is the first DRL agent
 to win the IEEE microRTS competition. In a benchmark without performance
 constraints, \agentName\ regularly defeated the two
 prior competition winners. This first competition-winning DRL submission can be
 a benchmark for future microRTS competitions and a starting point for future DRL
-research. Iteratively fine-tuning the base policy and transfer learning to specific maps was 
-critical to \agentName's winning performance, strategies that could be used in
+research. Iteratively fine-tuning the base policy and transfer learning to specific maps were 
+critical to \agentName's winning performance. These strategies can be used in
 economically training future DRL agents. Further work in Imitation Learning using Behavior Cloning and
-fine-tuning such models with DRL has proven promising as an even more efficient way
+fine-tuning these models with DRL has proven promising as an efficient way
 to bootstrap models with novel behaviors.
 \end{abstract}
 \section{Introduction}
@@ -85,18 +85,17 @@ every year since 2019 and at the Conference on Computational Intelligence and Ga
 (CIG) before that since 2017 \citep{Ontañón_Barriga_Silva_Moraes_Lelis_2018}.
 Competitors submit an agent that plays against other submissions and baselines in a round-robin tournament
 on 12 different maps: 8 Open (known beforehand) and 4 Hidden (unknown until after the
-competition results are released). Models in the IEEE microRTS competition are supposed
+competition results are released). Agents are supposed
 to submit actions every step within 100 ms. Without GPU acceleration, this is a significant constraint for deep neural
 network agents.
 
 This paper describes how the \agentName\ agent\footnote{\raiMicroRTSGitHubUrl} was
-trained and became the first DRL agent to win a microRTS competition by winning at CoG
+trained and became the first DRL agent to win the microRTS competition by winning at CoG
 in 2023. The agent consists of 7 trained neural networks, taking 70
 GPU-days to train. This significant training time combined with the general difficulty
 in debugging and fine-tuning a DRL implementation could explain why DRL hasn't been
 competitive so far. However, we demonstrate that transfer learning to specific maps was
-critical to winning the competition and more economical than training from randomly
-initialized weights. This strategy and the training framework can be a starting
+critical to winning the competition. This strategy and our training framework can be a starting
 point for future research and competition agents.
 
 While microRTS doesn't support human players, the competitions have made several agents
@@ -104,12 +103,12 @@ available to use for imitation learning. Work following the
 competition shows that behavior cloning and fine-tuning with DRL can be used to train a
 competitive agent more economically. Using the same playthroughs to train the critic
 heads on win-loss rewards means that DRL can be trained with just sparse win-loss
-rewards, eliminating the handcrafted reward function required to train with DRL in microRTS.
+rewards, eliminating the need for a handcrafted reward function.
 
 \section{Related Work}
 \subsection{MicroRTS-Py}
 \citet{DBLP:journals/corr/abs-2105-13807} released MicroRTS-Py\footnote{\url{https://github.com/Farama-Foundation/MicroRTS-Py}}, an OpenAI Gym
-wrapper for microRTS that includes a Proximal Policy Optimization (PPO, \citet{DBLP:journals/corr/SchulmanWDRK17}) implementation
+wrapper for microRTS that includes a Proximal Policy Optimization (PPO) \citep{DBLP:journals/corr/SchulmanWDRK17} implementation
 trained on 1 of the Open maps (\texttt{16x16basesWorkers}). They added action composition, a shaped reward function, invalid action
 masking, IMPALA-CNN (a convolutional neural network with residual blocks), and trained
 against a diverse set of scripted agents. The agent achieved a
@@ -127,7 +126,7 @@ computes the actions for all units in a single policy call by computing unit act
 logits for all grid positions and using a player action mask to ignore cells that don't
 have any units owned by the player. UAS performed better than GridNet (91\% vs 89\%).
 Despite UAS's better performance, MicroRTS-Py is deprecating UAS in favor of GridNet
-because UAS's more complex implementation and difficulty to incorporate self-play and
+because of UAS's more complex implementation and difficulty to incorporate self-play and
 imitation learning, both features important in \agentName\ and our further work.
 
 They also tried self-play, training the policy in games where the policy played itself. 
@@ -143,7 +142,7 @@ more maps, extend training capabilities, fix self-play, and add imitation learni
 \citet{Vinyals2019GrandmasterLI}'s AlphaStar is a grandmaster-level AI trained with DRL to play the RTS game
 StarCraft II. They created an initial set of agents through imitation learning: supervised learning
 using a dataset of observations, actions, and rewards to train a policy to mimic actions
-from the dataset. The dataset was created by sampling replays by top-quartile human
+from the dataset. The dataset was created by sampling replays of top-quartile human
 players. The supervised agents were rated in the top 16\% of human players and used as
 starting points for DRL. They created a league-based framework to train multiple agents
 in parallel, each with different opponents to beat, thus creating a diverse set of
@@ -173,10 +172,10 @@ submit agents that play against other submitted agents in a turn-based game
 environment. About once a year since 2020, Kaggle features an RTS-like Simulation competition:
 Halite, Lux AI, Kore, and Lux AI Season 2. Rules-based agents won Halite, Kore, and Lux
 AI Season 2. The first season Lux AI winning DRL agent by \citet{lux-ai-2021-winner} 
-has many similarities to MicroRTS-Py: GridNet action space, reward shaping, and
+has many similarities to MicroRTS-Py: GridNet action space, reward shaping, and an
 actor-critic training algorithm (IMPALA with additional UPGO and TD($\lambda$) loss
 terms, instead of PPO). Instead
-of training with a shaped reward function through the entirety of training, \citet{lux-ai-2021-winner}
+of training with a shaped reward function throughout training, \citet{lux-ai-2021-winner}
 used shaped rewards on a smaller map before transitioning to sparse win-loss rewards on
 larger and competition-size maps. The top DRL agent by \citet{Ferdinand2021doublecone} in the Lux AI Season 2 competition used a "DoubleCone" neural
 network backbone with critic and actor heads. DoubleCone is similar to ResNet's backbone but the 
@@ -197,18 +196,23 @@ existing codebase. We extended the observation representation in two ways:
     \item unit destinations as invalid move targets in the invalid action mask.
 \end{inparaenum}
 Only the unit's current location was considered invalid in MicroRTS-Py; however, 
-microRTS doesn't allow units to move into where another unit is moving into.
+microRTS doesn't allow units to move where another unit is moving into.
 Padded positions were represented as walls, which are impassable and noninteractive. 
 We also fixed a bug where resources (which are unowned) were being counted as
 owned by the opponent if the agent was the second
 player\footnote{\unownedFixGitHubCommit}.
 
-The submission version of the Python process loads 7 different policy networks, only one network is used
-for a given map (Table~\ref{tab:policy-networks}). Networks are chosen by prioritizing
-the compatible networks and then picking the highest priority network that is capable of
-running within the allotted time on the current hardware. Map-specific networks are
-prioritized higher than size-specific networks. Multiple networks can be prioritized for
-the same map or map size. While microRTS supports any map size (even non-square),
+\agentName\ loads 7 different policy networks. Only one network is used
+for a given map (Table~\ref{tab:policy-networks}). 
+Networks are selected by
+\begin{inparaenum}[(1)]
+    \item gathering all networks that are compatible with this map and its size,
+    \item prioritizing map-specific networks over size-specific networks, and
+    \item picking the highest priority network that can run within the allotted time on
+    the current hardware.
+\end{inparaenum}
+Multiple networks can be prioritized for the same map or map size. microRTS supports any
+map size (even non-square), and 
 observations are padded to fit the policy network. Policy actions are clipped to fit the
 map size.
 
@@ -218,7 +222,7 @@ squnet. The actor head is a convolutional layer
 that outputs logits for unit actions at every position. A unit action is composed of
 independent discrete subactions: $D = \{a_{action\ type},$ $a_{move\ direction},$ $a_{harvest\
 direction},$ $a_{return\ direction},$ $a_{produce\ direction},$ $a_{produce\ type},$ $a_{relative\
-attack\ position}\}$. This amounts to 78 logits per position. Invalid action masking sets
+attack\ position}\}$. Invalid action masking sets
 logits to a very large negative number (thus zeroing probabilities and gradients) for actions that are
 illegal or would accomplish nothing (e.g., moving a unit to an occupied or reserved
 position) \citep{DBLP:journals/corr/abs-2006-14171}. This masking significantly reduces
@@ -264,16 +268,15 @@ used in computing the policy loss ($L^{CLIP}$).
 
 The reward weights, value loss coefficients (each value
 head has its own loss coefficient), entropy coefficient, and learning rate are varied on
-a schedule. At the start of training, the policy loss heavily weighs the shaped 
+a schedule (Table~\ref{tab:initial-training-schedule}). At the start of training, the policy loss heavily weighs the shaped 
 reward advantage, and the value loss similarly weighs the shaped value head. By the end
 of training, both losses are weighted more towards the win-loss sparse reward. The entropy coefficient is also
 lowered at the end of training to discourage the agent from making random moves as the
 learning rate is lowered. The schedule specifies phases where these values are set and
-transitions between phases where values are changed linearly based on timesteps.
+transitions between phases by changing values linearly based on timesteps.
 
 We first trained \agentName\ with self-play both against itself and against prior
-versions of itself (Table~\ref{tab:training-parameters},
-Table~\ref{tab:initial-training-schedule}). We reached a 91\% win rate against the same bots MicroRTS-Py was
+versions of itself (Table~\ref{tab:training-parameters}). We reached a 91\% win rate against the same bots MicroRTS-Py was
 benchmarked against. However, it only beat CoacAI (the 2020 competition winner) in 20\%
 of games. The best performing agent of MicroRTS-Py nearly always beat CoacAI; however,
 the best versions using GridNet also usually lost against CoacAI. We fine-tuned
@@ -290,7 +293,7 @@ against each of CoacAI and Mayari.
 
 \subsection{Transfer learning}
 The model so far had been trained on the 5 smaller Open maps. Using the
-fine-tuned model as a starting point, we trained additional models each trained exclusively
+fine-tuned model as a starting point, we trained additional models, each trained exclusively
 on 1 of 3 Open maps. \texttt{NoWhereToRun9x8} is very different from the other maps with a wall of
 resources separating opponents. \texttt{DoubleGame24x24} and
 \texttt{BWDistantResources32x32} are larger than the maps the base model trained on.
@@ -301,7 +304,7 @@ All 3 transfer learning runs used the same schedule:
     \item middle phase of mixed rewards,
     \item end phase of sparse rewards again at a lower learning rate (Table~\ref{tab:transfer-learning-schedule}).
 \end{inparaenum}
-\texttt{NoWhereToRun9x8} had an additional fine-tuning using only the win-loss reward.
+We did an additional fine-tuning on \texttt{NoWhereToRun9x8} using only the win-loss reward.
 These transfer learned agents exceeded 90\% win-rate on their respective maps,
 significant improvements over the base model (especially on
 \texttt{BWDistantResources32x32} which started below 10\%)
@@ -309,12 +312,12 @@ significant improvements over the base model (especially on
 \subsection{squnet training}
 We trained the squnet models with fewer steps because of time constraints and skipped the
 predominantly cost-based reward phase because it didn't help train the
-base model (Table~\ref{tab:squnet-training-parameters}). The 2 models trained from randomly 
-initialized weights for maps of up to 32 (map32) and 64 (map64) managed only a 40\% 
-win-rate, never beating CoacAI or Mayari. These models were policies of last resort.
+base model (Table~\ref{tab:squnet-training-parameters}). The 2 models (trained on maps of
+up to size 32x32 and 64x64) managed only a 40\% win-rate, never beating CoacAI or Mayari. 
+These models were policies of last resort.
 
-We also fine-tuned the squnet-map32 model on \texttt{BWDistantResources32x32}
-exclusively using the transfer learning sparse fine-tuning schedule. This fine-tuned 
+We also fine-tuned the squnet-map32 model on only \texttt{BWDistantResources32x32}
+using the transfer learning sparse fine-tuning schedule. This fine-tuned 
 model achieved 85\% win-rate, beating Mayari half the time, but never beating CoacAI.
 
 \subsection{Behavior cloning bootstrapped training}
@@ -328,40 +331,40 @@ We opted for a neural architecture between DoubleCone and squnet: a nested downs
 block each of stride 4, so the bottom block scales the input down to 1/16th the original
 size. At each downscaling level, there were multiple residual blocks (6 at full
 resolution, split evenly by the downscaling block; 4 at 1/4 resolution, split evenly by
-the 1/16 downscaling block; and 4 at 1/16 resolution). This architecture theoretically
+the 1/16 downscaling block; and 4 at 1/16 resolution) (Table~\ref{tab:bc-architecture}). This architecture theoretically
 has a 128x128 receptive field while using 25\% fewer operations than DoubleCone at inference time. On
 the largest Open map (\texttt{(4)BloodBath.scmB}), this is 6 times more
 computations than squnet-64. Therefore, this neural architecture won't be usable in a
 competition given the same hardware constraints as the 2023 competition.
 
 Initially, we tried a similar training strategy to \agentName\ where the model is
-trained on 16x16 maps and reused as a starting point to transfer to
+trained on 16x16 maps and that model is used for transfer learning to
 larger maps. However, we only managed a 60\% win-rate on
 \texttt{BWDistantResources32x32} and less than a 20\% win-rate on
 \texttt{(4)BloodBath.scmB} after over 100 million
 steps before terminating training.
 
-We then used imitation learning to bootstrap the model, similar to
+Next, we tried imitation learning to bootstrap the model, similar to
 \cite{Vinyals2019GrandmasterLI}. We got rid of the three rewards, opting for only the
 win-loss reward. microRTS doesn't have human replays, so we used playthroughs of the
 2021 competition winner Mayari playing against itself, 2020 competition winner CoacAI, 
-and POLightRush (baseline scripted bot and 2017 competition winner). Instead of
+and POLightRush (baseline scripted bot and 2017 competition winner) (Table~\ref{tab:bc-training-parameters}). Instead of
 generating an offline replay dataset, we set the microRTS environment to play bots
 against each other and these observations and actions were fed into rollouts used for
 behavior cloning the policy and fitting the value heads:
 \begin{align}
-    L^{BC+VF}(\theta) &= \hat{\mathbb{E}}_t \left[ L^{BC}(\theta) - c_1 L^{VF} \right], \\
+    L^{BC+VF}(\theta) &= \hat{\mathbb{E}}_t \left[ L^{BC}(\theta) - c_1 L^{VF}(\theta) \right], \\
     L^{BC}(\theta) &= -\frac{1}{\|a_t\|} \log \pi_{\theta}(a_t|s_t),
 \end{align}
-where $c_1$ and $L^{VF}$ are the same as in the PPO loss function. The policy behavior
-cloning loss is the cross-entropy loss between the policy logits and the actions taken
+where $c_1$ and $L^{VF}$ are the same as in the PPO loss function. The behavior
+cloning policy loss is the cross-entropy loss between the policy logits and the actions taken
 by the Mayari bot. We found scaling the loss by the number of units that could take an
 action critical for behavior cloning to train.
 
 We trained 3 behavior cloned models (16x16, 32x32, and 64x64) on the same maps for each
 map size as \agentName\ training. The 64x64 model used the weights of the 32x32 model 
 as a starting point, while the other two models were randomly initialized. We then used 
-PPO to fine-tune the behavior cloned models on the same maps.
+PPO to fine-tune the behavior cloned models on the same maps (Table~\ref{tab:bc-ppo-training-parameters}).
 
 \section{Results}
 \subsection{Single player round-robin benchmark}
@@ -411,7 +414,7 @@ The IEEE-CoG2023 microRTS competition is a round-robin tournament on 12 maps of
 different sizes and distributions of terrain, resources, and starting units and
 buildings. 8 Open maps are known beforehand, 4 Hidden maps are only revealed after the
 competition. The winner is the agent with the highest win rate on the 8 Open maps.
-Hidden map results were released for the competition, but this paper will only discuss
+Hidden map results are publicly available, but this paper will only discuss
 the Open maps. For
 this competition, a total of 11 agents were submitted: 9 programmatic policies, 1
 synthesized programmatic policy, and \agentName. The competition also had 6
@@ -430,17 +433,16 @@ The baselines cannot win the competition.
 
 \agentName\ was declared the winner with the highest win rate (72\%) across all
 submissions (Table~\ref{tab:competition-winrate}). \agentName\ had a higher win rate 
-than all but two baselines: \texttt{2L} (76\%) and Mayari (82\%). Despite placing below 
-two baselines, \agentName\ had an over 50\% win rate versus every opponent including 
-\texttt{2L} (60\%) and Mayari (65\%).
+than all but two baselines: \texttt{2L} (76\%) and Mayari (82\%). \agentName\ had an 
+over 50\% win rate versus every opponent including \texttt{2L} (60\%) and Mayari (65\%).
 
 \begin{table}[ht]
     \caption{Win rates of selection of agents in the IEEE-CoG2023 microRTS competition.
     Player 1 is the row agent and player 2 is the column agent. Each win rate value is
     the percentage of games won by player 1. Cells are bolded if the win
-    rate is higher than the opponent's row win rate. For example, \agentName vs
+    rate is higher than the opponent's row win rate. For example, \agentName\ vs
     ObiBotKenobi is bolded because 49\% is higher than 47\%, thus meaning the combined player 1
-    and 2 win rate is 51\% for \agentName vs ObiBotKenobi. Overall includes all
+    and 2 win rate is 51\% for \agentName\ vs ObiBotKenobi. Overall includes all
     agents, including those not shown. Win rates for all agents are shown in
     Table~\ref{tab:all-competition-winrate}.}
     \label{tab:competition-winrate}
@@ -493,7 +495,7 @@ underperformed against agents already benchmarked in the single player round-rob
 the weaker squnet model on \texttt{BWDistantResources32x32}.  Breaking down by map, 
 \agentName\ underperformed against benchmarked agents by 20-40\% on 5 maps.
 
-The competition ran the tournament in jobs splitting each map into 5 or 10 jobs where
+The competition ran jobs, splitting each map into 5 or 10 jobs where
 each job would run a complete round-robin with all agents on that map playing 2 or 1
 games as player 1 and 2 each. For \texttt{basesWorkers8x8A}, on which \agentName\
 underperformed by almost 40\%, the competition had 5 jobs. On the first 3 jobs,
@@ -510,7 +512,7 @@ map-specific models.
 
 \begin{table}[ht]
     \centering
-    \caption{\bcPPOAgent\ win rate in single player round-robin benchmark. Win rates above 50 are bolded.}
+    \caption{\bcPPOAgent\ win rate in a single player round-robin benchmark. Win rates above 50\% are bolded.}
     \label{tab:bcppo-winrate}
     \begin{center}
     \begin{tabular}{lcccc|c}
@@ -542,12 +544,12 @@ where the fine-tuned model can no longer beat CoacAI and Mayari.
 
 \section{Discussion}
 \subsection{Improving inference time in microRTS competitions}
-\agentName's underperformance in the 2023 competition on 6 maps suggests that the job
-environment could sometimes run slower. We worked with the competition
+\agentName's underperformance in the 2023 competition suggests that job
+environments can run slow. We worked with the competition
 organizers to reduce the chance of timeouts. However, it was difficult to reproduce the same results as
 the competition servers in our development environments.
 
-Improving inference time is critical to reproducing benchmark results in a competition.
+Improving inference time is critical to matching benchmark results in a competition.
 We suggest 3 improvements (2 for agents, and 1 for the competition organizers):
 \begin{inparaenum}[(1)]
     \item use fast inference runtime providers like OpenVINO for ONNX Runtime,
@@ -603,7 +605,7 @@ These are significant amounts of compute for a mostly academic competition.
 There are several ways to make DRL more feasible in a competition and educational setting:
 \begin{inparaenum}[(1)]
     \item focus on smaller maps,
-    \item fine-tue pre-trained models (possibly through BC, DRL, or some other method),
+    \item fine-tune pretrained models from DRL or behavior cloning,
     \item transfer an existing model to new maps, or
     \item use a significantly smaller neural architecture.
 \end{inparaenum}
@@ -617,7 +619,7 @@ Fine-tuning and transfer learning were critical to making \agentName\ competitiv
 took significantly less time than training from randomly initialized weights because the
 policy already makes reasonable tactical actions and the critic already makes
 reasonable value estimates. If future competitions change the Open maps, fine-tuning and transfer learning
-will significantly help \agentName\ and \bcPPOAgent\. We didn't train \bcPPOAgent\ on
+will significantly help \agentName\ and \bcPPOAgent. We didn't train \bcPPOAgent\ on
 specific maps, so fine-tuning there could improve win rates. Novel behaviors can be
 trained through behavior cloning other agents, such as the new baseline \texttt{2L}.
 
@@ -634,7 +636,7 @@ iterative training process of fine-tuning and transfer learning is effective for
 creating competitive DRL agents. Such a training process can be used by 
 resource-constrained researchers and students to create novel DRL agents for future 
 competitions and experiments. Fine-tuning behavior cloning with PPO is a promising way
-to create competitive DRL agents with desired behaviors without needing to handcraft
+to create competitive DRL agents with novel behaviors without needing to handcraft
 shaped reward functions.
 
 \section{Reproducibility Statement}
@@ -649,7 +651,7 @@ Appendix~\ref{appendix:single-player-benchmark-setup} describes the setup of the
 single player round-robin tournaments for \agentName\
 (Section~\ref{sec:single-player-benchmark}), \bcAgent, and \bcPPOAgent\ (Section~\ref{sec:behavior-cloning-results}).
 The microRTS competition requires agents to be open sourced. Our open-sourced code
-repository includes a link to the archive used for the competition submission and
+repository includes a link to the archive used for the competition and
 instructions on how to run the submission in the competition
 environment\footnote{\raiMicroRTSGitHubUrl}. Supplementary Material includes an
 anonymized code repository; however, links had to be removed or broken.  
@@ -661,6 +663,39 @@ anonymized code repository; however, links had to be removed or broken.
 
 \appendix
 \section{Competition details}
+\begin{table}[H]
+    \caption{Policy networks used by \agentName}
+    \label{tab:policy-networks}
+    \begin{center}
+        \begin{tabular}{p{0.5\linewidth}p{0.5\linewidth}}
+            \multicolumn{1}{c}{\bf Network}  &\multicolumn{1}{c}{\bf Usage} \\
+            \midrule
+            ppo-Microrts-finetuned-NoWhereToRun-S1-best & NoWhereToRun9x8 \\ \hline
+            ppo-Microrts-A6000-finetuned-coac-mayari-S1-best & All other maps of size 16x16 and smaller \\ \hline
+            ppo-Microrts-finetuned-DoubleGame-shaped-S1-best & DoubleGame24x24 \\ \hline
+            ppo-Microrts-finetuned-DistantResources-shaped-S1-best & BWDistantResources32x32 if completion time under 75 ms \\ \hline
+            ppo-Microrts-squnet-DistantResources-128ch-finetuned-S1-best & BWDistantResources32x32 if completion time above 75 ms \\ \hline
+            ppo-Microrts-squnet-map32-128ch-selfplay-S1-best & All other maps where longest dimension is between 17-32 \\ \hline
+            ppo-Microrts-squnet-map64-64ch-selfplay-S1-best & Maps where the longest
+            dimension is over 32 \\
+        \end{tabular}
+    \end{center}
+\end{table}
+
+To participate in the competition, \agentName\ has a Java class that handles turn
+handling and resetting commands from the Java game engine. While earlier Python
+solutions  passed JSON or XML data over a
+socket\footnote{\url{https://github.com/douglasrizzo/python-microRTS}}, \agentName\
+passes binary data over a pipe to the Python process as a performance optimization for
+the larger maps.
+
+Each agent played every other agent on each map 20 times (10 each as player 1 and 2).
+Timeouts were disabled for the competition, but the Java-side of \agentName\ would skip
+its turn (submitting no actions) if 100 ms had elapsed. On
+\texttt{BWDistantResources32x32}, \agentName\ chose between the DoubleCone and squnet
+fine-tuned models by running both models on the first observation 100 times each and
+choosing DoubleCone if it computed actions within 75 ms on average.
+
 \begin{table}[H]
     \centering
     \begin{threeparttable}
@@ -700,39 +735,6 @@ anonymized code repository; however, links had to be removed or broken.
             \end{tablenotes}
     \end{threeparttable}
 \end{table}
-
-\begin{table}[h]
-    \caption{Policy networks used by \agentName}
-    \label{tab:policy-networks}
-    \begin{center}
-        \begin{tabular}{p{0.5\linewidth}p{0.5\linewidth}}
-            \multicolumn{1}{c}{\bf Network}  &\multicolumn{1}{c}{\bf Usage} \\
-            \midrule
-            ppo-Microrts-finetuned-NoWhereToRun-S1-best & NoWhereToRun9x8 \\ \hline
-            ppo-Microrts-A6000-finetuned-coac-mayari-S1-best & All other maps of size 16x16 and smaller \\ \hline
-            ppo-Microrts-finetuned-DoubleGame-shaped-S1-best & DoubleGame24x24 \\ \hline
-            ppo-Microrts-finetuned-DistantResources-shaped-S1-best & BWDistantResources32x32 if completion time under 75 ms \\ \hline
-            ppo-Microrts-squnet-DistantResources-128ch-finetuned-S1-best & BWDistantResources32x32 if completion time above 75 ms \\ \hline
-            ppo-Microrts-squnet-map32-128ch-selfplay-S1-best & All other maps where longest dimension is between 17-32 \\ \hline
-            ppo-Microrts-squnet-map64-64ch-selfplay-S1-best & Maps where the longest
-            dimension is over 32 \\
-        \end{tabular}
-    \end{center}
-\end{table}
-
-To participate in the competition, \agentName\ has a Java class that handles turn
-handling and resetting commands from the Java game engine. While earlier Python
-solutions  passed JSON or XML data over a
-socket\footnote{\url{https://github.com/douglasrizzo/python-microRTS}}, \agentName\
-passes binary data over a pipe to the Python process as a performance optimization for
-the larger maps.
-
-Each agent played every other agent on each map 20 times (10 each as player 1 and 2).
-Timeouts were disabled for the competition, but the Java-side of \agentName\ would skip
-its turn (submitting no actions) if 100 ms had elapsed. On
-\texttt{BWDistantResources32x32}, \agentName\ chose between the DoubleCone and squnet
-fine-tuned models by running both models on the first observation 100 times each and
-choosing DoubleCone if it computed actions within 75 ms on average.
 
 
 \section{Neural network architecture}
@@ -824,6 +826,29 @@ The adaptive average pooling layer allows the network to be used on different ma
 \begin{table}[H]
     \centering
     \begin{threeparttable}
+    \caption{Initial training schedule from a randomly initialized model}
+    \label{tab:initial-training-schedule}
+    \begin{tabular}{lccccr}
+    \toprule
+     & Phase 1 & Transition 1→2\tnote{*} & Phase 2 & Transition 2→3\tnote{*} & Phase 3 \\
+    \midrule
+    steps & 90M & 60M & 30M & 60M & 60M \\
+    reward weights\tnote{†} & [0.8, 0.01, 0.19] &  & [0, 0.5, 0.5] &  & [0, 0.99, 0.01] \\
+    $c_1$ (value loss coef)\tnote{†} & [0.5, 0.1, 0.2] &  & [0, 0.4, 0.4] &  & [0, 0.5, 0.1]\\
+    $c_2$ (entropy coef)& 0.01 & & 0.01 & & 0.001 \\
+    learning rate & $10^{-4}$ & & $10^{-4}$ & & $5 \times 10^{-5}$\\
+    \bottomrule
+    \end{tabular}
+    \begin{tablenotes}
+       \item[*] Values are linearly interpolated between phases based on step count.
+       \item[†] Listed weights are for the shaped, win-loss, cost-based values, respectively.
+    \end{tablenotes}
+    \end{threeparttable}
+\end{table}
+
+\begin{table}[H]
+    \centering
+    \begin{threeparttable}
     \caption{Comparison of initial training, shaped fine-tuning, and sparse fine-tuning parameters}
     \label{tab:training-parameters}
     \begin{tabular}{lccc}
@@ -852,29 +877,6 @@ The adaptive average pooling layer allows the network to be used on different ma
     \item[*] Value per value head (shaped, win-loss, cost-based).
     \item[\P] Multiply v\_{loss} by 0.5, as done in CleanRL.
     \item[\dag] Map not used in competition.
-    \end{tablenotes}
-    \end{threeparttable}
-\end{table}
-
-\begin{table}[H]
-    \centering
-    \begin{threeparttable}
-    \caption{Initial training schedule from a randomly initialized model}
-    \label{tab:initial-training-schedule}
-    \begin{tabular}{lccccr}
-    \toprule
-     & Phase 1 & Transition 1→2\tnote{*} & Phase 2 & Transition 2→3\tnote{*} & Phase 3 \\
-    \midrule
-    steps & 90M & 60M & 30M & 60M & 60M \\
-    reward weights\tnote{†} & [0.8, 0.01, 0.19] &  & [0, 0.5, 0.5] &  & [0, 0.99, 0.01] \\
-    $c_1$ (value loss coef)\tnote{†} & [0.5, 0.1, 0.2] &  & [0, 0.4, 0.4] &  & [0, 0.5, 0.1]\\
-    $c_2$ (entropy coef)& 0.01 & & 0.01 & & 0.001 \\
-    learning rate & $10^{-4}$ & & $10^{-4}$ & & $5 \times 10^{-5}$\\
-    \bottomrule
-    \end{tabular}
-    \begin{tablenotes}
-       \item[*] Values are linearly interpolated between phases based on step count.
-       \item[†] Listed weights are for the shaped, win-loss, cost-based values, respectively.
     \end{tablenotes}
     \end{threeparttable}
 \end{table}
@@ -1283,7 +1285,7 @@ In Section~\ref{sec:behavior-cloning-results}, \bcAgent\ and \bcPPOAgent\ play e
 \end{table}
 
 \begin{table}[H]
-    \caption{\agentName\ win rates split by competition job. Each map has 5 or 10 jobs that runs a round robin tournament of all agents for 2 or 1 iterations, respectively. "Outlier" jobs are bolded. "Average" is the average win rate for all jobs. "Average Removing Outliers" is the average win rate for all jobs excluding "outlier" jobs.}
+    \caption{\agentName\ win rates split by competition job. Each map has 5 or 10 jobs that runs a round-robin tournament of all agents for 2 or 1 iterations, respectively. "Outlier" jobs are bolded. "Average" is the average win rate for all jobs. "Average Removing Outliers" is the average win rate for all jobs excluding "outlier" jobs.}
     \label{tab:outlier-winrate}
     \begin{center}
     \begin{tabular}{r|rrrrrrrr|l}
@@ -1317,7 +1319,7 @@ In Section~\ref{sec:behavior-cloning-results}, \bcAgent\ and \bcPPOAgent\ play e
 
 \section{Additional behavior cloning benchmarks}
 \begin{table}[H]
-    \caption{\bcAgent\ win rate in single player round-robin benchmark. Win rates above 50 are bolded.}
+    \caption{\bcAgent\ win rate in single player round-robin benchmark. Win rates above 50\% are bolded.}
     \label{tab:bc-winrate}
     \begin{center}
     \begin{tabular}{lcccc|c}
