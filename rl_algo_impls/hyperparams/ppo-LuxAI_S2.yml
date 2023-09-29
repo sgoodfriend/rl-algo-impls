@@ -780,15 +780,15 @@ LuxAI_S2-v0-sSqunet-78env-deimos-gamma-1: &lux-ssqunet-78envs-deimos-gamma-1
     <<: *lux-ssqunet-78envs-deimos-constant-robots-3-algo
     gamma: [1, 1, 1]
 
-LuxAI_S2-v0-sSqunet-78env-deimos-lower-lichen:
-  &lux-ssqunet-78envs-deimos-lower-lichen
+LuxAI_S2-v0-sSqunet-78env-deimos-constant-robots-25:
+  &lux-ssqunet-78envs-deimos-constant-robots-25
   <<: *lux-ssqunet-78envs-deimos-gamma-1
-  algo_hyperparams: &lux-ssqunet-78envs-deimos-lower-lichen-algo
+  algo_hyperparams: &lux-ssqunet-78envs-deimos-constant-robots-25-algo
     <<: *lux-ssqunet-78envs-deimos-gamma-1-algo
-    multi_reward_weights: [0.25, 0.7, 0.05]
+    multi_reward_weights: [0.25, 0.65, 0.1]
 
 LuxAI_S2-v0-sSqunet-78env-deimos-lr2: &lux-ssqunet-78envs-deimos-high-lr2
-  <<: *lux-ssqunet-78envs-deimos-lower-lichen
+  <<: *lux-ssqunet-78envs-deimos-constant-robots-25
   hyperparam_transitions_kwargs:
     interpolate_method: cosine
     phases:
@@ -814,7 +814,7 @@ LuxAI_S2-v0-sSqunet-78env-deimos-lr2: &lux-ssqunet-78envs-deimos-high-lr2
       - 0.02
 
 LuxAI_S2-v0-sSqunet-78env-deimos-lr4: &lux-ssqunet-78envs-deimos-high-lr4
-  <<: *lux-ssqunet-78envs-deimos-lower-lichen
+  <<: *lux-ssqunet-78envs-deimos-constant-robots-25
   hyperparam_transitions_kwargs:
     interpolate_method: cosine
     phases:
@@ -840,7 +840,7 @@ LuxAI_S2-v0-sSqunet-78env-deimos-lr4: &lux-ssqunet-78envs-deimos-high-lr4
       - 0.02
 
 LuxAI_S2-v0-sSqunet-78env-deimos-lr8: &lux-ssqunet-78envs-deimos-high-lr8
-  <<: *lux-ssqunet-78envs-deimos-lower-lichen
+  <<: *lux-ssqunet-78envs-deimos-constant-robots-25
   hyperparam_transitions_kwargs:
     interpolate_method: cosine
     phases:
@@ -866,7 +866,7 @@ LuxAI_S2-v0-sSqunet-78env-deimos-lr8: &lux-ssqunet-78envs-deimos-high-lr8
       - 0.02
 
 LuxAI_S2-v0-sSqunet-78env-deimos-lr16: &lux-ssqunet-78envs-deimos-high-lr16
-  <<: *lux-ssqunet-78envs-deimos-lower-lichen
+  <<: *lux-ssqunet-78envs-deimos-constant-robots-25
   hyperparam_transitions_kwargs:
     interpolate_method: cosine
     phases:
@@ -892,7 +892,7 @@ LuxAI_S2-v0-sSqunet-78env-deimos-lr16: &lux-ssqunet-78envs-deimos-high-lr16
       - 0.02
 
 LuxAI_S2-v0-sSqunet-78env-deimos-lrH: &lux-ssqunet-78envs-deimos-high-lrh
-  <<: *lux-ssqunet-78envs-deimos-lower-lichen
+  <<: *lux-ssqunet-78envs-deimos-constant-robots-25
   hyperparam_transitions_kwargs:
     interpolate_method: cosine
     phases:
@@ -918,7 +918,7 @@ LuxAI_S2-v0-sSqunet-78env-deimos-lrH: &lux-ssqunet-78envs-deimos-high-lrh
       - 0.02
 
 LuxAI_S2-v0-sSqunet-78env-deimos-lrQ: &lux-ssqunet-78envs-deimos-high-lrq
-  <<: *lux-ssqunet-78envs-deimos-lower-lichen
+  <<: *lux-ssqunet-78envs-deimos-constant-robots-25
   hyperparam_transitions_kwargs:
     interpolate_method: cosine
     phases:
