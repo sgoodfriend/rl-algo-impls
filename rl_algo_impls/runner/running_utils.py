@@ -5,7 +5,7 @@ import os
 import random
 from dataclasses import asdict
 from pathlib import Path
-from typing import Dict, Optional, Type, Union
+from typing import Any, Dict, Optional, Type, Union
 
 import gym
 import matplotlib.pyplot as plt
@@ -78,35 +78,39 @@ def base_parser(multiple: bool = True) -> argparse.ArgumentParser:
 
 
 def load_hyperparams(algo: str, env_id: str) -> Hyperparams:
-    hp = load_hyperparams_by_env_id(algo, env_id) or load_hyperparams_by_algo(
+    return Hyperparams(**load_hyperparam_dict(algo, env_id))
+
+
+def load_hyperparam_dict(algo: str, env_id: str) -> Dict[str, Any]:
+    hp_dict = load_hyperparam_dict_by_env_id(
         algo, env_id
-    )
-    if hp is None:
+    ) or load_hyperparam_dict_by_algo(algo, env_id)
+    if hp_dict is None:
         raise ValueError(f"({algo},{env_id}) hyperparameters not specified")
-    return hp
+    return hp_dict
 
 
-def load_hyperparams_by_algo(algo: str, env_id: str) -> Optional[Hyperparams]:
+def load_hyperparam_dict_by_algo(algo: str, env_id: str) -> Optional[Dict[str, Any]]:
     root_path = Path(__file__).parent.parent
     hyperparams_path = os.path.join(root_path, HYPERPARAMS_PATH, f"{algo}.yml")
     with open(hyperparams_path, "r") as f:
         hyperparams_dict = yaml.safe_load(f)
 
     if env_id in hyperparams_dict:
-        return Hyperparams(**hyperparams_dict[env_id])
+        return hyperparams_dict[env_id]
 
     import_for_env_id(env_id)
     spec = gym.spec(env_id)
     entry_point_name = str(spec.entry_point)  # type: ignore
     if "AtariEnv" in entry_point_name and "_atari" in hyperparams_dict:
-        return Hyperparams(**hyperparams_dict["_atari"])
+        return hyperparams_dict["_atari"]
     elif "gym_microrts" in entry_point_name and "_microrts" in hyperparams_dict:
-        return Hyperparams(**hyperparams_dict["_microrts"])
+        return hyperparams_dict["_microrts"]
 
     return None
 
 
-def load_hyperparams_by_env_id(algo: str, env_id: str) -> Optional[Hyperparams]:
+def load_hyperparam_dict_by_env_id(algo: str, env_id: str) -> Optional[Dict[str, Any]]:
     root_path = Path(__file__).parent.parent
     env_prefix = env_id.split("-")[0]
     hyperparams_path = os.path.join(
@@ -118,7 +122,7 @@ def load_hyperparams_by_env_id(algo: str, env_id: str) -> Optional[Hyperparams]:
         hyperparams_dict = yaml.safe_load(f)
 
     if env_id in hyperparams_dict:
-        return Hyperparams(**hyperparams_dict[env_id])
+        return hyperparams_dict[env_id]
     return None
 
 
