@@ -1,6 +1,5 @@
 import gc
 import logging
-from contextlib import contextmanager
 from dataclasses import asdict, astuple, dataclass
 from time import perf_counter
 from typing import List, NamedTuple, Optional, Tuple, TypeVar, Union
@@ -13,6 +12,7 @@ from torch.utils.tensorboard.writer import SummaryWriter
 
 from rl_algo_impls.rollout.rollout import RolloutGenerator
 from rl_algo_impls.shared.algorithm import Algorithm
+from rl_algo_impls.shared.autocast import maybe_autocast
 from rl_algo_impls.shared.callbacks import Callback
 from rl_algo_impls.shared.policy.actor_critic import ActorCritic
 from rl_algo_impls.shared.schedule import (
@@ -385,12 +385,3 @@ class PPO(Algorithm):
         nn.utils.clip_grad_norm_(self.policy.parameters(), self.max_grad_norm)
         self.optimizer.step()
         self.optimizer.zero_grad(set_to_none=True)
-
-
-@contextmanager
-def maybe_autocast(autocast_enabled: bool, device: torch.device):
-    if autocast_enabled and device.type == "cuda" and torch.cuda.is_bf16_supported():
-        with torch.autocast(device.type, dtype=torch.bfloat16):
-            yield
-    else:
-        yield

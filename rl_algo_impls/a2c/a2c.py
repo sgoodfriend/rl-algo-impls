@@ -1,7 +1,7 @@
 import logging
 from dataclasses import astuple
 from time import perf_counter
-from typing import List, Optional, TypeVar
+from typing import List, NamedTuple, Optional, TypeVar
 
 import numpy as np
 import torch
@@ -9,8 +9,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.tensorboard.writer import SummaryWriter
 
+from rl_algo_impls.a2c.train_stats import TrainStats, TrainStepStats
 from rl_algo_impls.rollout.rollout import RolloutGenerator
 from rl_algo_impls.shared.algorithm import Algorithm
+from rl_algo_impls.shared.autocast import maybe_autocast
 from rl_algo_impls.shared.callbacks import Callback
 from rl_algo_impls.shared.gae import compute_advantages_from_policy
 from rl_algo_impls.shared.policy.actor_critic import ActorCritic
@@ -46,8 +48,11 @@ class A2C(Algorithm):
         normalize_advantage: bool = False,
         multi_reward_weights: Optional[List[int]] = None,
         scale_loss_by_num_actions: bool = False,
-        min_logprob: Optional[float] = None,
-        exp_logpa_loss: bool = False,
+        min_logprob: Optional[float] = None,  # DEPRECATE?
+        exp_logpa_loss: bool = False,  # DEPRECATE?
+        gradient_accumulation: bool = False,
+        autocast_loss: bool = False,
+        num_minibatches: Optional[int] = None,
     ) -> None:
         super().__init__(policy, device, tb_writer)
         self.policy = policy
@@ -76,6 +81,14 @@ class A2C(Algorithm):
         self.scale_loss_by_num_actions = scale_loss_by_num_actions
         self.min_logprob = min_logprob
         self.exp_logpa_loss = exp_logpa_loss
+
+        self.gradient_accumulation = gradient_accumulation
+        self.autocast_loss = autocast_loss
+        self.num_minibatches = num_minibatches or 1
+        assert self.num_minibatches == 1 or self.gradient_accumulation, (
+            "A2C only supports single step batches. Therefore, non-1 minibatches "
+            "must be gradient accumulated"
+        )
 
     def learn(
         self: A2CSelf,
@@ -118,48 +131,73 @@ class A2C(Algorithm):
                 if self.min_logprob is not None
                 else None
             )
+            step_stats = []
 
-            (
-                b_obs,
-                _,
-                b_actions,
-                b_action_masks,
-                b_num_actions,
-                _,
-                b_advantages,
-                b_returns,
-            ) = astuple(r.batch(self.device))
-
-            if self.normalize_advantage:
-                b_advantages = (b_advantages - b_advantages.mean()) / (
-                    b_advantages.std() + 1e-8
-                )
-
-            logp_a, entropy, v = self.policy(
-                b_obs, b_actions, action_masks=b_action_masks
+            multi_reward_weights = (
+                torch.Tensor(self.multi_reward_weights).to(self.device)
+                if self.multi_reward_weights is not None
+                else None
             )
+            for mb in r.minibatches(r.total_steps // self.num_minibatches, self.device):
+                (
+                    mb_obs,
+                    _,
+                    mb_actions,
+                    mb_action_masks,
+                    mb_num_actions,
+                    _,
+                    mb_advantages,
+                    mb_returns,
+                ) = astuple(mb)
 
-            if self.scale_loss_by_num_actions:
-                logp_a = torch.where(b_num_actions > 0, logp_a / b_num_actions, 0)
-            if min_logprob is not None:
-                logp_a = torch.where(
-                    b_advantages < 0, torch.max(logp_a, min_logprob), logp_a
+                if self.normalize_advantage:
+                    mb_advantages = (mb_advantages - mb_advantages.mean()) / (
+                        mb_advantages.std() + 1e-8
+                    )
+                if multi_reward_weights is not None:
+                    mb_advantages = mb_advantages @ multi_reward_weights
+
+                with maybe_autocast(self.autocast_loss, self.device):
+                    logp_a, entropy, v = self.policy(
+                        mb_obs, mb_actions, action_masks=mb_action_masks
+                    )
+
+                    if self.scale_loss_by_num_actions:
+                        logp_a = torch.where(
+                            mb_num_actions > 0, logp_a / mb_num_actions, 0
+                        )
+                    if min_logprob is not None:
+                        logp_a = torch.where(
+                            mb_advantages < 0, torch.max(logp_a, min_logprob), logp_a
+                        )
+                    if self.exp_logpa_loss:
+                        pi_loss = -(mb_advantages * torch.exp(logp_a))
+                    else:
+                        pi_loss = -(mb_advantages * logp_a)
+                    pi_loss = pi_loss.mean()
+
+                    value_loss = ((v - mb_returns) ** 2).mean(0)
+                    entropy_loss = -entropy.mean()
+
+                    loss = (
+                        pi_loss + (vf_coef * value_loss).sum() + ent_coef * entropy_loss
+                    )
+
+                    if self.gradient_accumulation:
+                        loss /= self.num_minibatches
+                loss.backward()
+                if not self.gradient_accumulation:
+                    self.optimizer_step()
+                step_stats.append(
+                    TrainStepStats(
+                        loss.item(),
+                        pi_loss.item(),
+                        value_loss.detach().cpu().numpy(),
+                        entropy_loss.item(),
+                    )
                 )
-            if self.exp_logpa_loss:
-                pi_loss = -(b_advantages * torch.exp(logp_a))
-            else:
-                pi_loss = -(b_advantages * logp_a)
-            pi_loss = pi_loss.mean()
-
-            value_loss = ((v - b_returns) ** 2).mean(0)
-            entropy_loss = -entropy.mean()
-
-            loss = pi_loss + (vf_coef * value_loss).sum() + ent_coef * entropy_loss
-
-            self.optimizer.zero_grad()
-            loss.backward()
-            nn.utils.clip_grad_norm_(self.policy.parameters(), self.max_grad_norm)
-            self.optimizer.step()
+            if self.gradient_accumulation:
+                self.optimizer_step()
 
             var_y = np.var(r.y_true).item()
             explained_var = (
@@ -174,17 +212,8 @@ class A2C(Algorithm):
                 timesteps_elapsed,
             )
 
-            log_scalars(
-                self.tb_writer,
-                "losses",
-                {
-                    "loss": loss.item(),
-                    "pi_loss": pi_loss.item(),
-                    "v_loss": value_loss.item(),
-                    "entropy_loss": entropy_loss.item(),
-                    "explained_var": explained_var,
-                },
-                timesteps_elapsed,
+            TrainStats(step_stats, explained_var).write_to_tensorboard(
+                self.tb_writer, timesteps_elapsed
             )
 
             if callbacks:
@@ -197,3 +226,8 @@ class A2C(Algorithm):
                     break
 
         return self
+
+    def optimizer_step(self) -> None:
+        nn.utils.clip_grad_norm_(self.policy.parameters(), self.max_grad_norm)  # type: ignore
+        self.optimizer.step()
+        self.optimizer.zero_grad(set_to_none=True)

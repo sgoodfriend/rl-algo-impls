@@ -1,0 +1,128 @@
+LuxAI_S2-v0-sSqunet-78env-deimos-lr2-no-guide:
+  additional_keys_to_log:
+    - stats
+    - results
+  algo_hyperparams:
+    autocast_loss: true
+    num_minibatches: 6
+    ent_coef: 0.01
+    gae_lambda:
+      - 0.95
+      - 0.95
+      - 0.95
+    gamma:
+      - 1
+      - 1
+      - 1
+    gradient_accumulation: true
+    learning_rate: !!float 1e-4
+    learning_rate_decay: none
+    max_grad_norm: 0.5
+    multi_reward_weights:
+      - 0.25
+      - 0.65
+      - 0.1
+    normalize_advantage: false
+    scale_loss_by_num_actions: true
+    vf_coef:
+      - 0.1
+      - 0.1
+      - 0.1
+  device_hyperparams:
+    set_float32_matmul_precision: high
+  env_hyperparams:
+    additional_win_loss_reward: true
+    additional_win_loss_smoothing_factor: 0.9
+    env_type: lux
+    make_kwargs:
+      bid_std_dev: 0
+      factory_ice_distance_buffer: null
+      reward_weights:
+        built_heavy_by_time_remaining: 0.11
+        built_light_by_time_remaining: 0.009
+    n_envs: 78
+    score_reward_kwargs:
+      episode_end: true
+    self_play_kwargs:
+      first_window_orig_policy: true
+      num_old_policies: 24
+      save_steps: 1000000.0
+      swap_steps: 3000
+      swap_window_size: 6
+      window: 50
+    vec_env_class: ray
+  env_id: LuxAI_S2-v0
+  eval_hyperparams:
+    deterministic: false
+    env_overrides:
+      additional_win_loss_reward: false
+      make_kwargs:
+        bid_std_dev: 0
+        factory_ice_distance_buffer: null
+        reward_weights:
+          win_loss: 1
+      n_envs: 64
+      score_reward_kwargs: null
+      self_play_kwargs: null
+      self_play_reference_kwargs:
+        window: 1
+    only_checkpoint_initial_policy: true
+    only_record_video_on_best: true
+    score_function: mean
+    score_threshold: null
+    step_freq: 5000000.0
+  hyperparam_transitions_kwargs:
+    durations:
+      - 0
+      - 0.1
+      - 0.55
+      - 0.3
+      - 0.05
+    interpolate_method: cosine
+    phases:
+      - ent_coef: 0.001
+        learning_rate: 1.0e-06
+      - ent_coef: 0.001
+        learning_rate: 2.0e-05
+      - ent_coef: 0.0001
+        learning_rate: 1.0e-06
+  n_timesteps: 50000000.0
+  policy_hyperparams:
+    actor_head_style: squeeze_unet
+    additional_critic_activation_functions:
+      - tanh
+      - tanh
+    channels_per_level:
+      - 128
+      - 128
+      - 128
+    critic_shares_backbone: true
+    decoder_residual_blocks_per_level:
+      - 2
+      - 2
+    deconv_strides_per_level:
+      - - 2
+        - 2
+      - - 2
+        - 2
+    encoder_residual_blocks_per_level:
+      - 2
+      - 2
+      - 4
+    load_run_path: sgoodfriend/rl-algo-impls-lux-nips1/act6rrp0
+    output_activation_fn: identity
+    save_critic_separate: false
+    strides_per_level:
+      - 4
+      - 4
+    subaction_mask:
+      1:
+        2: 0
+        3: 1
+        4: 1
+        5: 2
+  rollout_hyperparams:
+    full_batch_off_accelerator: true
+    n_steps: 64
+    num_envs_reset_every_rollout: 12
+  rollout_type: sync
