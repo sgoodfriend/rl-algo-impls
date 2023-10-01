@@ -37,7 +37,7 @@ def train() -> None:
         algo=["a2c"],
         # env=["CartPole-v1"],
         # env=["Microrts-debug"],
-        env=["LuxAI_S2-v0-sSqunet-78env-deimos-lr2-no-guide"],
+        env=["LuxAI_S2-v0-debug"],
         seed=[1],
         pool_size=3,
         wandb_project_name=None,

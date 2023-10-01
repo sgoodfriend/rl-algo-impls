@@ -1,4 +1,5 @@
 LuxAI_S2-v0-sSqunet-78env-deimos-lr2-no-guide:
+  &lux-ssqunet-78envs-deimos-lr2-no-guide
   additional_keys_to_log:
     - stats
     - results
@@ -30,11 +31,11 @@ LuxAI_S2-v0-sSqunet-78env-deimos-lr2-no-guide:
       - 0.1
   device_hyperparams:
     set_float32_matmul_precision: high
-  env_hyperparams:
+  env_hyperparams: &lux-ssqunet-78envs-deimos-lr16-no-guide-env
     additional_win_loss_reward: true
     additional_win_loss_smoothing_factor: 0.9
     env_type: lux
-    make_kwargs:
+    make_kwargs: &lux-ssqunet-78envs-deimos-lr16-no-guide-env-make-kwargs
       bid_std_dev: 0
       factory_ice_distance_buffer: null
       reward_weights:
@@ -87,7 +88,7 @@ LuxAI_S2-v0-sSqunet-78env-deimos-lr2-no-guide:
       - ent_coef: 0.0001
         learning_rate: 1.0e-06
   n_timesteps: 50000000.0
-  policy_hyperparams:
+  policy_hyperparams: &lux-ssqunet-78envs-deimos-lr2-no-guide-policy
     actor_head_style: squeeze_unet
     additional_critic_activation_functions:
       - tanh
@@ -126,3 +127,74 @@ LuxAI_S2-v0-sSqunet-78env-deimos-lr2-no-guide:
     n_steps: 64
     num_envs_reset_every_rollout: 12
   rollout_type: sync
+
+LuxAI_S2-v0-sSqunet-78env-deimos-lr1-no-guide:
+  &lux-ssqunet-78envs-deimos-lr1-no-guide
+  <<: *lux-ssqunet-78envs-deimos-lr2-no-guide
+  hyperparam_transitions_kwargs:
+    interpolate_method: cosine
+    phases:
+      - learning_rate: !!float 1e-6
+        ent_coef: 0.001
+      - learning_rate: !!float 1e-5
+        ent_coef: 0.001
+      - learning_rate: !!float 1e-6
+        ent_coef: 0.0001
+    durations:
+      - 0
+      - 0.1
+      - 0.55
+      - 0.3
+      - 0.05
+
+LuxAI_S2-v0-sSqunet-78env-deimos-lr4-no-guide:
+  &lux-ssqunet-78envs-deimos-lr4-no-guide
+  <<: *lux-ssqunet-78envs-deimos-lr2-no-guide
+  hyperparam_transitions_kwargs:
+    interpolate_method: cosine
+    phases:
+      - learning_rate: !!float 1e-6
+        ent_coef: 0.001
+      - learning_rate: !!float 4e-5
+        ent_coef: 0.001
+      - learning_rate: !!float 1e-6
+        ent_coef: 0.0001
+    durations:
+      - 0
+      - 0.1
+      - 0.55
+      - 0.3
+      - 0.05
+
+LuxAI_S2-v0-sSqunet-78env-deimos-lr16-no-guide:
+  &lux-ssqunet-78envs-deimos-lr16-no-guide
+  <<: *lux-ssqunet-78envs-deimos-lr2-no-guide
+  hyperparam_transitions_kwargs:
+    interpolate_method: cosine
+    phases:
+      - learning_rate: !!float 1e-6
+        ent_coef: 0.001
+      - learning_rate: !!float 1.6e-4
+        ent_coef: 0.001
+      - learning_rate: !!float 1e-6
+        ent_coef: 0.0001
+    durations:
+      - 0
+      - 0.1
+      - 0.55
+      - 0.3
+      - 0.05
+
+LuxAI_S2-v0-debug:
+  <<: *lux-ssqunet-78envs-deimos-lr16-no-guide
+  n_timesteps: !!float 1e6
+  device: mps
+  env_hyperparams:
+    <<: *lux-ssqunet-78envs-deimos-lr16-no-guide-env
+    make_kwargs:
+      <<: *lux-ssqunet-78envs-deimos-lr16-no-guide-env-make-kwargs
+      verbose: 3
+      verify: true
+  policy_hyperparams:
+    <<: *lux-ssqunet-78envs-deimos-lr2-no-guide-policy
+    load_run_path: null
