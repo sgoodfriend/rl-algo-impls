@@ -26,9 +26,9 @@ LuxAI_S2-v0-sSqunet-78env-deimos-lr2-no-guide:
     normalize_advantage: false
     scale_loss_by_num_actions: true
     vf_coef:
-      - 0.1
-      - 0.1
-      - 0.1
+      - 0.2
+      - 0.2
+      - 0.2
   device_hyperparams:
     set_float32_matmul_precision: high
   env_hyperparams: &lux-ssqunet-78envs-deimos-lr16-no-guide-env
