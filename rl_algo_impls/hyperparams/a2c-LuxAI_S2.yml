@@ -73,6 +73,7 @@ LuxAI_S2-v0-sSqunet-78env-deimos-lr2-no-guide:
     score_threshold: null
     step_freq: 5000000.0
   hyperparam_transitions_kwargs:
+    &lux-ssqunet-78envs-deimos-lr2-no-guide-hparam-transitions
     durations:
       - 0
       - 0.1
@@ -154,6 +155,26 @@ LuxAI_S2-v0-sSqunet-78env-deimos-lr1-no-guide:
       - 0.3
       - 0.05
 
+LuxAI_S2-v0-sSqunet-78env-deimos-lr1-high_vf:
+  &lux-ssqunet-78envs-deimos-lr1-high-vf
+  <<: *lux-ssqunet-78envs-deimos-lr1-no-guide
+  algo_hyperparams: &lux-ssqunet-78envs-deimos-lr1-high-vf-algo
+    <<: *lux-ssqunet-78envs-deimos-lr2-no-guide-algo
+    vf_coef: [0.3, 0.3, 0.3]
+
+LuxAI_S2-v0-sSqunet-78env-deimos-lr1-adv-norm:
+  &lux-ssqunet-78envs-deimos-lr1-adv-norm
+  <<: *lux-ssqunet-78envs-deimos-lr1-high-vf
+  algo_hyperparams: &lux-ssqunet-78envs-deimos-lr1-adv-norm-algo
+    <<: *lux-ssqunet-78envs-deimos-lr1-high-vf-algo
+    normalize_advantage: true
+
+LuxAI_A2-v0-sSqunet-78env-deimos-lr2-adv-norm:
+  &lux-ssqunet-78envs-deimos-lr2-adv-norm
+  <<: *lux-ssqunet-78envs-deimos-lr1-adv-norm
+  hyperparam_transitions_kwargs:
+    <<: *lux-ssqunet-78envs-deimos-lr2-no-guide-hparam-transitions
+
 LuxAI_S2-v0-sSqunet-78env-deimos-lr4-no-guide:
   &lux-ssqunet-78envs-deimos-lr4-no-guide
   <<: *lux-ssqunet-78envs-deimos-lr2-no-guide
@@ -193,7 +214,7 @@ LuxAI_S2-v0-sSqunet-78env-deimos-lr16-no-guide:
       - 0.05
 
 LuxAI_S2-v0-debug:
-  <<: *lux-ssqunet-78envs-deimos-lr2-high-vf
+  <<: *lux-ssqunet-78envs-deimos-lr2-adv-norm
   n_timesteps: !!float 1e6
   device: mps
   env_hyperparams:
