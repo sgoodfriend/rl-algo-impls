@@ -3,7 +3,7 @@ LuxAI_S2-v0-sSqunet-78env-deimos-lr2-no-guide:
   additional_keys_to_log:
     - stats
     - results
-  algo_hyperparams:
+  algo_hyperparams: &lux-ssqunet-78envs-deimos-lr2-no-guide-algo
     autocast_loss: true
     num_minibatches: 6
     ent_coef: 0.01
@@ -31,11 +31,11 @@ LuxAI_S2-v0-sSqunet-78env-deimos-lr2-no-guide:
       - 0.2
   device_hyperparams:
     set_float32_matmul_precision: high
-  env_hyperparams: &lux-ssqunet-78envs-deimos-lr16-no-guide-env
+  env_hyperparams: &lux-ssqunet-78envs-deimos-lr2-no-guide-env
     additional_win_loss_reward: true
     additional_win_loss_smoothing_factor: 0.9
     env_type: lux
-    make_kwargs: &lux-ssqunet-78envs-deimos-lr16-no-guide-env-make-kwargs
+    make_kwargs: &lux-ssqunet-78envs-deimos-lr2-no-guide-env-make-kwargs
       bid_std_dev: 0
       factory_ice_distance_buffer: null
       reward_weights:
@@ -128,6 +128,13 @@ LuxAI_S2-v0-sSqunet-78env-deimos-lr2-no-guide:
     num_envs_reset_every_rollout: 12
   rollout_type: sync
 
+LuxAI_S2-v0-sSqunet-78env-deimos-lr2-high_vf:
+  &lux-ssqunet-78envs-deimos-lr2-high-vf
+  <<: *lux-ssqunet-78envs-deimos-lr2-no-guide
+  algo_hyperparams:
+    <<: *lux-ssqunet-78envs-deimos-lr2-no-guide-algo
+    vf_coef: [0.3, 0.3, 0.3]
+
 LuxAI_S2-v0-sSqunet-78env-deimos-lr1-no-guide:
   &lux-ssqunet-78envs-deimos-lr1-no-guide
   <<: *lux-ssqunet-78envs-deimos-lr2-no-guide
@@ -186,13 +193,13 @@ LuxAI_S2-v0-sSqunet-78env-deimos-lr16-no-guide:
       - 0.05
 
 LuxAI_S2-v0-debug:
-  <<: *lux-ssqunet-78envs-deimos-lr16-no-guide
+  <<: *lux-ssqunet-78envs-deimos-lr2-high-vf
   n_timesteps: !!float 1e6
   device: mps
   env_hyperparams:
-    <<: *lux-ssqunet-78envs-deimos-lr16-no-guide-env
+    <<: *lux-ssqunet-78envs-deimos-lr2-no-guide-env
     make_kwargs:
-      <<: *lux-ssqunet-78envs-deimos-lr16-no-guide-env-make-kwargs
+      <<: *lux-ssqunet-78envs-deimos-lr2-no-guide-env-make-kwargs
       verbose: 3
       verify: true
   policy_hyperparams:
