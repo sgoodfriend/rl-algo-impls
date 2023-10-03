@@ -169,7 +169,7 @@ LuxAI_S2-v0-sSqunet-78env-deimos-lr1-adv-norm:
     <<: *lux-ssqunet-78envs-deimos-lr1-high-vf-algo
     normalize_advantage: true
 
-LuxAI_A2-v0-sSqunet-78env-deimos-lr2-adv-norm:
+LuxAI_S2-v0-sSqunet-78env-deimos-lr2-adv-norm:
   &lux-ssqunet-78envs-deimos-lr2-adv-norm
   <<: *lux-ssqunet-78envs-deimos-lr1-adv-norm
   hyperparam_transitions_kwargs:
