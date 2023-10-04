@@ -175,6 +175,25 @@ LuxAI_S2-v0-sSqunet-78env-deimos-lr2-adv-norm:
   hyperparam_transitions_kwargs:
     <<: *lux-ssqunet-78envs-deimos-lr2-no-guide-hparam-transitions
 
+LuxAI_S2-v0-sSqunet-78env-deimos-lrH-adv-norm:
+  &lux-ssqunet-78envs-deimos-lrh-adv-norm
+  <<: *lux-ssqunet-78envs-deimos-lr2-adv-norm
+  hyperparam_transitions_kwargs:
+    interpolate_method: cosine
+    phases:
+      - learning_rate: !!float 1e-6
+        ent_coef: 0.001
+      - learning_rate: !!float 5e-6
+        ent_coef: 0.001
+      - learning_rate: !!float 1e-6
+        ent_coef: 0.0001
+    durations:
+      - 0
+      - 0.2
+      - 0.5
+      - 0.25
+      - 0.05
+
 LuxAI_S2-v0-sSqunet-78env-deimos-lr4-no-guide:
   &lux-ssqunet-78envs-deimos-lr4-no-guide
   <<: *lux-ssqunet-78envs-deimos-lr2-no-guide
@@ -214,7 +233,7 @@ LuxAI_S2-v0-sSqunet-78env-deimos-lr16-no-guide:
       - 0.05
 
 LuxAI_S2-v0-debug:
-  <<: *lux-ssqunet-78envs-deimos-lr2-adv-norm
+  <<: *lux-ssqunet-78envs-deimos-lrh-adv-norm
   n_timesteps: !!float 1e6
   device: mps
   env_hyperparams:
