@@ -1,7 +1,7 @@
 import logging
 from dataclasses import astuple
 from time import perf_counter
-from typing import List, NamedTuple, Optional, TypeVar
+from typing import List, Optional, TypeVar
 
 import numpy as np
 import torch
@@ -14,16 +14,10 @@ from rl_algo_impls.rollout.rollout import RolloutGenerator
 from rl_algo_impls.shared.algorithm import Algorithm
 from rl_algo_impls.shared.autocast import maybe_autocast
 from rl_algo_impls.shared.callbacks import Callback
-from rl_algo_impls.shared.gae import compute_advantages_from_policy
 from rl_algo_impls.shared.policy.actor_critic import ActorCritic
 from rl_algo_impls.shared.schedule import schedule, update_learning_rate
 from rl_algo_impls.shared.stats import log_scalars
 from rl_algo_impls.shared.tensor_utils import NumOrList, num_or_array
-from rl_algo_impls.wrappers.vectorable_wrapper import (
-    VecEnv,
-    single_action_space,
-    single_observation_space,
-)
 
 A2CSelf = TypeVar("A2CSelf", bound="A2C")
 
