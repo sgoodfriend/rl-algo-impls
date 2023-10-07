@@ -289,6 +289,15 @@ LuxAI_S2-v0-sSqunet-78env-deimos-lr16-100m: &lux-ssqunet-78envs-deimos-lr16-100m
   <<: *lux-ssqunet-78envs-deimos-lr16-slow-start
   n_timesteps: !!float 100e6
 
+LuxAI_S2-v0-sSqunet-78env-deimos-push-bots: &lux-ssqunet-78envs-deimos-push-bots
+  <<: *lux-ssqunet-78envs-deimos-lr16-100m
+  algo_hyperparams:
+    <<: *lux-ssqunet-78envs-deimos-lr1-adv-norm-algo
+    multi_reward_weights:
+      - 0.3
+      - 0.6
+      - 0.1
+
 LuxAI_S2-v0-sSqunet-78env-deimos-lr32-100m: &lux-ssqunet-78envs-deimos-lr32-100m
   <<: *lux-ssqunet-78envs-deimos-lr16-100m
   hyperparam_transitions_kwargs:
@@ -309,7 +318,7 @@ LuxAI_S2-v0-sSqunet-78env-deimos-lr32-100m: &lux-ssqunet-78envs-deimos-lr32-100m
       - 0.05
 
 LuxAI_S2-v0-debug:
-  <<: *lux-ssqunet-78envs-deimos-lr32-100m
+  <<: *lux-ssqunet-78envs-deimos-push-bots
   n_timesteps: !!float 1e6
   device: mps
   env_hyperparams:
