@@ -38,7 +38,6 @@ class A2C(Algorithm):
         max_grad_norm: float = 0.5,
         rms_prop_eps: float = 1e-5,
         use_rms_prop: bool = True,
-        sde_sample_freq: int = -1,
         normalize_advantage: bool = False,
         multi_reward_weights: Optional[List[int]] = None,
         scale_loss_by_num_actions: bool = False,
@@ -66,7 +65,6 @@ class A2C(Algorithm):
         self.ent_coef_schedule = schedule(ent_coef_decay, ent_coef)
         self.max_grad_norm = max_grad_norm
 
-        self.sde_sample_freq = sde_sample_freq
         self.normalize_advantage = normalize_advantage
 
         self.multi_reward_weights = (
