@@ -6,7 +6,6 @@ from typing import List, Optional, TypeVar
 import numpy as np
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 from torch.utils.tensorboard.writer import SummaryWriter
 
 from rl_algo_impls.a2c.train_stats import TrainStats, TrainStepStats
