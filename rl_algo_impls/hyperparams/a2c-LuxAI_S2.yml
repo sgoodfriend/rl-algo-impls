@@ -319,11 +319,11 @@ LuxAI_S2-v0-sSqunet-78env-deimos-lr32-100m: &lux-ssqunet-78envs-deimos-lr32-100m
 
 LuxAI_S2-v0-sSqunet-78env-deimos-bots-lr8: &lux-ssqunet-78envs-deimos-bots-lr8
   <<: *lux-ssqunet-78envs-deimos-lr8-adv-norm
-  env_hyperparams:
+  algo_hyperparams: &lux-ssqunet-78envs-deimos-bots-lr8-algo
     <<: *lux-ssqunet-78envs-deimos-push-bots-algo
 
 LuxAI_S2-v0-debug:
-  <<: *lux-ssqunet-78envs-deimos-push-bots
+  <<: *lux-ssqunet-78envs-deimos-bots-lr8
   n_timesteps: !!float 1e6
   device: mps
   env_hyperparams:
