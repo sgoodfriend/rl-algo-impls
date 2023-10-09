@@ -341,6 +341,7 @@ LuxAI_S2-v0-debug:
       <<: *lux-ssqunet-78envs-deimos-lr2-no-guide-env-make-kwargs
       verbose: 3
       verify: true
+    vec_env_class: sync
   policy_hyperparams:
     <<: *lux-ssqunet-78envs-deimos-lr2-no-guide-policy
     load_run_path: null
