@@ -1096,6 +1096,19 @@ The adaptive average pooling layer allows the network to be used on different ma
 \end{table}
 
 \begin{table}[H]
+    \caption{Behavior cloning schedule for 16x16 maps. Values in transition are linearly interpolated.}
+    \label{tab:bc-schedule-map16}
+    \begin{center}
+    \begin{tabular}{lccc}
+    & Start & Transition & End \\
+    \midrule
+    & & 100M & \\
+    learning rate & $8 \times 10^{-5}$ &  & 0 \\
+    \end{tabular}
+\end{center}
+\end{table}
+
+\begin{table}[H]
     \caption{Behavior cloning schedule for 32x32 and 64x64 maps. Values in transitions are cosine interpolated.}
     \label{tab:bc-schedule}
     \begin{center}
