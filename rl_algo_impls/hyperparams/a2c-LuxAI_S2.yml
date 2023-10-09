@@ -322,8 +322,17 @@ LuxAI_S2-v0-sSqunet-78env-deimos-bots-lr8: &lux-ssqunet-78envs-deimos-bots-lr8
   algo_hyperparams: &lux-ssqunet-78envs-deimos-bots-lr8-algo
     <<: *lux-ssqunet-78envs-deimos-push-bots-algo
 
-LuxAI_S2-v0-debug:
+LuxAI_S2-v0-sSqunet-78env-deimos-Hbots-lr8: &lux-ssqunet-78envs-deimos-hbots-lr8
   <<: *lux-ssqunet-78envs-deimos-bots-lr8
+  algo_hyperparams: &lux-ssqunet-78envs-deimos-hbots-lr8-algo
+    <<: *lux-ssqunet-78envs-deimos-bots-lr8-algo
+    multi_reward_weights:
+      - 0.45
+      - 0.45
+      - 0.1
+
+LuxAI_S2-v0-debug:
+  <<: *lux-ssqunet-78envs-deimos-hbots-lr8
   n_timesteps: !!float 1e6
   device: mps
   env_hyperparams:
