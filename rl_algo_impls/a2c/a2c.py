@@ -142,8 +142,8 @@ class A2C(Algorithm):
                 ) = astuple(mb)
 
                 if self.normalize_advantage:
-                    mb_advantages = (mb_advantages - mb_advantages.mean()) / (
-                        mb_advantages.std() + 1e-8
+                    mb_advantages = (mb_advantages - mb_advantages.mean(0)) / (
+                        mb_advantages.std(0) + 1e-8
                     )
                 if multi_reward_weights is not None:
                     mb_advantages = mb_advantages @ multi_reward_weights
