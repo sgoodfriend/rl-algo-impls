@@ -26,7 +26,6 @@ MountainCarContinuous-v0:
   #   use_sde: true
   #   log_std_init: 0.0
   #   init_layers_orthogonal: false
-  algo_hyperparams:
   rollout_hyperparams:
     <<: *default-rollout
     n_steps: 100
