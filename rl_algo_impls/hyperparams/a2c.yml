@@ -159,6 +159,9 @@ _atari: &atari-defaults
     vf_coef: 0.25
   rollout_hyperparams:
     <<: *default-rollout
+  eval_hyperparams:
+    max_video_length: 18000
+    deterministic: false
 
 Microrts-squnet-d16-128-BC-offline: &microrts-squnet-d16-128-bc-offline
   additional_keys_to_log:

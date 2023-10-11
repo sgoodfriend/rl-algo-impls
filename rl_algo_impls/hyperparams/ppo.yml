@@ -172,6 +172,7 @@ _atari: &atari-defaults
     ent_coef: 0.01
   eval_hyperparams:
     deterministic: false
+    max_video_length: 18000
 
 _norm-rewards-atari: &norm-rewards-atari-default
   <<: *atari-defaults

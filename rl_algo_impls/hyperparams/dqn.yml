@@ -104,6 +104,7 @@ _atari: &atari-defaults
     train_freq: 8
   eval_hyperparams:
     deterministic: false
+    max_video_length: 18000
 
 PongNoFrameskip-v4:
   <<: *atari-defaults
