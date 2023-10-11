@@ -26,7 +26,7 @@ class GuidedLearnerRolloutGenerator(RolloutGenerator):
         include_logp: bool = True,
         subaction_mask: Optional[Dict[int, Dict[int, int]]] = None,
     ) -> None:
-        super().__init__()
+        super().__init__(learning_policy, vec_env)
         self.learning_policy = learning_policy
         self.guide_policy = guide_policy
         self.guide_policy.eval()

@@ -37,7 +37,7 @@ class RandomGuidedLearnerRolloutGenerator(RolloutGenerator):
         skip_no_action_steps: bool = False,
         num_envs_reset_every_rollout: int = 0,
     ) -> None:
-        super().__init__()
+        super().__init__(learning_policy, vec_env)
         self.learning_policy = learning_policy
         self.guide_policy = guide_policy
 

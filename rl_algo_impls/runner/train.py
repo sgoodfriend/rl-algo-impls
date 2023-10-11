@@ -25,6 +25,7 @@ import wandb
 from rl_algo_impls.runner.config import Config, EnvHyperparams, RunArgs
 from rl_algo_impls.runner.running_utils import (
     ALGOS,
+    DEFAULT_ROLLOUT_GENERATORS,
     get_device,
     hparam_dict,
     load_hyperparams,
@@ -141,10 +142,10 @@ def train(args: TrainArgs):
     if self_play_wrapper:
         callbacks.append(SelfPlayCallback(policy, self_play_wrapper))
 
-    rollout_hyperparams = {
-        **config.rollout_hyperparams,
-        "subaction_mask": config.policy_hyperparams.get("subaction_mask", None),
-    }
+    rollout_hyperparams = {**config.rollout_hyperparams}
+    subaction_mask = config.policy_hyperparams.get("subaction_mask", None)
+    if subaction_mask is not None:
+        rollout_hyperparams["subaction_mask"] = subaction_mask
     if config.rollout_type:
         if config.rollout_type == "sync":
             rollout_generator_cls = SyncStepRolloutGenerator
@@ -167,10 +168,10 @@ def train(args: TrainArgs):
         else:
             raise ValueError(f"{config.rollout_type} not recognized rollout_type")
     else:
-        rollout_generator_cls = SyncStepRolloutGenerator
+        rollout_generator_cls = DEFAULT_ROLLOUT_GENERATORS[args.algo]
 
     rollout_generator = rollout_generator_cls(
-        policy,
+        policy,  # type: ignore
         env,
         **rollout_hyperparams,
     )

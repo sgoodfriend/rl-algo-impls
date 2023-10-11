@@ -34,13 +34,14 @@ def train() -> None:
         "--virtual-display", action="store_true", help="Use headless virtual display"
     )
     parser.set_defaults(
-        algo=["a2c"],
-        # env=["CartPole-v1"],
+        algo=["dqn"],
+        env=["CartPole-v1"],
+        # env=["BipedalWalker-v3"],
         # env=["Microrts-debug"],
-        env=["LuxAI_S2-v0-debug"],
+        # env=["LuxAI_S2-v0-debug"],
         seed=[1],
         pool_size=3,
-        wandb_project_name=None,
+        # wandb_project_name=None,
     )
     args = parser.parse_args()
     print(args)

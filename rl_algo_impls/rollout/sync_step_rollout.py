@@ -26,7 +26,7 @@ class SyncStepRolloutGenerator(RolloutGenerator):
         subaction_mask: Optional[Dict[int, Dict[int, int]]] = None,
         num_envs_reset_every_rollout: int = 0,
     ) -> None:
-        super().__init__()
+        super().__init__(policy, vec_env)
         self.policy = policy
         self.vec_env = vec_env
         self.n_steps = n_steps

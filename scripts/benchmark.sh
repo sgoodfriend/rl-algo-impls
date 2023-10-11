@@ -14,7 +14,7 @@ do
     shift
 done
 
-algos="${algos:-ppo a2c dqn vpg}"
+algos="${algos:-ppo a2c dqn}"
 n_jobs="${n_jobs:-6}"
 project_name="${project_name:-rl-algo-impls-benchmarks}"
 seeds="${seeds:-1 2 3}"
@@ -76,8 +76,6 @@ for algo in $(echo $algos); do
     elif [ -z "$envs" ]; then
         if [ "$algo" = "dqn" ]; then
             BENCHMARK_ENVS="${BASIC_ENVS[*]} ${ATARI_ENVS[*]}"
-        elif [ "$algo" = "vpg" ]; then
-            BENCHMARK_ENVS="${BASIC_ENVS[*]} ${BOX_ENVS[*]}"
         else
             BENCHMARK_ENVS="${BASIC_ENVS[*]} ${BOX_ENVS[*]} ${ATARI_ENVS[*]}"
         fi

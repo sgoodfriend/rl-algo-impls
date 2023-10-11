@@ -21,6 +21,11 @@ from rl_algo_impls.acbc.acbc import ACBC
 from rl_algo_impls.dqn.dqn import DQN
 from rl_algo_impls.dqn.policy import DQNPolicy
 from rl_algo_impls.ppo.ppo import PPO
+from rl_algo_impls.rollout.replay_buffer_rollout_generator import (
+    ReplayBufferRolloutGenerator,
+)
+from rl_algo_impls.rollout.rollout import RolloutGenerator
+from rl_algo_impls.rollout.sync_step_rollout import SyncStepRolloutGenerator
 from rl_algo_impls.runner.config import Config, Hyperparams
 from rl_algo_impls.runner.wandb_load import load_player
 from rl_algo_impls.shared.algorithm import Algorithm
@@ -45,6 +50,12 @@ POLICIES: Dict[str, Type[Policy]] = {
     "ppo": ActorCritic,
     "a2c": ActorCritic,
     "acbc": ActorCritic,
+}
+DEFAULT_ROLLOUT_GENERATORS: Dict[str, Type[RolloutGenerator]] = {
+    "dqn": ReplayBufferRolloutGenerator,
+    "ppo": SyncStepRolloutGenerator,
+    "a2c": SyncStepRolloutGenerator,
+    "acbc": SyncStepRolloutGenerator,
 }
 
 HYPERPARAMS_PATH = "hyperparams"
@@ -251,4 +262,5 @@ def hparam_dict(
             flattened[k] = json.dumps(v)
         else:
             flattened[k] = v  # type: ignore
+    return flattened  # type: ignore
     return flattened  # type: ignore

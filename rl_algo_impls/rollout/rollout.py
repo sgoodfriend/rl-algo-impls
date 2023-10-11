@@ -7,12 +7,14 @@ import torch
 from gym.spaces import MultiDiscrete
 
 from rl_algo_impls.shared.actor.gridnet import ValueDependentMask
+from rl_algo_impls.shared.policy.policy import Policy
 from rl_algo_impls.shared.tensor_utils import (
     NumOrArray,
     NumpyOrDict,
     TensorOrDict,
     tensor_by_indicies,
 )
+from rl_algo_impls.wrappers.vectorable_wrapper import VecEnv
 
 BatchSelf = TypeVar("BatchSelf", bound="Batch")
 TDN = TypeVar("TDN", torch.Tensor, Dict[str, torch.Tensor], None)
@@ -94,11 +96,13 @@ class Rollout(ABC):
 
 
 class RolloutGenerator(ABC):
-    def __init__(self, **kwargs) -> None:
+    def __init__(self, policy: Policy, vec_env: VecEnv, **kwargs) -> None:
         super().__init__()
+        self.policy = policy
+        self.vec_env = vec_env
 
     @abstractmethod
-    def rollout(self, gamma: NumOrArray, gae_lambda: NumOrArray) -> Rollout:
+    def rollout(self, **kwargs) -> Rollout:
         ...
 
 
