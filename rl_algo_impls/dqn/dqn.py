@@ -88,7 +88,7 @@ class DQN(Algorithm):
                     else rollout_generator.train_freq
                 ):
                     self.train(rollout_generator.sample(self.batch_size, self.device))
-                steps_since_target_update += rollout_steps
+                steps_since_target_update += rollout_generator.train_freq
                 if steps_since_target_update >= self.target_update_interval:
                     self._update_target()
                     steps_since_target_update = 0
