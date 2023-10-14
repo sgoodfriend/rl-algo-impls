@@ -374,7 +374,7 @@ LuxAI_S2-v0-sSqunet-78env-deimos-lr4-hbots-100m:
 
 LuxAI_S2-v0-sSqunet-78env-deimos-lr2-hbots-100m:
   &lux-ssqunet-78envs-deimos-lr2-hbots-100m
-  <<: *lux-ssqunet-78envs-deimos-lr2-adv-norm
+  <<: *lux-ssqunet-78env-deimos-lr2-100m
   algo_hyperparams:
     <<: *lux-ssqunet-78envs-deimos-hbots-lr8-algo
 
