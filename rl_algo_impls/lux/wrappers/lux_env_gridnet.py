@@ -1,3 +1,4 @@
+import logging
 from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
@@ -215,7 +216,22 @@ def bid_actions(agents: List[str], bid_std_dev: float) -> Dict[str, Any]:
 def reset_and_early_phase(
     env: LuxAI_S2, bid_std_dev: float, seed: Optional[int] = None, **kwargs
 ) -> Tuple[Dict[str, ObservationStateDict], dict, List[str]]:
-    env.reset(seed=seed, **kwargs)
+    does_env_have_ice_ore = False
+    while not does_env_have_ice_ore:
+        lux_obs, _ = env.reset(seed=seed, **kwargs)
+        board = next(iter(lux_obs.values()))["board"]
+        does_env_have_ice = np.any(board["ice"])
+        does_env_have_ore = np.any(board["ore"])
+        does_env_have_ice_ore = does_env_have_ice and does_env_have_ore
+        if not does_env_have_ice_ore:
+            if not does_env_have_ice and not does_env_have_ore:
+                logging.warn("Resetting env because it has neither ice nor ore")
+            elif not does_env_have_ice:
+                logging.warn("Resetting env because it has no ice")
+            elif not does_env_have_ore:
+                logging.warn("Resetting env because it has no ore")
+            else:
+                raise RuntimeError("Should not be here")
     agents = env.agents
     lux_obs, _, _, _, info = env.step(bid_actions(env.agents, bid_std_dev))
     return lux_obs, info, agents
