@@ -52,11 +52,11 @@ LuxAI_S2-v0-sSqunet-78env-deimos-lr2-no-guide:
       window: 50
     vec_env_class: ray
   env_id: LuxAI_S2-v0
-  eval_hyperparams:
+  eval_hyperparams: &lux-ssqunet-78envs-deimos-lr2-no-guide-eval
     deterministic: false
-    env_overrides:
+    env_overrides: &lux-ssqunet-78envs-deimos-lr2-no-guide-eval-env-overrides
       additional_win_loss_reward: false
-      make_kwargs:
+      make_kwargs: &lux-ssqunet-78envs-deimos-lr2-no-guide-eval-env-make-kwargs
         bid_std_dev: 0
         factory_ice_distance_buffer: null
         reward_weights:
@@ -407,6 +407,12 @@ LuxAI_S2-v0-debug:
       verbose: 3
       verify: true
     vec_env_class: sync
-  policy_hyperparams:
-    <<: *lux-ssqunet-78envs-deimos-lr2-no-guide-policy
-    load_run_path: null
+  eval_hyperparams:
+    <<: *lux-ssqunet-78envs-deimos-lr2-no-guide-eval
+    env_overrides:
+      <<: *lux-ssqunet-78envs-deimos-lr2-no-guide-eval-env-overrides
+      make_kwargs:
+        <<: *lux-ssqunet-78envs-deimos-lr2-no-guide-eval-env-make-kwargs
+        verbose: 3
+        verify: true
+      vec_env_class: sync
