@@ -6,18 +6,14 @@ from rl_algo_impls.rollout.rollout import RolloutGenerator
 from rl_algo_impls.rollout.vec_rollout import VecRollout
 from rl_algo_impls.shared.policy.actor_critic import ActorCritic
 from rl_algo_impls.shared.tensor_utils import NumOrArray, batch_dict_keys
-from rl_algo_impls.wrappers.vectorable_wrapper import (
-    VecEnv,
-    single_action_space,
-    single_observation_space,
-)
+from rl_algo_impls.wrappers.vector_wrapper import VectorEnv
 
 
 class SyncStepRolloutGenerator(RolloutGenerator):
     def __init__(
         self,
         policy: ActorCritic,
-        vec_env: VecEnv,
+        vec_env: VectorEnv,
         n_steps: int = 2048,
         sde_sample_freq: int = -1,
         scale_advantage_by_values_accuracy: bool = False,
@@ -44,12 +40,12 @@ class SyncStepRolloutGenerator(RolloutGenerator):
 
         epoch_dim = (self.n_steps, vec_env.num_envs)
         step_dim = (vec_env.num_envs,)
-        obs_space = single_observation_space(vec_env)
-        act_space = single_action_space(vec_env)
+        obs_space = vec_env.single_observation_space
+        act_space = vec_env.single_action_space
         act_shape = self.policy.action_shape
         value_shape = self.policy.value_shape
 
-        self.next_obs = vec_env.reset()
+        self.next_obs, _ = vec_env.reset()
         self.next_action_masks = (
             self.get_action_mask() if self.get_action_mask else None
         )
@@ -114,9 +110,11 @@ class SyncStepRolloutGenerator(RolloutGenerator):
             (
                 self.next_obs,
                 self.rewards[s],
-                self.next_episode_starts,
+                terminations,
+                truncations,
                 _,
             ) = self.vec_env.step(clamped_actions)
+            self.next_episode_starts = terminations | truncations
             self.next_action_masks = (
                 self.get_action_mask() if self.get_action_mask else None
             )
@@ -128,7 +126,7 @@ class SyncStepRolloutGenerator(RolloutGenerator):
         if self.num_envs_reset_every_rollout > 0:
             masked_reset_mask = np.zeros(self.vec_env.num_envs, dtype=np.bool_)
             masked_reset_mask[-self.num_envs_reset_every_rollout :] = True
-            next_obs, action_mask = self.vec_env.masked_reset(masked_reset_mask)
+            next_obs, action_mask, _ = self.vec_env.masked_reset(masked_reset_mask)
             self.next_obs[-self.num_envs_reset_every_rollout :] = next_obs
             if self.next_action_masks is not None:
                 fold_in(

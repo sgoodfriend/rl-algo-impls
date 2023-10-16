@@ -7,11 +7,10 @@ authors = [
 ]
 license = {file = "LICENSE"}
 readme = "README.md"
-requires-python = ">= 3.7"
+requires-python = ">= 3.8"
 classifiers = [
     "License :: OSI Approved :: MIT License",
     "Development Status :: 3 - Alpha",
-    "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
@@ -22,12 +21,13 @@ dependencies = [
     "torch",
     "torchvision",
     "tensorboard >= 2.11.2, < 2.12",
-    "stable-baselines3 >= 1.7.0, < 1.8",
-    "gym >= 0.21.0, < 0.22",
-    "wandb == 0.13.10",
+    "stable-baselines3 >= 2.1.0, < 2.2",
+    "gymnasium >= 0.29.1, < 0.30",
+    "wandb >= 0.15.12, < 0.16",
     "pyvirtualdisplay",
     "psutil",
     "PyYAML",
+    "moviepy",
 ]
 
 [tool.setuptools]
@@ -45,11 +45,10 @@ test = [
 extra = [
     "cmake",
     "swig",
-    "stable-baselines3[extra] >= 1.7.0, < 1.8",
-    "gym[box2d] >= 0.21.0, < 0.22",
+    "stable-baselines3[extra] >= 2.1.0, < 2.2",
+    "gymnasium[box2d,mujoco] >= 0.29.1, < 0.30",
     "AutoROM.accept-rom-license >= 0.6",
     "pyglet == 1.5.27",
-    "pybullet",
     "scikit-learn",
     "matplotlib >= 3.7.1",
     "huggingface-hub",
@@ -57,6 +56,8 @@ extra = [
     "torchviz",
     "thop",
     "onnx",
+    "glfw >= 1.12.0, < 2",
+    "mujoco",
 ]
 optuna = [
     "optuna",
@@ -66,7 +67,7 @@ optuna = [
 procgen = [
     "numexpr >= 2.8.4",
     "gym3",
-    "glfw >= 1.12.0, < 1.13",
+    "glfw >= 1.12.0, < 2",
     "procgen; platform_machine=='x86_64'",
 ]
 microrts = [
@@ -79,12 +80,14 @@ jupyter = [
     "notebook"
 ]
 lux = [
-    "luxai_s2",
-    "juxai-s2",
+    "luxai_s2 >= 3.0.1, < 4",
     "ray[air]",
     "kaggle",
     "polars",
     "typing_extensions == 4.5.0",
+]
+jux = [
+    "juxai-s2 >= 3.0.0, < 4",
 ]
 all = [
     "rl-algo-impls[test]",
@@ -99,7 +102,7 @@ all = [
 "Homepage" = "https://github.com/sgoodfriend/rl-algo-impls"
 
 [build-system]
-requires = ["setuptools==65.5.0", "setuptools-scm", "wheel==0.38.4"]
+requires = ["setuptools", "setuptools-scm", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.isort]

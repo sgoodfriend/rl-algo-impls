@@ -2,18 +2,14 @@ from typing import Optional, Union
 
 import numpy as np
 
-from rl_algo_impls.wrappers.vectorable_wrapper import (
-    VecEnv,
-    VectorableWrapper,
-    find_wrapper,
-)
+from rl_algo_impls.wrappers.vector_wrapper import VectorEnv, VectorWrapper, find_wrapper
 
 
 class IncompleteArrayError(Exception):
     pass
 
 
-class SingleActionMaskWrapper(VectorableWrapper):
+class SingleActionMaskWrapper(VectorWrapper):
     def get_action_mask(self) -> Optional[np.ndarray]:
         envs = getattr(self.env.unwrapped, "envs", None)  # type: ignore
         assert (
@@ -24,13 +20,13 @@ class SingleActionMaskWrapper(VectorableWrapper):
         return np.array(masks, dtype=np.bool_)
 
 
-class MicrortsMaskWrapper(VectorableWrapper):
+class MicrortsMaskWrapper(VectorWrapper):
     def get_action_mask(self) -> np.ndarray:
         return self.env.get_action_mask().astype(bool)  # type: ignore
 
 
 def find_action_masker(
-    env: VecEnv,
+    env: VectorEnv,
 ) -> Optional[Union[SingleActionMaskWrapper, MicrortsMaskWrapper]]:
     return find_wrapper(env, SingleActionMaskWrapper) or find_wrapper(
         env, MicrortsMaskWrapper

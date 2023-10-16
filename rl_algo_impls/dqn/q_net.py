@@ -1,9 +1,9 @@
 from typing import Optional, Sequence, Type
 
-import gym
+import gymnasium
 import torch as th
 import torch.nn as nn
-from gym.spaces import Discrete
+from gymnasium.spaces import Discrete
 
 from rl_algo_impls.shared.encoder import Encoder
 from rl_algo_impls.shared.module.utils import mlp
@@ -12,8 +12,8 @@ from rl_algo_impls.shared.module.utils import mlp
 class QNetwork(nn.Module):
     def __init__(
         self,
-        observation_space: gym.Space,
-        action_space: gym.Space,
+        observation_space: gymnasium.Space,
+        action_space: gymnasium.Space,
         hidden_sizes: Sequence[int] = [],
         activation: Type[nn.Module] = nn.ReLU,  # Used by stable-baselines3
         cnn_flatten_dim: int = 512,

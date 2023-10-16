@@ -2,7 +2,7 @@ from typing import Optional, Sequence, Tuple
 
 import torch
 import torch.nn as nn
-from gym.spaces import Space
+from gymnasium.spaces import Space
 
 from rl_algo_impls.shared.actor import actor_head
 from rl_algo_impls.shared.encoder import Encoder

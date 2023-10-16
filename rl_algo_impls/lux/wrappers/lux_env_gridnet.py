@@ -1,12 +1,12 @@
 from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
-from gym import Wrapper
-from gym.spaces import Box
-from gym.spaces import Dict as DictSpace
-from gym.spaces import MultiDiscrete
-from gym.spaces import Tuple as TupleSpace
-from gym.vector.utils import batch_space
+from gymnasium import Wrapper
+from gymnasium.spaces import Box
+from gymnasium.spaces import Dict as DictSpace
+from gymnasium.spaces import MultiDiscrete
+from gymnasium.spaces import Tuple as TupleSpace
+from gymnasium.vector.utils import batch_space
 from luxai_s2.env import LuxAI_S2
 from luxai_s2.state import ObservationStateDict
 
@@ -20,19 +20,26 @@ from rl_algo_impls.lux.observation import observation_and_action_mask
 from rl_algo_impls.lux.resource_distance_map import FactoryPlacementDistances
 from rl_algo_impls.lux.rewards import LuxRewardWeights, from_lux_rewards
 from rl_algo_impls.lux.stats import StatsTracking
+from rl_algo_impls.wrappers.vector_wrapper import (
+    VecEnvResetReturn,
+    VecEnvStepReturn,
+    VectorEnv,
+    merge_info,
+)
 
 
-class LuxEnvGridnet(Wrapper):
+class LuxEnvGridnet(VectorEnv):
     def __init__(
         self,
-        env,
+        env: LuxAI_S2,
         bid_std_dev: float = 5,
         reward_weights: Optional[Dict[str, float]] = None,
         verify: bool = False,
         factory_ice_distance_buffer: Optional[int] = None,
         reset_on_done: bool = True,
     ) -> None:
-        super().__init__(env)
+        super().__init__()
+        self.env = env
         self.bid_std_dev = bid_std_dev
         if reward_weights is None:
             self.reward_weights = LuxRewardWeights.default_start()
@@ -40,9 +47,9 @@ class LuxEnvGridnet(Wrapper):
             self.reward_weights = LuxRewardWeights(**reward_weights)
         self.verify = verify
         self.factory_ice_distance_buffer = factory_ice_distance_buffer
-        self.seed(None)
+        self.seed_rng = np.random.RandomState()
         self.reset_on_done = reset_on_done
-        self.map_size = self.unwrapped.env_cfg.map_size
+        self.map_size = self.env.env_cfg.map_size
 
         self.stats = StatsTracking()
 
@@ -68,7 +75,7 @@ class LuxEnvGridnet(Wrapper):
             ),
         }
 
-        observation_sample = self.reset()
+        observation_sample, _ = self.reset()
         single_obs_shape = observation_sample.shape[1:]
         self.single_observation_space = Box(
             low=0,
@@ -82,28 +89,29 @@ class LuxEnvGridnet(Wrapper):
         self._action_mask: Optional[np.ndarray] = None
 
     @property
-    def unwrapped(self) -> LuxAI_S2:
-        unwrapped = super().unwrapped
-        assert isinstance(unwrapped, LuxAI_S2)
-        return unwrapped
+    def num_envs(self) -> int:
+        return len(self.env.possible_agents)
 
-    def step(
-        self, action: np.ndarray
-    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, List[Dict[str, Any]],]:
-        env = self.unwrapped
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self.env, name)
+
+    def step(self, action: np.ndarray) -> VecEnvStepReturn:
         lux_actions = self._to_lux_actions(action)
-        lux_obs, lux_rewards, done, info = env.step(lux_actions)
+        lux_obs, lux_rewards, terminations, truncations, info = self.env.step(
+            lux_actions
+        )
 
         self.factory_distances.record_placement(lux_actions)
 
-        all_done = all(done.values())
+        dones = {p: terminations[p] or truncations[p] for p in self.agents}
+        all_done = all(dones.values())
         rewards = self._from_lux_rewards(lux_rewards, all_done, info)
 
         if all_done and self.reset_on_done:
-            obs = self.reset()
+            obs, _ = self.reset()
         else:
             if self.reset_on_done:
-                assert not any(done.values()), "All or none should be done"
+                assert not any(dones.values()), "All or none should be done"
             self._enqueued_actions = {
                 u_id: enqueued_action_from_obs(u["action_queue"])
                 for p in self.agents
@@ -114,24 +122,27 @@ class LuxEnvGridnet(Wrapper):
         return (
             obs,
             rewards,
-            np.array([done[p] for p in self.agents]),
-            [info[p] for p in self.agents],
+            np.array([terminations[p] for p in self.agents]),
+            np.array([truncations[p] for p in self.agents]),
+            merge_info(self, [info.get(p, {}) for p in self.agents]),
         )
 
-    def reset(self) -> np.ndarray:
+    def reset(self, *, seed: Optional[int] = None, **kwargs) -> VecEnvResetReturn:
+        if seed is not None:
+            self.seed_rng = np.random.RandomState(seed)
         int_info = np.iinfo(np.int32)
-        lux_obs, self.agents = reset_and_early_phase(
-            self.unwrapped,
+        lux_obs, info, self.agents = reset_and_early_phase(
+            self.env,
             self.bid_std_dev,
             self.seed_rng.randint(int_info.max),
+            **kwargs,
         )
-        self.factory_distances = FactoryPlacementDistances(self.unwrapped.state)
+        self.factory_distances = FactoryPlacementDistances(self.env.state)
         self._enqueued_actions = {}
-        self.stats.reset(self.unwrapped, self.verify)
-        return self._from_lux_observation(lux_obs)
-
-    def seed(self, seed: Optional[int] = None) -> None:
-        self.seed_rng = np.random.RandomState(seed)
+        self.stats.reset(self.env, self.verify)
+        return self._from_lux_observation(lux_obs), merge_info(
+            self, [info.get(p, {}) for p in self.agents]
+        )
 
     def _from_lux_observation(
         self, lux_obs: Dict[str, ObservationStateDict]
@@ -202,9 +213,9 @@ def bid_actions(agents: List[str], bid_std_dev: float) -> Dict[str, Any]:
 
 
 def reset_and_early_phase(
-    env: LuxAI_S2, bid_std_dev: float, seed: Optional[int] = None
-) -> Tuple[Dict[str, ObservationStateDict], List[str]]:
-    env.reset(seed=seed)
+    env: LuxAI_S2, bid_std_dev: float, seed: Optional[int] = None, **kwargs
+) -> Tuple[Dict[str, ObservationStateDict], dict, List[str]]:
+    env.reset(seed=seed, **kwargs)
     agents = env.agents
-    lux_obs, _, _, _ = env.step(bid_actions(env.agents, bid_std_dev))
-    return lux_obs, agents
+    lux_obs, _, _, _, info = env.step(bid_actions(env.agents, bid_std_dev))
+    return lux_obs, info, agents

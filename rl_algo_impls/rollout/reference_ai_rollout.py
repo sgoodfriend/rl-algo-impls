@@ -13,11 +13,11 @@ from rl_algo_impls.shared.tensor_utils import (
     batch_dict_keys,
     tensor_to_numpy,
 )
-from rl_algo_impls.wrappers.vectorable_wrapper import VecEnv, single_action_space
+from rl_algo_impls.wrappers.vector_wrapper import VectorEnv
 
 
 class ReferenceAIRolloutGenerator(SyncStepRolloutGenerator):
-    def __init__(self, policy: ActorCritic, vec_env: VecEnv, **kwargs) -> None:
+    def __init__(self, policy: ActorCritic, vec_env: VectorEnv, **kwargs) -> None:
         super().__init__(policy, vec_env, **kwargs)
         if not self.include_logp:
             if isinstance(self.actions, dict):

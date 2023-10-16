@@ -7,7 +7,7 @@ import torch
 
 from rl_algo_impls.rollout.rollout import RolloutGenerator
 from rl_algo_impls.shared.policy.policy import Policy
-from rl_algo_impls.wrappers.vectorable_wrapper import VecEnv
+from rl_algo_impls.wrappers.vector_wrapper import VectorEnv
 
 
 class Batch(NamedTuple):
@@ -30,7 +30,7 @@ class ReplayBufferRolloutGenerator(RolloutGenerator):
     def __init__(
         self,
         policy: Policy,
-        vec_env: VecEnv,
+        vec_env: VectorEnv,
         buffer_size: int = 1_000_000,
         learning_starts: int = 50_000,
         train_freq: int = 4,
@@ -38,7 +38,7 @@ class ReplayBufferRolloutGenerator(RolloutGenerator):
         super().__init__(policy, vec_env)
         self.policy = policy
         self.vec_env = vec_env
-        self.next_obs = vec_env.reset()
+        self.next_obs, _ = vec_env.reset()
 
         self.learning_starts = learning_starts
         self.train_freq = train_freq
@@ -56,7 +56,8 @@ class ReplayBufferRolloutGenerator(RolloutGenerator):
         self.policy.train(False)
         for _ in range(n_steps):
             actions = self.policy.act(self.next_obs, deterministic=False, **kwargs)
-            next_obs, rewards, dones, _ = self.vec_env.step(actions)
+            next_obs, rewards, terminations, truncations, _ = self.vec_env.step(actions)
+            dones = terminations | truncations
             assert isinstance(self.next_obs, np.ndarray)
             assert isinstance(next_obs, np.ndarray)
             for i in range(self.vec_env.num_envs):

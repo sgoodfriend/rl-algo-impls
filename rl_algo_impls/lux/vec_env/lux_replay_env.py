@@ -2,10 +2,10 @@ import logging
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
-from gym import Env
-from gym.spaces import Box
-from gym.spaces import Dict as DictSpace
-from gym.spaces import MultiDiscrete
+from gymnasium import Env
+from gymnasium.spaces import Box
+from gymnasium.spaces import Dict as DictSpace
+from gymnasium.spaces import MultiDiscrete
 
 from rl_algo_impls.lux.actions import (
     ACTION_SIZES,
@@ -92,7 +92,7 @@ class LuxReplayEnv(Env):
 
     def step(
         self, action: Optional[Dict[str, np.ndarray]]
-    ) -> Tuple[np.ndarray, float, bool, Dict[str, Any]]:
+    ) -> Tuple[np.ndarray, float, bool, bool, Dict[str, Any]]:
         state, replay_action, done, self_score, opponent_score = self.state.step()
         # _last_action must be set before _from_lux_state is called, which updates prior obs
         self._last_action = from_lux_action(
@@ -125,16 +125,16 @@ class LuxReplayEnv(Env):
                     "score_reward": reward,
                 }
             }
-            obs = self.reset()
+            obs, _ = self.reset()
         else:
             reward = 0
             info = {}
-        return (obs, reward, done, info)
+        return (obs, reward, done, False, info)
 
-    def reset(self) -> np.ndarray:
+    def reset(self, **kwargs) -> Tuple[np.ndarray, dict]:
         lux_state = self.state.reset(self.next_replay_path_fn())
         obs = self._from_lux_state(lux_state)
-        return obs
+        return obs, {}
 
     def _from_lux_state(self, lux_state: LuxState) -> np.ndarray:
         (obs_state_dict, game_state, enqueued_actions, player) = lux_state
@@ -153,8 +153,9 @@ class LuxReplayEnv(Env):
     def get_action_mask(self) -> Dict[str, np.ndarray]:
         return self._action_mask
 
-    def close(self) -> None:
+    def close(self, **kwargs) -> None:
         self.next_replay_path_fn = None
+        super().close()
 
     @property
     def last_action(self) -> Dict[str, np.ndarray]:

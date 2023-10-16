@@ -95,12 +95,13 @@ def replay_file_to_npz(
     # action_masks are not offset; however, don't compute mask for last observation
     action_masks = []
 
-    obs[0] = env.reset()
+    obs[0], _ = env.reset()
     idx = 0
     d = False
     while not d:
         action_masks.append(env.get_action_mask())
-        o, r, d, _ = env.step(None)
+        o, r, termination, truncation, _ = env.step(None)
+        d = termination or truncation
         reward[idx] = r
         done[idx] = d
         actions.append(env.last_action)

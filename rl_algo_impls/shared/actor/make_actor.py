@@ -1,8 +1,8 @@
 from typing import Optional, Tuple, Type
 
-import gym
+import gymnasium
 import torch.nn as nn
-from gym.spaces import Box, Discrete, MultiDiscrete
+from gymnasium.spaces import Box, Discrete, MultiDiscrete
 
 from rl_algo_impls.shared.actor.actor import Actor
 from rl_algo_impls.shared.actor.categorical import CategoricalActorHead
@@ -17,7 +17,7 @@ from rl_algo_impls.shared.encoder import EncoderOutDim
 
 
 def actor_head(
-    action_space: gym.Space,
+    action_space: gymnasium.Space,
     in_dim: EncoderOutDim,
     hidden_sizes: Tuple[int, ...],
     init_layers_orthogonal: bool,

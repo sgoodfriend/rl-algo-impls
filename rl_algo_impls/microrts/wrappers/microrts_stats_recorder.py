@@ -2,19 +2,19 @@ from typing import Any, Dict, List, Optional
 
 import numpy as np
 
-from rl_algo_impls.wrappers.vectorable_wrapper import (
-    VecEnvObs,
+from rl_algo_impls.wrappers.vector_wrapper import (
+    VecEnvResetReturn,
     VecEnvStepReturn,
-    VectorableWrapper,
+    VectorEnv,
+    VectorWrapper,
 )
 
 
-class MicrortsStatsRecorder(VectorableWrapper):
+class MicrortsStatsRecorder(VectorWrapper):
     def __init__(
         self,
-        env,
+        env: VectorEnv,
         bots: Optional[Dict[str, int]] = None,
-        map_paths: Optional[List[str]] = None,
     ) -> None:
         super().__init__(env)
         self.raw_rewards = [[] for _ in range(self.num_envs)]
@@ -24,25 +24,26 @@ class MicrortsStatsRecorder(VectorableWrapper):
             for b, n in self.bots.items():
                 self._bot_at_index.extend([b] * n)
 
-    def reset(self) -> VecEnvObs:
-        obs = super().reset()
+    def reset(self, **kwargs) -> VecEnvResetReturn:
+        reset_return = super().reset(**kwargs)
         self.raw_rewards = [[] for _ in range(self.num_envs)]
-        return obs
+        return reset_return
 
     def step(self, actions: np.ndarray) -> VecEnvStepReturn:
-        obs, rews, dones, infos = self.env.step(actions)
+        obs, rews, terminations, truncations, infos = self.env.step(actions)
+        dones = terminations | truncations
         self._update_infos(infos, dones)
-        return obs, rews, dones, infos
+        return obs, rews, terminations, truncations, infos
 
-    def _update_infos(self, infos: List[Dict[str, Any]], dones: np.ndarray) -> None:
-        for idx, info in enumerate(infos):
-            self.raw_rewards[idx].append(info["raw_rewards"])
-        for idx, (info, done) in enumerate(zip(infos, dones)):
+    def _update_infos(self, infos: dict, dones: np.ndarray) -> None:
+        for idx, raw_rewards in enumerate(infos.get("raw_rewards", [])):
+            self.raw_rewards[idx].append(raw_rewards)
+        for idx, done in enumerate(dones):
             if done:
                 raw_rewards = np.array(self.raw_rewards[idx]).sum(0)
                 raw_names = [str(rf) for rf in self.env.unwrapped.rfs]
                 # ScoreRewardFunction makes no sense to accumulate
-                info["microrts_stats"] = dict(
+                microrts_stats = dict(
                     (n, r)
                     for n, r in zip(raw_names, raw_rewards)
                     if n != "ScoreRewardFunction"
@@ -67,7 +68,14 @@ class MicrortsStatsRecorder(VectorableWrapper):
                         }
                     )
 
-                info["microrts_results"] = microrts_results
+                self._add_info(
+                    infos,
+                    {
+                        "microrts_results": microrts_results,
+                        "microrts_stats": microrts_stats,
+                    },
+                    idx,
+                )
 
                 self.raw_rewards[idx] = []
 

@@ -3,13 +3,17 @@ import os
 from typing import Dict, List, NamedTuple, Optional
 
 import numpy as np
-from gym.vector.vector_env import VectorEnv
 
 from rl_algo_impls.lux.rewards import LuxRewardWeights
 from rl_algo_impls.lux.vec_env.lux_npz_replay_env import LuxNpzReplayEnv
 from rl_algo_impls.lux.vec_env.lux_replay_env import LuxReplayEnv
 from rl_algo_impls.lux.vec_env.lux_replay_state import ReplayPath
-from rl_algo_impls.wrappers.vectorable_wrapper import VecEnvObs, VecEnvStepReturn
+from rl_algo_impls.shared.vec_env.base_vector_env import BaseVectorEnv
+from rl_algo_impls.wrappers.vector_wrapper import (
+    VecEnvResetReturn,
+    VecEnvStepReturn,
+    merge_info,
+)
 
 
 class ReplayDir(NamedTuple):
@@ -17,7 +21,7 @@ class ReplayDir(NamedTuple):
     team_name: str
 
 
-class VecLuxReplayEnv(VectorEnv):
+class VecLuxReplayEnv(BaseVectorEnv):
     def __init__(
         self,
         num_envs: int,
@@ -87,11 +91,11 @@ class VecLuxReplayEnv(VectorEnv):
         single_env = self.envs[0]
         map_dim = single_env.map_size
         self.num_map_tiles = map_dim * map_dim
-        single_observation_space = single_env.observation_space
         self.action_plane_space = single_env.action_plane_space
-        single_action_space = single_env.action_space
         self.metadata = single_env.metadata
-        super().__init__(num_envs, single_observation_space, single_action_space)
+        super().__init__(
+            num_envs, single_env.observation_space, single_env.action_space
+        )
 
     def next_replay_path(self) -> ReplayPath:
         rp = self.replay_paths[self.replay_idx_permutation[self.next_replay_idx]]
@@ -108,22 +112,22 @@ class VecLuxReplayEnv(VectorEnv):
             step_returns = [env.step(None) for env in self.envs]
         obs = np.stack([sr[0] for sr in step_returns])
         rewards = np.stack([sr[1] for sr in step_returns])
-        dones = np.stack([sr[2] for sr in step_returns])
-        infos = [sr[3] for sr in step_returns]
-        return obs, rewards, dones, infos
+        terminations = np.stack([sr[2] for sr in step_returns])
+        truncations = np.stack([sr[3] for sr in step_returns])
+        infos = merge_info(self, [sr[4] for sr in step_returns])
+        return obs, rewards, terminations, truncations, infos
 
-    def reset(self) -> VecEnvObs:
-        env_observations = [env.reset() for env in self.envs]
+    def reset(self, **kwargs) -> VecEnvResetReturn:
+        reset_returns = [env.reset(**kwargs) for env in self.envs]
+        env_observations = [rr[0] for rr in reset_returns]
+        infos = [rr[1] for rr in reset_returns]
         if self.offset_env_starts:
             max_episode_length = self.envs[0].max_episode_length
             for idx, env in enumerate(self.envs):
                 offset = int(max_episode_length * idx / self.num_envs)
                 for _ in range(offset):
-                    env_observations[idx], _, _, _ = env.step(None)
-        return np.stack(env_observations)
-
-    def seed(self, seeds=None):
-        pass
+                    env_observations[idx], _, _, _, infos[idx] = env.step(None)
+        return np.stack(env_observations), merge_info(self, infos)
 
     def close_extras(self, **kwargs):
         if self.is_npz_dir:
@@ -131,12 +135,7 @@ class VecLuxReplayEnv(VectorEnv):
 
             ray.shutdown()
         for env in self.envs:
-            env.close()
-
-    def render(self, mode="human", **kwargs):
-        raise NotImplementedError(
-            f"{self.__class__.__name__} doesn't support rendering"
-        )
+            env.close(**kwargs)
 
     def get_action_mask(self) -> np.ndarray:
         return np.stack([env.get_action_mask() for env in self.envs])
@@ -155,3 +154,13 @@ class VecLuxReplayEnv(VectorEnv):
         assert hasattr(self.envs[0], "reward_weights")
         for env in self.envs:
             env.reward_weights = reward_weights  # type: ignore
+
+    def call(self, method_name: str, *args, **kwargs) -> tuple:
+        results = []
+        for env in self.envs:
+            fn = getattr(env, method_name)
+            if callable(fn):
+                results.append(fn(*args, **kwargs))
+            else:
+                results.append(fn)
+        return tuple(results)

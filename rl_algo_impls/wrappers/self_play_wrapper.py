@@ -1,23 +1,24 @@
 import random
 from collections import deque
-from typing import Any, Deque, Dict, List, Optional
+from typing import Any, Deque, Dict, Generic, List, Optional
 
 import numpy as np
+from gymnasium.experimental.vector.utils import batch_space
 
 from rl_algo_impls.runner.config import Config
 from rl_algo_impls.shared.policy.policy import Policy
 from rl_algo_impls.shared.tensor_utils import batch_dict_keys
-from rl_algo_impls.wrappers.action_mask_wrapper import find_action_masker
-from rl_algo_impls.wrappers.vectorable_wrapper import (
+from rl_algo_impls.wrappers.vector_wrapper import (
+    ObsType,
     VecEnvMaskedResetReturn,
-    VecEnvObs,
     VecEnvStepReturn,
-    VectorableWrapper,
+    VectorWrapper,
+    filter_info,
 )
 
 
-class SelfPlayWrapper(VectorableWrapper):
-    next_obs: VecEnvObs
+class SelfPlayWrapper(VectorWrapper, Generic[ObsType]):
+    next_obs: ObsType
     next_action_masks: Optional[np.ndarray]
 
     def __init__(
@@ -54,11 +55,19 @@ class SelfPlayWrapper(VectorableWrapper):
 
         self.selfplay_policies: Dict[str, Policy] = {}
 
-        self.num_envs = env.num_envs - num_old_policies
+        self._num_envs = env.num_envs - num_old_policies
+        self._observation_space = batch_space(
+            env.single_observation_space, n=self._num_envs
+        )
+        self._action_space = batch_space(env.single_action_space, n=self._num_envs)
 
         if self.selfplay_bots:
-            self.num_envs -= sum(self.selfplay_bots.values())
+            self._num_envs -= sum(self.selfplay_bots.values())
             self.initialize_selfplay_bots()
+
+    @property
+    def num_envs(self) -> int:
+        return self._num_envs
 
     def get_action_mask(self) -> Optional[np.ndarray]:
         assert self.next_action_masks is not None
@@ -122,17 +131,14 @@ class SelfPlayWrapper(VectorableWrapper):
             policy_indexes = [policy == p for p in self.policy_assignments]
             if any(policy_indexes):
                 all_actions[policy_indexes] = policy.act(
-                    self.next_obs[policy_indexes],
+                    self.next_obs[policy_indexes],  # type: ignore
                     deterministic=False,
                     action_masks=batch_dict_keys(self.next_action_masks[policy_indexes])
                     if self.next_action_masks is not None
                     else None,
                 )
-        self.next_obs, rew, done, info = env.step(all_actions)
-        self.next_action_masks = env.get_action_mask()
-
-        rew = rew[orig_learner_indexes]
-        info = [i for i, b in zip(info, orig_learner_indexes) if b]
+        self.next_obs, rew, truncations, terminations, info = env.step(all_actions)
+        self.next_action_masks = env.get_action_mask()  # type: ignore
 
         self.steps_since_swap += 1
         for idx in range(
@@ -144,12 +150,19 @@ class SelfPlayWrapper(VectorableWrapper):
                 self.swap_policy(idx, self.swap_window_size)
 
         new_learner_indexes = self.learner_indexes()
-        return self.next_obs[new_learner_indexes], rew, done[orig_learner_indexes], info
+        return (
+            self.next_obs[new_learner_indexes],
+            rew[orig_learner_indexes],
+            terminations[orig_learner_indexes],
+            truncations[orig_learner_indexes],
+            filter_info(info, orig_learner_indexes),
+        )
 
-    def reset(self) -> VecEnvObs:
-        self.next_obs = super().reset()
-        self.next_action_masks = self.env.get_action_mask()
-        return self.next_obs[self.learner_indexes()]
+    def reset(self, **kwargs):
+        self.next_obs, info = super().reset(**kwargs)
+        self.next_action_masks = self.env.get_action_mask()  # type: ignore
+        learner_indexes = self.learner_indexes()
+        return self.next_obs[learner_indexes], filter_info(info, learner_indexes)
 
     def masked_reset(self, env_mask: np.ndarray) -> VecEnvMaskedResetReturn:
         learning_mask = np.array(self.learner_indexes(), dtype=np.bool_)
@@ -158,7 +171,7 @@ class SelfPlayWrapper(VectorableWrapper):
         assert np.all(
             mapped_mask[::2] == mapped_mask[1::2]
         ), f"Expect mapped_mask to be the same for player 1 and 2: {mapped_mask}"
-        return self.env.masked_reset(mapped_mask)
+        return self.env.masked_reset(mapped_mask)  # type: ignore
 
     def __getattr__(self, name):
         attr = super().__getattr__(name)

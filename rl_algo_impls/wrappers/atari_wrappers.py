@@ -1,45 +1,44 @@
-from typing import Any, Dict, Tuple, Union
+from typing import Any, Dict
 
-import gym
+import gymnasium
 import numpy as np
 
-from rl_algo_impls.wrappers.vectorable_wrapper import VectorableWrapper
 
-ObsType = Union[np.ndarray, dict]
-ActType = Union[int, float, np.ndarray, dict]
-
-
-class EpisodicLifeEnv(VectorableWrapper):
-    def __init__(self, env: gym.Env, training: bool = True, noop_act: int = 0) -> None:
+class EpisodicLifeEnv(gymnasium.Wrapper):
+    def __init__(
+        self, env: gymnasium.Env, training: bool = True, noop_act: int = 0
+    ) -> None:
         super().__init__(env)
         self.training = training
         self.noop_act = noop_act
         self.life_done_continue = False
         self.lives = 0
 
-    def step(self, action: ActType) -> Tuple[ObsType, float, bool, Dict[str, Any]]:
-        obs, rew, done, info = self.env.step(action)
+    def step(self, action):
+        obs, rew, terminated, truncated, info = self.env.step(action)
         new_lives = self.env.unwrapped.ale.lives()
-        self.life_done_continue = new_lives != self.lives and not done
+        self.life_done_continue = new_lives != self.lives and not (
+            terminated or truncated
+        )
         # Only if training should life-end be marked as done
         if self.training and 0 < new_lives < self.lives:
-            done = True
+            truncated = True
         self.lives = new_lives
-        return obs, rew, done, info
+        return obs, rew, terminated, truncated, info
 
-    def reset(self, **kwargs) -> ObsType:
+    def reset(self, **kwargs):
         # If life_done_continue (but not game over), then a reset should just allow the
         # game to progress to the next life.
         if self.training and self.life_done_continue:
-            obs, _, _, _ = self.env.step(self.noop_act)
+            obs, _, _, _, info = self.env.step(self.noop_act)
         else:
-            obs = self.env.reset(**kwargs)
+            obs, info = self.env.reset(**kwargs)
         self.lives = self.env.unwrapped.ale.lives()
-        return obs
+        return obs, info
 
 
-class FireOnLifeStarttEnv(VectorableWrapper):
-    def __init__(self, env: gym.Env, fire_act: int = 1) -> None:
+class FireOnLifeStarttEnv(gymnasium.Wrapper):
+    def __init__(self, env: gymnasium.Env, fire_act: int = 1) -> None:
         super().__init__(env)
         self.fire_act = fire_act
         action_meanings = env.unwrapped.get_action_meanings()
@@ -48,37 +47,38 @@ class FireOnLifeStarttEnv(VectorableWrapper):
         self.lives = 0
         self.fire_on_next_step = True
 
-    def step(self, action: ActType) -> Tuple[ObsType, float, bool, Dict[str, Any]]:
+    def step(self, action):
         if self.fire_on_next_step:
             action = self.fire_act
             self.fire_on_next_step = False
-        obs, rew, done, info = self.env.step(action)
+        obs, rew, terminated, truncated, info = self.env.step(action)
         new_lives = self.env.unwrapped.ale.lives()
+        done = terminated or truncated
         if 0 < new_lives < self.lives and not done:
             self.fire_on_next_step = True
         self.lives = new_lives
-        return obs, rew, done, info
+        return obs, rew, terminated, truncated, info
 
-    def reset(self, **kwargs) -> ObsType:
+    def reset(self, **kwargs):
         self.env.reset(**kwargs)
-        obs, _, done, _ = self.env.step(self.fire_act)
-        if done:
+        obs, _, terminated, truncated, _ = self.env.step(self.fire_act)
+        if terminated or truncated:
             self.env.reset(**kwargs)
-        obs, _, done, _ = self.env.step(2)
-        if done:
-            self.env.reset(**kwargs)
+        obs, _, terminated, truncated, info = self.env.step(2)
+        if terminated or truncated:
+            obs, info = self.env.reset(**kwargs)
         self.fire_on_next_step = False
-        return obs
+        return obs, info
 
 
-class ClipRewardEnv(VectorableWrapper):
-    def __init__(self, env: gym.Env, training: bool = True) -> None:
+class ClipRewardEnv(gymnasium.Wrapper):
+    def __init__(self, env: gymnasium.Env, training: bool = True) -> None:
         super().__init__(env)
         self.training = training
 
-    def step(self, action: ActType) -> Tuple[ObsType, float, bool, Dict[str, Any]]:
-        obs, rew, done, info = self.env.step(action)
+    def step(self, action):
+        obs, rew, terminated, truncated, info = self.env.step(action)
         if self.training:
             info["unclipped_reward"] = rew
-            rew = np.sign(rew)
-        return obs, rew, done, info
+            rew = np.sign(rew)  # type: ignore
+        return obs, rew, terminated, truncated, info

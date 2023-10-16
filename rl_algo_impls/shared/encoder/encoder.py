@@ -1,16 +1,16 @@
 from typing import Dict, Optional, Sequence, Type
 
-import gym
+import gymnasium
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from gym.spaces import Box, Discrete
+from gymnasium.spaces import Box, Discrete
 from stable_baselines3.common.preprocessing import get_flattened_obs_dim
 
+from rl_algo_impls.microrts.encoder.microrts_cnn import MicrortsCnn
 from rl_algo_impls.shared.encoder.cnn import CnnEncoder
 from rl_algo_impls.shared.encoder.gridnet_encoder import GridnetEncoder
 from rl_algo_impls.shared.encoder.impala_cnn import ImpalaCnn
-from rl_algo_impls.microrts.encoder.microrts_cnn import MicrortsCnn
 from rl_algo_impls.shared.encoder.nature_cnn import NatureCnn
 from rl_algo_impls.shared.module.utils import layer_init
 
@@ -25,7 +25,7 @@ CNN_EXTRACTORS_BY_STYLE: Dict[str, Type[CnnEncoder]] = {
 class Encoder(nn.Module):
     def __init__(
         self,
-        obs_space: gym.Space,
+        obs_space: gymnasium.Space,
         activation: Type[nn.Module],
         init_layers_orthogonal: bool = False,
         cnn_flatten_dim: int = 512,

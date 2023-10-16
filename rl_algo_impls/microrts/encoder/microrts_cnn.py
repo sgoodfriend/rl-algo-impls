@@ -1,6 +1,6 @@
 from typing import Optional, Type
 
-import gym
+import gymnasium
 import torch
 import torch.nn as nn
 
@@ -15,7 +15,7 @@ class MicrortsCnn(FlattenedCnnEncoder):
 
     def __init__(
         self,
-        obs_space: gym.Space,
+        obs_space: gymnasium.Space,
         activation: Type[nn.Module],
         cnn_init_layers_orthogonal: Optional[bool],
         linear_init_layers_orthogonal: bool,

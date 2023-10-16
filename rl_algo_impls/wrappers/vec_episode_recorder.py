@@ -1,14 +1,14 @@
 import numpy as np
-from gym.wrappers.monitoring.video_recorder import VideoRecorder
+from gymnasium.wrappers.monitoring.video_recorder import VideoRecorder
 
-from rl_algo_impls.wrappers.vectorable_wrapper import (
-    VecEnvObs,
+from rl_algo_impls.wrappers.vector_wrapper import (
     VecEnvStepReturn,
-    VectorableWrapper,
+    VectorWrapper,
+    get_info,
 )
 
 
-class VecEpisodeRecorder(VectorableWrapper):
+class VecEpisodeRecorder(VectorWrapper):
     def __init__(
         self, env, base_path: str, max_video_length: int = 3600, num_episodes: int = 1
     ):
@@ -21,33 +21,35 @@ class VecEpisodeRecorder(VectorableWrapper):
         self.num_completed = 0
 
     def step(self, actions: np.ndarray) -> VecEnvStepReturn:
-        obs, rew, dones, infos = self.env.step(actions)
+        obs, rew, terminations, truncations, infos = self.env.step(actions)
+        dones = terminations | truncations
         # Using first env to record episodes
         if self.video_recorder:
             self.video_recorder.capture_frame()
             self.recorded_frames += 1
             if dones[0]:
                 self.num_completed += 1
-            if dones[0] and infos[0].get("episode"):
-                episode_info = {
-                    k: v.item() if hasattr(v, "item") else v
-                    for k, v in infos[0]["episode"].items()
-                }
+                ep_info = get_info(infos, "episode", 0)
+                if ep_info:
+                    episode_info = {
+                        k: v.item() if hasattr(v, "item") else v
+                        for k, v in ep_info.items()
+                    }
+                    if "episodes" not in self.video_recorder.metadata:
+                        self.video_recorder.metadata["episodes"] = []
+                    self.video_recorder.metadata["episodes"].append(episode_info)
 
-                if "episodes" not in self.video_recorder.metadata:
-                    self.video_recorder.metadata["episodes"] = []
-                self.video_recorder.metadata["episodes"].append(episode_info)
             if (
                 self.num_completed == self.num_episodes
                 or self.recorded_frames > self.max_video_length
             ):
                 self._close_video_recorder()
-        return obs, rew, dones, infos
+        return obs, rew, terminations, truncations, infos
 
-    def reset(self) -> VecEnvObs:
-        obs = self.env.reset()
+    def reset(self, **kwargs):
+        reset_return = self.env.reset(**kwargs)
         self._start_video_recorder()
-        return obs
+        return reset_return
 
     def _start_video_recorder(self) -> None:
         self._close_video_recorder()
@@ -64,3 +66,5 @@ class VecEpisodeRecorder(VectorableWrapper):
         if self.video_recorder:
             self.video_recorder.close()
         self.video_recorder = None
+        self.recorded_frames = 0
+        self.num_completed = 0

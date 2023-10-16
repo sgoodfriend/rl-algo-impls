@@ -7,7 +7,6 @@ Microrts-squnet-d16-128-iMayari: &microrts-squnet-d16-128-imayari
     - action_mask_stats
   algo_hyperparams: &microrts-squnet-d16-128-imayari-algo
     learning_rate: 1.6e-04
-    learning_rate_decay: linear
     batch_size: 3072
     n_epochs: 2
     gamma: 0.999
@@ -16,6 +15,11 @@ Microrts-squnet-d16-128-iMayari: &microrts-squnet-d16-128-imayari
     max_grad_norm: 0.5
     gradient_accumulation: false
     scale_loss_by_num_actions: true
+  hyperparam_transitions_kwargs:
+    durations: [0, 1, 0]
+    phases:
+      - learning_rate: 1.6e-04
+      - learning_rate: 0
   env_hyperparams: &microrts-squnet-d16-128-imayari-env
     additional_win_loss_reward: false
     bots:

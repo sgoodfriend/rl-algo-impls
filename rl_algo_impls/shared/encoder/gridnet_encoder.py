@@ -1,6 +1,6 @@
 from typing import Optional, Tuple, Type, Union
 
-import gym
+import gymnasium
 import torch
 import torch.nn as nn
 
@@ -15,10 +15,10 @@ class GridnetEncoder(CnnEncoder):
 
     def __init__(
         self,
-        obs_space: gym.Space,
+        obs_space: gymnasium.Space,
         activation: Type[nn.Module] = nn.ReLU,
         cnn_init_layers_orthogonal: Optional[bool] = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         if cnn_init_layers_orthogonal is None:
             cnn_init_layers_orthogonal = True

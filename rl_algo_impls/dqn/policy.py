@@ -1,4 +1,3 @@
-import os
 from typing import Optional, Sequence, TypeVar
 
 import numpy as np
@@ -6,12 +5,7 @@ import torch
 
 from rl_algo_impls.dqn.q_net import QNetwork
 from rl_algo_impls.shared.policy.policy import Policy
-from rl_algo_impls.wrappers.vectorable_wrapper import (
-    VecEnv,
-    VecEnvObs,
-    single_action_space,
-    single_observation_space,
-)
+from rl_algo_impls.wrappers.vector_wrapper import ObsType, VectorEnv
 
 DQNPolicySelf = TypeVar("DQNPolicySelf", bound="DQNPolicy")
 
@@ -19,7 +13,7 @@ DQNPolicySelf = TypeVar("DQNPolicySelf", bound="DQNPolicy")
 class DQNPolicy(Policy):
     def __init__(
         self,
-        env: VecEnv,
+        env: VectorEnv,
         hidden_sizes: Sequence[int] = [],
         cnn_flatten_dim: int = 512,
         cnn_style: str = "nature",
@@ -29,8 +23,8 @@ class DQNPolicy(Policy):
     ) -> None:
         super().__init__(env, **kwargs)
         self.q_net = QNetwork(
-            single_observation_space(env),
-            single_action_space(env),
+            env.single_observation_space,
+            env.single_action_space,
             hidden_sizes,
             cnn_flatten_dim=cnn_flatten_dim,
             cnn_style=cnn_style,
@@ -40,7 +34,7 @@ class DQNPolicy(Policy):
 
     def act(
         self,
-        obs: VecEnvObs,
+        obs: ObsType,
         eps: float = 0,
         deterministic: bool = True,
         action_masks: Optional[np.ndarray] = None,
@@ -52,7 +46,7 @@ class DQNPolicy(Policy):
         if not deterministic and np.random.random() < eps:
             return np.array(
                 [
-                    single_action_space(self.env).sample()
+                    self.env.single_action_space.sample()
                     for _ in range(self.env.num_envs)
                 ]
             )

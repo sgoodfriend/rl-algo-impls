@@ -5,17 +5,20 @@ import numpy as np
 from torch.utils.tensorboard.writer import SummaryWriter
 
 from rl_algo_impls.shared.stats import Episode, EpisodesStats
-from rl_algo_impls.wrappers.vectorable_wrapper import (
-    VecEnvObs,
+from rl_algo_impls.wrappers.vector_wrapper import (
+    VecEnvResetReturn,
     VecEnvStepReturn,
-    VectorableWrapper,
+    VectorEnv,
+    VectorWrapper,
+    get_info,
+    get_infos,
 )
 
 
-class EpisodeStatsWriter(VectorableWrapper):
+class EpisodeStatsWriter(VectorWrapper):
     def __init__(
         self,
-        env,
+        env: VectorEnv,
         tb_writer: SummaryWriter,
         training: bool = True,
         rolling_length=100,
@@ -34,16 +37,14 @@ class EpisodeStatsWriter(VectorableWrapper):
         )
         self._steps_per_step: Optional[int] = None
 
-    def step(self, actions: np.ndarray) -> VecEnvStepReturn:
-        obs, rews, dones, infos = self.env.step(actions)
+    def step(self, actions) -> VecEnvStepReturn:
+        obs, rewards, terminations, truncations, infos = self.env.step(actions)
         self._record_stats(infos)
-        return obs, rews, dones, infos
+        return obs, rewards, terminations, truncations, infos
 
-    # Support for stable_baselines3.common.vec_env.VecEnvWrapper
-    def step_wait(self) -> VecEnvStepReturn:
-        obs, rews, dones, infos = self.env.step_wait()
-        self._record_stats(infos)
-        return obs, rews, dones, infos
+    def reset(self, **kwargs) -> VecEnvResetReturn:
+        obs, infos = self.env.reset(**kwargs)
+        return obs, self._record_stats(infos)
 
     @property
     def steps_per_step(self) -> int:
@@ -55,16 +56,38 @@ class EpisodeStatsWriter(VectorableWrapper):
     def steps_per_step(self, steps_per_step: int) -> None:
         self._steps_per_step = steps_per_step
 
-    def _record_stats(self, infos: List[Dict[str, Any]]) -> None:
+    def _record_stats(self, infos: dict) -> None:
         self.total_steps += self.steps_per_step
         step_episodes = []
-        for info in infos:
-            ep_info = info.get("episode")
-            if ep_info:
-                additional_info = {k: info[k] for k in self.additional_keys_to_log}
-                episode = Episode(ep_info["r"], ep_info["l"], info=additional_info)
-                step_episodes.append(episode)
-                self.episodes.append(episode)
+        if "episode" not in infos:
+            # look for episode in final_info
+            for env_idx, final_info in enumerate(
+                get_infos(infos, "final_info", self.num_envs, {})
+            ):
+                if final_info and "episode" in final_info:
+                    additional_info = {
+                        k: final_info[k] for k in self.additional_keys_to_log
+                    }
+                    episode = Episode(
+                        final_info["episode"]["r"].item(),
+                        final_info["episode"]["l"].item(),
+                        info=additional_info,
+                    )
+                    step_episodes.append(episode)
+                    self.episodes.append(episode)
+        else:
+            for env_idx, ep_info in enumerate(
+                get_infos(infos, "episode", self.num_envs, {})
+            ):
+                if ep_info:
+                    additional_info = {
+                        k: get_info(infos, k, env_idx)
+                        for k in self.additional_keys_to_log
+                    }
+                    episode = Episode(ep_info["r"], ep_info["l"], info=additional_info)
+                    step_episodes.append(episode)
+                    self.episodes.append(episode)
+
         if step_episodes:
             tag = "train" if self.training else "eval"
             step_stats = EpisodesStats(step_episodes, simple=True)

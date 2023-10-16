@@ -33,7 +33,6 @@ class ACBC(Algorithm):
         device: torch.device,
         tb_writer: SummaryWriter,
         learning_rate: float = 3e-4,
-        learning_rate_decay: str = "none",
         batch_size: int = 64,
         n_epochs: int = 10,
         gamma: NL = 0.99,
@@ -46,7 +45,7 @@ class ACBC(Algorithm):
         super().__init__(policy, device, tb_writer)
         self.policy = policy
 
-        self.learning_rate_schedule = schedule(learning_rate_decay, learning_rate)
+        self.learning_rate = learning_rate
         self.batch_size = batch_size
         self.n_epochs = n_epochs
         self.gamma = num_or_array(gamma)
@@ -75,11 +74,10 @@ class ACBC(Algorithm):
             start_time = perf_counter()
 
             progress = timesteps_elapsed / total_timesteps
-            learning_rate = self.learning_rate_schedule(progress)
             if not optimizer:
-                optimizer = Adam(self.policy.parameters(), lr=learning_rate)
+                optimizer = Adam(self.policy.parameters(), lr=self.learning_rate)
             else:
-                update_learning_rate(optimizer, learning_rate)
+                update_learning_rate(optimizer, self.learning_rate)
 
             chart_scalars = {
                 "learning_rate": optimizer.param_groups[0]["lr"],

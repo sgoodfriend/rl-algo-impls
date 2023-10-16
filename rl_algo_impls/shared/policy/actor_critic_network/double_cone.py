@@ -2,7 +2,7 @@ from typing import Dict, List, Optional
 
 import torch
 import torch.nn as nn
-from gym.spaces import Box, Space
+from gymnasium.spaces import Box, Space
 
 from rl_algo_impls.shared.module.utils import layer_init
 from rl_algo_impls.shared.policy.actor_critic_network.backbone_actor_critic import (

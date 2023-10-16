@@ -83,7 +83,7 @@ class MicroRTSSocketEnv(MicroRTSInterface):
             self._send(action[0])
         return self._wait_for_obs()
 
-    def reset(self):
+    def reset(self, **kwargs):
         if not self._initialized:
             gc.disable()
             gc.collect()

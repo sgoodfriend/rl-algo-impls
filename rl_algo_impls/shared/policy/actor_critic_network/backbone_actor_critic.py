@@ -4,9 +4,9 @@ from typing import Dict, List, Optional, Sequence, Tuple, Union
 import numpy as np
 import torch
 import torch.nn as nn
-from gym.spaces import Box
-from gym.spaces import Dict as DictSpace
-from gym.spaces import MultiDiscrete, Space
+from gymnasium.spaces import Box
+from gymnasium.spaces import Dict as DictSpace
+from gymnasium.spaces import MultiDiscrete, Space
 
 from rl_algo_impls.shared.actor import pi_forward
 from rl_algo_impls.shared.actor.gridnet import GridnetDistribution, ValueDependentMask
@@ -61,7 +61,7 @@ class BackboneActorCritic(ActorCriticNetwork):
             self.pick_vec = None
         else:
             raise ValueError(
-                f"action_space {action_space.__class__.__name__} must be MultiDiscrete or gym Dict of MultiDiscrete"
+                f"action_space {action_space.__class__.__name__} must be MultiDiscrete or gymnasium Dict of MultiDiscrete"
             )
         self.subaction_mask = subaction_mask
         self.critic_shares_backbone = critic_shares_backbone

@@ -1,15 +1,18 @@
 from dataclasses import astuple
 from typing import Optional
 
-import gym
+import gymnasium
 import numpy as np
+from gymnasium.experimental.wrappers.vector.record_episode_statistics import (
+    RecordEpisodeStatisticsV0,
+)
 from torch.utils.tensorboard.writer import SummaryWriter
 
 from rl_algo_impls.runner.config import Config, EnvHyperparams
 from rl_algo_impls.wrappers.episode_stats_writer import EpisodeStatsWriter
-from rl_algo_impls.wrappers.hwc_to_chw_observation import HwcToChwObservation
+from rl_algo_impls.wrappers.hwc_to_chw_observation import HwcToChwVectorObservation
 from rl_algo_impls.wrappers.is_vector_env import IsVectorEnv
-from rl_algo_impls.wrappers.vectorable_wrapper import VecEnv
+from rl_algo_impls.wrappers.vector_wrapper import VectorEnv
 
 
 def make_procgen_env(
@@ -17,9 +20,8 @@ def make_procgen_env(
     hparams: EnvHyperparams,
     training: bool = True,
     render: bool = False,
-    normalize_load_path: Optional[str] = None,
     tb_writer: Optional[SummaryWriter] = None,
-) -> VecEnv:
+) -> VectorEnv:
     from gym3 import ExtractDictObWrapper, ViewerWrapper
     from procgen.env import ProcgenGym3Env, ToBaselinesVecEnv
 
@@ -54,7 +56,7 @@ def make_procgen_env(
         _,  # time_budget_ms,
         _,  # video_frames_per_second,
         _,  # reference_bot,
-        _, # self_play_reference_kwargs,
+        _,  # self_play_reference_kwargs,
         _,  # additional_win_loss_smoothing_factor,
     ) = astuple(hparams)
 
@@ -72,9 +74,9 @@ def make_procgen_env(
     envs = ToBaselinesVecEnv(envs)
     envs = IsVectorEnv(envs)
     # TODO: Handle Grayscale and/or FrameStack
-    envs = HwcToChwObservation(envs)
+    envs = HwcToChwVectorObservation(envs)
 
-    envs = gym.wrappers.RecordEpisodeStatistics(envs)
+    envs = RecordEpisodeStatisticsV0(envs)
 
     if seed is not None:
         envs.action_space.seed(seed)
@@ -87,9 +89,9 @@ def make_procgen_env(
         )
     if normalize and training:
         normalize_kwargs = normalize_kwargs or {}
-        envs = gym.wrappers.NormalizeReward(envs)
+        envs = gymnasium.wrappers.NormalizeReward(envs)
         clip_obs = normalize_kwargs.get("clip_reward", 10.0)
-        envs = gym.wrappers.TransformReward(
+        envs = gymnasium.wrappers.TransformReward(
             envs, lambda r: np.clip(r, -clip_obs, clip_obs)
         )
 

@@ -99,22 +99,17 @@ class PPO(Algorithm):
         device: torch.device,
         tb_writer: SummaryWriter,
         learning_rate: float = 3e-4,
-        learning_rate_decay: str = "none",
         batch_size: int = 64,
         n_epochs: int = 10,
         gamma: NL = 0.99,
         gae_lambda: NumOrList = 0.95,
         clip_range: float = 0.2,
-        clip_range_decay: str = "none",
         clip_range_vf: Optional[float] = None,
-        clip_range_vf_decay: str = "none",
         normalize_advantage: bool = True,
         ent_coef: float = 0.0,
-        ent_coef_decay: str = "none",
         vf_coef: NumOrList = 0.5,
         ppo2_vf_coef_halving: bool = False,
         max_grad_norm: float = 0.5,
-        gamma_end: Optional[NL] = None,
         multi_reward_weights: Optional[List[int]] = None,
         gradient_accumulation: bool = False,
         kl_cutoff: Optional[float] = None,
@@ -129,23 +124,17 @@ class PPO(Algorithm):
         super().__init__(policy, device, tb_writer)
         self.policy = policy
 
-        self.gamma_schedule = (
-            linear_schedule(num_or_array(gamma), num_or_array(gamma_end))
-            if gamma_end is not None
-            else constant_schedule(num_or_array(gamma))
-        )
+        self.gamma = num_or_array(gamma)
         self.gae_lambda = num_or_array(gae_lambda)
         self.optimizer = Adam(self.policy.parameters(), lr=learning_rate, eps=1e-7)
-        self.learning_rate_schedule = schedule(learning_rate_decay, learning_rate)
+        self.learning_rate = learning_rate
         self.max_grad_norm = max_grad_norm
-        self.clip_range_schedule = schedule(clip_range_decay, clip_range)
-        self.clip_range_vf_schedule = None
-        if clip_range_vf:
-            self.clip_range_vf_schedule = schedule(clip_range_vf_decay, clip_range_vf)
+        self.clip_range = clip_range
+        self.clip_range_vf = clip_range_vf
 
         self.normalize_advantage = normalize_advantage
 
-        self.ent_coef_schedule = schedule(ent_coef_decay, ent_coef)
+        self.ent_coef = ent_coef
         self.vf_coef = num_or_array(vf_coef)
         self.ppo2_vf_coef_halving = ppo2_vf_coef_halving
 
@@ -200,21 +189,18 @@ class PPO(Algorithm):
         start_time = perf_counter()
 
         progress = timesteps_elapsed / total_timesteps
-        ent_coef = self.ent_coef_schedule(progress)
-        learning_rate = self.learning_rate_schedule(progress)
-        update_learning_rate(self.optimizer, learning_rate)
-        pi_clip = self.clip_range_schedule(progress)
-        gamma = self.gamma_schedule(progress)
+        update_learning_rate(self.optimizer, self.learning_rate)
+        pi_clip = self.clip_range
         chart_scalars = {
             "learning_rate": self.optimizer.param_groups[0]["lr"],
-            "ent_coef": ent_coef,
+            "ent_coef": self.ent_coef,
             "pi_clip": pi_clip,
-            "gamma": gamma,
+            "gamma": self.gamma,
             "gae_lambda": self.gae_lambda,
             "vf_coef": self.vf_coef,
         }
-        if self.clip_range_vf_schedule:
-            v_clip = self.clip_range_vf_schedule(progress)
+        if self.clip_range_vf is not None:
+            v_clip = self.clip_range_vf
             chart_scalars["v_clip"] = v_clip
         else:
             v_clip = None
@@ -234,7 +220,7 @@ class PPO(Algorithm):
             chart_scalars["guide_probability"] = self.guide_probability
         log_scalars(self.tb_writer, "charts", chart_scalars, timesteps_elapsed)
 
-        r = rollout_generator.rollout(gamma, self.gae_lambda)
+        r = rollout_generator.rollout(gamma=self.gamma, gae_lambda=self.gae_lambda)
         gc.collect()
         timesteps_elapsed += r.total_steps
 
@@ -291,7 +277,7 @@ class PPO(Algorithm):
                     pi_loss = -torch.min(ratio * mb_adv, clipped_ratio * mb_adv).mean()
 
                     v_loss_unclipped = (new_values - mb_returns) ** 2
-                    if v_clip:
+                    if v_clip is not None:
                         v_loss_clipped = (
                             mb_values
                             + torch.clamp(new_values - mb_values, -v_clip, v_clip)
@@ -312,7 +298,7 @@ class PPO(Algorithm):
 
                     loss = (
                         pi_coef * pi_loss
-                        + ent_coef * entropy_loss
+                        + self.ent_coef * entropy_loss
                         + (vf_coef * v_loss).sum()
                     )
 
@@ -337,7 +323,7 @@ class PPO(Algorithm):
                         .mean(0)
                         .cpu()
                         .numpy()
-                        if v_clip
+                        if v_clip is not None
                         else np.zeros(v_loss.shape)
                     )
 

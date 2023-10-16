@@ -1,11 +1,11 @@
 from typing import Any
 
-from rl_algo_impls.wrappers.vectorable_wrapper import VectorableWrapper
+from rl_algo_impls.wrappers.vector_wrapper import VectorWrapper
 
 
-class IsVectorEnv(VectorableWrapper):
+class IsVectorEnv(VectorWrapper):
     """
-    Override to set properties to match gym.vector.VectorEnv
+    Override to set properties to match gymnasium.vector.VectorEnv
     """
 
     def __init__(self, env: Any) -> None:

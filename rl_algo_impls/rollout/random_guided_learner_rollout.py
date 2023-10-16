@@ -14,18 +14,14 @@ from rl_algo_impls.rollout.trajectory_rollout import TrajectoryRollout
 from rl_algo_impls.shared.policy.actor_critic import ActorCritic
 from rl_algo_impls.shared.tensor_utils import NumOrArray, batch_dict_keys
 from rl_algo_impls.wrappers.episode_stats_writer import EpisodeStatsWriter
-from rl_algo_impls.wrappers.vectorable_wrapper import (
-    VecEnv,
-    find_wrapper,
-    single_action_space,
-)
+from rl_algo_impls.wrappers.vector_wrapper import VectorEnv, find_wrapper
 
 
 class RandomGuidedLearnerRolloutGenerator(RolloutGenerator):
     def __init__(
         self,
         learning_policy: ActorCritic,
-        vec_env: VecEnv,
+        vec_env: VectorEnv,
         guide_policy: ActorCritic,
         guide_probability: float,
         n_steps: int = 2048,
@@ -60,7 +56,7 @@ class RandomGuidedLearnerRolloutGenerator(RolloutGenerator):
 
         self.get_action_mask = getattr(vec_env, "get_action_mask", None)
 
-        self.next_obs = vec_env.reset()
+        self.next_obs, _ = vec_env.reset()
         self.next_action_masks = (
             self.get_action_mask() if self.get_action_mask else None
         )
@@ -71,7 +67,7 @@ class RandomGuidedLearnerRolloutGenerator(RolloutGenerator):
             assert (
                 self.get_action_mask is not None
             ), f"skip_no_action_steps requires get_action_mask to be implemented on {vec_env}"
-            act_space = single_action_space(vec_env)
+            act_space = vec_env.single_action_space
             act_shape = self.learning_policy.action_shape
             if isinstance(act_shape, dict):
                 self.zero_action = np.array(
@@ -103,7 +99,7 @@ class RandomGuidedLearnerRolloutGenerator(RolloutGenerator):
         completed_trajectories = []
 
         act_shape = self.learning_policy.action_shape
-        act_space = single_action_space(self.vec_env)
+        act_space = self.vec_env.single_action_space
         if isinstance(act_shape, dict):
             step_clamped_actions = np.zeros((num_envs,), dtype=np.object_)
         else:
@@ -190,7 +186,10 @@ class RandomGuidedLearnerRolloutGenerator(RolloutGenerator):
             if self.episode_stats_writer:
                 self.episode_stats_writer.steps_per_step = learning_steps
 
-            self.next_obs, rewards, dones, _ = self.vec_env.step(step_clamped_actions)
+            self.next_obs, rewards, terminations, truncations, _ = self.vec_env.step(
+                step_clamped_actions
+            )
+            dones = terminations | truncations
             self.next_action_masks = (
                 self.get_action_mask() if self.get_action_mask else None
             )
@@ -233,7 +232,7 @@ class RandomGuidedLearnerRolloutGenerator(RolloutGenerator):
         if self.num_envs_reset_every_rollout > 0:
             masked_reset_mask = np.zeros(self.num_envs, dtype=np.bool_)
             masked_reset_mask[-self.num_envs_reset_every_rollout :] = True
-            next_obs, action_mask = self.vec_env.masked_reset(masked_reset_mask)
+            next_obs, action_mask, _ = self.vec_env.masked_reset(masked_reset_mask)
             self.next_obs[-self.num_envs_reset_every_rollout :] = next_obs
             if self.next_action_masks is not None:
                 self.next_action_masks[

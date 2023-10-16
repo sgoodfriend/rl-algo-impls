@@ -2,11 +2,11 @@ import logging
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
 
-import gym
-import gym.spaces
-import gym.vector
+import gymnasium
+import gymnasium.spaces
+import gymnasium.vector
 import numpy as np
-from gym.vector.utils.spaces import batch_space
+from gymnasium.vector.utils.spaces import batch_space
 
 from rl_algo_impls.microrts.vec_env.microrts_interface import (
     ByteArray,
@@ -22,7 +22,12 @@ from rl_algo_impls.microrts.vec_env.planes import (
     Planes,
     ThresholdPlane,
 )
-from rl_algo_impls.wrappers.vectorable_wrapper import VecEnvStepReturn
+from rl_algo_impls.wrappers.vector_wrapper import (
+    VecEnvResetReturn,
+    VecEnvStepReturn,
+    VectorEnv,
+    merge_info,
+)
 
 MAX_HP = 10
 MAX_RESOURCES = 40
@@ -53,7 +58,7 @@ class TerrainOverride:
     use_paper_obs: bool
 
 
-class MicroRTSSpaceTransform(gym.vector.VectorEnv, MicroRTSInterfaceListener):
+class MicroRTSSpaceTransform(VectorEnv, MicroRTSInterfaceListener):
     logger = logging.getLogger("MicroRTSSpaceTransform")
 
     def __init__(
@@ -141,18 +146,15 @@ class MicroRTSSpaceTransform(gym.vector.VectorEnv, MicroRTSInterfaceListener):
 
         self.height, self.width, self.num_features = 0, 0, 0
         self.use_paper_obs = False
-        spaces = self._update_spaces(is_init=True)
-        assert spaces is not None
-        observation_space, action_space = spaces
+        self._update_spaces(is_init=True)
+        self.num_envs = self.interface.num_envs
 
-        super().__init__(self.interface.num_envs, observation_space, action_space)
+        super().__init__()
 
         if not self.fixed_size:
             self.interface.add_listener(self)
 
-    def _update_spaces(
-        self, is_init: bool
-    ) -> Optional[Tuple[gym.spaces.Box, gym.spaces.MultiDiscrete]]:
+    def _update_spaces(self, is_init: bool) -> None:
         if self.terrain_overrides:
             if len(self.terrain_overrides) == 1 and not self.valid_sizes:
                 matching_terrain_overrides = list(self.terrain_overrides.values())
@@ -174,9 +176,8 @@ class MicroRTSSpaceTransform(gym.vector.VectorEnv, MicroRTSInterfaceListener):
                     terrain_override.use_paper_obs == use_paper_obs
                     for terrain_override in matching_terrain_overrides
                 )
-                return self._set_spaces(
-                    is_init=is_init, sz=sz, use_paper_obs=use_paper_obs
-                )
+                self._set_spaces(is_init=is_init, sz=sz, use_paper_obs=use_paper_obs)
+                return
         # Set height and width to next factor of 4 if not factor of 4 already
         next_factor_of_4 = lambda n: n + 4 - n % 4 if n % 4 else n
         height = next_factor_of_4(np.max(self.interface.heights))
@@ -193,9 +194,10 @@ class MicroRTSSpaceTransform(gym.vector.VectorEnv, MicroRTSInterfaceListener):
                 self.logger.warning(
                     f"Map size {sz} larger than all valid sizes {self.valid_sizes}"
                 )
-        return self._set_spaces(
+        self._set_spaces(
             is_init=is_init, sz=sz, use_paper_obs=sz in self.paper_planes_sizes
         )
+        return
 
     def map_change(
         self,
@@ -259,12 +261,12 @@ class MicroRTSSpaceTransform(gym.vector.VectorEnv, MicroRTSInterfaceListener):
         self._update_action_mask(microrts_mask)
 
         obs = self._from_microrts_obs(microrts_obs)
-        return obs, r, d, i
+        return obs, r, d, np.zeros_like(d), merge_info(self, i)
 
-    def reset(self) -> np.ndarray:
+    def reset(self, **kwargs) -> VecEnvResetReturn:
         microrts_obs, microrts_mask = self.interface.reset()
         self._update_action_mask(microrts_mask)
-        return self._from_microrts_obs(microrts_obs)
+        return self._from_microrts_obs(microrts_obs), {}
 
     def render(self, mode="human"):
         return self.interface.render(mode)
@@ -496,7 +498,7 @@ class MicroRTSSpaceTransform(gym.vector.VectorEnv, MicroRTSInterfaceListener):
         is_init: bool,
         sz: int,
         use_paper_obs: bool,
-    ) -> Optional[Tuple[gym.spaces.Box, gym.spaces.MultiDiscrete]]:
+    ) -> None:
         get_dim = lambda: (self.height, self.width, self.num_features)
         old_dim = get_dim()
 
@@ -512,7 +514,7 @@ class MicroRTSSpaceTransform(gym.vector.VectorEnv, MicroRTSInterfaceListener):
         if not is_init and get_dim() == old_dim:
             return None
 
-        observation_space = gym.spaces.Box(
+        observation_space = gymnasium.spaces.Box(
             low=0.0,
             high=1.0,
             shape=(
@@ -524,11 +526,11 @@ class MicroRTSSpaceTransform(gym.vector.VectorEnv, MicroRTSInterfaceListener):
         )
 
         action_space_dims = [6, 4, 4, 4, 4, len(self.interface.utt["unitTypes"]), 7 * 7]
-        action_space = gym.spaces.MultiDiscrete(
+        action_space = gymnasium.spaces.MultiDiscrete(
             np.array([action_space_dims] * self.height * self.width).flatten().tolist()
         )
 
-        self.action_plane_space = gym.spaces.MultiDiscrete(action_space_dims)
+        self.action_plane_space = gymnasium.spaces.MultiDiscrete(action_space_dims)
 
         self.source_unit_idxs = np.tile(
             np.arange(self.height * self.width), (self.num_envs, 1)
@@ -537,18 +539,14 @@ class MicroRTSSpaceTransform(gym.vector.VectorEnv, MicroRTSInterfaceListener):
             (self.source_unit_idxs.shape + (1,))
         )
 
-        if is_init:
-            return observation_space, action_space
-        else:
-            self.single_observation_space = observation_space
-            self.observation_space = batch_space(
-                observation_space, n=self.interface.num_envs
-            )
-            self.single_action_space = action_space
-            self.action_space = gym.spaces.Tuple(
-                (action_space,) * self.interface.num_envs
-            )
-        return None
+        self.single_observation_space = observation_space
+        self.observation_space = batch_space(
+            observation_space, n=self.interface.num_envs
+        )
+        self.single_action_space = action_space
+        self.action_space = gymnasium.spaces.Tuple(
+            (action_space,) * self.interface.num_envs
+        )
 
     def set_space_transform(
         self, sz: int, use_paper_obs: bool, expected_step_ms: int

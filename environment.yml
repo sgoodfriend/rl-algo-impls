@@ -1,15 +1,13 @@
-name: rl_algo_impls_311
+name: rl_algo_impls_38
 channels:
   - pytorch
   - conda-forge
   - nodefaults
 dependencies:
-  - python=3.11
+  - python=3.8
   - mamba
   - pip
   - pytorch
   - torchvision
   - torchaudio
-  - setuptools=65.5.0
-  - wheel=0.38.4
   - build

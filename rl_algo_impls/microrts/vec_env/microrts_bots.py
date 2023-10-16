@@ -1,11 +1,12 @@
 from dataclasses import astuple
 from typing import Optional
 
-import gym
 import numpy as np
+from gymnasium.experimental.wrappers.vector.record_episode_statistics import (
+    RecordEpisodeStatisticsV0,
+)
 from torch.utils.tensorboard.writer import SummaryWriter
 
-from rl_algo_impls.microrts.vec_env.microrts_socket_env import MicroRTSSocketEnv
 from rl_algo_impls.microrts.vec_env.microrts_space_transform import (
     MicroRTSSpaceTransform,
 )
@@ -19,11 +20,10 @@ from rl_algo_impls.wrappers.additional_win_loss_reward import (
     AdditionalWinLossRewardWrapper,
 )
 from rl_algo_impls.wrappers.episode_stats_writer import EpisodeStatsWriter
-from rl_algo_impls.wrappers.hwc_to_chw_observation import HwcToChwObservation
+from rl_algo_impls.wrappers.hwc_to_chw_observation import HwcToChwVectorObservation
 from rl_algo_impls.wrappers.is_vector_env import IsVectorEnv
 from rl_algo_impls.wrappers.score_reward_wrapper import ScoreRewardWrapper
-from rl_algo_impls.wrappers.self_play_wrapper import SelfPlayWrapper
-from rl_algo_impls.wrappers.vectorable_wrapper import VecEnv
+from rl_algo_impls.wrappers.vector_wrapper import VectorEnv
 
 
 def make_microrts_bots_env(
@@ -31,9 +31,8 @@ def make_microrts_bots_env(
     hparams: EnvHyperparams,
     training: bool = True,
     render: bool = False,
-    normalize_load_path: Optional[str] = None,
     tb_writer: Optional[SummaryWriter] = None,
-) -> VecEnv:
+) -> VectorEnv:
     (
         _,  # env_type
         n_envs,
@@ -45,7 +44,6 @@ def make_microrts_bots_env(
         _,  # normalize
         _,  # normalize_kwargs,
         rolling_length,
-        _,  # train_record_video
         _,  # video_step_interval
         _,  # initial_steps_to_truncate
         _,  # clip_atari_rewards
@@ -134,7 +132,7 @@ def make_microrts_bots_env(
         fixed_size=fixed_size,
         terrain_overrides=terrain_overrides,
     )
-    envs = HwcToChwObservation(envs)
+    envs = HwcToChwVectorObservation(envs)
     envs = IsVectorEnv(envs)
     envs = MicrortsMaskWrapper(envs)
 
@@ -142,11 +140,10 @@ def make_microrts_bots_env(
         envs.action_space.seed(seed)
         envs.observation_space.seed(seed)
 
-    envs = gym.wrappers.RecordEpisodeStatistics(envs)
+    envs = RecordEpisodeStatisticsV0(envs)
     envs = MicrortsStatsRecorder(
         envs,
         bots,
-        make_kwargs.get("map_paths"),
     )
     envs = ActionMaskStatsRecorder(envs)
     if training:

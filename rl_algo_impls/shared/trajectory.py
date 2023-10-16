@@ -1,9 +1,9 @@
-import numpy as np
-
 from dataclasses import dataclass, field
 from typing import Generic, List, Optional, Type, TypeVar
 
-from rl_algo_impls.wrappers.vectorable_wrapper import VecEnvObs
+import numpy as np
+
+from rl_algo_impls.wrappers.vector_wrapper import ObsType
 
 
 @dataclass
@@ -38,7 +38,7 @@ class Trajectory:
 T = TypeVar("T", bound=Trajectory)
 
 
-class TrajectoryAccumulator(Generic[T]):
+class TrajectoryAccumulator(Generic[T, ObsType]):
     def __init__(self, num_envs: int, trajectory_class: Type[T] = Trajectory) -> None:
         self.num_envs = num_envs
         self.trajectory_class = trajectory_class
@@ -48,9 +48,9 @@ class TrajectoryAccumulator(Generic[T]):
 
     def step(
         self,
-        obs: VecEnvObs,
+        obs: ObsType,
         action: np.ndarray,
-        next_obs: VecEnvObs,
+        next_obs: ObsType,
         reward: np.ndarray,
         done: np.ndarray,
         val: np.ndarray,
@@ -61,7 +61,7 @@ class TrajectoryAccumulator(Generic[T]):
         for i, args in enumerate(zip(obs, action, next_obs, reward, done, val, *args)):
             trajectory = self._current_trajectories[i]
             # TODO: Eventually take advantage of terminated/truncated differentiation in
-            # later versions of gym.
+            # gymnasium.
             trajectory.add(*args)
             if done[i]:
                 self._trajectories.append(trajectory)

@@ -2,7 +2,7 @@ from typing import Dict, Iterator, List, Optional, TypeVar
 
 import numpy as np
 import torch
-from gym.spaces import MultiDiscrete
+from gymnasium.spaces import MultiDiscrete
 from numpy.typing import NDArray
 
 from rl_algo_impls.rollout.rollout import Batch, Rollout

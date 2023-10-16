@@ -1,12 +1,12 @@
-from typing import List, Optional
+from typing import Optional
 
-from rl_algo_impls.wrappers.vectorable_wrapper import VectorableWrapper
+import gymnasium
 
 
-class NoopEnvSeed(VectorableWrapper):
+class NoopEnvSeed(gymnasium.Wrapper):
     """
     Wrapper to stop a seed call going to the underlying environment.
     """
 
-    def seed(self, seed: Optional[int] = None) -> Optional[List[int]]:
-        return None
+    def reset(self, *, seed: Optional[int] = None, **kwargs):
+        return super().reset(**kwargs)

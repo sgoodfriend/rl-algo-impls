@@ -1,13 +1,16 @@
 from typing import Any, Dict, NamedTuple, Optional
 
-import gym
 import numpy as np
 import ray
-from gym import Wrapper
+from luxai_s2.env import LuxAI_S2
 
 from rl_algo_impls.lux.rewards import LuxRewardWeights
 from rl_algo_impls.lux.wrappers.lux_env_gridnet import LuxEnvGridnet
-from rl_algo_impls.wrappers.vectorable_wrapper import VecEnvStepReturn
+from rl_algo_impls.wrappers.vector_wrapper import (
+    VecEnvResetReturn,
+    VecEnvStepReturn,
+    VectorWrapper,
+)
 
 
 class LuxRayStepReturn(NamedTuple):
@@ -16,7 +19,7 @@ class LuxRayStepReturn(NamedTuple):
 
 
 class LuxRayResetReturn(NamedTuple):
-    obs: np.ndarray
+    reset_return: VecEnvResetReturn
     action_mask: np.ndarray
 
 
@@ -30,7 +33,7 @@ class LuxRayEnvProperties(NamedTuple):
 
 
 @ray.remote
-class LuxRayEnv(Wrapper):
+class LuxRayEnv(VectorWrapper):
     def __init__(
         self,
         bid_std_dev: float = 5,
@@ -41,7 +44,7 @@ class LuxRayEnv(Wrapper):
     ) -> None:
         super().__init__(
             LuxEnvGridnet(
-                gym.make("LuxAI_S2-v0", collect_stats=True, **kwargs),
+                LuxAI_S2(collect_stats=True, **kwargs),
                 bid_std_dev=bid_std_dev,
                 reward_weights=reward_weights,
                 verify=verify,
@@ -53,12 +56,16 @@ class LuxRayEnv(Wrapper):
     def step(self, action: np.ndarray) -> LuxRayStepReturn:
         return LuxRayStepReturn(self.env.step(action), self.env.get_action_mask())
 
-    def reset(self) -> LuxRayResetReturn:
-        return LuxRayResetReturn(self.env.reset(), self.env.get_action_mask())
+    def reset(
+        self, *, seed: Optional[int] = None, options: Optional[Dict[str, Any]] = None
+    ) -> LuxRayResetReturn:
+        return LuxRayResetReturn(
+            self.env.reset(seed=seed, options=options), self.env.get_action_mask()
+        )
 
     def get_properties(self) -> LuxRayEnvProperties:
         return LuxRayEnvProperties(
-            map_dim=self.unwrapped.env_cfg.map_size,
+            map_dim=self.env.env_cfg.map_size,
             single_observation_space=self.env.single_observation_space,
             single_action_space=self.env.single_action_space,
             action_plane_space=self.env.action_plane_space,
@@ -68,3 +75,9 @@ class LuxRayEnv(Wrapper):
 
     def set_reward_weights(self, reward_weights: LuxRewardWeights) -> None:
         self.env.reward_weights = reward_weights
+
+    def call(self, method_name: str, *args, **kwargs) -> tuple:
+        result = getattr(self.env, method_name)
+        if callable(result):
+            result = result(*args, **kwargs)
+        return (result,)

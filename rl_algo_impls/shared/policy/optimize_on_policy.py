@@ -1,18 +1,15 @@
-import optuna
-
-from gym.spaces import Box
 from typing import Any, Dict
 
-from rl_algo_impls.wrappers.vectorable_wrapper import (
-    VecEnv,
-    single_action_space,
-)
+import optuna
+from gymnasium.spaces import Box
+
+from rl_algo_impls.wrappers.vector_wrapper import VectorEnv
 
 
 def sample_on_policy_hyperparams(
-    trial: optuna.Trial, policy_hparams: Dict[str, Any], env: VecEnv
+    trial: optuna.Trial, policy_hparams: Dict[str, Any], env: VectorEnv
 ) -> Dict[str, Any]:
-    act_space = single_action_space(env)
+    act_space = env.single_action_space
 
     policy_hparams["init_layers_orthogonal"] = trial.suggest_categorical(
         "init_layers_orthogonal", [True, False]

@@ -41,7 +41,7 @@ from rl_algo_impls.shared.callbacks.reward_decay_callback import RewardDecayCall
 from rl_algo_impls.shared.stats import EpisodesStats
 from rl_algo_impls.shared.vec_env import make_env, make_eval_env
 from rl_algo_impls.wrappers.self_play_wrapper import SelfPlayWrapper
-from rl_algo_impls.wrappers.vectorable_wrapper import find_wrapper
+from rl_algo_impls.wrappers.vector_wrapper import find_wrapper
 
 
 @dataclass

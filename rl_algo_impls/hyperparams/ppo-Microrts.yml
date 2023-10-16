@@ -14,13 +14,16 @@ _microrts: &microrts-defaults
     batch_size: 256
     n_epochs: 4
     learning_rate: !!float 2.5e-4
-    learning_rate_decay: linear
     clip_range: 0.1
     vf_coef: 0.5
     ent_coef: 0.01
-    clip_range_decay: none
     clip_range_vf: 0.1
     ppo2_vf_coef_halving: true
+  hyperparam_transitions_kwargs:
+    durations: [0, 1, 0]
+    phases:
+      - learning_rate: !!float 2.5e-4
+      - learning_rate: 0
   eval_hyperparams: &microrts-eval-defaults
     deterministic: false
 
@@ -73,7 +76,6 @@ _microrts_ai: &microrts-ai-defaults
   algo_hyperparams: &microrts-ai-algo-defaults
     <<: *microrts-algo-defaults
     learning_rate: !!float 2.5e-4
-    learning_rate_decay: linear
     batch_size: 3072
     n_epochs: 4
     ent_coef: 0.01
@@ -81,6 +83,11 @@ _microrts_ai: &microrts-ai-defaults
     max_grad_norm: 0.5
     clip_range: 0.1
     clip_range_vf: 0.1
+  hyperparam_transitions_kwargs:
+    durations: [0, 1, 0]
+    phases:
+      - learning_rate: !!float 2.5e-4
+      - learning_rate: 0
   eval_hyperparams: &microrts-ai-eval-defaults
     <<: *microrts-eval-defaults
     score_function: mean
@@ -127,7 +134,12 @@ Microrts-DefeatRandomEnemySparseReward-v3-unet:
   algo_hyperparams:
     <<: *microrts-ai-algo-defaults
     learning_rate: !!float 2.5e-4
-    learning_rate_decay: spike
+  hyperparam_transitions_kwargs:
+    durations: [0, 0.1, 0, 0.9, 0]
+    phases:
+      - learning_rate: !!float 2.5e-6
+      - learning_rate: !!float 2.5e-4
+      - learning_rate: !!float 2.5e-8
 
 Microrts-DefeatCoacAIShaped-v3: &microrts-coacai-defaults
   <<: *microrts-ai-defaults
@@ -192,7 +204,12 @@ Microrts-DefeatCoacAIShaped-v3-diverseBots-unet: &microrts-unet-defaults
   algo_hyperparams: &microrts-unet-algo-defaults
     <<: *microrts-ai-algo-defaults
     learning_rate: !!float 2.5e-4
-    learning_rate_decay: spike
+  hyperparam_transitions_kwargs:
+    durations: [0, 0.1, 0, 0.9, 0]
+    phases:
+      - learning_rate: !!float 2.5e-6
+      - learning_rate: !!float 2.5e-4
+      - learning_rate: !!float 2.5e-8
 
 Microrts-selfplay-unet: &microrts-selfplay-defaults
   <<: *microrts-unet-defaults
@@ -230,7 +247,11 @@ Microrts-selfplay-unet-decay: &microrts-selfplay-decay-defaults
   reward_decay_callback: true
   algo_hyperparams:
     <<: *microrts-unet-algo-defaults
-    gamma_end: 0.999
+  hyperparam_transitions_kwargs:
+    durations: [0, 1, 0]
+    phases:
+      - gamma: 0.99
+      - gamma: 0.999
 
 Microrts-selfplay-unet-debug: &microrts-selfplay-debug-defaults
   <<: *microrts-selfplay-decay-defaults
@@ -271,7 +292,6 @@ _Microrts-squnet: &microrts-squnet
     additional_critic_activation_functions: [tanh, identity]
   algo_hyperparams: &microrts-squnet-algo-defaults
     <<: *microrts-ai-algo-defaults
-    learning_rate_decay: none
     n_epochs: 2
     gamma: [0.99, 0.999, 0.999]
     gae_lambda: [0.95, 0.99, 0.99]
@@ -733,7 +753,6 @@ Microrts-selfplay-dc-phases: &microrts-sp-dc-phases-defaults
     gelu_pool_conv: false # Bug with prior model, but was trained with this
   algo_hyperparams: &microrts-sp-dc-phases-algo-defaults
     <<: *microrts-ai-algo-defaults
-    learning_rate_decay: none
     n_epochs: 2
     gamma: [0.99, 0.999, 0.999]
     gae_lambda: [0.95, 0.99, 0.99]

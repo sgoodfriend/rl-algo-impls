@@ -4,8 +4,8 @@ from pathlib import Path
 from typing import Any, Dict
 
 import numpy as np
-from gym.spaces import Dict as DictSpace
-from gym.spaces import MultiDiscrete
+from gymnasium.spaces import Dict as DictSpace
+from gymnasium.spaces import MultiDiscrete
 from luxai_s2.state import ObservationStateDict
 
 from rl_algo_impls.lux.actions import (
@@ -22,8 +22,8 @@ from rl_algo_impls.runner.config import Config, EnvHyperparams, RunArgs
 from rl_algo_impls.runner.running_utils import get_device, load_hyperparams, make_policy
 from rl_algo_impls.shared.tensor_utils import batch_dict_keys
 from rl_algo_impls.shared.vec_env.make_env import make_eval_env
-from rl_algo_impls.wrappers.hwc_to_chw_observation import HwcToChwObservation
-from rl_algo_impls.wrappers.vectorable_wrapper import find_wrapper
+from rl_algo_impls.wrappers.hwc_to_chw_observation import HwcToChwVectorObservation
+from rl_algo_impls.wrappers.vector_wrapper import find_wrapper
 
 
 class Agent:
@@ -60,7 +60,7 @@ class Agent:
             **config.policy_hyperparams,
         ).eval()
 
-        transpose_wrapper = find_wrapper(env, HwcToChwObservation)
+        transpose_wrapper = find_wrapper(env, HwcToChwVectorObservation)
         assert transpose_wrapper
         self.transpose_wrapper = transpose_wrapper
 

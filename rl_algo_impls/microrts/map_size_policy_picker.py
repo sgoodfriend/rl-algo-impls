@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import (
     DefaultDict,
     Dict,
+    Generic,
     List,
     Optional,
     Sequence,
@@ -25,7 +26,7 @@ from rl_algo_impls.runner.config import Config, RunArgs
 from rl_algo_impls.runner.running_utils import load_hyperparams, make_policy
 from rl_algo_impls.shared.policy.policy import Policy
 from rl_algo_impls.shared.tensor_utils import NumpyOrDict
-from rl_algo_impls.wrappers.vectorable_wrapper import VecEnv, VecEnvObs
+from rl_algo_impls.wrappers.vector_wrapper import ObsType, VectorEnv
 
 MODEL_ROOT_PATH = "rai_microrts_saved_models"
 EXPONENTIAL_MOVING_AVERAGE_SPAN = 100
@@ -121,7 +122,7 @@ class ExponentialMovingAverages:
         return f"{self.__class__.__name__}: {json.dumps(self.ema_by_key)}"
 
 
-class MapSizePolicyPicker(Policy):
+class MapSizePolicyPicker(Policy, Generic[ObsType]):
     logger = logging.getLogger("MapSizePolicyPicker")
     avg_ms_by_terrain_md5: DefaultDict[str, ExponentialMovingAverages]
     selected_policy_for_terrain_md5: Dict[str, str]
@@ -131,9 +132,9 @@ class MapSizePolicyPicker(Policy):
         self,
         picker_args_by_size: Dict[int, List[PickerArgs]],
         picker_args_by_terrain_md5: Dict[str, List[PickerArgs]],
-        env: VecEnv,
+        env: VectorEnv,
         device: torch.device,
-        envs_by_name: Dict[str, VecEnv],
+        envs_by_name: Dict[str, VectorEnv],
         time_budget_ms: int,
         use_best_models: bool,
     ) -> None:
@@ -148,7 +149,7 @@ class MapSizePolicyPicker(Policy):
         )
         self.selected_policy_for_terrain_md5 = {}
 
-        def load_policy(args: PickerArgs, vec_env: VecEnv) -> Policy:
+        def load_policy(args: PickerArgs, vec_env: VectorEnv) -> Policy:
             policy_hyperparams = args.config.policy_hyperparams
             if "load_run_path" in policy_hyperparams:
                 del policy_hyperparams["load_run_path"]
@@ -195,7 +196,7 @@ class MapSizePolicyPicker(Policy):
         assert isinstance(p, Policy)
         return p
 
-    def _valid_policies(self, obs: VecEnvObs) -> List[Tuple[str, Policy]]:
+    def _valid_policies(self, obs: ObsType) -> List[Tuple[str, Policy]]:
         global errored_on_sizes
 
         valid_policies: List[Tuple[str, Policy]] = []
@@ -237,7 +238,7 @@ class MapSizePolicyPicker(Policy):
 
     def act(
         self,
-        obs: VecEnvObs,
+        obs: ObsType,
         deterministic: bool = True,
         action_masks: Optional[NumpyOrDict] = None,
     ) -> np.ndarray:
@@ -254,7 +255,7 @@ class MapSizePolicyPicker(Policy):
 
     def pre_game_analysis(
         self,
-        obs: VecEnvObs,
+        obs: ObsType,
         deterministic: bool = True,
         action_masks: Optional[NumpyOrDict] = None,
     ) -> np.ndarray:
@@ -283,12 +284,12 @@ class MapSizePolicyPicker(Policy):
         valid_policies = self._valid_policies(obs)
         pga_expiration = getattr(self.env, "pre_game_analysis_expiration_ms")
         observation_by_policy_name: Dict[
-            str, Tuple[VecEnvObs, Optional[NumpyOrDict]]
+            str, Tuple[ObsType, Optional[NumpyOrDict]]
         ] = {}
         for p_name, p in valid_policies:
             p_env = self.envs_by_name[p_name]
             observation_by_policy_name[p_name] = (
-                p_env.reset(),
+                p_env.reset()[0],
                 getattr(p_env, "get_action_mask")(),
             )
 
@@ -368,7 +369,7 @@ class MapSizePolicyPicker(Policy):
         policy: Policy,
         policy_name: str,
         terrain_md5: str,
-        obs: VecEnvObs,
+        obs: ObsType,
         deterministic: bool,
         action_masks: Optional[NumpyOrDict],
     ) -> np.ndarray:

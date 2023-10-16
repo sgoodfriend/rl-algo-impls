@@ -76,7 +76,6 @@ def selfplay_evaluate(args: SelfplayEvalArgs, root_dir: str) -> Evaluation:
             "make_kwargs": env_make_kwargs,
         },
         render=args.render,
-        normalize_load_path=player_1_model_path,
     )
     if args.video_path:
         env = VecEpisodeRecorder(

@@ -1,14 +1,14 @@
-import optuna
-
 from typing import Any, Dict
 
-from rl_algo_impls.wrappers.vectorable_wrapper import VecEnv, single_observation_space
+import optuna
+
+from rl_algo_impls.wrappers.vector_wrapper import VectorEnv
 
 
 def sample_env_hyperparams(
-    trial: optuna.Trial, env_hparams: Dict[str, Any], env: VecEnv
+    trial: optuna.Trial, env_hparams: Dict[str, Any], env: VectorEnv
 ) -> Dict[str, Any]:
-    obs_space = single_observation_space(env)
+    obs_space = env.single_observation_space
 
     n_envs = 2 ** trial.suggest_int("n_envs_exp", 1, 5)
     trial.set_user_attr("n_envs", n_envs)

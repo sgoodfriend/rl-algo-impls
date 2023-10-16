@@ -1,22 +1,16 @@
-import gym
+import gymnasium
 
 from rl_algo_impls.runner.config import Config
 
 
 def import_for_env_id(env_id: str) -> None:
-    if "BulletEnv" in env_id:
-        import pybullet_envs
     if "LuxAI_S2" in env_id:
         import luxai_s2
 
 
 def is_atari(config: Config) -> bool:
-    spec = gym.spec(config.env_id)
+    spec = gymnasium.spec(config.env_id)
     return "AtariEnv" in str(spec.entry_point)
-
-
-def is_bullet_env(config: Config) -> bool:
-    return "BulletEnv" in config.env_id
 
 
 def is_car_racing(config: Config) -> bool:

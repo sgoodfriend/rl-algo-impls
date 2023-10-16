@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Optional, Tuple, Type, Union
 
-import gym
+import gymnasium
 import numpy as np
 import torch
 import torch.nn as nn
@@ -15,7 +15,7 @@ class CnnEncoder(nn.Module, ABC):
     @abstractmethod
     def __init__(
         self,
-        obs_space: gym.Space,
+        obs_space: gymnasium.Space,
         **kwargs,
     ) -> None:
         super().__init__()
@@ -38,7 +38,7 @@ class CnnEncoder(nn.Module, ABC):
 class FlattenedCnnEncoder(CnnEncoder):
     def __init__(
         self,
-        obs_space: gym.Space,
+        obs_space: gymnasium.Space,
         activation: Type[nn.Module],
         linear_init_layers_orthogonal: bool,
         cnn_flatten_dim: int,

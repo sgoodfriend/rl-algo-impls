@@ -38,7 +38,7 @@ from rl_algo_impls.shared.callbacks.self_play_callback import SelfPlayCallback
 from rl_algo_impls.shared.stats import EpisodesStats
 from rl_algo_impls.shared.vec_env import make_env, make_eval_env
 from rl_algo_impls.wrappers.self_play_wrapper import SelfPlayWrapper
-from rl_algo_impls.wrappers.vectorable_wrapper import find_wrapper
+from rl_algo_impls.wrappers.vector_wrapper import find_wrapper
 
 
 @dataclass
@@ -325,7 +325,6 @@ def stepwise_optimize(
             env = make_env(
                 config,
                 EnvHyperparams(**config.env_hyperparams),
-                normalize_load_path=config.model_dir_path() if i > 0 else None,
                 tb_writer=tb_writer,
             )
             device = get_device(config, env)
@@ -338,7 +337,6 @@ def stepwise_optimize(
             eval_env = make_eval_env(
                 config,
                 EnvHyperparams(**config.env_hyperparams),
-                normalize_load_path=config.model_dir_path() if i > 0 else None,
                 override_hparams={"n_envs": study_args.n_eval_envs},
                 self_play_wrapper=self_play_wrapper,
             )

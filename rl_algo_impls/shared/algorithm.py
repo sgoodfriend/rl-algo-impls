@@ -7,7 +7,6 @@ from torch.utils.tensorboard.writer import SummaryWriter
 from rl_algo_impls.rollout.rollout import RolloutGenerator
 from rl_algo_impls.shared.callbacks import Callback
 from rl_algo_impls.shared.policy.policy import Policy
-from rl_algo_impls.wrappers.vectorable_wrapper import VecEnv
 
 AlgorithmSelf = TypeVar("AlgorithmSelf", bound="Algorithm")
 

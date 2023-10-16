@@ -9,9 +9,14 @@ CartPole-v1: &cartpole-defaults
     gamma: 0.98
     ent_coef: 0.0
     learning_rate: 0.001
-    learning_rate_decay: linear
     clip_range: 0.2
-    clip_range_decay: linear
+  hyperparam_transitions_kwargs:
+    durations: [0, 1, 0]
+    phases:
+      - learning_rate: 0.001
+        clip_range: 0.2
+      - learning_rate: 0
+        clip_range: 0
   eval_hyperparams:
     step_freq: !!float 2.5e4
   rollout_hyperparams:
@@ -50,11 +55,15 @@ MountainCarContinuous-v0:
     n_epochs: 10
     learning_rate: !!float 7.77e-5
     ent_coef: 0.01 # 0.00429
-    ent_coef_decay: linear
     clip_range: 0.1
     gae_lambda: 0.9
     max_grad_norm: 5
     vf_coef: 0.19
+  hyperparam_transitions_kwargs:
+    durations: [0, 1, 0]
+    phases:
+      - ent_coef: 0.01
+      - ent_coef: 0
   eval_hyperparams:
     step_freq: 5000
 
@@ -83,11 +92,16 @@ LunarLander-v2:
     gae_lambda: 0.98
     gamma: 0.999
     learning_rate: !!float 5e-4
-    learning_rate_decay: linear
     clip_range: 0.2
-    clip_range_decay: linear
     ent_coef: 0.01
     normalize_advantage: false
+  hyperparam_transitions_kwargs:
+    durations: [0, 1, 0]
+    phases:
+      - learning_rate: !!float 5e-4
+        clip_range: 0.2
+      - learning_rate: 0
+        clip_range: 0
 
 BipedalWalker-v3:
   n_timesteps: !!float 10e6
@@ -103,15 +117,24 @@ BipedalWalker-v3:
     n_epochs: 10
     ent_coef: 0.001
     learning_rate: !!float 2.5e-4
-    learning_rate_decay: linear
     clip_range: 0.2
-    clip_range_decay: linear
+  hyperparam_transitions_kwargs:
+    durations: [0, 1, 0]
+    phases:
+      - learning_rate: !!float 2.5e-4
+        clip_range: 0.2
+      - learning_rate: 0
+        clip_range: 0
 
-CarRacing-v0: &carracing-defaults
+CarRacing-v2: &carracing-defaults
   n_timesteps: !!float 4e6
   env_hyperparams:
     n_envs: 8
-    frame_stack: 4
+    frame_stack: 2
+    normalize: true
+    normalize_kwargs:
+      norm_obs: false
+      norm_reward: true
   policy_hyperparams: &carracing-policy-defaults
     use_sde: true
     log_std_init: -2
@@ -127,17 +150,21 @@ CarRacing-v0: &carracing-defaults
     batch_size: 128
     n_epochs: 10
     learning_rate: !!float 1e-4
-    learning_rate_decay: linear
     gamma: 0.99
     gae_lambda: 0.95
     ent_coef: 0.0
     max_grad_norm: 0.5
     vf_coef: 0.5
     clip_range: 0.2
+  hyperparam_transitions_kwargs:
+    durations: [0, 1, 0]
+    phases:
+      - learning_rate: !!float 1e-4
+      - learning_rate: 0
 
-impala-CarRacing-v0:
+impala-CarRacing-v2:
   <<: *carracing-defaults
-  env_id: CarRacing-v0
+  env_id: CarRacing-v2
   policy_hyperparams:
     <<: *carracing-policy-defaults
     cnn_style: impala
@@ -165,11 +192,16 @@ _atari: &atari-defaults
     batch_size: 256
     n_epochs: 4
     learning_rate: !!float 2.5e-4
-    learning_rate_decay: linear
     clip_range: 0.1
-    clip_range_decay: linear
     vf_coef: 0.5
     ent_coef: 0.01
+  hyperparam_transitions_kwargs:
+    durations: [0, 1, 0]
+    phases:
+      - learning_rate: !!float 2.5e-4
+        clip_range: 0.1
+      - learning_rate: 0
+        clip_range: 0
   eval_hyperparams:
     deterministic: false
     max_video_length: 18000
@@ -221,66 +253,60 @@ impala-QbertNoFrameskip-v4:
   <<: *impala-atari-defaults
   env_id: QbertNoFrameskip-v4
 
-HalfCheetahBulletEnv-v0: &pybullet-defaults
-  n_timesteps: !!float 2e6
-  env_hyperparams: &pybullet-env-defaults
-    n_envs: 16
+HalfCheetah-v4: &mujoco-defaults
+  n_timesteps: !!float 1e6
+  env_hyperparams: &mujoco-env-defaults
+    n_envs: 1
     normalize: true
-  policy_hyperparams: &pybullet-policy-defaults
+  policy_hyperparams: &mujoco-policy-defaults
     pi_hidden_sizes: [256, 256]
     v_hidden_sizes: [256, 256]
     activation_fn: relu
-  rollout_hyperparams: &pybullet-rollout-defaults
+    log_std_init: -2
+    init_layers_orthogonal: false
+  rollout_hyperparams: &mujoco-rollout-defaults
     n_steps: 512
-  algo_hyperparams: &pybullet-algo-defaults
-    batch_size: 128
-    n_epochs: 20
-    gamma: 0.99
-    gae_lambda: 0.9
-    ent_coef: 0.0
-    max_grad_norm: 0.5
-    vf_coef: 0.5
-    learning_rate: !!float 3e-5
-    clip_range: 0.4
-
-AntBulletEnv-v0:
-  <<: *pybullet-defaults
-  policy_hyperparams:
-    <<: *pybullet-policy-defaults
-  algo_hyperparams:
-    <<: *pybullet-algo-defaults
-
-Walker2DBulletEnv-v0:
-  <<: *pybullet-defaults
-  algo_hyperparams:
-    <<: *pybullet-algo-defaults
-    clip_range_decay: linear
-
-HopperBulletEnv-v0:
-  <<: *pybullet-defaults
-  algo_hyperparams:
-    <<: *pybullet-algo-defaults
-    clip_range_decay: linear
-
-HumanoidBulletEnv-v0:
-  <<: *pybullet-defaults
-  n_timesteps: !!float 1e7
-  env_hyperparams:
-    <<: *pybullet-env-defaults
-    n_envs: 8
-  policy_hyperparams:
-    <<: *pybullet-policy-defaults
-    # log_std_init: -1
-  rollout_hyperparams:
-    <<: *pybullet-rollout-defaults
-    n_steps: 2048
-  algo_hyperparams:
-    <<: *pybullet-algo-defaults
+  algo_hyperparams: &mujoco-algo-defaults
     batch_size: 64
-    n_epochs: 10
+    n_epochs: 20
+    gamma: 0.98
+    gae_lambda: 0.92
+    ent_coef: 0.000401762
+    max_grad_norm: 0.8
+    vf_coef: 0.58096
+    learning_rate: !!float 2.0633e-05
+    clip_range: 0.1
+
+Ant-v4:
+  <<: *mujoco-defaults
+
+Walker2d-v4:
+  <<: *mujoco-defaults
+  algo_hyperparams:
+    <<: *mujoco-algo-defaults
+    batch_size: 32
+    gamma: 0.99
+    learning_rate: 5.05041e-05
+    ent_coef: 0.000585045
+    clip_range: 0.1
+    n_epochs: 20
     gae_lambda: 0.95
-    learning_rate: !!float 2.5e-4
+    max_grad_norm: 1
+    vf_coef: 0.871923
+
+Hopper-v4:
+  <<: *mujoco-defaults
+  algo_hyperparams:
+    <<: *mujoco-algo-defaults
+    batch_size: 32
+    gamma: 0.999
+    learning_rate: 9.80828e-05
+    ent_coef: 0.00229519
     clip_range: 0.2
+    n_epochs: 5
+    gae_lambda: 0.99
+    max_grad_norm: 0.7
+    vf_coef: 0.835671
 
 _procgen: &procgen-defaults
   env_hyperparams: &procgen-env-defaults
@@ -306,10 +332,8 @@ _procgen: &procgen-defaults
     n_epochs: 3
     ent_coef: 0.01
     clip_range: 0.2
-    # clip_range_decay: linear
     clip_range_vf: 0.2
     learning_rate: !!float 5e-4
-    # learning_rate_decay: linear
     vf_coef: 0.5
   eval_hyperparams: &procgen-eval-defaults
     ignore_first_episode: true
@@ -357,8 +381,13 @@ _procgen-hard: &procgen-hard-defaults
   algo_hyperparams: &procgen-hard-algo-defaults
     <<: *procgen-algo-defaults
     batch_size: 8192
-    clip_range_decay: linear
-    learning_rate_decay: linear
+  hyperparam_transitions_kwargs:
+    durations: [0, 1, 0]
+    phases:
+      - learning_rate: !!float 5e-4
+        clip_range: 0.2
+      - learning_rate: 0
+        clip_range: 0
   eval_hyperparams:
     <<: *procgen-eval-defaults
     step_freq: !!float 5e5

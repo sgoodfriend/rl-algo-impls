@@ -15,7 +15,7 @@ from rl_algo_impls.utils.system_info import (
     log_installed_libraries_info,
     log_memory_info,
 )
-from rl_algo_impls.wrappers.vectorable_wrapper import VecEnv
+from rl_algo_impls.wrappers.vector_wrapper import VectorEnv
 
 file_path = os.path.abspath(Path(__file__))
 root_dir = str(Path(file_path).parent.parent.parent.absolute())
@@ -163,7 +163,7 @@ def main():
         },
     )
 
-    envs_by_name: Dict[str, VecEnv] = {}
+    envs_by_name: Dict[str, VectorEnv] = {}
     for sz, picker_args in AGENT_ARGS_BY_MAP_SIZE.items():
         for p_arg in picker_args:
             envs_by_name[p_arg.env] = make_eval_env(
@@ -207,7 +207,7 @@ def main():
 
     get_action_mask = getattr(env, "get_action_mask")
 
-    obs = env.reset()
+    obs, _ = env.reset()
     action_mask = get_action_mask()
     # Runs forever. Java process expected to terminate on own.
     while True:

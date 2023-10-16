@@ -35,13 +35,13 @@ BOX_ENVS=(
     # Basic
     "MountainCarContinuous-v0"
     "BipedalWalker-v3"
-    # PyBullet
-    "HalfCheetahBulletEnv-v0"
-    "AntBulletEnv-v0"
-    "HopperBulletEnv-v0"
-    "Walker2DBulletEnv-v0"
+    # MuJoCo
+    "HalfCheetah-v4"
+    "Ant-v4"
+    "Hopper-v4"
+    "Walker2d-v4"
     # CarRacing
-    "CarRacing-v0"
+    "CarRacing-v2"
 )
 
 for algo in $(echo $algos); do
@@ -76,8 +76,6 @@ for algo in $(echo $algos); do
     elif [ -z "$envs" ]; then
         if [ "$algo" = "dqn" ]; then
             BENCHMARK_ENVS="${BASIC_ENVS[*]} ${ATARI_ENVS[*]}"
-        elif [ "$algo" = "vpg" ]; then
-            BENCHMARK_ENVS="${BASIC_ENVS[*]} ${BOX_ENVS[*]}"
         else
             BENCHMARK_ENVS="${BASIC_ENVS[*]} ${BOX_ENVS[*]} ${ATARI_ENVS[*]}"
         fi

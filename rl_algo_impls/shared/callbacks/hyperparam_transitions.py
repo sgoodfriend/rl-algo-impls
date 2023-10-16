@@ -9,7 +9,7 @@ from rl_algo_impls.shared.callbacks.callback import Callback
 from rl_algo_impls.shared.schedule import constant_schedule
 from rl_algo_impls.shared.tensor_utils import num_or_array
 from rl_algo_impls.utils.interpolate import InterpolateMethod, interpolate
-from rl_algo_impls.wrappers.vectorable_wrapper import VecEnv
+from rl_algo_impls.wrappers.vector_wrapper import VectorEnv
 
 ALGO_SET_NAMES = {
     "gae_lambda",
@@ -17,8 +17,12 @@ ALGO_SET_NAMES = {
     "vf_coef",
     "switch_range",
     "guide_probability",
+    "learning_rate",
+    "clip_range",
+    "clip_range_vf",
+    "ent_coef",
+    "gamma",
 }
-ALGO_SET_SCHEDULE_NAMES = {"gamma", "ent_coef", "learning_rate"}
 ALGO_BOOL_NAMES = {"freeze_policy_head", "freeze_value_head", "freeze_backbone"}
 
 LUX_REWARD_WEIGHTS_NAME = "reward_weights"
@@ -28,7 +32,7 @@ class HyperparamTransitions(Callback):
     def __init__(
         self,
         config: Config,
-        env: VecEnv,
+        env: VectorEnv,
         algo: Algorithm,
         phases: List[Dict[str, Any]],
         durations: List[float],
@@ -86,11 +90,7 @@ class HyperparamTransitions(Callback):
         phase = self.phases[phase_idx]
         print(f"{self.timesteps_elapsed}: Entering phase {phase_idx}: {phase}")
         for k, v in phase.items():
-            if k in ALGO_SET_SCHEDULE_NAMES:
-                name = f"{k}_schedule"
-                assert hasattr(self.algo, name)
-                setattr(self.algo, name, constant_schedule(num_or_array(v)))
-            elif k in ALGO_SET_NAMES:
+            if k in ALGO_SET_NAMES:
                 assert hasattr(self.algo, k)
                 setattr(self.algo, k, num_or_array(v))
             elif k in ALGO_BOOL_NAMES:
@@ -115,22 +115,7 @@ class HyperparamTransitions(Callback):
         ), f"An override has to be specified in every phase"
         for k, next_v in next_phase.items():
             old_v = prior_phase[k]
-            if k in ALGO_SET_SCHEDULE_NAMES:
-                name = f"{k}_schedule"
-                assert hasattr(self.algo, name)
-                setattr(
-                    self.algo,
-                    name,
-                    constant_schedule(
-                        interpolate(
-                            num_or_array(old_v),
-                            num_or_array(next_v),
-                            transition_progress,
-                            self.interpolate_method,
-                        )
-                    ),
-                )
-            elif k in ALGO_SET_NAMES:
+            if k in ALGO_SET_NAMES:
                 assert hasattr(self.algo, k)
                 setattr(
                     self.algo,

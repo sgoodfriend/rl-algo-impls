@@ -86,7 +86,6 @@ def evaluate_model(args: EvalArgs, root_dir: str) -> Evaluation:
         EnvHyperparams(**config.env_hyperparams),
         override_hparams=override_hparams,
         render=args.render,
-        normalize_load_path=model_path,
     )
     if args.video_path:
         env = VecEpisodeRecorder(
@@ -107,7 +106,7 @@ def evaluate_model(args: EvalArgs, root_dir: str) -> Evaluation:
         else config.eval_hyperparams.get("deterministic", True)
     )
     if args.visualize_model_path or args.thop or args.tensorboard_folder:
-        obs = env.reset()
+        obs, _ = env.reset()
         get_action_mask = getattr(env, "get_action_mask", None)
         action_masks = batch_dict_keys(get_action_mask()) if get_action_mask else None
         act = policy.act(

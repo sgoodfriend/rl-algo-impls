@@ -1,18 +1,17 @@
-import logging
 from collections import deque
-from typing import List, NamedTuple, Optional, Union
+from typing import NamedTuple, Optional
 
 import numpy as np
 import ray
-from gym.vector.vector_env import VectorEnv
-from stable_baselines3.common.vec_env.base_vec_env import tile_images
 
 from rl_algo_impls.lux.rewards import LuxRewardWeights
 from rl_algo_impls.lux.vec_env.lux_ray_env import LuxRayEnv
-from rl_algo_impls.wrappers.vectorable_wrapper import (
+from rl_algo_impls.wrappers.vector_wrapper import (
     VecEnvMaskedResetReturn,
-    VecEnvObs,
+    VecEnvResetReturn,
     VecEnvStepReturn,
+    VectorEnv,
+    merge_infos,
 )
 
 try:
@@ -41,14 +40,15 @@ class LuxRayVectorEnv(VectorEnv):
 
         (
             map_dim,
-            single_observation_space,
-            single_action_space,
+            self.single_observation_space,
+            self.single_action_space,
             self.action_plane_space,
             self.metadata,
             self._reward_weights,
         ) = ray.get(self.envs[0].get_properties.remote())
         self.num_map_tiles = map_dim * map_dim
-        super().__init__(num_envs, single_observation_space, single_action_space)
+        self.num_envs = num_envs
+        super().__init__()
 
     def step(self, action: np.ndarray) -> VecEnvStepReturn:
         step_returns = ray.get(
@@ -59,12 +59,14 @@ class LuxRayVectorEnv(VectorEnv):
         )
         obs = []
         rewards = []
-        dones = []
+        terminations = []
+        truncations = []
         infos = []
         action_masks = []
         reset_future_indexes = []
         reset_futures = []
-        for idx, ((o, r, d, i), am) in enumerate(step_returns):
+        for idx, ((o, r, termination, truncation, i), am) in enumerate(step_returns):
+            d = termination | truncation
             if d.any():
                 assert d.all(), "All dones should be True if any done is True"
                 self.pending_resets.append(
@@ -75,8 +77,9 @@ class LuxRayVectorEnv(VectorEnv):
                 reset_futures.append(reset_future)
             obs.append(o)
             rewards.append(r)
-            dones.append(d)
-            infos.extend(i)
+            terminations.append(termination)
+            truncations.append(truncation)
+            infos.append(i)
             action_masks.append(am)
         reset_returns = ray.get(reset_futures)
         for idx, (o, am) in zip(reset_future_indexes, reset_returns):
@@ -86,21 +89,31 @@ class LuxRayVectorEnv(VectorEnv):
         return (
             np.concatenate(obs),
             np.concatenate(rewards),
-            np.concatenate(dones),
-            infos,
+            np.concatenate(terminations),
+            np.concatenate(truncations),
+            merge_infos(self, infos, 2),
         )
 
-    def reset(self) -> VecEnvObs:
+    def reset(self, *, seed: Optional[int] = None, **kwargs) -> VecEnvResetReturn:
+        if seed is not None:
+            seed_rng = np.random.RandomState(seed)
+            seeds = seed_rng.randint(0, np.iinfo(np.int32).max, len(self.envs))
+        else:
+            seeds = [None for _ in self.envs]
+
         self.pending_resets.extend(
-            [PendingReset(e, e.reset.remote()) for e in self.envs]
+            [
+                PendingReset(e, e.reset.remote(seed=s, **kwargs))
+                for e, s in zip(self.envs, seeds)
+            ]
         )
 
         resets = [self.pending_resets.popleft() for _ in range(len(self.envs))]
         self.envs = [r.env for r in resets]
         reset_returns = ray.get([r.reset_future for r in resets])
-        obs = np.concatenate([sr.obs for sr in reset_returns])
+        obs = np.concatenate([sr.reset_return[0] for sr in reset_returns])
         self._action_masks = np.concatenate([sr.action_mask for sr in reset_returns])
-        return obs
+        return obs, merge_infos(self, [sr.reset_return[1] for sr in reset_returns], 2)
 
     def masked_reset(self, env_mask: np.ndarray) -> VecEnvMaskedResetReturn:
         assert np.all(
@@ -115,35 +128,18 @@ class LuxRayVectorEnv(VectorEnv):
             self.envs[idx], reset_future = self.pending_resets.popleft()
             reset_futures.append(reset_future)
         reset_returns = ray.get(reset_futures)
-        obs = np.concatenate([sr.obs for sr in reset_returns])
+        obs = np.concatenate([sr.reset_return[0] for sr in reset_returns])
         action_masks = np.concatenate([sr.action_mask for sr in reset_returns])
         self._action_masks[env_mask] = action_masks
-        return VecEnvMaskedResetReturn(obs, action_masks)
-
-    def seed(self, seed: Optional[int]) -> None:
-        seed_rng = np.random.RandomState(seed)
-        for e, s in zip(
-            self.all_envs,
-            seed_rng.randint(0, np.iinfo(np.int32).max, size=len(self.all_envs)),
-        ):
-            e.seed.remote(s)
+        return (
+            obs,
+            action_masks,
+            merge_infos(self, [sr.reset_return[1] for sr in reset_returns], 2),
+        )
 
     def close_extras(self, **kwargs):
-        ray.get([e.close.remote() for e in self.all_envs])
+        ray.get([e.close.remote(**kwargs) for e in self.all_envs])
         ray.shutdown()
-
-    def render(self, mode: str = "human", **kwargs):
-        if mode == "human":
-            for e in self.envs:
-                e.render.remote(mode, **kwargs)
-        elif mode == "rgb_array":
-            imgs = ray.get([e.render.remote(mode, **kwargs) for e in self.envs])
-            bigimg = tile_images(imgs)
-            return bigimg
-        else:
-            raise ValueError(
-                f"Unknown mode {mode}. Only 'human' and 'rgb_array' are supported"
-            )
 
     def get_action_mask(self) -> np.ndarray:
         return self._action_masks
@@ -157,3 +153,9 @@ class LuxRayVectorEnv(VectorEnv):
         self._reward_weights = reward_weights
         for e in self.envs:
             e.set_reward_weights.remote(reward_weights)
+
+    def call(self, method_name: str, *args, **kwargs) -> tuple:
+        call_returns = ray.get(
+            [env.call.remote(method_name, *args, **kwargs) for env in self.envs]
+        )
+        return tuple(cr[0] for cr in call_returns)

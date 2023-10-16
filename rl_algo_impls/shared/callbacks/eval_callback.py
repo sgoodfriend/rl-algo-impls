@@ -15,7 +15,7 @@ from rl_algo_impls.shared.stats import Episode, EpisodeAccumulator, EpisodesStat
 from rl_algo_impls.shared.tensor_utils import batch_dict_keys
 from rl_algo_impls.wrappers.self_play_reference_wrapper import SelfPlayReferenceWrapper
 from rl_algo_impls.wrappers.vec_episode_recorder import VecEpisodeRecorder
-from rl_algo_impls.wrappers.vectorable_wrapper import VecEnv, find_wrapper
+from rl_algo_impls.wrappers.vector_wrapper import VectorEnv, find_wrapper
 
 
 class EvaluateAccumulator(EpisodeAccumulator):
@@ -76,7 +76,7 @@ class EvaluateAccumulator(EpisodeAccumulator):
 
 
 def evaluate(
-    env: VecEnv,
+    env: VectorEnv,
     policy: Policy,
     n_episodes: int,
     render: bool = False,
@@ -97,7 +97,7 @@ def evaluate(
         additional_keys_to_log=additional_keys_to_log,
     )
 
-    obs = env.reset()
+    obs, _ = env.reset()
     get_action_mask = getattr(env, "get_action_mask", None)
     while not episodes.is_done():
         act = policy.act(
@@ -107,7 +107,8 @@ def evaluate(
             if get_action_mask
             else None,
         )
-        obs, rew, done, info = env.step(act)
+        obs, rew, terminations, truncations, info = env.step(act)
+        done = terminations | truncations
         episodes.step(rew, done, info)
         if render:
             env.render()
@@ -126,7 +127,7 @@ class EvalCallback(Callback):
     def __init__(
         self,
         policy: Policy,
-        env: VecEnv,
+        env: VectorEnv,
         tb_writer: SummaryWriter,
         best_model_path: Optional[str] = None,
         step_freq: Union[int, float] = 50_000,
@@ -134,9 +135,9 @@ class EvalCallback(Callback):
         save_best: bool = True,
         deterministic: bool = True,
         only_record_video_on_best: bool = True,
-        video_env: Optional[VecEnv] = None,
+        video_env: Optional[VectorEnv] = None,
         video_dir: Optional[str] = None,
-        max_video_length: int = 3600,
+        max_video_length: int = 9000,
         ignore_first_episode: bool = False,
         additional_keys_to_log: Optional[List[str]] = None,
         score_function: str = "mean-std",
@@ -159,12 +160,21 @@ class EvalCallback(Callback):
         self.best = None
 
         self.only_record_video_on_best = only_record_video_on_best
-        assert (video_env is not None) == (video_dir is not None)
-        self.video_env = video_env
+        self.max_video_length = max_video_length
+        assert (video_env is not None) == (
+            video_dir is not None
+        ), f"video_env ({video_env}) and video_dir ({video_dir}) must be set or unset together"
         self.video_dir = video_dir
         if video_dir:
             os.makedirs(video_dir, exist_ok=True)
-        self.max_video_length = max_video_length
+            self.video_env = VecEpisodeRecorder(
+                video_env,
+                video_dir,  # This is updated when a video is actually created
+                max_video_length=self.max_video_length,
+            )
+        else:
+            self.video_env = None
+
         self.ignore_first_episode = ignore_first_episode
         self.additional_keys_to_log = additional_keys_to_log
         self.score_function = score_function
@@ -259,13 +269,9 @@ class EvalCallback(Callback):
             best_video_base_path = os.path.join(
                 self.video_dir, str(self.timesteps_elapsed)
             )
-            video_wrapped = VecEpisodeRecorder(
-                self.video_env,
-                best_video_base_path,
-                max_video_length=self.max_video_length,
-            )
+            self.video_env.base_path = best_video_base_path
             video_stats = evaluate(
-                video_wrapped,
+                self.video_env,
                 self.policy,
                 1,
                 deterministic=self.deterministic,

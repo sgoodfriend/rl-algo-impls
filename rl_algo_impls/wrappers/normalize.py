@@ -1,22 +1,19 @@
 from typing import Tuple, TypeVar
 
-import gym
+import gymnasium
 import numpy as np
 from numpy.typing import NDArray
 
-from rl_algo_impls.wrappers.vectorable_wrapper import (
-    VectorableWrapper,
-    single_observation_space,
-)
+from rl_algo_impls.wrappers.vector_wrapper import VectorEnv, VectorWrapper
 
 RunningMeanStdSelf = TypeVar("RunningMeanStdSelf", bound="RunningMeanStd")
 
 
 class RunningMeanStd:
-    def __init__(self, episilon: float = 1e-4, shape: Tuple[int, ...] = ()) -> None:
+    def __init__(self, epsilon: float = 1e-4, shape: Tuple[int, ...] = ()) -> None:
         self.mean = np.zeros(shape, np.float64)
         self.var = np.ones(shape, np.float64)
-        self.count = episilon
+        self.count = epsilon
 
     def update(self, x: NDArray) -> None:
         batch_mean = np.mean(x, axis=0)
@@ -59,38 +56,37 @@ NormalizeObservationSelf = TypeVar(
 )
 
 
-class NormalizeObservation(VectorableWrapper):
+class NormalizeObservation(VectorWrapper):
     def __init__(
         self,
-        env: gym.Env,
+        env: VectorEnv,
         training: bool = True,
         epsilon: float = 1e-8,
         clip: float = 10.0,
     ) -> None:
         super().__init__(env)
-        self.rms = RunningMeanStd(shape=single_observation_space(env).shape)
+        self.rms = RunningMeanStd(shape=env.single_observation_space.shape)
         self.training = training
         self.epsilon = epsilon
         self.clip = clip
 
     def step(self, action):
-        obs, reward, done, info = self.env.step(action)
-        return self.normalize(obs), reward, done, info
+        obs, reward, terminations, truncations, info = self.env.step(action)
+        return self.normalize(obs), reward, terminations, truncations, info
 
     def reset(self, **kwargs):
-        obs = self.env.reset(**kwargs)
-        return self.normalize(obs)
+        obs, info = self.env.reset(**kwargs)
+        return self.normalize(obs), info
 
     def normalize(self, obs: NDArray) -> NDArray:
-        obs_array = np.array([obs]) if not self.is_vector_env else obs
         if self.training:
-            self.rms.update(obs_array)
+            self.rms.update(obs)
         normalized = np.clip(
-            (obs_array - self.rms.mean) / np.sqrt(self.rms.var + self.epsilon),
+            (obs - self.rms.mean) / np.sqrt(self.rms.var + self.epsilon),
             -self.clip,
             self.clip,
         )
-        return normalized[0] if not self.is_vector_env else normalized
+        return normalized
 
     def save(self, path: str) -> None:
         self.rms.save(path)
@@ -107,10 +103,10 @@ class NormalizeObservation(VectorableWrapper):
 NormalizeRewardSelf = TypeVar("NormalizeRewardSelf", bound="NormalizeReward")
 
 
-class NormalizeReward(VectorableWrapper):
+class NormalizeReward(VectorWrapper):
     def __init__(
         self,
-        env: gym.Env,
+        env: VectorEnv,
         training: bool = True,
         gamma: float = 0.99,
         epsilon: float = 1e-8,
@@ -126,18 +122,13 @@ class NormalizeReward(VectorableWrapper):
         self.returns = np.zeros(self.num_envs)
 
     def step(self, action):
-        obs, reward, done, info = self.env.step(action)
+        obs, reward, terminations, truncations, info = self.env.step(action)
 
-        if not self.is_vector_env:
-            reward = np.array([reward])
         reward = self.normalize(reward)
-        if not self.is_vector_env:
-            reward = reward[0]
 
-        dones = done if self.is_vector_env else np.array([done])
-        self.returns[dones] = 0
+        self.returns[terminations | truncations] = 0
 
-        return obs, reward, done, info
+        return obs, reward, terminations, truncations, info
 
     def reset(self, **kwargs):
         self.returns = np.zeros(self.num_envs)

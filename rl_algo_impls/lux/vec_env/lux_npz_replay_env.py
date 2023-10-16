@@ -3,10 +3,10 @@ from typing import Any, Callable, Dict, List, NamedTuple, Optional, Tuple
 
 import numpy as np
 import ray
-from gym import Env
-from gym.spaces import Box
-from gym.spaces import Dict as DictSpace
-from gym.spaces import MultiDiscrete
+from gymnasium import Env
+from gymnasium.spaces import Box
+from gymnasium.spaces import Dict as DictSpace
+from gymnasium.spaces import MultiDiscrete
 
 from rl_algo_impls.lux.actions import ACTION_SIZES
 from rl_algo_impls.lux.replay_stats import ReplayActionStats, UnitBuiltStats
@@ -111,16 +111,16 @@ class LuxNpzReplayEnv(Env):
         )
         self.initialized = True
 
-    def reset(self) -> np.ndarray:
+    def reset(self, **kwargs) -> Tuple[np.ndarray, dict]:
         assert self.initialized
         self.action_stats = ReplayActionStats()
         self._load_next_replay()
         self._action_mask = self.action_mask[self.env_step]
-        return self.obs[self.env_step]
+        return self.obs[self.env_step], {}
 
     def step(
         self, action: Optional[Dict[str, np.ndarray]]
-    ) -> Tuple[np.ndarray, float, bool, Dict[str, Any]]:
+    ) -> Tuple[np.ndarray, float, bool, bool, Dict[str, Any]]:
         assert self.initialized
         score_reward = self.reward[self.env_step]
         d = self.done[self.env_step]
@@ -172,15 +172,16 @@ class LuxNpzReplayEnv(Env):
             ]
         )
         r = weights.dot(raw_rewards)
-        return (o, r, d, info)
+        return (o, r, d, False, info)
 
     def get_action_mask(self) -> Dict[str, np.ndarray]:
         assert self.initialized
         return self._action_mask
 
-    def close(self) -> None:
+    def close(self, **kwargs) -> None:
         self.next_npz_path_fn = None
         self._load_request = None
+        super().close()
 
     @property
     def last_action(self) -> Dict[str, np.ndarray]:

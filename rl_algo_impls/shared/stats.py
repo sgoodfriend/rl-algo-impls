@@ -6,6 +6,8 @@ from typing import Any, Dict, List, Optional, Sequence, TypeVar, Union
 import numpy as np
 from torch.utils.tensorboard.writer import SummaryWriter
 
+from rl_algo_impls.wrappers.vector_wrapper import extract_info
+
 
 @dataclass
 class Episode:
@@ -168,14 +170,14 @@ class EpisodeAccumulator:
     def episodes(self) -> List[Episode]:
         return self._episodes
 
-    def step(self, reward: np.ndarray, done: np.ndarray, info: List[Dict]) -> None:
+    def step(self, reward: np.ndarray, done: np.ndarray, info: dict) -> None:
         for idx, current in enumerate(self.current_episodes):
             current.score += reward[idx]
             current.length += 1
             if done[idx]:
                 self._episodes.append(current)
                 self.current_episodes[idx] = Episode()
-                self.on_done(idx, current, info[idx])
+                self.on_done(idx, current, extract_info(info, idx))
 
     def __len__(self) -> int:
         return len(self.episodes)

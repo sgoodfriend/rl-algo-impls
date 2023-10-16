@@ -1,11 +1,21 @@
 from abc import abstractmethod
-from typing import Dict, List, NamedTuple, Optional, Sequence, Tuple, TypeVar, Union
+from typing import (
+    Dict,
+    Generic,
+    List,
+    NamedTuple,
+    Optional,
+    Sequence,
+    Tuple,
+    TypeVar,
+    Union,
+)
 
-import gym
+import gymnasium
 import numpy as np
 import torch
-from gym.spaces import Box
-from gym.spaces import Dict as DictSpace
+from gymnasium.spaces import Box
+from gymnasium.spaces import Dict as DictSpace
 
 from rl_algo_impls.shared.policy.actor_critic_network import (
     ConnectedTrioActorCriticNetwork,
@@ -23,12 +33,7 @@ from rl_algo_impls.shared.policy.actor_critic_network.squeeze_unet import (
 )
 from rl_algo_impls.shared.policy.policy import Policy
 from rl_algo_impls.shared.tensor_utils import NumpyOrDict, tensor_to_numpy
-from rl_algo_impls.wrappers.vectorable_wrapper import (
-    VecEnv,
-    VecEnvObs,
-    single_action_space,
-    single_observation_space,
-)
+from rl_algo_impls.wrappers.vector_wrapper import ObsType, VectorEnv
 
 
 class Step(NamedTuple):
@@ -52,9 +57,9 @@ ActorCriticSelf = TypeVar("ActorCriticSelf", bound="ActorCritic")
 
 
 def clamp_actions(
-    actions: NumpyOrDict, action_space: gym.Space, squash_output: bool
+    actions: NumpyOrDict, action_space: gymnasium.Space, squash_output: bool
 ) -> np.ndarray:
-    def clip(action: np.ndarray, space: gym.Space) -> np.ndarray:
+    def clip(action: np.ndarray, space: gymnasium.Space) -> np.ndarray:
         if isinstance(space, Box):
             low, high = action_space.low, action_space.high  # type: ignore
             if squash_output:
@@ -79,13 +84,13 @@ def clamp_actions(
     return clip(actions, action_space)
 
 
-class OnPolicy(Policy):
+class OnPolicy(Policy, Generic[ObsType]):
     @abstractmethod
-    def value(self, obs: VecEnvObs) -> np.ndarray:
+    def value(self, obs: ObsType) -> np.ndarray:
         ...
 
     @abstractmethod
-    def step(self, obs: VecEnvObs, action_masks: Optional[NumpyOrDict] = None) -> Step:
+    def step(self, obs: ObsType, action_masks: Optional[NumpyOrDict] = None) -> Step:
         ...
 
     @property
@@ -98,10 +103,10 @@ class OnPolicy(Policy):
         return ()
 
 
-class ActorCritic(OnPolicy):
+class ActorCritic(OnPolicy, Generic[ObsType]):
     def __init__(
         self,
-        env: VecEnv,
+        env: VectorEnv,
         pi_hidden_sizes: Optional[Sequence[int]] = None,
         v_hidden_sizes: Optional[Sequence[int]] = None,
         init_layers_orthogonal: bool = True,
@@ -140,8 +145,8 @@ class ActorCritic(OnPolicy):
     ) -> None:
         super().__init__(env, **kwargs)
 
-        observation_space = single_observation_space(env)
-        action_space = single_action_space(env)
+        observation_space = env.single_observation_space
+        action_space = env.single_action_space
         action_plane_space = getattr(env, "action_plane_space", None)
 
         self.action_space = action_space
@@ -256,7 +261,7 @@ class ActorCritic(OnPolicy):
         assert entropy is not None
         return ACForward(logp_a, entropy, v)
 
-    def value(self, obs: VecEnvObs) -> np.ndarray:
+    def value(self, obs: ObsType) -> np.ndarray:
         assert isinstance(obs, np.ndarray)
         o = self._as_tensor(obs)
         assert isinstance(o, torch.Tensor)
@@ -264,7 +269,7 @@ class ActorCritic(OnPolicy):
             v = self.network.value(o)
         return v.cpu().numpy()
 
-    def step(self, obs: VecEnvObs, action_masks: Optional[NumpyOrDict] = None) -> Step:
+    def step(self, obs: ObsType, action_masks: Optional[NumpyOrDict] = None) -> Step:
         assert isinstance(obs, np.ndarray)
         o = self._as_tensor(obs)
         assert isinstance(o, torch.Tensor)

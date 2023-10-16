@@ -17,7 +17,6 @@ LuxAI_S2-v0-sSqunet-78env-deimos-lr2-no-guide:
       - 1
     gradient_accumulation: true
     learning_rate: !!float 1e-4
-    learning_rate_decay: none
     max_grad_norm: 0.5
     multi_reward_weights:
       - 0.25

@@ -1,17 +1,18 @@
-from typing import Optional, Tuple, Union
+from typing import Optional, SupportsFloat, Tuple, Union
 
-import gym
+import gymnasium
 import numpy as np
-
-from rl_algo_impls.wrappers.vectorable_wrapper import VectorableWrapper
 
 ObsType = Union[np.ndarray, dict]
 ActType = Union[int, float, np.ndarray, dict]
 
 
-class NoRewardTimeout(VectorableWrapper):
+class NoRewardTimeout(gymnasium.Wrapper):
     def __init__(
-        self, env: gym.Env, n_timeout_steps: int, n_fire_steps: Optional[int] = None
+        self,
+        env: gymnasium.Env,
+        n_timeout_steps: int,
+        n_fire_steps: Optional[int] = None,
     ) -> None:
         super().__init__(env)
         self.n_timeout_steps = n_timeout_steps
@@ -25,30 +26,30 @@ class NoRewardTimeout(VectorableWrapper):
 
         self.steps_since_reward = 0
 
-        self.episode_score = 0
+        self.episode_score = 0.0
         self.episode_step_idx = 0
 
-    def step(self, action: ActType) -> Tuple[ObsType, float, bool, dict]:
+    def step(self, action: ActType) -> Tuple[ObsType, SupportsFloat, bool, bool, dict]:
         if self.steps_since_reward == self.n_fire_steps:
             assert self.fire_act is not None
             self.print_intervention("Force fire action")
             action = self.fire_act
-        obs, rew, done, info = self.env.step(action)
+        obs, rew, terminated, truncated, info = self.env.step(action)
 
-        self.episode_score += rew
+        self.episode_score += float(rew)
         self.episode_step_idx += 1
 
-        if rew != 0 or done:
+        if rew != 0 or terminated or truncated:
             self.steps_since_reward = 0
         else:
             self.steps_since_reward += 1
             if self.steps_since_reward >= self.n_timeout_steps:
                 self.print_intervention("Early terminate")
-                done = True
+                truncated = True
 
-        return obs, rew, done, info
+        return obs, rew, terminated, truncated, info
 
-    def reset(self, **kwargs) -> ObsType:
+    def reset(self, **kwargs) -> Tuple[ObsType, dict]:
         self._reset_state()
         return self.env.reset(**kwargs)
 

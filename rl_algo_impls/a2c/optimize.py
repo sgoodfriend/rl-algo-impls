@@ -34,9 +34,6 @@ def sample_params(
     algo_hyperparams = hyperparams.algo_hyperparams
 
     learning_rate = trial.suggest_float("learning_rate", 1e-5, 2e-3, log=True)
-    learning_rate_decay = trial.suggest_categorical(
-        "learning_rate_decay", ["none", "linear"]
-    )
     n_steps_exp = trial.suggest_int("n_steps_exp", 1, 10)
     n_steps = 2**n_steps_exp
     trial.set_user_attr("n_steps", n_steps)
@@ -45,7 +42,6 @@ def sample_params(
     gae_lambda = 1 - trial.suggest_float("gae_lambda_om", 1e-4, 1e-1)
     trial.set_user_attr("gae_lambda", gae_lambda)
     ent_coef = trial.suggest_float("ent_coef", 1e-8, 2.5e-2, log=True)
-    ent_coef_decay = trial.suggest_categorical("ent_coef_decay", ["none", "linear"])
     vf_coef = trial.suggest_float("vf_coef", 0.1, 0.7)
     max_grad_norm = trial.suggest_float("max_grad_norm", 1e-1, 1e1, log=True)
     use_rms_prop = trial.suggest_categorical("use_rms_prop", [True, False])
@@ -56,12 +52,10 @@ def sample_params(
     algo_hyperparams.update(
         {
             "learning_rate": learning_rate,
-            "learning_rate_decay": learning_rate_decay,
             "n_steps": n_steps,
             "gamma": gamma,
             "gae_lambda": gae_lambda,
             "ent_coef": ent_coef,
-            "ent_coef_decay": ent_coef_decay,
             "vf_coef": vf_coef,
             "max_grad_norm": max_grad_norm,
             "use_rms_prop": use_rms_prop,

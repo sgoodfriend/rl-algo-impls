@@ -9,7 +9,7 @@ from rl_algo_impls.shared.tensor_utils import (
     prepend_dims_to_match,
 )
 from rl_algo_impls.shared.trajectory import Trajectory
-from rl_algo_impls.wrappers.vectorable_wrapper import VecEnvObs
+from rl_algo_impls.wrappers.vector_wrapper import ObsType
 
 
 class RtgAdvantage(NamedTuple):
@@ -77,8 +77,8 @@ def compute_advantages_from_policy(
     values: np.ndarray,
     episode_starts: np.ndarray,
     next_episode_starts: np.ndarray,
-    next_obs: VecEnvObs,
-    policy: OnPolicy,
+    next_obs: ObsType,
+    policy: OnPolicy[ObsType],
     gamma: Union[float, np.ndarray],
     gae_lambda: Union[float, np.ndarray],
 ) -> np.ndarray:

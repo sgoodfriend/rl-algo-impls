@@ -1,13 +1,15 @@
 from typing import Tuple
 
-import gym
 import numpy as np
-from gym import ObservationWrapper
-from gym.spaces import Box
+from gymnasium import ObservationWrapper
+from gymnasium.experimental.vector.vector_env import VectorObservationWrapper
+from gymnasium.spaces import Box
+
+from rl_algo_impls.wrappers.vector_wrapper import ObsType, VectorEnv
 
 
 class HwcToChwObservation(ObservationWrapper):
-    def __init__(self, env: gym.Env) -> None:
+    def __init__(self, env) -> None:
         super().__init__(env)
 
         assert isinstance(env.observation_space, Box)
@@ -29,6 +31,28 @@ class HwcToChwObservation(ObservationWrapper):
         else:
             transpose_axes = self._transpose_axes
         return np.transpose(obs, axes=transpose_axes)
+
+
+class HwcToChwVectorObservation(VectorObservationWrapper):
+    def __init__(self, env: VectorEnv) -> None:
+        super().__init__(env)
+        assert isinstance(env.observation_space, Box)
+        assert isinstance(env.single_observation_space, Box)
+        self.observation_space, self._transpose_axes = transpose_space(
+            env.observation_space
+        )
+        (
+            self.single_observation_space,
+            self._transpose_single_obs_axes,
+        ) = transpose_space(env.single_observation_space)
+
+    def vector_observation(self, observation: ObsType) -> ObsType:
+        assert isinstance(observation, np.ndarray)
+        return np.transpose(observation, axes=self._transpose_axes)
+
+    def single_observation(self, observation: ObsType) -> ObsType:
+        assert isinstance(observation, np.ndarray)
+        return np.transpose(observation, axes=self._transpose_single_obs_axes)
 
 
 def transpose_space(space: Box) -> Tuple[Box, Tuple[int, ...]]:

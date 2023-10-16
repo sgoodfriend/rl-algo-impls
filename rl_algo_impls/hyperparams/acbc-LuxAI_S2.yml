@@ -56,7 +56,6 @@ LuxAI_S2-v0-squnet-iDeimos: &lux-squnet-ideimos
     output_activation_fn: tanh
   algo_hyperparams: &lux-squnet-ideimos-algo
     learning_rate: !!float 1e-3
-    learning_rate_decay: linear
     batch_size: 384
     n_epochs: 2
     gamma: [0.9997, 0.9997]
@@ -65,6 +64,11 @@ LuxAI_S2-v0-squnet-iDeimos: &lux-squnet-ideimos
     max_grad_norm: 0.5
     gradient_accumulation: true
     scale_loss_by_num_actions: true
+  hyperparam_transitions_kwargs:
+    durations: [0, 1, 0]
+    phases:
+      - learning_rate: !!float 1e-3
+      - learning_rate: 0
 
 LuxAI_S2-v0-squnet-flg: &lux-squnet-flg
   <<: *lux-squnet-ideimos

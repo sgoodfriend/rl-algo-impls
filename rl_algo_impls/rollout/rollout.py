@@ -4,17 +4,16 @@ from typing import Dict, Iterator, Optional, TypeVar
 
 import numpy as np
 import torch
-from gym.spaces import MultiDiscrete
+from gymnasium.spaces import MultiDiscrete
 
 from rl_algo_impls.shared.actor.gridnet import ValueDependentMask
 from rl_algo_impls.shared.policy.policy import Policy
 from rl_algo_impls.shared.tensor_utils import (
-    NumOrArray,
     NumpyOrDict,
     TensorOrDict,
     tensor_by_indicies,
 )
-from rl_algo_impls.wrappers.vectorable_wrapper import VecEnv
+from rl_algo_impls.wrappers.vector_wrapper import VectorEnv
 
 BatchSelf = TypeVar("BatchSelf", bound="Batch")
 TDN = TypeVar("TDN", torch.Tensor, Dict[str, torch.Tensor], None)
@@ -96,7 +95,7 @@ class Rollout(ABC):
 
 
 class RolloutGenerator(ABC):
-    def __init__(self, policy: Policy, vec_env: VecEnv, **kwargs) -> None:
+    def __init__(self, policy: Policy, vec_env: VectorEnv, **kwargs) -> None:
         super().__init__()
         self.policy = policy
         self.vec_env = vec_env

@@ -44,7 +44,6 @@ class EnvHyperparams:
     normalize: bool = False
     normalize_kwargs: Optional[Dict[str, Any]] = None
     rolling_length: int = 100
-    train_record_video: bool = False
     video_step_interval: Union[int, float] = 1_000_000
     initial_steps_to_truncate: Optional[int] = None
     clip_atari_rewards: bool = True

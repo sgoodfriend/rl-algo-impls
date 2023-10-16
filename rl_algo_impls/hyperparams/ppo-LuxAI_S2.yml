@@ -86,11 +86,9 @@ LuxAI_S2-v0: &lux-defaults
   algo_hyperparams: &lux-algo-defaults
     batch_size: 2304
     n_epochs: 4
-    learning_rate_decay: none
     ent_coef: 0.01
     max_grad_norm: 0.5
     clip_range: 0.1
-    clip_range_decay: none
     clip_range_vf: 0.1
     ppo2_vf_coef_halving: true
     multi_reward_weights: [0.99, 0.01]

@@ -9,7 +9,7 @@ Implementations of reinforcement learning algorithms.
     [technical-description.md](https://github.com/sgoodfriend/rl-algo-impls/blob/main/rl_algo_impls/microrts/technical-description.md).
   - [Lux AI Season 2](https://www.kaggle.com/competitions/lux-ai-season-2/discussion/406791)
 - [WandB benchmark reports](https://wandb.ai/sgoodfriend/rl-algo-impls-benchmarks/reportlist)
-  - [Basic, PyBullet, and Atari games
+  - [Basic, MuJoCo, and Atari games
     (v0.0.9)](https://api.wandb.ai/links/sgoodfriend/fdp5mg6h)
     - [v0.0.8](https://api.wandb.ai/links/sgoodfriend/jh3cqbon)
     - [v0.0.4](https://api.wandb.ai/links/sgoodfriend/09frjfcs)
@@ -37,7 +37,7 @@ login`.
 Benchmark runs are uploaded to WandB, which can be made into reports ([for
 example](https://api.wandb.ai/links/sgoodfriend/6p2sjqtn)). So far I've found Lambda
 Labs A10 instances to be a good balance of performance (14 hours to train PPO in 14
-environments [5 basic gym, 4 PyBullet, CarRacing-v0, and 4 Atari] across 3 seeds) vs
+environments [5 basic gymnasium, 4 MuJoCo, CarRacing-v2, and 4 Atari] across 3 seeds) vs
 cost ($0.60/hr).
 
 ```
@@ -85,7 +85,7 @@ bash scripts/tuning.sh -a ALGO -e ENV -j N_JOBS -s NUM_SEEDS
 
 - [colab_benchmark.ipynb](https://github.com/sgoodfriend/rl-algo-impls/blob/main/colab/colab_benchmark.ipynb):
   Even with a Google Colab Pro+ subscription you'd need to only run parts of the
-  benchmark. The file recommends 4 splits (basic+pybullet, carcarcing, atari1, atari2)
+  benchmark. The file recommends 4 splits (basic+mujoco, carcarcing, atari1, atari2)
   because it would otherwise exceed the 24-hour session limit. This mostly comes from
   being unable to get pool_size above 1 because of WandB errors.
 - [colab_train.ipynb](https://github.com/sgoodfriend/rl-algo-impls/blob/main/colab/colab_train.ipynb):

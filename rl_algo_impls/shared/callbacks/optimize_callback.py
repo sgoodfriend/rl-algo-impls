@@ -1,16 +1,16 @@
+from time import perf_counter
+from typing import NamedTuple, Union
+
 import numpy as np
 import optuna
-
-from time import perf_counter
 from torch.utils.tensorboard.writer import SummaryWriter
-from typing import NamedTuple, Union
 
 from rl_algo_impls.shared.callbacks import Callback
 from rl_algo_impls.shared.callbacks.eval_callback import evaluate
 from rl_algo_impls.shared.policy.policy import Policy
 from rl_algo_impls.shared.stats import EpisodesStats
 from rl_algo_impls.wrappers.episode_stats_writer import EpisodeStatsWriter
-from rl_algo_impls.wrappers.vectorable_wrapper import VecEnv, find_wrapper
+from rl_algo_impls.wrappers.vector_wrapper import VectorEnv, find_wrapper
 
 
 class Evaluation(NamedTuple):
@@ -23,7 +23,7 @@ class OptimizeCallback(Callback):
     def __init__(
         self,
         policy: Policy,
-        env: VecEnv,
+        env: VectorEnv,
         trial: optuna.Trial,
         tb_writer: SummaryWriter,
         step_freq: Union[int, float] = 50_000,
@@ -76,7 +76,7 @@ class OptimizeCallback(Callback):
 
 def evaluation(
     policy: Policy,
-    env: VecEnv,
+    env: VectorEnv,
     tb_writer: SummaryWriter,
     n_episodes: int,
     deterministic: bool,

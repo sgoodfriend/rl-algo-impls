@@ -4,7 +4,7 @@ from typing import NamedTuple, Optional, Sequence, Tuple
 
 import torch
 import torch.nn as nn
-from gym.spaces import Box, Discrete, Space
+from gymnasium.spaces import Box, Discrete, Space
 
 from rl_algo_impls.shared.actor import PiForward
 from rl_algo_impls.shared.tensor_utils import TensorOrDict

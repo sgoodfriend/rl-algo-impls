@@ -4,14 +4,14 @@ import numpy as np
 
 from rl_algo_impls.runner.config import Config
 from rl_algo_impls.shared.callbacks import Callback
-from rl_algo_impls.wrappers.vectorable_wrapper import VecEnv
+from rl_algo_impls.wrappers.vector_wrapper import VectorEnv
 
 
 class RewardDecayCallback(Callback):
     def __init__(
         self,
         config: Config,
-        env: VecEnv,
+        env: VectorEnv,
         start_timesteps: int = 0,
         constant_indexes: Optional[Iterable[int]] = None,
         increase_indexes: Optional[Iterable[int]] = None,

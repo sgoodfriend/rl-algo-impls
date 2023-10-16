@@ -1,7 +1,7 @@
 from typing import Optional, Sequence, Tuple
 
 import torch
-from gym.spaces import Space
+from gymnasium.spaces import Space
 
 from rl_algo_impls.shared.actor import actor_head
 from rl_algo_impls.shared.encoder import Encoder
@@ -102,7 +102,12 @@ class ConnectedTrioActorCriticNetwork(ActorCriticNetwork):
     def action_shape(self) -> Tuple[int, ...]:
         return self._pi.action_shape
 
-    def freeze(self, freeze_policy_head: bool, freeze_value_head: bool, freeze_backbone: bool = True) -> None:
+    def freeze(
+        self,
+        freeze_policy_head: bool,
+        freeze_value_head: bool,
+        freeze_backbone: bool = True,
+    ) -> None:
         for p in self._pi.parameters():
             p.requires_grad = not freeze_policy_head
         for p in self._v.parameters():

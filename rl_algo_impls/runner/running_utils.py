@@ -7,13 +7,13 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import Any, Dict, Optional, Type, Union
 
-import gym
+import gymnasium
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import torch.backends.cudnn
 import yaml
-from gym.spaces import Box, Discrete
+from gymnasium.spaces import Box, Discrete
 from torch.utils.tensorboard.writer import SummaryWriter
 
 from rl_algo_impls.a2c.a2c import A2C
@@ -33,20 +33,16 @@ from rl_algo_impls.shared.callbacks.eval_callback import EvalCallback
 from rl_algo_impls.shared.policy.actor_critic import ActorCritic
 from rl_algo_impls.shared.policy.policy import Policy
 from rl_algo_impls.shared.vec_env.utils import import_for_env_id, is_microrts
-from rl_algo_impls.vpg.policy import VPGActorCritic
-from rl_algo_impls.vpg.vpg import VanillaPolicyGradient
-from rl_algo_impls.wrappers.vectorable_wrapper import VecEnv, single_observation_space
+from rl_algo_impls.wrappers.vector_wrapper import VectorEnv
 
 ALGOS: Dict[str, Type[Algorithm]] = {
     "dqn": DQN,
-    "vpg": VanillaPolicyGradient,
     "ppo": PPO,
     "a2c": A2C,
     "acbc": ACBC,
 }
 POLICIES: Dict[str, Type[Policy]] = {
     "dqn": DQNPolicy,
-    "vpg": VPGActorCritic,
     "ppo": ActorCritic,
     "a2c": ActorCritic,
     "acbc": ActorCritic,
@@ -76,7 +72,7 @@ def base_parser(multiple: bool = True) -> argparse.ArgumentParser:
         default=["CartPole-v1"],
         type=str,
         nargs="+" if multiple else 1,
-        help="Name of environment(s) in gym",
+        help="Name of environment(s) in gymnasium",
     )
     parser.add_argument(
         "--seed",
@@ -111,7 +107,7 @@ def load_hyperparam_dict_by_algo(algo: str, env_id: str) -> Optional[Dict[str, A
         return hyperparams_dict[env_id]
 
     import_for_env_id(env_id)
-    spec = gym.spec(env_id)
+    spec = gymnasium.spec(env_id)
     entry_point_name = str(spec.entry_point)  # type: ignore
     if "AtariEnv" in entry_point_name and "_atari" in hyperparams_dict:
         return hyperparams_dict["_atari"]
@@ -137,7 +133,7 @@ def load_hyperparam_dict_by_env_id(algo: str, env_id: str) -> Optional[Dict[str,
     return None
 
 
-def get_device(config: Config, env: VecEnv) -> torch.device:
+def get_device(config: Config, env: VectorEnv) -> torch.device:
     device = config.device
     # cuda by default
     if device == "auto":
@@ -151,7 +147,7 @@ def get_device(config: Config, env: VecEnv) -> torch.device:
         # Simple environments like Discreet and 1-D Boxes might also be better
         # served with the CPU.
         if device == "mps":
-            obs_space = single_observation_space(env)
+            obs_space = env.single_observation_space
             if isinstance(obs_space, Discrete):
                 device = "cpu"
             elif isinstance(obs_space, Box) and len(obs_space.shape) == 1:
@@ -188,7 +184,7 @@ def set_seeds(seed: Optional[int], use_deterministic_algorithms: bool) -> None:
 
 def make_policy(
     config: Config,
-    env: VecEnv,
+    env: VectorEnv,
     device: torch.device,
     load_path: Optional[str] = None,
     load_run_path: Optional[str] = None,

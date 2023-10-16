@@ -56,7 +56,6 @@ def onnx_export(args: ExportArgs, root_dir: str):
         EnvHyperparams(**config.env_hyperparams),
         override_hparams=override_hparams,
         render=False,
-        normalize_load_path=model_path,
     )
     device = get_device(config, env)
     policy = make_policy(
@@ -73,7 +72,7 @@ def onnx_export(args: ExportArgs, root_dir: str):
         else config.eval_hyperparams.get("deterministic", True)
     )
 
-    obs = env.reset()
+    obs, _ = env.reset()
     get_action_mask = getattr(env, "get_action_mask", None)
     action_masks = batch_dict_keys(get_action_mask()) if get_action_mask else None
     act = policy.act(

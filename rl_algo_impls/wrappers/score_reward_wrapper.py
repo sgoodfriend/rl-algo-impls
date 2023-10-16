@@ -1,15 +1,16 @@
 import numpy as np
-from gym import Env
+from gymnasium import Env
 
-from rl_algo_impls.wrappers.vectorable_wrapper import (
+from rl_algo_impls.wrappers.vector_wrapper import (
     VecEnvStepReturn,
-    VectorableWrapper,
+    VectorEnv,
+    VectorWrapper,
 )
 
 
-class ScoreRewardWrapper(VectorableWrapper):
+class ScoreRewardWrapper(VectorWrapper):
     def __init__(
-        self, env: Env, delta_every_step: bool = False, episode_end: bool = False
+        self, env: VectorEnv, delta_every_step: bool = False, episode_end: bool = False
     ) -> None:
         super().__init__(env)
         assert (
@@ -19,12 +20,12 @@ class ScoreRewardWrapper(VectorableWrapper):
         self.episode_end = episode_end
 
     def step(self, action) -> VecEnvStepReturn:
-        o, r, d, infos = super().step(action)
+        o, r, terminations, truncations, infos = super().step(action)
         r_to_add = []
         if self.delta_every_step:
             r_to_add.append(
                 np.expand_dims(
-                    np.array([info["score_reward"]["delta_reward"] for info in infos]),
+                    np.array([sr["delta_reward"] for sr in infos["score_reward"]]),
                     axis=-1,
                 )
             )
@@ -33,8 +34,10 @@ class ScoreRewardWrapper(VectorableWrapper):
                 np.expand_dims(
                     np.array(
                         [
-                            info.get("results", {}).get("score_reward", 0)
-                            for info in infos
+                            r.get("score_reward", 0) if r is not None else 0
+                            for r in infos.get(
+                                "results", [{} for _ in range(self.num_envs)]
+                            )
                         ]
                     ),
                     axis=-1,
@@ -43,4 +46,4 @@ class ScoreRewardWrapper(VectorableWrapper):
         if len(r.shape) == 1:
             r = np.expand_dims(r, axis=-1)
         rewards = np.concatenate([r] + r_to_add, axis=-1)
-        return o, rewards, d, infos
+        return o, rewards, terminations, truncations, infos
