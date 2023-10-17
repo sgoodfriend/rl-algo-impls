@@ -44,6 +44,7 @@ BOX_ENVS=(
     "CarRacing-v2"
 )
 
+train_jobs=""
 for algo in $(echo $algos); do
     if [ "$procgen" = "t" ]; then
         PROCGEN_ENVS=(
@@ -84,5 +85,7 @@ for algo in $(echo $algos); do
         algo_envs=$envs
     fi
 
-    bash scripts/train_loop.sh -a $algo -e "$algo_envs" -p $project_name -s "$seeds" | xargs -I CMD -P $n_jobs bash -c CMD
+    train_jobs+=$(bash scripts/train_loop.sh -a $algo -e "$algo_envs" -p $project_name -s "${seeds[*]}")$'\n'
 done
+
+printf "$train_jobs" | xargs -I CMD -P $n_jobs bash -c CMD
