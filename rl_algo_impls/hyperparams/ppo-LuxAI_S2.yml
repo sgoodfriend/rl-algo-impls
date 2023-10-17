@@ -1095,6 +1095,30 @@ LuxAI_S2-v0-sSqnet-78env32-deimos-lr4d-hbots-50m:
     <<: *lux-ssqunet-78envs-deimos-lr2-no-guide-rollout
     n_steps: 128
 
+LuxAI_S2-v0-sSqnet-78env16-deimos-lr4d-hbots-50m:
+&lux-ssqnet-78env16-deimos-lr4d-hbots-50m:
+  <<: *lux-ssqunet-78envs-deimos-lr4d-hbots-100m
+  n_timesteps: !!float 50e6
+  env_hyperparams: &lux-ssqnet-78env16-env
+    <<: *lux-ssqunet-78envs-deimos-win-loss-smoothing-env
+    make_kwargs: &lux-ssqnet-78env16-env-make-kwargs
+      <<: *lux-short-squnet-78-envs-deimos-lighter-robots-env-make-kwargs
+      map_size: 16
+      MIN_FACTORIES: 1
+      MAX_FACTORIES: 2
+  eval_hyperparams: &lux-ssqnet-78env16-eval
+    <<: *lux-eval-defaults
+    env_overrides: &lux-ssqnet-78env16-eval-env-overrides
+      <<: *lux-eval-env-overrides
+      make_kwargs: &lux-ssqnet-78env16-eval-env-override-make-kwargs
+        <<: *lux-eval-env-override-make-kwargs
+        map_size: 16
+        MIN_FACTORIES: 1
+        MAX_FACTORIES: 2
+  rollout_hyperparams:
+    <<: *lux-ssqunet-78envs-deimos-lr2-no-guide-rollout
+    n_steps: 512
+
 LuxAI_S2-agent: &lux-agent
   <<: *lux-squnet-ideimos
   device: cpu
@@ -1117,18 +1141,18 @@ LuxAI_S2-v0-debug:
   n_timesteps: !!float 1e6
   device: mps
   env_hyperparams:
-    <<: *lux-ssqnet-78env32-env
+    <<: *lux-ssqnet-78env16-env
     make_kwargs:
-      <<: *lux-ssqnet-78env32-env-make-kwargs
+      <<: *lux-ssqnet-78env16-env-make-kwargs
       verbose: 3
       verify: true
     vec_env_class: sync
   eval_hyperparams:
-    <<: *lux-ssqnet-78env32-eval
+    <<: *lux-ssqnet-78env16-eval
     env_overrides:
-      <<: *lux-ssqnet-78env32-eval-env-overrides
+      <<: *lux-ssqnet-78env16-eval-env-overrides
       vec_env_class: sync
       make_kwargs:
-        <<: *lux-ssqnet-78env32-eval-env-override-make-kwargs
+        <<: *lux-ssqnet-78env16-eval-env-override-make-kwargs
         verbose: 3
         verify: true

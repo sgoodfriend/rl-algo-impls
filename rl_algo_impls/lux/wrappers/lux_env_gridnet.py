@@ -131,11 +131,10 @@ class LuxEnvGridnet(VectorEnv):
     def reset(self, *, seed: Optional[int] = None, **kwargs) -> VecEnvResetReturn:
         if seed is not None:
             self.seed_rng = np.random.RandomState(seed)
-        int_info = np.iinfo(np.int32)
         lux_obs, info, self.agents = reset_and_early_phase(
             self.env,
             self.bid_std_dev,
-            self.seed_rng.randint(int_info.max),
+            self.seed_rng,
             **kwargs,
         )
         self.factory_distances = FactoryPlacementDistances(self.env.state)
@@ -214,24 +213,36 @@ def bid_actions(agents: List[str], bid_std_dev: float) -> Dict[str, Any]:
 
 
 def reset_and_early_phase(
-    env: LuxAI_S2, bid_std_dev: float, seed: Optional[int] = None, **kwargs
+    env: LuxAI_S2, bid_std_dev: float, seed_rng: np.random.RandomState, **kwargs
 ) -> Tuple[Dict[str, ObservationStateDict], dict, List[str]]:
+    int_info = np.iinfo(np.int32)
     does_env_have_ice_ore = False
+    reset_no_ice = 0
+    reset_no_ore = 0
+    reset_no_both = 0
     while not does_env_have_ice_ore:
-        lux_obs, _ = env.reset(seed=seed, **kwargs)
+        lux_obs, _ = env.reset(seed=seed_rng.randint(int_info.max), **kwargs)
         board = next(iter(lux_obs.values()))["board"]
         does_env_have_ice = np.any(board["ice"])
         does_env_have_ore = np.any(board["ore"])
         does_env_have_ice_ore = does_env_have_ice and does_env_have_ore
         if not does_env_have_ice_ore:
             if not does_env_have_ice and not does_env_have_ore:
-                logging.warn("Resetting env because it has neither ice nor ore")
+                reset_no_both += 1
             elif not does_env_have_ice:
-                logging.warn("Resetting env because it has no ice")
+                reset_no_ice += 1
             elif not does_env_have_ore:
-                logging.warn("Resetting env because it has no ore")
+                reset_no_ore += 1
             else:
                 raise RuntimeError("Should not be here")
+    if env.env_cfg.verbose > 2:
+        if reset_no_ice or reset_no_ore or reset_no_both:
+            logging.debug(
+                f"Reset because lacked resources: ice {reset_no_ice}, ore {reset_no_ore}, both {reset_no_both}"
+            )
+        else:
+            logging.debug("No reset because had ice and ore")
+
     agents = env.agents
     lux_obs, _, _, _, info = env.step(bid_actions(env.agents, bid_std_dev))
     return lux_obs, info, agents
