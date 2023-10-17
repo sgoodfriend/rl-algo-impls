@@ -5,7 +5,7 @@ from gymnasium.experimental.vector.utils import batch_space
 from luxai_s2.env import LuxAI_S2
 
 from rl_algo_impls.lux.rewards import LuxRewardWeights
-from rl_algo_impls.lux.wrappers.lux_env_gridnet import LuxEnvGridnet
+from rl_algo_impls.lux.vec_env.lux_env_gridnet import LuxEnvGridnet
 from rl_algo_impls.shared.vec_env.base_vector_env import BaseVectorEnv
 from rl_algo_impls.wrappers.vector_wrapper import (
     VecEnvMaskedResetReturn,
