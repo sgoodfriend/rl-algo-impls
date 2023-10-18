@@ -342,7 +342,7 @@ LuxAI_S2-v0-squnet-Deimos-jumpstart: &lux-squnet-deimos-jumpstart
     <<: *lux-squnet-ideimos-eval
     score_threshold: null
     only_checkpoint_initial_policy: true
-    env_overrides:
+    env_overrides: &lux-squnet-deimos-jumpstart-eval-env-overrides
       <<: *lux-squnet-ideimos-eval-env-overrides
       self_play_reference_kwargs:
         window: 1
@@ -1083,9 +1083,9 @@ LuxAI_S2-v0-sSqnet-78env32-deimos-lr4d-hbots-50m:
       MIN_FACTORIES: 2
       MAX_FACTORIES: 3
   eval_hyperparams: &lux-ssqnet-78env32-eval
-    <<: *lux-eval-defaults
+    <<: *lux-squnet-deimos-jumpstart-eval
     env_overrides: &lux-ssqnet-78env32-eval-env-overrides
-      <<: *lux-eval-env-overrides
+      <<: *lux-squnet-deimos-jumpstart-eval-env-overrides
       make_kwargs: &lux-ssqnet-78env32-eval-env-override-make-kwargs
         <<: *lux-eval-env-override-make-kwargs
         map_size: 32
@@ -1107,9 +1107,9 @@ LuxAI_S2-v0-sSqnet-78env16-deimos-lr4d-hbots-50m:
       MIN_FACTORIES: 1
       MAX_FACTORIES: 2
   eval_hyperparams: &lux-ssqnet-78env16-eval
-    <<: *lux-eval-defaults
+    <<: *lux-squnet-deimos-jumpstart-eval
     env_overrides: &lux-ssqnet-78env16-eval-env-overrides
-      <<: *lux-eval-env-overrides
+      <<: *lux-squnet-deimos-jumpstart-eval-env-overrides
       make_kwargs: &lux-ssqnet-78env16-eval-env-override-make-kwargs
         <<: *lux-eval-env-override-make-kwargs
         map_size: 16
