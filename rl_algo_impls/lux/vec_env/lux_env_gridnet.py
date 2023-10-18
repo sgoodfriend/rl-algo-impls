@@ -2,7 +2,6 @@ import logging
 from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
-from gymnasium import Wrapper
 from gymnasium.spaces import Box
 from gymnasium.spaces import Dict as DictSpace
 from gymnasium.spaces import MultiDiscrete
@@ -55,7 +54,7 @@ class LuxEnvGridnet(VectorEnv):
         self.stats = StatsTracking()
 
         self.num_map_tiles = self.map_size * self.map_size
-        self.action_plane_space = MultiDiscrete(ACTION_SIZES)
+        self.action_plane_space = MultiDiscrete(np.array(ACTION_SIZES))
         self.single_action_space = DictSpace(
             {
                 "per_position": MultiDiscrete(
