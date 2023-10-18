@@ -1087,10 +1087,11 @@ LuxAI_S2-v0-sSqnet-78env32-deimos-lr4d-hbots-50m:
     env_overrides: &lux-ssqnet-78env32-eval-env-overrides
       <<: *lux-squnet-deimos-jumpstart-eval-env-overrides
       make_kwargs: &lux-ssqnet-78env32-eval-env-override-make-kwargs
-        <<: *lux-eval-env-override-make-kwargs
+        <<: *lux-squnet-ideimos-eval-env-make-kwargs
         map_size: 32
         MIN_FACTORIES: 2
         MAX_FACTORIES: 3
+    only_record_video_on_best: false
   rollout_hyperparams:
     <<: *lux-ssqunet-78envs-deimos-lr2-no-guide-rollout
     n_steps: 128
@@ -1100,18 +1101,18 @@ LuxAI_S2-v0-sSqnet-78env16-deimos-lr4d-hbots-50m:
   <<: *lux-ssqunet-78envs-deimos-lr4d-hbots-100m
   n_timesteps: !!float 50e6
   env_hyperparams: &lux-ssqnet-78env16-env
-    <<: *lux-ssqunet-78envs-deimos-win-loss-smoothing-env
+    <<: *lux-ssqnet-78env32-env
     make_kwargs: &lux-ssqnet-78env16-env-make-kwargs
-      <<: *lux-short-squnet-78-envs-deimos-lighter-robots-env-make-kwargs
+      <<: *lux-ssqnet-78env32-env-make-kwargs
       map_size: 16
       MIN_FACTORIES: 1
       MAX_FACTORIES: 2
   eval_hyperparams: &lux-ssqnet-78env16-eval
-    <<: *lux-squnet-deimos-jumpstart-eval
+    <<: *lux-ssqnet-78env32-eval
     env_overrides: &lux-ssqnet-78env16-eval-env-overrides
-      <<: *lux-squnet-deimos-jumpstart-eval-env-overrides
+      <<: *lux-ssqnet-78env32-eval-env-overrides
       make_kwargs: &lux-ssqnet-78env16-eval-env-override-make-kwargs
-        <<: *lux-eval-env-override-make-kwargs
+        <<: *lux-ssqnet-78env32-eval-env-override-make-kwargs
         map_size: 16
         MIN_FACTORIES: 1
         MAX_FACTORIES: 2
