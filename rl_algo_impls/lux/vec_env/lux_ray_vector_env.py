@@ -82,7 +82,7 @@ class LuxRayVectorEnv(VectorEnv):
             infos.append(i)
             action_masks.append(am)
         reset_returns = ray.get(reset_futures)
-        for idx, (o, am) in zip(reset_future_indexes, reset_returns):
+        for idx, ((o, _), am) in zip(reset_future_indexes, reset_returns):
             obs[idx] = o
             action_masks[idx] = am
         self._action_masks = np.concatenate(action_masks)
