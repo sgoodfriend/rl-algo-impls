@@ -1116,6 +1116,9 @@ LuxAI_S2-v0-sSqnet-78env16-deimos-lr4d-hbots-50m:
         map_size: 16
         MIN_FACTORIES: 1
         MAX_FACTORIES: 2
+  rollout_hyperparams:
+    <<: *lux-ssqunet-78envs-deimos-lr2-no-guide-rollout
+    n_steps: 128
   algo_hyperparams: &lux-ssqnet-78env16-deimos-lr4d-hbots-50m-algo
     <<: *lux-ssqnet-78env32-deimos-lr4d-hbots-50m-algo
     batch_size: 9984
