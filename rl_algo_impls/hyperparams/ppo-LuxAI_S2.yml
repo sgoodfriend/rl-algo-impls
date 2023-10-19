@@ -1117,8 +1117,8 @@ LuxAI_S2-v0-sSqnet-78env16-deimos-lr4d-hbots-50m:
         MIN_FACTORIES: 1
         MAX_FACTORIES: 2
   algo_hyperparams: &lux-ssqnet-78env16-deimos-lr4d-hbots-50m-algo
-    <<: *lux-ssqunet-78envs-deimos-lr2-hbots-100m-algo
-    batch_size: 4992
+    <<: *lux-ssqnet-78env32-deimos-lr4d-hbots-50m-algo
+    batch_size: 9984
 
 LuxAI_S2-agent: &lux-agent
   <<: *lux-squnet-ideimos
