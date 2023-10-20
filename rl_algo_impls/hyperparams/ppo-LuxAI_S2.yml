@@ -1123,6 +1123,11 @@ LuxAI_S2-v0-sSqnet-78env16-deimos-lr4d-hbots-50m:
     <<: *lux-ssqnet-78env32-deimos-lr4d-hbots-50m-algo
     batch_size: 7488
 
+LuxAI_S2-v0-sSqnet-78env16-deimos-lr4d-hbots-200m:
+  &lux-ssqnet-78env16-deimos-lr4d-hbots-200m
+  <<: *lux-ssqnet-78env16-deimos-lr4d-hbots-50m
+  n_timesteps: !!float 200e6
+
 LuxAI_S2-agent: &lux-agent
   <<: *lux-squnet-ideimos
   device: cpu
