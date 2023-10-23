@@ -448,6 +448,16 @@ LuxAI_S2-v0-sSqnet-78env16-deimos-lr4d-hbots-50m:
     <<: *lux-ssqnet-78env32-deimos-lr4d-hbots-50m-algo
     num_minibatches: 1
 
+LuxAI_S2-v0-sSqnet-78env16-deimos-lr4d-hbots-200m:
+  &lux-ssqnet-78env16-deimos-lr4d-hbots-200m
+  <<: *lux-ssqnet-78env16-deimos-lr4d-hbots-50m
+  n_timesteps: !!float 200e6
+
+LuxAI_S2-v0-sSqnet-78env32-deimos-lr4d-hbots-200m:
+  &lux-ssqnet-78env32-deimos-lr4d-hbots-200m
+  <<: *lux-ssqnet-78env32-deimos-lr4d-hbots-50m
+  n_timesteps: !!float 200e6
+
 LuxAI_S2-v0-debug:
   <<: *lux-ssqunet-78envs-deimos-hbots-lr8
   n_timesteps: !!float 1e6
