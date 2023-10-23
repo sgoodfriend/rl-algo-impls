@@ -1133,6 +1133,60 @@ LuxAI_S2-v0-sSqnet-78env32-deimos-lr4d-hbots-200m:
   <<: *lux-ssqnet-78env32-deimos-lr4d-hbots-50m
   n_timesteps: !!float 200e6
 
+LuxAI_S2-v0-sSqnet-78env48-deimos-lr4d-hbots-50m:
+  &lux-ssqnet-78env48-deimos-lr4d-hbots-50m
+  <<: *lux-ssqunet-78envs-deimos-lr4d-hbots-100m
+  n_timesteps: !!float 50e6
+  env_hyperparams: &lux-ssqnet-78env48-env
+    <<: *lux-ssqnet-78env32-env
+    make_kwargs: &lux-ssqnet-78env48-env-make-kwargs
+      <<: *lux-ssqnet-78env32-env-make-kwargs
+      map_size: 48
+      MIN_FACTORIES: 2
+      MAX_FACTORIES: 5
+  eval_hyperparams: &lux-ssqnet-78env48-eval
+    <<: *lux-ssqnet-78env32-eval
+    env_overrides: &lux-ssqnet-78env48-eval-env-overrides
+      <<: *lux-ssqnet-78env32-eval-env-overrides
+      make_kwargs: &lux-ssqnet-78env48-eval-env-override-make-kwargs
+        <<: *lux-ssqnet-78env32-eval-env-override-make-kwargs
+        map_size: 48
+        MIN_FACTORIES: 2
+        MAX_FACTORIES: 5
+  rollout_hyperparams:
+    <<: *lux-ssqunet-78envs-deimos-lr2-no-guide-rollout
+    n_steps: 64
+  algo_hyperparams: &lux-ssqnet-78env48-deimos-lr4d-hbots-50m-algo
+    <<: *lux-ssqnet-78env32-deimos-lr4d-hbots-50m-algo
+    batch_size: 832
+
+LuxAI_S2-v0-sSqnet-78env64-deimos-lr4d-hbots-50m:
+  &lux-ssqnet-78env64-deimos-lr4d-hbots-50m
+  <<: *lux-ssqunet-78envs-deimos-lr4d-hbots-100m
+  n_timesteps: !!float 50e6
+  env_hyperparams: &lux-ssqnet-78env64-env
+    <<: *lux-ssqnet-78env32-env
+    make_kwargs: &lux-ssqnet-78env64-env-make-kwargs
+      <<: *lux-ssqnet-78env32-env-make-kwargs
+      map_size: 64
+      MIN_FACTORIES: 4
+      MAX_FACTORIES: 10
+  eval_hyperparams: &lux-ssqnet-78env64-eval
+    <<: *lux-ssqnet-78env32-eval
+    env_overrides: &lux-ssqnet-78env64-eval-env-overrides
+      <<: *lux-ssqnet-78env32-eval-env-overrides
+      make_kwargs: &lux-ssqnet-78env64-eval-env-override-make-kwargs
+        <<: *lux-ssqnet-78env32-eval-env-override-make-kwargs
+        map_size: 64
+        MIN_FACTORIES: 4
+        MAX_FACTORIES: 10
+  rollout_hyperparams:
+    <<: *lux-ssqunet-78envs-deimos-lr2-no-guide-rollout
+    n_steps: 64
+  algo_hyperparams: &lux-ssqnet-78env64-deimos-lr4d-hbots-50m-algo
+    <<: *lux-ssqnet-78env32-deimos-lr4d-hbots-50m-algo
+    batch_size: 416
+
 LuxAI_S2-agent: &lux-agent
   <<: *lux-squnet-ideimos
   device: cpu
