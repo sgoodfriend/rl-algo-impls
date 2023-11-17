@@ -346,8 +346,13 @@ def agent_simple_move_masks(
     enqueued_actions: Dict[str, Optional[np.ndarray]],
     adjacent_rubble: np.ndarray,
 ) -> Dict[str, np.ndarray]:
+    own_units = np.zeros(state.board.factory_occupancy_map.shape, dtype=np.bool_)
+    for u in state.units[player].values():
+        pos = pos_to_numpy(u.pos)
+        own_units[pos[0], pos[1]] = True
     areas_of_interest = (
-        (
+        own_units
+        | (
             np.isin(
                 state.board.factory_occupancy_map, state.teams[player].factory_strains
             )

@@ -425,6 +425,7 @@ def _observation_and_per_position_action_mask(
         | obs[SimpleObservationFeature.ICE]
         | obs[SimpleObservationFeature.ORE]
         | obs[SimpleObservationFeature.OPPONENT_LICHEN]
+        | obs[SimpleObservationFeature.OWN_UNIT]
     )
     # bool[B*P, W, H]
     move_zone = fill_valid_regions(points_of_interest)
