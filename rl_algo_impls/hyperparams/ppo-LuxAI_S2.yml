@@ -3094,7 +3094,7 @@ LuxAI_S2-v0-j512env64-80m-a100-lr20-finetune:
     load_path: downloaded_models/ppo-LuxAI_S2-v0-j1024env16-80m-lr30-opp-resources-S1-best
   algo_hyperparams: &lux-j512env64-80m-a100-lr20-finetune-algo
     <<: *lux-j1024env16-80m-lr20-opp-resources-algo
-    batch_size: 256
+    batch_size: 512
   hyperparam_transitions_kwargs:
     interpolate_method: cosine
     phases:
