@@ -139,7 +139,11 @@ class Policy(nn.Module, ABC, Generic[ObsType]):
             elif isinstance(current, NormalizeReward):
                 assert self.norm_reward
                 current.rms = deepcopy(self.norm_reward.rms)
-            current = getattr(current, "venv", getattr(current, "env", current))
+            current = (
+                getattr(current, "venv")
+                if hasattr(current, "venv")
+                else getattr(current, "env", current)
+            )
             if not current:
                 raise AttributeError(
                     f"{type(current)} doesn't include env or venv attribute"
