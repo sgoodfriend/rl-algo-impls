@@ -329,35 +329,6 @@ def is_position_in_map(pos: np.ndarray, config: LuxEnvConfig) -> bool:
     return (0 <= pos[0] < config.map_size) and (0 <= pos[1] < config.map_size)
 
 
-def _max_move_repeats(
-    unit: LuxUnit,
-    move_delta: np.ndarray,
-    state: LuxGameState,
-    direction_action_index: int,
-    enqueued_action: Optional[np.ndarray],
-) -> int:
-    config = state.env_cfg
-    num_repeats = 0
-    power_remaining = unit.power
-    if (
-        enqueued_action is None
-        or enqueued_action[0] != 0
-        or enqueued_action[1] != direction_action_index
-    ):
-        power_remaining -= unit.unit_cfg.ACTION_QUEUE_POWER_COST
-    assert not bool(np.all(move_delta == 0)), "No move Move action not expected"
-    target_pos = pos_to_numpy(unit.pos)
-    while True:
-        target_pos = target_pos + move_delta
-        if not is_position_in_map(target_pos, config):
-            return num_repeats
-        rubble = int(state.board.rubble[target_pos[0], target_pos[1]])
-        power_remaining -= move_power_cost(unit, rubble)
-        if power_remaining < 0:
-            return num_repeats
-        num_repeats += 1
-
-
 def enqueued_action_from_obs(
     action_queue: List[np.ndarray], use_simplified_spaces: bool
 ) -> Optional[np.ndarray]:
