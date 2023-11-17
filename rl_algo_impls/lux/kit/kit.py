@@ -3,6 +3,7 @@ from typing import Dict
 
 import numpy as np
 
+from rl_algo_impls.lux.kit.board import Board
 from rl_algo_impls.lux.kit.cargo import UnitCargo
 from rl_algo_impls.lux.kit.config import EnvConfig
 from rl_algo_impls.lux.kit.factory import Factory
@@ -99,7 +100,7 @@ def obs_to_game_state(step, env_cfg: EnvConfig, obs):
         faction = FactionTypes[team_data["faction"]]
         teams[agent] = Team(**team_data, agent=agent)
 
-    return GameState(
+    game_state = GameState(
         env_cfg=env_cfg,
         env_steps=step,
         board=Board(
@@ -116,18 +117,10 @@ def obs_to_game_state(step, env_cfg: EnvConfig, obs):
         factories=factories,
         teams=teams,
     )
-
-
-@dataclass
-class Board:
-    rubble: np.ndarray
-    ice: np.ndarray
-    ore: np.ndarray
-    lichen: np.ndarray
-    lichen_strains: np.ndarray
-    factory_occupancy_map: np.ndarray
-    factories_per_team: int
-    valid_spawns_mask: np.ndarray
+    for factories_by_id in factories.values():
+        for factory in factories_by_id.values():
+            factory.cache_water_info(game_state.board)
+    return game_state
 
 
 @dataclass

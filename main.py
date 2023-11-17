@@ -1,4 +1,6 @@
 import json
+import logging
+import sys
 from argparse import Namespace
 
 from rl_algo_impls.lux.agent import Agent
@@ -49,6 +51,8 @@ if __name__ == "__main__":
             return input()
         except EOFError as eof:
             raise SystemExit(eof)
+
+    logging.basicConfig(stream=sys.stderr, level=logging.INFO)
 
     step = 0
     player_id = 0

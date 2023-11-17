@@ -1640,23 +1640,6 @@ LuxAI_S2-v0-sSqnet-78env64-deimos-lr4d-hbots-50m:
     <<: *lux-ssqnet-78env32-deimos-lr4d-hbots-50m-algo
     batch_size: 416
 
-LuxAI_S2-agent: &lux-agent
-  <<: *lux-squnet-ideimos
-  device: cpu
-  policy_hyperparams:
-    <<: *lux-squnet-ideimos-policy
-    load_run_path: null
-    load_path: lux_models/acbc-LuxAI_S2-v0-squnet-iDeimos-S1
-  eval_hyperparams:
-    <<: *lux-eval-defaults
-    env_overrides:
-      <<: *lux-eval-env-overrides
-      n_envs: 1
-      vec_env_class: agent
-      self_play_kwargs:
-        save_steps: .inf
-        swap_steps: .inf
-
 LuxAI_S2-v0-sSqnet-j1024env16-80m-checkpoints:
   &lux-ssqnet-j1024env16-80m-checkpoints
   <<: *lux-ssqnet-j1024env16-80m-2i2o
@@ -3266,6 +3249,21 @@ LuxAI_S2-v0-j1024env16-80m-lr20-finetune: &lux-j1024env16-80m-lr20-finetune
     <<: *lux-j1024env32-80m-a100-lr20-finetune-policy
   hyperparam_transitions_kwargs:
     <<: *lux-j1024env32-80m-a100-lr20-finetune-hyperparam-transitions
+
+LuxAI_S2-agent: &lux-agent
+  <<: *lux-j512env64-80m-a100-lr20-finetune
+  device: cpu
+  policy_hyperparams:
+    <<: *lux-j512env64-80m-a100-lr20-finetune-policy
+    load_run_path: null
+    load_path: lux_models/ppo-LuxAI_S2-v0-j512env64-80m-a100-lr20-finetune-S1-best
+  eval_hyperparams:
+    <<: *lux-j512env64-opp-resources-eval
+    env_overrides:
+      <<: *lux-j512env64-opp-resources-eval-env-overrides
+      n_envs: 1
+      vec_env_class: agent
+      play_checkpoints_kwargs: null
 
 LuxAI_S2-v0-debug:
   <<: *lux-j1024env16-80m-lr20-finetune

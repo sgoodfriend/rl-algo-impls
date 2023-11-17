@@ -321,7 +321,7 @@ def is_water_action_valid(
     config: LuxEnvConfig,
     agent_cfg: LuxAgentConfig,
 ) -> bool:
-    water_cost = factory_water_cost(factory, state, config)
+    water_cost = factory_water_cost(factory, config)
     ice_water = factory.cargo.water + factory.cargo.ice // config.ICE_WATER_RATIO
     return factory.cargo.water > water_cost and ice_water - water_cost > np.minimum(
         config.max_episode_length - state.real_env_steps, agent_cfg.min_water_to_lichen

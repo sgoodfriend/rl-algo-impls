@@ -17,7 +17,7 @@ from rl_algo_impls.lux.obs_feature import (
     WATER_FACTORY_LAMBDA,
     SimpleObservationFeature,
 )
-from rl_algo_impls.lux.shared import LuxGameState
+from rl_algo_impls.lux.shared import LuxGameState, factory_water_cost
 
 VERIFY = False
 
@@ -116,8 +116,7 @@ def simple_obs_from_lux_observation(
 
         grow_lichen_positions = f_state.grow_lichen_positions
         water_cost = 1 - np.exp(
-            -WATER_COST_LAMBDA
-            * np.ceil(len(grow_lichen_positions) / env_cfg.LICHEN_WATERING_COST_FACTOR)
+            -WATER_COST_LAMBDA * factory_water_cost(f_state, env_cfg)
         )
         for gl_x, gl_y in grow_lichen_positions:
             obs[SimpleObservationFeature.WATER_COST, gl_x, gl_y] = water_cost

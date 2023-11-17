@@ -1,4 +1,3 @@
-import logging
 import os.path
 from pathlib import Path
 from typing import Any, Dict
@@ -10,9 +9,11 @@ from luxai_s2.state import ObservationStateDict
 
 from rl_algo_impls.lux.actions import (
     ACTION_SIZES,
+    SIMPLE_ACTION_SIZES,
     enqueued_action_from_obs,
     to_lux_actions,
 )
+from rl_algo_impls.lux.agent_config import LuxAgentConfig
 from rl_algo_impls.lux.early import bid_action
 from rl_algo_impls.lux.kit.config import EnvConfig
 from rl_algo_impls.lux.kit.kit import obs_to_game_state
@@ -59,18 +60,17 @@ class Agent:
             device,
             **config.policy_hyperparams,
         ).eval()
-        self.use_simplified_spaces = config.env_hyperparams.make_kwargs.get(
-            "use_simplified_spaces", False
+        self.agent_cfg = LuxAgentConfig.from_kwargs(
+            **config.env_hyperparams["make_kwargs"]
         )
-
-        transpose_wrapper = find_wrapper(env, HwcToChwVectorObservation)
-        assert transpose_wrapper
-        self.transpose_wrapper = transpose_wrapper
+        self.bid_std_dev = config.env_hyperparams["make_kwargs"].get("bid_std_dev", 5)
 
         self.map_size = env_cfg.map_size
         self.num_map_tiles = self.map_size * self.map_size
         action_sizes = (
-            SIMPLE_ACTION_SIZES if self.use_simplified_spaces else ACTION_SIZES
+            SIMPLE_ACTION_SIZES
+            if self.agent_cfg.use_simplified_spaces
+            else ACTION_SIZES
         )
         self.action_plane_space = MultiDiscrete(action_sizes)
         self.action_space = DictSpace(
@@ -98,7 +98,7 @@ class Agent:
         state = obs_to_game_state(step, self.env_cfg, lux_obs)
         enqueued_actions = {
             u_id: enqueued_action_from_obs(
-                u["action_queue"], self.use_simplified_spaces
+                u["action_queue"], self.agent_cfg.use_simplified_spaces
             )
             for p in self.agents
             for u_id, u in lux_obs["units"][p].items()
@@ -109,11 +109,9 @@ class Agent:
             state,
             self.action_mask_shape,
             enqueued_actions,
-            self.use_simplified_spaces,
-            factory_ice_distance_buffer=0,
+            self.agent_cfg,
         )
         obs = np.expand_dims(obs, axis=0)
-        obs = self.transpose_wrapper.observation(obs)
         action_mask = np.expand_dims(action_mask, axis=0)
 
         actions = self.policy.act(
@@ -127,11 +125,11 @@ class Agent:
             action_mask[0],
             enqueued_actions,
             action_stats,
-            self.use_simplified_spaces,
+            self.agent_cfg,
         )
         return lux_action
 
     def bid_policy(
         self, step: int, lux_obs: ObservationStateDict, remainingOverageTime: int = 60
     ) -> Dict[str, Any]:
-        return bid_action(5, self.faction)
+        return bid_action(self.bid_std_dev, self.faction)
