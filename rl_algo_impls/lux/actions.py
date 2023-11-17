@@ -74,7 +74,9 @@ def to_lux_actions(
         water = (
             cfg.INIT_WATER_METAL_PER_FACTORY if agent_cfg.init_water_constant else metal
         )
-        assert factories_to_place > 1 or (metal == metal_left and water == water_left)
+        assert factories_to_place > 1 or (
+            metal == metal_left and water == water_left
+        ), f"Last factory should use last of metal ({metal} -> {metal_left}) and water ({water} -> {water_left})"
 
         return {
             "metal": metal,
