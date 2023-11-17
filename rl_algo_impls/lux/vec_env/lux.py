@@ -80,6 +80,8 @@ def make_lux_env(
             not selfplay_bots
         ), "play_checkpoints_kwargs doesn't work with selfplay_bots"
         num_envs += play_checkpoints_kwargs["n_envs_against_checkpoints"] or n_envs
+    if num_envs == 1 and not training:
+        num_envs = 2
     assert num_envs % 2 == 0, f"num_envs {num_envs} must be even"
 
     if vec_env_class == "sync":
