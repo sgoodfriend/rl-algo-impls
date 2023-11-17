@@ -359,7 +359,7 @@ def agent_simple_move_masks(
         )
         | state.board.ice
         | state.board.ore
-        | (state.board.lichen_strains != 1)
+        | (state.board.lichen_strains != -1)
         | adjacent_rubble
     )
     move_area = fill_valid_regions(areas_of_interest)
