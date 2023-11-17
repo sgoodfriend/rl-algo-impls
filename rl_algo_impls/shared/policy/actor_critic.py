@@ -327,8 +327,10 @@ class ActorCritic(OnPolicy, Generic[ObsType]):
         else:
             super().load_weights(path)
 
-    def load(self, path: str) -> None:
-        super().load(path)
+    def load(
+        self, path: str, load_norm_rms_count_override: Optional[int] = None
+    ) -> None:
+        super().load(path, load_norm_rms_count_override=load_norm_rms_count_override)
         self.reset_noise()
 
     def load_from(self: ActorCriticSelf, policy: ActorCriticSelf) -> ActorCriticSelf:
