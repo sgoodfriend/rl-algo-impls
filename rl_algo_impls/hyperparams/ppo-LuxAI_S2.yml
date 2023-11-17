@@ -3139,25 +3139,27 @@ LuxAI_S2-v0-j512env64-80m-a100-lr10-finetune:
       - 0.1
       - 0
 
-LuxAI_S2-v0-j512env64-80m-a100-lr10-finetune32:
-  &lux-j512env64-80m-a100-lr10-finetune32
+LuxAI_S2-v0-j512env64-80m-lr10-finetune32: &lux-j512env64-80m-lr10-finetune32
   <<: *lux-j512env64-80m-a100-lr10-finetune
-  env_hyperparams: &lux-j512env64-80m-a100-lr10-finetune32-env
+  env_hyperparams: &lux-j512env64-80m-lr10-finetune32-env
     <<: *lux-j512env64-opp-resources-env
-    make_kwargs: &lux-j512env64-80m-a100-lr10-finetune32-env-make-kwargs
+    make_kwargs: &lux-j512env64-80m-lr10-finetune32-env-make-kwargs
       <<: *lux-j512env64-opp-resources-env-make-kwargs
       min_water_to_lichen: 300
-  eval_hyperparams: &lux-j512env64-80m-a100-lr10-finetune32-eval
+  eval_hyperparams: &lux-j512env64-80m-lr10-finetune32-eval
     <<: *lux-j512env64-opp-resources-eval
-    env_overrides: &lux-j512env64-80m-a100-lr10-finetune32-eval-env-overrides
+    env_overrides: &lux-j512env64-80m-lr10-finetune32-eval-env-overrides
       <<: *lux-j512env64-opp-resources-eval-env-overrides
       make_kwargs:
-        &lux-j512env64-80m-a100-lr10-finetune32-eval-env-overrides-make-kwargs
+        &lux-j512env64-80m-lr10-finetune32-eval-env-overrides-make-kwargs
         <<: *lux-j512env64-opp-resources-eval-env-overrides-make-kwargs
         min_water_to_lichen: 300
-  policy_hyperparams: &lux-j512env64-80m-a100-lr10-finetune32-policy
+  policy_hyperparams: &lux-j512env64-80m-lr10-finetune32-policy
     <<: *lux-j512env64-80m-a100-lr20-finetune-policy
     load_path: downloaded_models/ppo-LuxAI_S2-v0-j1024env32-80m-a100-lr20-finetune-S1
+  algo_hyperparams: &lux-j512env64-80m-lr10-finetune32-algo
+    <<: *lux-j512env64-80m-a100-lr20-finetune-algo
+    batch_size: 128
 
 LuxAI_S2-v0-j512env64-80m-a100-lr5-finetune:
   &lux-j512env64-80m-a100-lr5-finetune
