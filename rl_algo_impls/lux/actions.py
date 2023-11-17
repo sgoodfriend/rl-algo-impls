@@ -71,7 +71,9 @@ def to_lux_actions(
             min(metal_left - factories_to_place * heavy_cost_metal, heavy_cost_metal)
             + heavy_cost_metal
         )
-        water = metal
+        water = (
+            cfg.INIT_WATER_METAL_PER_FACTORY if agent_cfg.init_water_constant else metal
+        )
         assert factories_to_place > 1 or (metal == metal_left and water == water_left)
 
         return {
