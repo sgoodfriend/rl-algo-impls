@@ -632,7 +632,7 @@ def valid_pickup_resource_mask(
     unit_cargo_capacity = np.array(astuple(unit.cargo)) < unit.cargo_space
     if agent_cfg.disable_cargo_pickup:
         if agent_cfg.enable_light_water_pickup and not unit.is_heavy():
-            unit_cargo_capacity[(0, 1, 3)] = False
+            unit_cargo_capacity[((0, 1, 3),)] = False
         else:
             unit_cargo_capacity = np.zeros_like(unit_cargo_capacity)
     has_capacity = np.concatenate(
