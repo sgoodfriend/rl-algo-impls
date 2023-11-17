@@ -3268,7 +3268,7 @@ LuxAI_S2-v0-j1024env16-80m-lr20-finetune: &lux-j1024env16-80m-lr20-finetune
     <<: *lux-j1024env32-80m-a100-lr20-finetune-hyperparam-transitions
 
 LuxAI_S2-v0-debug:
-  <<: *lux-j1024env16-80m-lr20-opp-resources
+  <<: *lux-j1024env16-80m-lr20-finetune
   n_timesteps: !!float 10e6
   device: mps
   env_hyperparams:

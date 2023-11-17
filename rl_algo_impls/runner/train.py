@@ -170,6 +170,9 @@ def train(args: TrainArgs):
     else:
         rollout_generator_cls = DEFAULT_ROLLOUT_GENERATORS[args.algo]
 
+    # TODO: Remove
+    eval_callback.generate_video()
+
     rollout_generator = rollout_generator_cls(
         policy,  # type: ignore
         env,

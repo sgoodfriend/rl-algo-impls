@@ -279,20 +279,7 @@ class EvalCallback(Callback):
                 self.tb_writer, "best_eval", self.timesteps_elapsed
             )
         if self.video_env and (not self.only_record_video_on_best or strictly_better):
-            assert self.video_env and self.video_dir
-            best_video_base_path = os.path.join(
-                self.video_dir, str(self.timesteps_elapsed)
-            )
-            self.video_env.base_path = best_video_base_path
-            video_stats = evaluate(
-                self.video_env,
-                self.policy,
-                1,
-                deterministic=self.deterministic,
-                print_returns=False,
-                score_function=self.score_function,
-            )
-            print(f"Saved video: {video_stats}")
+            self.generate_video()
 
         eval_stat.write_to_tensorboard(self.tb_writer, "eval", self.timesteps_elapsed)
         self.checkpoint_policy(is_best)
@@ -310,3 +297,17 @@ class EvalCallback(Callback):
                         f"Checkpointing best policy at {self.timesteps_elapsed}"
                     )
             self.prior_policies.appendleft(deepcopy(self.policy))
+
+    def generate_video(self) -> None:
+        assert self.video_env and self.video_dir
+        best_video_base_path = os.path.join(self.video_dir, str(self.timesteps_elapsed))
+        self.video_env.base_path = best_video_base_path
+        video_stats = evaluate(
+            self.video_env,
+            self.policy,
+            1,
+            deterministic=self.deterministic,
+            print_returns=False,
+            score_function=self.score_function,
+        )
+        print(f"Saved video: {video_stats}")
