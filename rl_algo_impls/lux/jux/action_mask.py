@@ -10,13 +10,15 @@ import jax
 import jax.numpy as jnp
 from jux.state import State as JuxState
 
-from rl_algo_impls.lux.jux.agent_config import AgentConfig
+from rl_algo_impls.lux.jux.agent_config import JuxAgentConfig
 from rl_algo_impls.lux.jux.jit import toggleable_jit
 from rl_algo_impls.lux.jux.util import roll_outwards
 
 
 @partial(toggleable_jit, static_argnums=(1,))
-def get_action_mask_pick_position(state: JuxState, agent_cfg: AgentConfig) -> jax.Array:
+def get_action_mask_pick_position(
+    state: JuxState, agent_cfg: JuxAgentConfig
+) -> jax.Array:
     valid_spawns_mask = state.board.valid_spawns_mask
     max_map_dist = valid_spawns_mask.shape[-1] + valid_spawns_mask.shape[-2] - 2
     if agent_cfg.valid_spawns_mask_ore_ice_union:

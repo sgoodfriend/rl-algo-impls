@@ -6,6 +6,7 @@ from typing import Any, Dict, List, NamedTuple, Optional, TypeVar, Union
 import numpy as np
 from luxai_s2.actions import move_deltas
 
+from rl_algo_impls.lux.agent_config import LuxAgentConfig
 from rl_algo_impls.lux.shared import (
     LuxEnvConfig,
     LuxFactory,
@@ -54,7 +55,7 @@ def to_lux_actions(
     action_mask: np.ndarray,
     enqueued_actions: Dict[str, Optional[np.ndarray]],
     action_stats: ActionStats,
-    use_simplified_spaces: bool,
+    agent_cfg: LuxAgentConfig,
 ) -> Dict[str, Any]:
     cfg = state.env_cfg
 
@@ -103,10 +104,14 @@ def to_lux_actions(
             del positions_occupied[target_pos_idx]
         current_pos_idx = pos_to_idx(unit.pos, cfg.map_size)
         if current_pos_idx in positions_occupied:
-            cancel_move(
-                state.units[player][positions_occupied[current_pos_idx]],
-                current_pos_idx,
-            )
+            occupier_id = positions_occupied[current_pos_idx]
+            # BUILD is a special case for factory robot build. In this case, the factory
+            # will cancel it's build action.
+            if occupier_id != "BUILD":
+                cancel_move(
+                    state.units[player][occupier_id],
+                    current_pos_idx,
+                )
         positions_occupied[current_pos_idx] = unit.unit_id
 
     def resource_amount(unit: Union[LuxUnit, LuxFactory], idx: int) -> int:
@@ -127,63 +132,98 @@ def to_lux_actions(
 
     for u, a in unit_actions:
         action_stats.action_type[a[0]] += 1
+        if a[0] == 0:
+            # Will be handled next loop
+            continue
+        positions_occupied[pos_to_idx(u.pos, cfg.map_size)] = u.unit_id
 
-        if a[0] == 0:  # move
-            direction = a[1] + (1 if use_simplified_spaces else 0)
-            move_delta = move_deltas[direction]
-            target_pos_idx = pos_to_idx(pos_to_numpy(u.pos) + move_delta, cfg.map_size)
-            if target_pos_idx in positions_occupied:
-                cancel_move(u, target_pos_idx)
+        if a[0] == 1:  # transfer
+            direction = a[2] + (1 if agent_cfg.use_simplified_spaces else 0)
+            resource = a[3]
+            amount = resource_amount(u, resource)
+            if resource == 4:
+                amount -= u.unit_cfg.BATTERY_CAPACITY * 0.1
+            if amount <= 0:
+                cancel_action(u)
+                action_stats.transfer_cancelled_no_resource += 1
                 continue
-            positions_occupied[target_pos_idx] = u.unit_id
+            num_executions = 1  # TODO: Not efficient (especially for transfer chains)
+        elif a[0] == 2:  # pickup
+            direction = 0
+            resource = a[4]
+            _capacity = u.cargo_space if resource < 4 else u.battery_capacity
+            _factory = factory_at_pos(state, pos_to_numpy(u.pos))
+            assert _factory is not None
+            _factory_amount = resource_amount(_factory, resource)
+            amount = max(
+                min(
+                    _capacity - resource_amount(u, resource),
+                    _factory_amount - int(min_factory_resources(cfg)[resource]),
+                ),
+                0,
+            )
+            if amount <= 0:
+                cancel_action(u)
+                action_stats.pickup_cancelled += 1
+                continue
+            num_executions = 1
+        elif a[0] == 3:  # dig
+            direction = 0
             resource = 0
             amount = 0
-            num_executions = _max_move_repeats(
-                u, move_delta, state, a[1], enqueued_actions.get(u.unit_id)
-            )
+            num_executions = cfg.max_episode_length
+        elif a[0] == 4:  # self-destruct
+            direction = 0
+            resource = 0
+            amount = 0
+            num_executions = 1
+        elif a[0] == 5:  # recharge
+            direction = 0
+            resource = 0
+            amount = u.battery_capacity
+            num_executions = cfg.max_episode_length
         else:
-            positions_occupied[pos_to_idx(u.pos, cfg.map_size)] = u.unit_id
+            raise ValueError(f"Unrecognized action {a[0]}")
 
-            if a[0] == 1:  # transfer
-                direction = a[2] + (1 if use_simplified_spaces else 0)
-                resource = a[3]
-                amount = resource_amount(u, resource)
-                num_executions = (
-                    1  # TODO: Not efficient (especially for transfer chains)
-                )
-            elif a[0] == 2:  # pickup
-                direction = 0
-                resource = a[4]
-                _capacity = u.cargo_space if resource < 4 else u.battery_capacity
-                _factory = factory_at_pos(state, pos_to_numpy(u.pos))
-                assert _factory is not None
-                _factory_amount = resource_amount(_factory, resource)
-                amount = max(
-                    min(
-                        _capacity - resource_amount(u, resource),
-                        _factory_amount - int(min_factory_resources(cfg)[resource]),
-                    ),
-                    0,
-                )
-                assert amount > 0
-                num_executions = 1
-            elif a[0] == 3:  # dig
-                direction = 0
-                resource = 0
-                amount = 0
-                num_executions = u.power // u.unit_cfg.DIG_COST
-            elif a[0] == 4:  # self-destruct
-                direction = 0
-                resource = 0
-                amount = 0
-                num_executions = 1
-            elif a[0] == 5:  # recharge
-                direction = 0
-                resource = 0
-                amount = u.battery_capacity
-                num_executions = 1
+        assert num_executions > 0, (
+            "num_executions must be positive: "
+            f"{np.array([a[0], direction, resource, amount, 0, num_executions])}"
+        )
+        if actions_equal(a, enqueued_actions.get(u.unit_id)):
+            action_stats.repeat_action += 1
+            continue
+
+        assert u.power >= u.unit_cfg.ACTION_QUEUE_POWER_COST
+        lux_actions[u.unit_id] = [
+            np.array([a[0], direction, resource, amount, 0, num_executions])
+        ]
+
+    for f in state.factories[player].values():
+        if no_valid_factory_actions(f, action_mask, cfg.map_size):
+            continue
+        a = actions[pos_to_idx(f.pos, cfg.map_size), 0]
+        if a in {1, 2}:
+            if pos_to_idx(f.pos, cfg.map_size) in positions_occupied:
+                action_stats.build_cancelled += 1
+                actions[pos_to_idx(f.pos, cfg.map_size), 0] = 0  # DO_NOTHING
             else:
-                raise ValueError(f"Unrecognized action {a[0]}")
+                positions_occupied[pos_to_idx(f.pos, cfg.map_size)] = "BUILD"
+
+    for u, a in unit_actions:
+        if a[0] != 0:
+            # Non-moves handled in prior unit loop
+            continue
+        direction = a[1] + (1 if agent_cfg.use_simplified_spaces else 0)
+        move_delta = move_deltas[direction]
+        target_pos_idx = pos_to_idx(pos_to_numpy(u.pos) + move_delta, cfg.map_size)
+        if target_pos_idx in positions_occupied:
+            cancel_move(u, target_pos_idx)
+            continue
+        positions_occupied[target_pos_idx] = u.unit_id
+        resource = 0
+        amount = 0
+        num_executions = cfg.max_episode_length
+
         assert num_executions > 0, (
             "num_executions must be positive: "
             f"{np.array([a[0], direction, resource, amount, 0, num_executions])}"
@@ -204,7 +244,7 @@ def to_lux_actions(
             continue
         target_pos = (
             pos_to_numpy(u.pos)
-            + move_deltas[a[2] + (1 if use_simplified_spaces else 0)]
+            + move_deltas[a[2] + (1 if agent_cfg.use_simplified_spaces else 0)]
         )
         if state.board.factory_occupancy_map[target_pos[0], target_pos[1]] != -1:
             continue
@@ -234,9 +274,12 @@ def to_lux_actions(
     for f in state.factories[player].values():
         if no_valid_factory_actions(f, action_mask, cfg.map_size):
             continue
-        a = actions[pos_to_idx(f.pos, cfg.map_size), 0]
+        f_pos_idx = pos_to_idx(f.pos, cfg.map_size)
+        a = actions[f_pos_idx, 0]
         if a > 0:
-            if a in {1, 2} and pos_to_idx(f.pos, cfg.map_size) in positions_occupied:
+            if a in {1, 2} and positions_occupied[f_pos_idx] != "BUILD":
+                # Likely a unit that was going to move out had to cancel its action.
+                # Cancel the build.
                 action_stats.build_cancelled += 1
                 continue
             lux_actions[f.unit_id] = a - 1
@@ -379,4 +422,4 @@ def factory_at_pos(state: LuxGameState, pos: np.ndarray) -> Optional[LuxFactory]
 
 
 def min_factory_resources(cfg: LuxEnvConfig) -> np.ndarray:
-    return np.array([0, 0, cfg.FACTORY_WATER_CONSUMPTION * cfg.CYCLE_LENGTH, 0, 0])
+    return np.array([0, 0, cfg.INIT_WATER_METAL_PER_FACTORY, 0, 0])

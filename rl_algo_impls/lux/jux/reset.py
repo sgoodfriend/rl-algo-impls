@@ -13,7 +13,7 @@ from jux.state import State as JuxState
 from jux.stats import Stats as JuxStats
 
 from rl_algo_impls.lux.jux.actions import JuxStepReturn
-from rl_algo_impls.lux.jux.agent_config import AgentConfig
+from rl_algo_impls.lux.jux.agent_config import JuxAgentConfig
 from rl_algo_impls.lux.jux.info import get_info
 from rl_algo_impls.lux.jux.jit import toggleable_jit
 from rl_algo_impls.lux.jux.observation import observation_and_action_mask
@@ -32,7 +32,7 @@ def _step_bid(
     env_cfg: EnvConfig,
     buf_cfg: JuxBufferConfig,
     bids: jax.Array,
-    agent_cfg: AgentConfig,
+    agent_cfg: JuxAgentConfig,
 ) -> JuxStepReturn:
     batch_size = len(state.env_steps)
     factions = jnp.tile(jnp.arange(2), (batch_size, 2))
@@ -61,7 +61,7 @@ def reset_and_bid(
     buf_cfg: JuxBufferConfig,
     seeds: jax.Array,
     bids: jax.Array,
-    agent_cfg: AgentConfig,
+    agent_cfg: JuxAgentConfig,
 ) -> JuxResetReturnAndValidityMask:
     state = jux_env_batch.reset(seeds, same_factories_per_team=False)
     state, obs, action_mask, _, _, _ = _step_bid(

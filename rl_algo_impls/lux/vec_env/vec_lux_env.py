@@ -1,10 +1,10 @@
 from itertools import chain
-from typing import Dict, List, Optional, TypeVar
+from typing import Dict, Optional, TypeVar
 
 import numpy as np
-from gymnasium.experimental.vector.utils import batch_space
 from luxai_s2.env import LuxAI_S2
 
+from rl_algo_impls.lux.agent_config import LuxAgentConfig
 from rl_algo_impls.lux.rewards import LuxRewardWeights
 from rl_algo_impls.lux.vec_env.lux_env_gridnet import LuxEnvGridnet
 from rl_algo_impls.shared.vec_env.base_vector_env import BaseVectorEnv
@@ -25,9 +25,9 @@ class VecLuxEnv(BaseVectorEnv):
         bid_std_dev: float = 5,
         reward_weights: Optional[Dict[str, float]] = None,
         verify: bool = False,
-        factory_ore_distance_buffer: Optional[int] = None,  # Ignore
+        factory_ore_distance_buffer: Optional[int] = None,
         factory_ice_distance_buffer: Optional[int] = None,
-        valid_spawns_mask_ore_ice_union: bool = False,  # Ignore
+        valid_spawns_mask_ore_ice_union: bool = False,
         use_simplified_spaces: bool = False,
         min_ice: int = 1,
         min_ore: int = 1,
@@ -36,25 +36,36 @@ class VecLuxEnv(BaseVectorEnv):
         USES_COMPACT_SPAWNS_MASK: bool = False,  # Ignore
         use_difference_ratio: bool = False,  # Ignore
         relative_stats_eps: Optional[Dict[str, Dict[str, float]]] = None,  # Ignore
-        disable_unit_to_unit_transfers: bool = False,  # Ignore
-        enable_factory_to_digger_power_transfers: bool = False,  # Ignore
-        disable_cargo_pickup: bool = False,  # Ignore
-        enable_light_water_pickup: bool = False,  # Ignore
-        init_water_constant: bool = False,  # Ignore
-        min_water_to_lichen: int = 1000,  # Ignore
+        disable_unit_to_unit_transfers: bool = False,
+        enable_factory_to_digger_power_transfers: bool = False,
+        disable_cargo_pickup: bool = False,
+        enable_light_water_pickup: bool = False,
+        init_water_constant: bool = False,
+        min_water_to_lichen: int = 1000,
         **kwargs,
     ) -> None:
         assert num_envs % 2 == 0, f"{num_envs} must be even"
+        agent_cfg = LuxAgentConfig(
+            min_ice=min_ice,
+            min_ore=min_ore,
+            disable_unit_to_unit_transfers=disable_unit_to_unit_transfers,
+            enable_factory_to_digger_power_transfers=enable_factory_to_digger_power_transfers,
+            disable_cargo_pickup=disable_cargo_pickup,
+            enable_light_water_pickup=enable_light_water_pickup,
+            factory_ore_distance_buffer=factory_ore_distance_buffer,
+            factory_ice_distance_buffer=factory_ice_distance_buffer,
+            valid_spawns_mask_ore_ice_union=valid_spawns_mask_ore_ice_union,
+            init_water_constant=init_water_constant,
+            min_water_to_lichen=min_water_to_lichen,
+            use_simplified_spaces=use_simplified_spaces,
+        )
         self.envs = [
             LuxEnvGridnet(
                 LuxAI_S2(collect_stats=True, **kwargs),
+                agent_cfg=agent_cfg,
                 bid_std_dev=bid_std_dev,
                 reward_weights=reward_weights,
                 verify=verify,
-                factory_ice_distance_buffer=factory_ice_distance_buffer,
-                use_simplified_spaces=use_simplified_spaces,
-                min_ice=min_ice,
-                min_ore=min_ore,
             )
             for _ in range(num_envs // 2)
         ]

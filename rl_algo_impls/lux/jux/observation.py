@@ -28,7 +28,7 @@ from rl_algo_impls.lux.actions import (
     SIMPLE_UNIT_ACTION_SIZES,
 )
 from rl_algo_impls.lux.jux.action_mask import get_action_mask_pick_position
-from rl_algo_impls.lux.jux.agent_config import AgentConfig
+from rl_algo_impls.lux.jux.agent_config import JuxAgentConfig
 from rl_algo_impls.lux.jux.jit import toggleable_jit
 from rl_algo_impls.lux.jux.resources import get_factory_resources, get_unit_resources
 from rl_algo_impls.lux.jux.util import get_ij, get_neighbor_ij, roll_outwards
@@ -47,7 +47,7 @@ def observation_and_action_mask(
     state: JuxState,
     env_cfg: EnvConfig,
     buf_cfg: JuxBufferConfig,
-    agent_cfg: AgentConfig,
+    agent_cfg: JuxAgentConfig,
 ) -> Tuple[jax.Array, Dict[str, jax.Array]]:
     obs, per_position_action_mask = _observation_and_per_position_action_mask(
         state, env_cfg, buf_cfg, agent_cfg
@@ -70,7 +70,7 @@ def _observation_and_per_position_action_mask(
     state: JuxState,
     env_cfg: EnvConfig,
     buf_cfg: JuxBufferConfig,
-    agent_cfg: AgentConfig,
+    agent_cfg: JuxAgentConfig,
 ) -> Tuple[jax.Array, jax.Array]:
     batch_size = len(state.env_steps)
     num_envs = 2 * batch_size

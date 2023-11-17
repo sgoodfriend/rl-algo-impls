@@ -16,6 +16,7 @@ from rl_algo_impls.lux.actions import (
     enqueued_action_from_obs,
     to_lux_actions,
 )
+from rl_algo_impls.lux.agent_config import LuxAgentConfig
 from rl_algo_impls.lux.early import bid_action
 from rl_algo_impls.lux.observation import observation_and_action_mask
 from rl_algo_impls.lux.resource_distance_map import FactoryPlacementDistances
@@ -33,48 +34,31 @@ class LuxEnvGridnet(VectorEnv):
     def __init__(
         self,
         env: LuxAI_S2,
+        agent_cfg: LuxAgentConfig,
         bid_std_dev: float = 5,
         reward_weights: Optional[Dict[str, float]] = None,
         verify: bool = False,
-        factory_ore_distance_buffer: Optional[int] = None,  # Ignore
-        factory_ice_distance_buffer: Optional[int] = None,
-        valid_spawns_mask_ore_ice_union: bool = False,  # Ignore
         reset_on_done: bool = True,
-        use_simplified_spaces: bool = False,
-        min_ice: int = 1,
-        min_ore: int = 1,
-        MAX_N_UNITS: int = 512,  # Ignore
-        MAX_GLOBAL_ID: int = 2 * 512,  # Ignore
-        USES_COMPACT_SPAWNS_MASK: bool = False,  # Ignore
-        use_difference_ratio: bool = False,  # Ignore
-        relative_stats_eps: Optional[Dict[str, Dict[str, float]]] = None,  # Ignore
-        disable_unit_to_unit_transfers: bool = False,  # Ignore
-        enable_factory_to_digger_power_transfers: bool = False,  # Ignore
-        disable_cargo_pickup: bool = False,  # Ignore
-        enable_light_water_pickup: bool = False,  # Ignore
-        init_water_constant: bool = False,  # Ignore
-        min_water_to_lichen: int = 1000,  # Ignore
     ) -> None:
         super().__init__()
         self.env = env
+        self.agent_cfg = agent_cfg
         self.bid_std_dev = bid_std_dev
         if reward_weights is None:
             self.reward_weights = LuxRewardWeights.default_start()
         else:
             self.reward_weights = LuxRewardWeights(**reward_weights)
         self.verify = verify
-        self.factory_ice_distance_buffer = factory_ice_distance_buffer
         self.seed_rng = np.random.RandomState()
         self.reset_on_done = reset_on_done
-        self.use_simplified_spaces = use_simplified_spaces
-        self.min_ice = min_ice
-        self.min_ore = min_ore
         self.map_size = self.env.env_cfg.map_size
 
         self.stats = StatsTracking()
 
         self.num_map_tiles = self.map_size * self.map_size
-        action_sizes = SIMPLE_ACTION_SIZES if use_simplified_spaces else ACTION_SIZES
+        action_sizes = (
+            SIMPLE_ACTION_SIZES if agent_cfg.use_simplified_spaces else ACTION_SIZES
+        )
         self.action_plane_space = MultiDiscrete(np.array(action_sizes))
         self.single_action_space = DictSpace(
             {
@@ -135,7 +119,7 @@ class LuxEnvGridnet(VectorEnv):
                 assert not any(dones.values()), "All or none should be done"
             self._enqueued_actions = {
                 u_id: enqueued_action_from_obs(
-                    u["action_queue"], self.use_simplified_spaces
+                    u["action_queue"], self.agent_cfg.use_simplified_spaces
                 )
                 for p in self.agents
                 for u_id, u in lux_obs[p]["units"][p].items()
@@ -157,8 +141,7 @@ class LuxEnvGridnet(VectorEnv):
             self.env,
             self.bid_std_dev,
             self.seed_rng,
-            self.min_ice,
-            self.min_ore,
+            self.agent_cfg,
             **kwargs,
         )
         self.factory_distances = FactoryPlacementDistances(self.env.state)
@@ -180,8 +163,7 @@ class LuxEnvGridnet(VectorEnv):
                 self.env.state,
                 self.action_mask_shape,
                 self._enqueued_actions,
-                self.use_simplified_spaces,
-                factory_ice_distance_buffer=self.factory_ice_distance_buffer,
+                self.agent_cfg,
             )
             observations.append(obs)
             action_masks.append(action_mask)
@@ -203,7 +185,7 @@ class LuxEnvGridnet(VectorEnv):
                 action_mask[p_idx],
                 self._enqueued_actions,
                 self.stats.action_stats[p_idx],
-                self.use_simplified_spaces,
+                self.agent_cfg,
             )
             for p_idx, p in enumerate(self.agents)
         }
@@ -242,10 +224,11 @@ def reset_and_early_phase(
     env: LuxAI_S2,
     bid_std_dev: float,
     seed_rng: np.random.RandomState,
-    min_ice: int,
-    min_ore: int,
+    agent_cfg: LuxAgentConfig,
     **kwargs,
 ) -> Tuple[Dict[str, ObservationStateDict], dict, List[str]]:
+    min_ice = agent_cfg.min_ice
+    min_ore = agent_cfg.min_ore
     int_info = np.iinfo(np.int32)
     not_enough_resources = True
     reset_lacks_ice = 0

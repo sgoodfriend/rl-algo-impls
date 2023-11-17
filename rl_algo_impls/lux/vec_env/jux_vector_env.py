@@ -17,7 +17,7 @@ from jux.stats import Stats as JuxStats
 
 from rl_algo_impls.lux.actions import SIMPLE_ACTION_SIZES
 from rl_algo_impls.lux.jux.actions import step_unified
-from rl_algo_impls.lux.jux.agent_config import AgentConfig
+from rl_algo_impls.lux.jux.agent_config import JuxAgentConfig
 from rl_algo_impls.lux.jux.reset import (
     JuxResetReturnAndValidityMask,
     masked_overwrite,
@@ -88,9 +88,7 @@ class JuxVectorEnv(BaseVectorEnv):
 
         self.map_size = self.jux_env_batch.env_cfg.map_size
         max_map_distance = 2 * self.map_size
-        self.agent_cfg = AgentConfig(
-            relative_stats_eps=JuxStats.epsilon(**(relative_stats_eps or {})),
-            use_difference_ratio=use_difference_ratio,
+        self.agent_cfg = JuxAgentConfig(
             min_ice=min_ice,
             min_ore=min_ore,
             disable_unit_to_unit_transfers=disable_unit_to_unit_transfers,
@@ -106,6 +104,8 @@ class JuxVectorEnv(BaseVectorEnv):
             valid_spawns_mask_ore_ice_union=valid_spawns_mask_ore_ice_union,
             init_water_constant=init_water_constant,
             min_water_to_lichen=min_water_to_lichen,
+            relative_stats_eps=JuxStats.epsilon(**(relative_stats_eps or {})),
+            use_difference_ratio=use_difference_ratio,
         )
 
         self.num_map_tiles = self.map_size * self.map_size

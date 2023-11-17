@@ -10,7 +10,7 @@ import jax.numpy as jnp
 from jux.config import EnvConfig
 from jux.state import State as JuxState
 
-from rl_algo_impls.lux.jux.agent_config import AgentConfig
+from rl_algo_impls.lux.jux.agent_config import JuxAgentConfig
 from rl_algo_impls.lux.jux.jit import toggleable_jit
 from rl_algo_impls.lux.rewards import MIN_SCORE
 
@@ -65,7 +65,7 @@ def get_info(
     dones: jax.Array,
     rewards: jax.Array,
     env_cfg: EnvConfig,
-    agent_cfg: AgentConfig,
+    agent_cfg: JuxAgentConfig,
 ) -> Dict[str, Union[jax.Array, dict]]:
     opp_score = rewards[:, ::-1]
     score_delta = rewards - opp_score

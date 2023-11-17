@@ -7,9 +7,8 @@ jax_init()
 from jux.stats import Stats as JuxStats
 
 
-class AgentConfig(NamedTuple):
-    relative_stats_eps: JuxStats
-    use_difference_ratio: bool
+class JuxAgentConfig(NamedTuple):
+    # Lux and Jux shared
     min_ice: int
     min_ore: int
     disable_unit_to_unit_transfers: bool
@@ -21,3 +20,6 @@ class AgentConfig(NamedTuple):
     valid_spawns_mask_ore_ice_union: bool
     init_water_constant: bool
     min_water_to_lichen: int
+    # Jux-specific
+    relative_stats_eps: JuxStats
+    use_difference_ratio: bool

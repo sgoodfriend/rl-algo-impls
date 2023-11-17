@@ -16,7 +16,7 @@ from jux.unified_actions import FactoryPlacementAction, UnifiedAction
 from jux.unit import ResourceType, UnitType
 from jux.utils import imax
 
-from rl_algo_impls.lux.jux.agent_config import AgentConfig
+from rl_algo_impls.lux.jux.agent_config import JuxAgentConfig
 from rl_algo_impls.lux.jux.info import get_info
 from rl_algo_impls.lux.jux.jit import toggleable_jit
 from rl_algo_impls.lux.jux.observation import observation_and_action_mask
@@ -47,7 +47,7 @@ def step_unified(
     buf_cfg: JuxBufferConfig,
     actions: Dict[str, jax.Array],
     obs: jax.Array,
-    agent_cfg: AgentConfig,
+    agent_cfg: JuxAgentConfig,
 ) -> JuxStepReturn:
     factory_placement_actions = get_factory_placement_actions(
         state, env_cfg, agent_cfg, actions
@@ -76,7 +76,7 @@ def step_unified(
 def get_factory_placement_actions(
     state: JuxState,
     env_cfg: EnvConfig,
-    agent_cfg: AgentConfig,
+    agent_cfg: JuxAgentConfig,
     actions: Dict[str, jax.Array],
 ) -> FactoryPlacementAction:
     # Returns FactoryPlacementAction[B, 2]
@@ -108,7 +108,7 @@ def get_late_game_actions(
     env_cfg: EnvConfig,
     actions_dict: Dict[str, jax.Array],
     obs: jax.Array,
-    agent_cfg: AgentConfig,
+    agent_cfg: JuxAgentConfig,
 ) -> JuxAction:
     # Shape: (B, P, W, H, A) - int8
     actions = actions_dict["per_position"]
