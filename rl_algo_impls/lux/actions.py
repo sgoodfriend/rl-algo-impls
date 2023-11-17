@@ -142,7 +142,8 @@ def to_lux_actions(
             resource = a[3]
             amount = resource_amount(u, resource)
             if resource == 4:
-                amount -= u.unit_cfg.BATTERY_CAPACITY * 0.1
+                # Don't transfer last 10% of unit power
+                amount -= u.unit_cfg.BATTERY_CAPACITY // 10
             if amount <= 0:
                 cancel_action(u)
                 action_stats.transfer_cancelled_no_resource += 1
