@@ -3119,6 +3119,7 @@ LuxAI_S2-v0-j512env64-80m-a100-lr10-finetune:
   &lux-j512env64-80m-a100-lr10-finetune
   <<: *lux-j512env64-80m-a100-lr20-finetune
   hyperparam_transitions_kwargs:
+    &lux-j512env64-80m-a100-lr10-finetune-hyperparam-transitions
     interpolate_method: cosine
     phases:
       - learning_rate: !!float 1e-7
@@ -3142,6 +3143,7 @@ LuxAI_S2-v0-j512env64-80m-a100-lr5-finetune:
   &lux-j512env64-80m-a100-lr5-finetune
   <<: *lux-j512env64-80m-a100-lr10-finetune
   hyperparam_transitions_kwargs:
+    &lux-j512env64-80m-a100-lr5-finetune-hyperparam-transitions
     interpolate_method: cosine
     phases:
       - learning_rate: !!float 1e-7
@@ -3195,27 +3197,17 @@ LuxAI_S2-v0-j1024env32-80m-lr10-finetune: &lux-j1024env32-80m-lr10-finetune
     <<: *lux-j1024env32-80m-a100-lr20-finetune-algo
     batch_size: 1024
   hyperparam_transitions_kwargs:
-    interpolate_method: cosine
-    phases:
-      - learning_rate: !!float 1e-7
-        ent_coef: 0.001
-      - learning_rate: !!float 1e-4
-        ent_coef: 0.001
-      - learning_rate: !!float 5e-5
-        ent_coef: 0.001
-      - learning_rate: !!float 1e-6
-        ent_coef: 0.0001
-    durations:
-      - 0
-      - 0.05 # 4M steps
-      - 0
-      - 0.45
-      - 0.4
-      - 0.1
-      - 0
+    &lux-j1024env32-80m-lr10-finetune-hyperparam-transitions
+    <<: *lux-j512env64-80m-a100-lr10-finetune-hyperparam-transitions
+
+LuxAI_S2-v0-j1024env32-80m-lr5-finetune: &lux-j1024env32-80m-lr5-finetune
+  <<: *lux-j1024env32-80m-lr10-finetune
+  hyperparam_transitions_kwargs:
+    &lux-j1024env32-80m-lr5-finetune-hyperparam-transitions
+    <<: *lux-j512env64-80m-a100-lr5-finetune-hyperparam-transitions
 
 LuxAI_S2-v0-debug:
-  <<: *lux-j1024env32-80m-lr10-finetune
+  <<: *lux-j1024env32-80m-lr5-finetune
   n_timesteps: !!float 10e6
   device: mps
   env_hyperparams:
