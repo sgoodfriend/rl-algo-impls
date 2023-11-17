@@ -3151,7 +3151,8 @@ LuxAI_S2-v0-j512env64-80m-a100-lr10-finetune32:
     <<: *lux-j512env64-opp-resources-eval
     env_overrides: &lux-j512env64-80m-a100-lr10-finetune32-eval-env-overrides
       <<: *lux-j512env64-opp-resources-eval-env-overrides
-      make_kwargs: &lux-j512env64-80m-a100-lr10-finetune32-env-make-kwargs
+      make_kwargs:
+        &lux-j512env64-80m-a100-lr10-finetune32-eval-env-overrides-make-kwargs
         <<: *lux-j512env64-opp-resources-eval-env-overrides-make-kwargs
         min_water_to_lichen: 300
   policy_hyperparams: &lux-j512env64-80m-a100-lr10-finetune32-policy
