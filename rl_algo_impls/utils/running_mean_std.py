@@ -41,7 +41,7 @@ class RunningMeanStd:
         data = np.load(path)
         self.mean = data["mean"]
         self.var = data["var"]
-        self.count = data["count"] if count_override is None else count_override
+        self.count = data.get("count") if count_override is None else count_override
 
     def load_from(self: RunningMeanStdSelf, existing: RunningMeanStdSelf) -> None:
         self.mean = np.copy(existing.mean)

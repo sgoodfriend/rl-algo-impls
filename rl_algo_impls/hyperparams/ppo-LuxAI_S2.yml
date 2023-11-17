@@ -3200,6 +3200,17 @@ LuxAI_S2-v0-j1024env32-80m-lr10-finetune: &lux-j1024env32-80m-lr10-finetune
     &lux-j1024env32-80m-lr10-finetune-hyperparam-transitions
     <<: *lux-j512env64-80m-a100-lr10-finetune-hyperparam-transitions
 
+LuxAI_S2-v0-j1024env32-80m-lr10-finetune-rms:
+  &lux-j1024env32-80m-lr10-finetune-rms
+  <<: *lux-j1024env32-80m-lr10-finetune
+  env_hyperparams: &lux-j1024env32-80m-lr10-finetune-rms-env
+    <<: *lux-j1024env32-80m-lr20-opp-resources-rms-env
+  policy_hyperparams: &lux-j1024env32-80m-lr10-finetune-rms-policy
+    <<: *lux-j1024env32-80m-a100-lr20-finetune-policy
+    load_norm_rms_count_override: !!float 1e6
+  hyperparam_transitions_kwargs:
+    <<: *lux-j1024env32-80m-lr10-finetune-hyperparam-transitions
+
 LuxAI_S2-v0-j1024env32-80m-lr5-finetune: &lux-j1024env32-80m-lr5-finetune
   <<: *lux-j1024env32-80m-lr10-finetune
   hyperparam_transitions_kwargs:
@@ -3207,11 +3218,11 @@ LuxAI_S2-v0-j1024env32-80m-lr5-finetune: &lux-j1024env32-80m-lr5-finetune
     <<: *lux-j512env64-80m-a100-lr5-finetune-hyperparam-transitions
 
 LuxAI_S2-v0-debug:
-  <<: *lux-j1024env32-80m-lr5-finetune
+  <<: *lux-j1024env32-80m-lr10-finetune-rms
   n_timesteps: !!float 10e6
   device: mps
   env_hyperparams:
-    <<: *lux-j1024env32-opp-resources-env
+    <<: *lux-j1024env32-80m-lr10-finetune-rms-env
     make_kwargs:
       <<: *lux-j1024env32-opp-resources-env-make-kwargs
       verbose: 3
