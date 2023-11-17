@@ -600,7 +600,7 @@ def valid_transfer_resource_mask(
         np.array((0, 0, 0, 0) if only_transfer_power else astuple(unit.cargo)) > 0
     )
     has_resources = np.concatenate(
-        transferrable_cargo + (unit.power > unit.unit_cfg.INIT_POWER)
+        (transferrable_cargo, (unit.power > unit.unit_cfg.INIT_POWER,))
     )
     if unit.power < unit.unit_cfg.ACTION_QUEUE_POWER_COST:
         zeros = np.full(5, False)
