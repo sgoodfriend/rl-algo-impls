@@ -201,6 +201,7 @@ class SqueezeUnetActorCriticNetwork(BackboneActorCritic):
         subaction_mask: Optional[Dict[int, Dict[int, int]]] = None,
         critic_shares_backbone: bool = True,
         save_critic_separate: bool = False,
+        shared_critic_head: bool = False,
     ) -> None:
         if cnn_layers_init_orthogonal is None:
             cnn_layers_init_orthogonal = False
@@ -247,4 +248,5 @@ class SqueezeUnetActorCriticNetwork(BackboneActorCritic):
             subaction_mask=subaction_mask,
             critic_shares_backbone=critic_shares_backbone,
             save_critic_separate=save_critic_separate,
+            shared_critic_head=shared_critic_head,
         )

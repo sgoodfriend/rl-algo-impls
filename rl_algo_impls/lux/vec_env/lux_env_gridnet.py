@@ -12,6 +12,7 @@ from luxai_s2.state import ObservationStateDict
 
 from rl_algo_impls.lux.actions import (
     ACTION_SIZES,
+    SIMPLE_ACTION_SIZES,
     enqueued_action_from_obs,
     to_lux_actions,
 )
@@ -35,8 +36,24 @@ class LuxEnvGridnet(VectorEnv):
         bid_std_dev: float = 5,
         reward_weights: Optional[Dict[str, float]] = None,
         verify: bool = False,
+        factory_ore_distance_buffer: Optional[int] = None,  # Ignore
         factory_ice_distance_buffer: Optional[int] = None,
+        valid_spawns_mask_ore_ice_union: bool = False,  # Ignore
         reset_on_done: bool = True,
+        use_simplified_spaces: bool = False,
+        min_ice: int = 1,
+        min_ore: int = 1,
+        MAX_N_UNITS: int = 512,  # Ignore
+        MAX_GLOBAL_ID: int = 2 * 512,  # Ignore
+        USES_COMPACT_SPAWNS_MASK: bool = False,  # Ignore
+        use_difference_ratio: bool = False,  # Ignore
+        relative_stats_eps: Optional[Dict[str, Dict[str, float]]] = None,  # Ignore
+        disable_unit_to_unit_transfers: bool = False,  # Ignore
+        enable_factory_to_digger_power_transfers: bool = False,  # Ignore
+        disable_cargo_pickup: bool = False,  # Ignore
+        enable_light_water_pickup: bool = False,  # Ignore
+        init_water_constant: bool = False,  # Ignore
+        min_water_to_lichen: int = 1000,  # Ignore
     ) -> None:
         super().__init__()
         self.env = env
@@ -49,16 +66,20 @@ class LuxEnvGridnet(VectorEnv):
         self.factory_ice_distance_buffer = factory_ice_distance_buffer
         self.seed_rng = np.random.RandomState()
         self.reset_on_done = reset_on_done
+        self.use_simplified_spaces = use_simplified_spaces
+        self.min_ice = min_ice
+        self.min_ore = min_ore
         self.map_size = self.env.env_cfg.map_size
 
         self.stats = StatsTracking()
 
         self.num_map_tiles = self.map_size * self.map_size
-        self.action_plane_space = MultiDiscrete(np.array(ACTION_SIZES))
+        action_sizes = SIMPLE_ACTION_SIZES if use_simplified_spaces else ACTION_SIZES
+        self.action_plane_space = MultiDiscrete(np.array(action_sizes))
         self.single_action_space = DictSpace(
             {
                 "per_position": MultiDiscrete(
-                    np.array(ACTION_SIZES * self.num_map_tiles).flatten().tolist()
+                    np.array(action_sizes * self.num_map_tiles).flatten().tolist()
                 ),
                 "pick_position": MultiDiscrete([self.num_map_tiles]),
             }
@@ -113,7 +134,9 @@ class LuxEnvGridnet(VectorEnv):
             if self.reset_on_done:
                 assert not any(dones.values()), "All or none should be done"
             self._enqueued_actions = {
-                u_id: enqueued_action_from_obs(u["action_queue"])
+                u_id: enqueued_action_from_obs(
+                    u["action_queue"], self.use_simplified_spaces
+                )
                 for p in self.agents
                 for u_id, u in lux_obs[p]["units"][p].items()
             }
@@ -134,6 +157,8 @@ class LuxEnvGridnet(VectorEnv):
             self.env,
             self.bid_std_dev,
             self.seed_rng,
+            self.min_ice,
+            self.min_ore,
             **kwargs,
         )
         self.factory_distances = FactoryPlacementDistances(self.env.state)
@@ -155,6 +180,7 @@ class LuxEnvGridnet(VectorEnv):
                 self.env.state,
                 self.action_mask_shape,
                 self._enqueued_actions,
+                self.use_simplified_spaces,
                 factory_ice_distance_buffer=self.factory_ice_distance_buffer,
             )
             observations.append(obs)
@@ -177,6 +203,7 @@ class LuxEnvGridnet(VectorEnv):
                 action_mask[p_idx],
                 self._enqueued_actions,
                 self.stats.action_stats[p_idx],
+                self.use_simplified_spaces,
             )
             for p_idx, p in enumerate(self.agents)
         }
@@ -212,32 +239,37 @@ def bid_actions(agents: List[str], bid_std_dev: float) -> Dict[str, Any]:
 
 
 def reset_and_early_phase(
-    env: LuxAI_S2, bid_std_dev: float, seed_rng: np.random.RandomState, **kwargs
+    env: LuxAI_S2,
+    bid_std_dev: float,
+    seed_rng: np.random.RandomState,
+    min_ice: int,
+    min_ore: int,
+    **kwargs,
 ) -> Tuple[Dict[str, ObservationStateDict], dict, List[str]]:
     int_info = np.iinfo(np.int32)
-    does_env_have_ice_ore = False
-    reset_no_ice = 0
-    reset_no_ore = 0
-    reset_no_both = 0
-    while not does_env_have_ice_ore:
+    not_enough_resources = True
+    reset_lacks_ice = 0
+    reset_lacks_ore = 0
+    reset_lacks_both = 0
+    while not_enough_resources:
         lux_obs, _ = env.reset(seed=seed_rng.randint(int_info.max), **kwargs)
         board = next(iter(lux_obs.values()))["board"]
-        does_env_have_ice = np.any(board["ice"])
-        does_env_have_ore = np.any(board["ore"])
-        does_env_have_ice_ore = does_env_have_ice and does_env_have_ore
-        if not does_env_have_ice_ore:
-            if not does_env_have_ice and not does_env_have_ore:
-                reset_no_both += 1
-            elif not does_env_have_ice:
-                reset_no_ice += 1
-            elif not does_env_have_ore:
-                reset_no_ore += 1
+        ice_cnt = np.sum(board["ice"])
+        ore_cnt = np.sum(board["ore"])
+        not_enough_resources = ice_cnt < min_ice or ore_cnt < min_ore
+        if not_enough_resources:
+            if ice_cnt < min_ice and ore_cnt < min_ore:
+                reset_lacks_both += 1
+            elif ice_cnt < min_ice:
+                reset_lacks_ice += 1
+            elif ore_cnt < min_ore:
+                reset_lacks_ore += 1
             else:
                 raise RuntimeError("Should not be here")
     if env.env_cfg.verbose > 2:
-        if reset_no_ice or reset_no_ore or reset_no_both:
+        if reset_lacks_ice or reset_lacks_ore or reset_lacks_both:
             logging.debug(
-                f"Reset because lacked resources: ice {reset_no_ice}, ore {reset_no_ore}, both {reset_no_both}"
+                f"Reset because lacked resources: ice {reset_lacks_ice}, ore {reset_lacks_ore}, both {reset_lacks_both}"
             )
         else:
             logging.debug("No reset because had ice and ore")

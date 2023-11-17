@@ -6,7 +6,6 @@ from typing import Any, Dict, Generic, Optional, Type, TypeVar, Union
 import numpy as np
 import torch
 import torch.nn as nn
-from stable_baselines3.common.vec_env import unwrap_vec_normalize
 
 from rl_algo_impls.shared.tensor_utils import NumpyOrDict, TensorOrDict, numpy_to_tensor
 from rl_algo_impls.wrappers.normalize import NormalizeObservation, NormalizeReward
@@ -32,9 +31,10 @@ class Policy(nn.Module, ABC, Generic[ObsType]):
     def __init__(self, env: VectorEnv, **kwargs) -> None:
         super().__init__()
         self.env = env
-        self.vec_normalize = unwrap_vec_normalize(env)
-        self.norm_observation = find_wrapper(env, NormalizeObservation)
-        self.norm_reward = find_wrapper(env, NormalizeReward)
+        norm_observation = find_wrapper(env, NormalizeObservation)
+        self.norm_observation_rms = norm_observation.rms if norm_observation else None
+        norm_reward = find_wrapper(env, NormalizeReward)
+        self.norm_reward_rms = norm_reward.rms if norm_reward else None
         self.device = None
 
     def to(
@@ -70,33 +70,37 @@ class Policy(nn.Module, ABC, Generic[ObsType]):
     def save(self, path: str) -> None:
         os.makedirs(path, exist_ok=True)
 
-        if self.vec_normalize:
-            self.vec_normalize.save(os.path.join(path, VEC_NORMALIZE_FILENAME))
-        if self.norm_observation:
-            self.norm_observation.save(
+        if self.norm_observation_rms:
+            self.norm_observation_rms.save(
                 os.path.join(path, NORMALIZE_OBSERVATION_FILENAME)
             )
-        if self.norm_reward:
-            self.norm_reward.save(os.path.join(path, NORMALIZE_REWARD_FILENAME))
+        if self.norm_reward_rms:
+            self.norm_reward_rms.save(os.path.join(path, NORMALIZE_REWARD_FILENAME))
         self.save_weights(path)
 
-    def load(self, path: str) -> None:
+    def load(
+        self, path: str, load_norm_rms_count_override: Optional[int] = None
+    ) -> None:
         self.load_weights(path)
-        if self.norm_observation:
-            self.norm_observation.load(
-                os.path.join(path, NORMALIZE_OBSERVATION_FILENAME)
+        if self.norm_observation_rms:
+            self.norm_observation_rms.load(
+                os.path.join(path, NORMALIZE_OBSERVATION_FILENAME),
+                count_override=load_norm_rms_count_override,
             )
-        if self.norm_reward:
-            self.norm_reward.load(os.path.join(path, NORMALIZE_REWARD_FILENAME))
+        if self.norm_reward_rms:
+            self.norm_reward_rms.load(
+                os.path.join(path, NORMALIZE_REWARD_FILENAME),
+                count_override=load_norm_rms_count_override,
+            )
 
     def load_from(self: PolicySelf, policy: PolicySelf) -> PolicySelf:
         self.load_state_dict(policy.state_dict())
-        if self.norm_observation:
-            assert policy.norm_observation
-            self.norm_observation.load_from(policy.norm_observation)
-        if self.norm_reward:
-            assert policy.norm_reward
-            self.norm_reward.load_from(policy.norm_reward)
+        if self.norm_observation_rms:
+            assert policy.norm_observation_rms
+            self.norm_observation_rms.load_from(policy.norm_observation_rms)
+        if self.norm_reward_rms:
+            assert policy.norm_reward_rms
+            self.norm_reward_rms.load_from(policy.norm_reward_rms)
         return self
 
     def __deepcopy__(self: PolicySelf, memo: Dict[int, Any]) -> PolicySelf:

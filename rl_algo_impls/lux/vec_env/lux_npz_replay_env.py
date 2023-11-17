@@ -8,7 +8,7 @@ from gymnasium.spaces import Box
 from gymnasium.spaces import Dict as DictSpace
 from gymnasium.spaces import MultiDiscrete
 
-from rl_algo_impls.lux.actions import ACTION_SIZES
+from rl_algo_impls.lux.actions import ACTION_SIZES, SIMPLE_ACTION_SIZES
 from rl_algo_impls.lux.replay_stats import ReplayActionStats, UnitBuiltStats
 from rl_algo_impls.lux.rewards import LuxRewardWeights
 from rl_algo_impls.lux.vec_env.lux_replay_state import ReplayPath
@@ -56,10 +56,25 @@ class LuxNpzReplayEnv(Env):
     def __init__(
         self,
         next_npz_path_fn: Callable[[], ReplayPath],
+        use_simplified_spaces: bool,
+        min_ice: int = 1,  # Ignore
+        min_ore: int = 1,  # Ignore
+        MAX_N_UNITS: int = 512,  # Ignore
+        MAX_GLOBAL_ID: int = 2 * 512,  # Ignore
+        USES_COMPACT_SPAWNS_MASK: bool = False,  # Ignore
         reward_weights: Optional[Dict[str, float]] = None,
+        use_difference_ratio: bool = False, # Ignore
+        relative_stats_eps: Optional[Dict[str, Dict[str, float]]] = None, # Ignore
+        disable_unit_to_unit_transfers: bool = False, # Ignore
+        enable_factory_to_digger_power_transfers: bool = False, # Ignore
+        disable_cargo_pickup: bool = False, # Ignore
+        enable_light_water_pickup: bool = False,  # Ignore
+        init_water_constant: bool = False,  # Ignore
+        min_water_to_lichen: int = 1000,  # Ignore
     ) -> None:
         super().__init__()
         self.next_npz_path_fn = next_npz_path_fn
+        self.use_simplified_spaces = use_simplified_spaces
         self.reward_weights = (
             LuxRewardWeights(score_vs_opponent=1)
             if reward_weights is None
@@ -83,11 +98,14 @@ class LuxNpzReplayEnv(Env):
         self._load_next_replay()
         self.map_size = self.obs.shape[-2]
         self.num_map_tiles = self.map_size * self.map_size
-        self.action_plane_space = MultiDiscrete(ACTION_SIZES)
+        action_sizes = (
+            SIMPLE_ACTION_SIZES if self.use_simplified_spaces else ACTION_SIZES
+        )
+        self.action_plane_space = MultiDiscrete(np.array(action_sizes))
         self.action_space = DictSpace(
             {
                 "per_position": MultiDiscrete(
-                    np.array(ACTION_SIZES * self.num_map_tiles).flatten().tolist()
+                    np.array(action_sizes * self.num_map_tiles).flatten().tolist()
                 ),
                 "pick_position": MultiDiscrete([self.num_map_tiles]),
             }

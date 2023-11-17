@@ -1,8 +1,14 @@
 from collections import deque
 from typing import NamedTuple, Optional
 
+try:
+    import ray
+
+    ray.init(_system_config={"automatic_object_spilling_enabled": False})
+except ImportError:
+    raise ImportError("Please install ray to use this class: `pip install ray`")
+
 import numpy as np
-import ray
 
 from rl_algo_impls.lux.rewards import LuxRewardWeights
 from rl_algo_impls.lux.vec_env.lux_ray_env import LuxRayEnv
@@ -13,13 +19,6 @@ from rl_algo_impls.wrappers.vector_wrapper import (
     VectorEnv,
     merge_infos,
 )
-
-try:
-    import ray
-
-    ray.init(_system_config={"automatic_object_spilling_enabled": False})
-except ImportError:
-    raise ImportError("Please install ray to use this class: `pip install ray`")
 
 
 class PendingReset(NamedTuple):

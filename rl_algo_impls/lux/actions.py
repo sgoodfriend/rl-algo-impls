@@ -33,8 +33,18 @@ UNIT_ACTION_SIZES = (
 UNIT_ACTION_ENCODED_SIZE = sum(UNIT_ACTION_SIZES)
 RECHARGE_UNIT_ACTION = UNIT_ACTION_SIZES[0] - 1
 
+SIMPLE_UNIT_ACTION_SIZES = (
+    6,  # action type
+    4,  # move direction
+    4,  # transfer direction
+    5,  # transfer resource
+    5,  # pickup resource
+)
+SIMPLE_UNIT_ACTION_ENCODED_SIZE = sum(SIMPLE_UNIT_ACTION_SIZES)
+
 
 ACTION_SIZES = FACTORY_ACTION_SIZES + UNIT_ACTION_SIZES
+SIMPLE_ACTION_SIZES = FACTORY_ACTION_SIZES + SIMPLE_UNIT_ACTION_SIZES
 
 
 def to_lux_actions(
@@ -44,6 +54,7 @@ def to_lux_actions(
     action_mask: np.ndarray,
     enqueued_actions: Dict[str, Optional[np.ndarray]],
     action_stats: ActionStats,
+    use_simplified_spaces: bool,
 ) -> Dict[str, Any]:
     cfg = state.env_cfg
 
@@ -118,24 +129,23 @@ def to_lux_actions(
         action_stats.action_type[a[0]] += 1
 
         if a[0] == 0:  # move
-            direction = a[1]
-            target_pos_idx = pos_to_idx(
-                pos_to_numpy(u.pos) + move_deltas[direction], cfg.map_size
-            )
+            direction = a[1] + (1 if use_simplified_spaces else 0)
+            move_delta = move_deltas[direction]
+            target_pos_idx = pos_to_idx(pos_to_numpy(u.pos) + move_delta, cfg.map_size)
             if target_pos_idx in positions_occupied:
                 cancel_move(u, target_pos_idx)
                 continue
             positions_occupied[target_pos_idx] = u.unit_id
             resource = 0
             amount = 0
-            num_executions = max_move_repeats(
-                u, direction, state, enqueued_actions.get(u.unit_id)
+            num_executions = _max_move_repeats(
+                u, move_delta, state, a[1], enqueued_actions.get(u.unit_id)
             )
         else:
             positions_occupied[pos_to_idx(u.pos, cfg.map_size)] = u.unit_id
 
             if a[0] == 1:  # transfer
-                direction = a[2]
+                direction = a[2] + (1 if use_simplified_spaces else 0)
                 resource = a[3]
                 amount = resource_amount(u, resource)
                 num_executions = (
@@ -174,7 +184,10 @@ def to_lux_actions(
                 num_executions = 1
             else:
                 raise ValueError(f"Unrecognized action {a[0]}")
-        assert num_executions > 0
+        assert num_executions > 0, (
+            "num_executions must be positive: "
+            f"{np.array([a[0], direction, resource, amount, 0, num_executions])}"
+        )
         if actions_equal(a, enqueued_actions.get(u.unit_id)):
             action_stats.repeat_action += 1
             continue
@@ -189,7 +202,10 @@ def to_lux_actions(
     for u, a in unit_actions:
         if a[0] != 1:
             continue
-        target_pos = pos_to_numpy(u.pos) + move_deltas[a[2]]
+        target_pos = (
+            pos_to_numpy(u.pos)
+            + move_deltas[a[2] + (1 if use_simplified_spaces else 0)]
+        )
         if state.board.factory_occupancy_map[target_pos[0], target_pos[1]] != -1:
             continue
         target_unit_id = positions_occupied.get(pos_to_idx(target_pos, cfg.map_size))
@@ -267,10 +283,11 @@ def is_position_in_map(pos: np.ndarray, config: LuxEnvConfig) -> bool:
     return (0 <= pos[0] < config.map_size) and (0 <= pos[1] < config.map_size)
 
 
-def max_move_repeats(
+def _max_move_repeats(
     unit: LuxUnit,
-    direction_idx: int,
+    move_delta: np.ndarray,
     state: LuxGameState,
+    direction_action_index: int,
     enqueued_action: Optional[np.ndarray],
 ) -> int:
     config = state.env_cfg
@@ -279,10 +296,9 @@ def max_move_repeats(
     if (
         enqueued_action is None
         or enqueued_action[0] != 0
-        or enqueued_action[1] != direction_idx
+        or enqueued_action[1] != direction_action_index
     ):
         power_remaining -= unit.unit_cfg.ACTION_QUEUE_POWER_COST
-    move_delta = move_deltas[direction_idx]
     assert not bool(np.all(move_delta == 0)), "No move Move action not expected"
     target_pos = pos_to_numpy(unit.pos)
     while True:
@@ -296,15 +312,27 @@ def max_move_repeats(
         num_repeats += 1
 
 
-def enqueued_action_from_obs(action_queue: List[np.ndarray]) -> Optional[np.ndarray]:
+def enqueued_action_from_obs(
+    action_queue: List[np.ndarray], use_simplified_spaces: bool
+) -> Optional[np.ndarray]:
     if len(action_queue) == 0:
         return None
     action = action_queue[0]
     action_type = action[0]
     if action_type == 0:
-        return np.array((action_type, action[1], -1, -1, -1))
+        return np.array(
+            (action_type, action[1] - (1 if use_simplified_spaces else 0), -1, -1, -1)
+        )
     elif action_type == 1:
-        return np.array((action_type, -1, action[1], action[2], -1))
+        return np.array(
+            (
+                action_type,
+                -1,
+                action[1] - (1 if use_simplified_spaces else 0),
+                action[2],
+                -1,
+            )
+        )
     elif action_type == 2:
         return np.array((action_type, -1, -1, -1, action[2]))
     elif 3 <= action_type <= 5:

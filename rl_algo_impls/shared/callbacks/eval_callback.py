@@ -1,4 +1,5 @@
 import itertools
+import logging
 import os
 import shutil
 from collections import deque
@@ -13,7 +14,7 @@ from rl_algo_impls.shared.callbacks import Callback
 from rl_algo_impls.shared.policy.policy import Policy
 from rl_algo_impls.shared.stats import Episode, EpisodeAccumulator, EpisodesStats
 from rl_algo_impls.shared.tensor_utils import batch_dict_keys
-from rl_algo_impls.wrappers.self_play_reference_wrapper import SelfPlayReferenceWrapper
+from rl_algo_impls.wrappers.play_checkpoints_wrapper import PlayCheckpointsWrapper
 from rl_algo_impls.wrappers.vec_episode_recorder import VecEpisodeRecorder
 from rl_algo_impls.wrappers.vector_wrapper import VectorEnv, find_wrapper
 
@@ -145,6 +146,8 @@ class EvalCallback(Callback):
         score_threshold: Optional[float] = None,
         skip_evaluate_at_start: bool = False,
         only_checkpoint_initial_policy: bool = False,
+        only_checkpoint_best_policies: bool = False,
+        n_checkpoints: int = 1,
         latest_model_path: Optional[str] = None,
     ) -> None:
         super().__init__()
@@ -183,23 +186,34 @@ class EvalCallback(Callback):
         self.skip_evaluate_at_start = skip_evaluate_at_start
         self.latest_model_path = latest_model_path
 
-        self_play_reference_wrapper = find_wrapper(env, SelfPlayReferenceWrapper)
-        if self_play_reference_wrapper:
-            self.prior_policies = deque(maxlen=self_play_reference_wrapper.window)
+        play_checkpoints_wrappers = [
+            find_wrapper(env, PlayCheckpointsWrapper),
+            find_wrapper(video_env, PlayCheckpointsWrapper) if video_env else None,
+            find_wrapper(policy.env, PlayCheckpointsWrapper),
+        ]
+        if play_checkpoints_wrappers[0] and video_env:
+            assert play_checkpoints_wrappers[
+                1
+            ], f"video_env must have PlayCheckpointsWrapper given eval env does"
+        play_checkpoints_wrappers = [
+            wrapper for wrapper in play_checkpoints_wrappers if wrapper
+        ]
+        if play_checkpoints_wrappers:
+            if only_checkpoint_initial_policy:
+                assert (
+                    n_checkpoints == 1
+                ), f"n_checkpoints must be 1 if only_checkpoint_initial_policy is True"
+            self.prior_policies = deque(maxlen=n_checkpoints)
             self.only_checkpoint_initial_policy = only_checkpoint_initial_policy
-            self.checkpoint_policy()
+            self.only_checkpoint_best_policies = only_checkpoint_best_policies
+            self.checkpoint_policy(True)
 
             def policies_getter_fn() -> Sequence[Policy]:
                 assert self.prior_policies
                 return self.prior_policies
 
-            self_play_reference_wrapper.policies_getter_fn = policies_getter_fn
-            if video_env:
-                video_sprw = find_wrapper(video_env, SelfPlayReferenceWrapper)
-                assert (
-                    video_sprw
-                ), f"video_env should have SelfPlayReferenceWrapper given eval env does"
-                video_sprw.policies_getter_fn = policies_getter_fn
+            for wrapper in play_checkpoints_wrappers:
+                wrapper.checkpoints_getter = policies_getter_fn
         else:
             self.prior_policies = None
 
@@ -281,11 +295,18 @@ class EvalCallback(Callback):
             print(f"Saved video: {video_stats}")
 
         eval_stat.write_to_tensorboard(self.tb_writer, "eval", self.timesteps_elapsed)
-        self.checkpoint_policy()
+        self.checkpoint_policy(is_best)
         return eval_stat
 
-    def checkpoint_policy(self):
+    def checkpoint_policy(self, is_best: bool):
         if self.prior_policies is not None:
-            if self.only_checkpoint_initial_policy and len(self.prior_policies) > 0:
-                return
-            self.prior_policies.append(deepcopy(self.policy))
+            if len(self.prior_policies) > 0:
+                if self.only_checkpoint_initial_policy:
+                    return
+                if self.only_checkpoint_best_policies and not is_best:
+                    return
+                else:
+                    logging.info(
+                        f"Checkpointing best policy at {self.timesteps_elapsed}"
+                    )
+            self.prior_policies.appendleft(deepcopy(self.policy))

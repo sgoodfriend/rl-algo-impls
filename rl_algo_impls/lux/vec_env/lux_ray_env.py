@@ -39,7 +39,23 @@ class LuxRayEnv(VectorWrapper):
         bid_std_dev: float = 5,
         reward_weights: Optional[Dict[str, float]] = None,
         verify: bool = False,
+        factory_ore_distance_buffer: Optional[int] = None,  # Ignore
         factory_ice_distance_buffer: Optional[int] = None,
+        valid_spawns_mask_ore_ice_union: bool = False,  # Ignore
+        use_simplified_spaces: Optional[bool] = False,
+        min_ice: int = 1,
+        min_ore: int = 1,
+        MAX_N_UNITS: int = 512,  # Ignore
+        MAX_GLOBAL_ID: int = 2 * 512,  # Ignore
+        USES_COMPACT_SPAWNS_MASK: bool = False,  # Ignore
+        use_difference_ratio: bool = False,  # Ignore
+        relative_stats_eps: Optional[Dict[str, Dict[str, float]]] = None,  # Ignore
+        disable_unit_to_unit_transfers: bool = False,  # Ignore
+        enable_factory_to_digger_power_transfers: bool = False, # Ignore
+        disable_cargo_pickup: bool = False,  # Ignore
+        enable_light_water_pickup: bool = False,  # Ignore
+        init_water_constant: bool = False,  # Ignore
+        min_water_to_lichen: int = 1000,  # Ignore
         **kwargs,
     ) -> None:
         super().__init__(
@@ -50,6 +66,9 @@ class LuxRayEnv(VectorWrapper):
                 verify=verify,
                 factory_ice_distance_buffer=factory_ice_distance_buffer,
                 reset_on_done=False,
+                use_simplified_spaces=use_simplified_spaces,
+                min_ice=min_ice,
+                min_ore=min_ore,
             )
         )
 

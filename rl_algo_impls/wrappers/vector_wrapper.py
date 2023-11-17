@@ -1,4 +1,15 @@
-from typing import Any, Iterable, List, Optional, Sequence, Tuple, Type, TypeVar, Union
+from typing import (
+    Any,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+)
 
 import numpy as np
 from gymnasium.core import ObsType
@@ -24,22 +35,24 @@ def find_wrapper(env: VectorEnv, wrapper_class: Type[W]) -> Optional[W]:
 def get_info(infos: dict, key: Any, env_idx: int) -> Any:
     if key in infos:
         if isinstance(infos[key], dict):
-            return {k: v[env_idx] for k, v in infos[key].items()}
+            return _get_dict_idx(infos[key], env_idx)
         return infos[key][env_idx]
     return None
+
+
+def _get_dict_idx(_dict: Dict[str, Union[Dict, np.ndarray]], env_idx: int) -> Any:
+    return {
+        k: (_get_dict_idx(v, env_idx) if isinstance(v, dict) else v[env_idx])
+        for k, v in _dict.items()
+    }
 
 
 def get_infos(infos: dict, key: Any, num_envs: int, default_value: Any) -> List[Any]:
     if key in infos:
         assert len(infos[f"_{key}"]) == num_envs
-        if isinstance(infos[key], dict):
-            return [
-                {k: v[idx] for k, v in infos[key].items()} if is_set else default_value
-                for idx, is_set in enumerate(infos[f"_{key}"])
-            ]
         return [
-            v if is_set else default_value
-            for v, is_set in zip(infos[key], infos[f"_{key}"])
+            get_info(infos, key, idx) if is_set else default_value
+            for idx, is_set in enumerate(infos[f"_{key}"])
         ]
     return [default_value for _ in range(num_envs)]
 
@@ -50,12 +63,7 @@ def filter_info(infos: dict, mask: Iterable[bool]) -> dict:
         if key.startswith("_"):
             continue
         if isinstance(values, dict):
-            _infos[key] = {
-                k: np.array(
-                    [v for v, m in zip(values[k], mask) if m], dtype=values[k].dtype
-                )
-                for k in values
-            }
+            _infos[key] = _filter_dict(values, mask)
         else:
             _infos[key] = np.array(
                 [v for v, m in zip(values, mask) if m], dtype=values.dtype
@@ -65,6 +73,15 @@ def filter_info(infos: dict, mask: Iterable[bool]) -> dict:
             [s for s, m in zip(infos[set_key], mask) if m], dtype=np.bool_
         )
     return _infos
+
+
+def _filter_dict(
+    _dict: Dict[str, Union[Dict, np.ndarray]], mask: Iterable[bool]
+) -> Dict[str, Union[Dict, np.ndarray]]:
+    return {
+        k: (_filter_dict(v, mask) if isinstance(v, dict) else v[mask])
+        for k, v in _dict.items()
+    }
 
 
 def merge_info(env: VectorEnv, infos: Iterable[dict]) -> dict:
@@ -115,7 +132,14 @@ def extract_info(infos: dict, env_idx: int) -> Any:
         if key.startswith("_"):
             continue
         if isinstance(values, dict):
-            info[key] = {k: v[env_idx] for k, v in values.items()}
+            info[key] = _extract_dict(values, env_idx)
         else:
             info[key] = values[env_idx]
     return info
+
+
+def _extract_dict(_dict: Dict[str, Union[Dict, np.ndarray]], env_idx: int) -> Any:
+    return {
+        k: (_extract_dict(v, env_idx) if isinstance(v, dict) else v[env_idx])
+        for k, v in _dict.items()
+    }

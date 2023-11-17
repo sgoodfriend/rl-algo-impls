@@ -37,8 +37,9 @@ LuxAI_S2-v0-squnet-iDeimos: &lux-squnet-ideimos
         factory_ice_distance_buffer: null
       additional_win_loss_reward: false
       score_reward_kwargs: null
-      self_play_reference_kwargs:
-        window: 32
+      play_checkpoints_kwargs:
+        n_envs_against_checkpoints: null
+    n_checkpoints: 32
   policy_hyperparams: &lux-squnet-ideimos-policy
     actor_head_style: squeeze_unet
     subaction_mask:

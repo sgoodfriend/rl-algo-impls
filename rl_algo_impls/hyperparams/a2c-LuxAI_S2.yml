@@ -64,8 +64,9 @@ LuxAI_S2-v0-sSqunet-78env-deimos-lr2-no-guide:
       n_envs: 64
       score_reward_kwargs: null
       self_play_kwargs: null
-      self_play_reference_kwargs:
-        window: 1
+      play_checkpoints_kwargs:
+        n_envs_against_checkpoints: null
+    n_checkpoints: 1
     only_checkpoint_initial_policy: true
     only_record_video_on_best: true
     score_function: mean

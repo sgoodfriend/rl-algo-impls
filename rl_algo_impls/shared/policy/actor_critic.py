@@ -141,6 +141,7 @@ class ActorCritic(OnPolicy, Generic[ObsType]):
         subaction_mask: Optional[Dict[int, Dict[int, int]]] = None,
         critic_shares_backbone: Optional[bool] = None,
         save_critic_separate: Optional[bool] = None,
+        shared_critic_head: Optional[bool] = None,
         **kwargs,
     ) -> None:
         super().__init__(env, **kwargs)
@@ -208,6 +209,9 @@ class ActorCritic(OnPolicy, Generic[ObsType]):
                 else True,
                 save_critic_separate=save_critic_separate
                 if save_critic_separate is not None
+                else False,
+                shared_critic_head=shared_critic_head
+                if shared_critic_head is not None
                 else False,
             )
         elif share_features_extractor:

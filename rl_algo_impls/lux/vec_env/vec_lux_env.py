@@ -1,3 +1,4 @@
+from itertools import chain
 from typing import Dict, List, Optional, TypeVar
 
 import numpy as np
@@ -24,7 +25,23 @@ class VecLuxEnv(BaseVectorEnv):
         bid_std_dev: float = 5,
         reward_weights: Optional[Dict[str, float]] = None,
         verify: bool = False,
+        factory_ore_distance_buffer: Optional[int] = None,  # Ignore
         factory_ice_distance_buffer: Optional[int] = None,
+        valid_spawns_mask_ore_ice_union: bool = False,  # Ignore
+        use_simplified_spaces: bool = False,
+        min_ice: int = 1,
+        min_ore: int = 1,
+        MAX_N_UNITS: int = 512,  # Ignore
+        MAX_GLOBAL_ID: int = 2 * 512,  # Ignore
+        USES_COMPACT_SPAWNS_MASK: bool = False,  # Ignore
+        use_difference_ratio: bool = False,  # Ignore
+        relative_stats_eps: Optional[Dict[str, Dict[str, float]]] = None,  # Ignore
+        disable_unit_to_unit_transfers: bool = False,  # Ignore
+        enable_factory_to_digger_power_transfers: bool = False,  # Ignore
+        disable_cargo_pickup: bool = False,  # Ignore
+        enable_light_water_pickup: bool = False,  # Ignore
+        init_water_constant: bool = False,  # Ignore
+        min_water_to_lichen: int = 1000,  # Ignore
         **kwargs,
     ) -> None:
         assert num_envs % 2 == 0, f"{num_envs} must be even"
@@ -35,6 +52,9 @@ class VecLuxEnv(BaseVectorEnv):
                 reward_weights=reward_weights,
                 verify=verify,
                 factory_ice_distance_buffer=factory_ice_distance_buffer,
+                use_simplified_spaces=use_simplified_spaces,
+                min_ice=min_ice,
+                min_ore=min_ore,
             )
             for _ in range(num_envs // 2)
         ]
@@ -59,7 +79,7 @@ class VecLuxEnv(BaseVectorEnv):
         truncations = np.concatenate([sr[2] for sr in step_returns])
         terminations = np.concatenate([sr[3] for sr in step_returns])
         infos = merge_infos(self, [sr[4] for sr in step_returns], 2)
-        return obs, rewards, truncations, terminations, infos
+        return obs, rewards, terminations, truncations, infos
 
     def reset(self, *, seed: Optional[int] = None, **kwargs) -> VecEnvResetReturn:
         if seed is not None:
@@ -111,4 +131,9 @@ class VecLuxEnv(BaseVectorEnv):
                 results.append(fn(*args, **kwargs))
             else:
                 results.append(fn)
+        # Most methods assume this returns a tuple of the same length as num_envs;
+        # however, this would cause double rendering. Special case for render to not
+        # duplicate.
+        if method_name != "render":
+            results = list(chain.from_iterable([r, r] for r in results))
         return tuple(results)

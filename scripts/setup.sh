@@ -13,4 +13,5 @@ python3 -m pip install --upgrade pip
 pip install --upgrade torch torchvision torchaudio
 
 python -m pip install --upgrade '.[all]'
+python -m pip install --upgrade '.[jux]'
 python -m pip install -e .

@@ -19,6 +19,8 @@ n_jobs="${n_jobs:-1}"
 project_name="${project_name:-rl-algo-impls-lux-nips1}"
 seeds="${seeds:-1}"
 
+export XLA_PYTHON_CLIENT_PREALLOCATE=false
+
 BASIC_ENVS=(
     "CartPole-v1"
     "MountainCar-v0"

@@ -186,23 +186,28 @@ def train(args: TrainArgs):
     log_dict: Dict[str, Any] = {
         "eval": eval_stats._asdict(),
     }
+    hparam_metric_dict = {
+        "hparam/last_mean": eval_stats.score.mean,
+        "hparam/last_result": eval_stats.score.mean - eval_stats.score.std,
+    }
     if eval_callback.best:
-        log_dict["best_eval"] = eval_callback.best._asdict()
+        best_eval_stats: EpisodesStats = eval_callback.best
+        log_dict["best_eval"] = best_eval_stats._asdict()
+        hparam_metric_dict.update(
+            {
+                "hparam/best_mean": best_eval_stats.score.mean,
+                "hparam/best_result": best_eval_stats.score.mean
+                - best_eval_stats.score.std,
+            }
+        )
     log_dict.update(asdict(hyperparams))
     log_dict.update(vars(args))
     with open(config.logs_path, "a") as f:
         yaml.dump({config.run_name(): log_dict}, f)
 
-    best_eval_stats: EpisodesStats = eval_callback.best  # type: ignore
     tb_writer.add_hparams(
         hparam_dict(hyperparams, vars(args)),
-        {
-            "hparam/best_mean": best_eval_stats.score.mean,
-            "hparam/best_result": best_eval_stats.score.mean
-            - best_eval_stats.score.std,
-            "hparam/last_mean": eval_stats.score.mean,
-            "hparam/last_result": eval_stats.score.mean - eval_stats.score.std,
-        },
+        hparam_metric_dict,
         None,
         config.run_name(),
     )

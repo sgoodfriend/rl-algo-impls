@@ -59,6 +59,9 @@ class Agent:
             device,
             **config.policy_hyperparams,
         ).eval()
+        self.use_simplified_spaces = config.env_hyperparams.make_kwargs.get(
+            "use_simplified_spaces", False
+        )
 
         transpose_wrapper = find_wrapper(env, HwcToChwVectorObservation)
         assert transpose_wrapper
@@ -66,11 +69,14 @@ class Agent:
 
         self.map_size = env_cfg.map_size
         self.num_map_tiles = self.map_size * self.map_size
-        self.action_plane_space = MultiDiscrete(ACTION_SIZES)
+        action_sizes = (
+            SIMPLE_ACTION_SIZES if self.use_simplified_spaces else ACTION_SIZES
+        )
+        self.action_plane_space = MultiDiscrete(action_sizes)
         self.action_space = DictSpace(
             {
                 "per_position": MultiDiscrete(
-                    np.array(ACTION_SIZES * self.num_map_tiles).flatten().tolist()
+                    np.array(action_sizes * self.num_map_tiles).flatten().tolist()
                 ),
                 "pick_position": MultiDiscrete([self.num_map_tiles]),
             }
@@ -91,7 +97,9 @@ class Agent:
     ) -> Dict[str, Any]:
         state = obs_to_game_state(step, self.env_cfg, lux_obs)
         enqueued_actions = {
-            u_id: enqueued_action_from_obs(u["action_queue"])
+            u_id: enqueued_action_from_obs(
+                u["action_queue"], self.use_simplified_spaces
+            )
             for p in self.agents
             for u_id, u in lux_obs["units"][p].items()
         }
@@ -101,6 +109,7 @@ class Agent:
             state,
             self.action_mask_shape,
             enqueued_actions,
+            self.use_simplified_spaces,
             factory_ice_distance_buffer=0,
         )
         obs = np.expand_dims(obs, axis=0)
@@ -118,6 +127,7 @@ class Agent:
             action_mask[0],
             enqueued_actions,
             action_stats,
+            self.use_simplified_spaces,
         )
         return lux_action
 

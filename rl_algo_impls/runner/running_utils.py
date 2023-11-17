@@ -189,6 +189,7 @@ def make_policy(
     load_path: Optional[str] = None,
     load_run_path: Optional[str] = None,
     load_run_path_best: bool = True,
+    load_norm_rms_count_override: Optional[int] = None,
     **kwargs,
 ) -> Policy:
     policy = POLICIES[config.algo](env, **kwargs).to(device)
@@ -201,7 +202,9 @@ def make_policy(
         )
         assert load_path
     if load_path:
-        policy.load(load_path)
+        policy.load(
+            load_path, load_norm_rms_count_override=load_norm_rms_count_override
+        )
     return policy
 
 

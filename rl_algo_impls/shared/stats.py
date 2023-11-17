@@ -1,7 +1,17 @@
 import dataclasses
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Sequence, TypeVar, Union
+from typing import (
+    Any,
+    DefaultDict,
+    Dict,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    TypeVar,
+    Union,
+)
 
 import numpy as np
 from torch.utils.tensorboard.writer import SummaryWriter
@@ -90,6 +100,20 @@ class Statistic:
 EpisodesStatsSelf = TypeVar("EpisodesStatsSelf", bound="EpisodesStats")
 
 
+def _add_info_values(
+    values: DefaultDict[str, List[Union[float, int]]],
+    info: Dict[str, Any],
+    path: Optional[Tuple[str, ...]] = None,
+) -> None:
+    if path is None:
+        path = tuple()
+    for k, v in info.items():
+        if isinstance(v, dict):
+            _add_info_values(values, v, path=(*path, k))
+        else:
+            values["_".join((*path, k))].append(v)
+
+
 class EpisodesStats:
     def __init__(
         self,
@@ -106,12 +130,7 @@ class EpisodesStats:
         additional_values = defaultdict(list)
         for e in self.episodes:
             if e.info:
-                for k, v in e.info.items():
-                    if isinstance(v, dict):
-                        for k2, v2 in v.items():
-                            additional_values[f"{k}_{k2}"].append(v2)
-                    else:
-                        additional_values[k].append(v)
+                _add_info_values(additional_values, e.info)
         self.additional_stats = {
             k: Statistic(np.array(values)) for k, values in additional_values.items()
         }

@@ -1,10 +1,10 @@
 import numpy as np
-from gymnasium import Env
 
 from rl_algo_impls.wrappers.vector_wrapper import (
     VecEnvStepReturn,
     VectorEnv,
     VectorWrapper,
+    get_infos,
 )
 
 
@@ -25,7 +25,14 @@ class ScoreRewardWrapper(VectorWrapper):
         if self.delta_every_step:
             r_to_add.append(
                 np.expand_dims(
-                    np.array([sr["delta_reward"] for sr in infos["score_reward"]]),
+                    np.array(
+                        [
+                            sr["delta_reward"]
+                            for sr in get_infos(
+                                infos, "score_reward", self.env.num_envs, None
+                            )
+                        ]
+                    ),
                     axis=-1,
                 )
             )
@@ -35,8 +42,8 @@ class ScoreRewardWrapper(VectorWrapper):
                     np.array(
                         [
                             r.get("score_reward", 0) if r is not None else 0
-                            for r in infos.get(
-                                "results", [{} for _ in range(self.num_envs)]
+                            for r in get_infos(
+                                infos, "results", self.env.num_envs, None
                             )
                         ]
                     ),

@@ -106,6 +106,7 @@ class PPO(Algorithm):
         clip_range: float = 0.2,
         clip_range_vf: Optional[float] = None,
         normalize_advantage: bool = True,
+        standardize_advantage: bool = False,
         ent_coef: float = 0.0,
         vf_coef: NumOrList = 0.5,
         ppo2_vf_coef_halving: bool = False,
@@ -133,6 +134,10 @@ class PPO(Algorithm):
         self.clip_range_vf = clip_range_vf
 
         self.normalize_advantage = normalize_advantage
+        self.standardize_advantage = standardize_advantage
+        assert not (
+            normalize_advantage and standardize_advantage
+        ), f"Cannot both normalize and standardize advantage"
 
         self.ent_coef = ent_coef
         self.vf_coef = num_or_array(vf_coef)
@@ -188,7 +193,6 @@ class PPO(Algorithm):
     ) -> Tuple[int, bool]:
         start_time = perf_counter()
 
-        progress = timesteps_elapsed / total_timesteps
         update_learning_rate(self.optimizer, self.learning_rate)
         pi_clip = self.clip_range
         chart_scalars = {
@@ -263,6 +267,8 @@ class PPO(Algorithm):
                 else:
                     if self.normalize_advantage:
                         mb_adv = (mb_adv - mb_adv.mean(0)) / (mb_adv.std(0) + 1e-8)
+                    elif self.standardize_advantage:
+                        mb_adv = mb_adv / (mb_adv.std(0) + 1e-8)
                     if multi_reward_weights is not None:
                         mb_adv = mb_adv @ multi_reward_weights
 

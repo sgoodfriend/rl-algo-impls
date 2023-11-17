@@ -11,6 +11,7 @@ from gymnasium.spaces import MultiDiscrete, Space
 from rl_algo_impls.shared.actor import pi_forward
 from rl_algo_impls.shared.actor.gridnet import GridnetDistribution, ValueDependentMask
 from rl_algo_impls.shared.actor.gridnet_decoder import Transpose
+from rl_algo_impls.shared.module.channelwise_activation import ChannelwiseActivation
 from rl_algo_impls.shared.module.stack import HStack
 from rl_algo_impls.shared.module.utils import layer_init
 from rl_algo_impls.shared.policy.actor_critic_network.network import (
@@ -40,6 +41,7 @@ class BackboneActorCritic(ActorCriticNetwork):
         subaction_mask: Optional[Dict[int, Dict[int, int]]] = None,
         critic_shares_backbone: bool = True,
         save_critic_separate: bool = False,
+        shared_critic_head: bool = False,
     ):
         if num_additional_critics and not additional_critic_activation_functions:
             additional_critic_activation_functions = [
@@ -70,6 +72,7 @@ class BackboneActorCritic(ActorCriticNetwork):
             assert (
                 not critic_shares_backbone
             ), "Cannot save critic separate if sharing backbone"
+        self.shared_critic_head = shared_critic_head
 
         self.map_size = len(action_space_per_position.nvec) // len(action_plane_space.nvec)  # type: ignore
 
@@ -90,7 +93,9 @@ class BackboneActorCritic(ActorCriticNetwork):
             ]
         )
 
-        def critic_head(output_activation_name: str = "identity") -> nn.Module:
+        def critic_head(
+            output_activation_layer: nn.Module, num_output_channels: int = 1
+        ) -> nn.Module:
             def down_conv(
                 in_channels: int, out_channels: int, stride: int
             ) -> List[nn.Module]:
@@ -138,22 +143,30 @@ class BackboneActorCritic(ActorCriticNetwork):
                         ),
                         nn.GELU(),
                         layer_init(
-                            nn.Linear(critic_channels, 1),
+                            nn.Linear(critic_channels, num_output_channels),
                             init_layers_orthogonal=init_layers_orthogonal,
                             std=1.0,
                         ),
-                        ACTIVATION[output_activation_name](),
+                        output_activation_layer,
                     ]
                 )
             )
 
-        self.critic_heads = HStack(
-            [
-                critic_head(act_fn_name)
-                for act_fn_name in [output_activation_fn]
-                + (additional_critic_activation_functions or [])
-            ]
-        )
+        output_activations = [
+            ACTIVATION[act_fn_name]()
+            for act_fn_name in [output_activation_fn]
+            + (additional_critic_activation_functions or [])
+        ]
+        self._critic_features = len(output_activations)
+        if self.shared_critic_head:
+            self.critic_heads = critic_head(
+                ChannelwiseActivation(output_activations),
+                num_output_channels=len(output_activations),
+            )
+        else:
+            self.critic_heads = HStack(
+                [critic_head(activation) for activation in output_activations]
+            )
 
     def _preprocess(self, obs: torch.Tensor) -> torch.Tensor:
         if len(obs.shape) == 3:
@@ -215,8 +228,8 @@ class BackboneActorCritic(ActorCriticNetwork):
 
     @property
     def value_shape(self) -> Tuple[int, ...]:
-        if len(self.critic_heads) > 1:
-            return (len(self.critic_heads),)
+        if self._critic_features > 1:
+            return (self._critic_features,)
         else:
             return ()
 

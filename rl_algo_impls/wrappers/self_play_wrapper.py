@@ -137,7 +137,7 @@ class SelfPlayWrapper(VectorWrapper, Generic[ObsType]):
                     if self.next_action_masks is not None
                     else None,
                 )
-        self.next_obs, rew, truncations, terminations, info = env.step(all_actions)
+        self.next_obs, rew, terminations, truncations, info = env.step(all_actions)
         self.next_action_masks = env.get_action_mask()  # type: ignore
 
         self.steps_since_swap += 1

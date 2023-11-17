@@ -86,28 +86,3 @@ class AbstractSelfPlayReferenceWrapper(VectorWrapper, ABC, Generic[ObsType]):
     @abstractmethod
     def _assignment_and_indexes(self) -> Tuple[List[Optional[Policy]], List[bool]]:
         ...
-
-
-class SelfPlayReferenceWrapper(AbstractSelfPlayReferenceWrapper):
-    policies_getter_fn: Optional[Callable[[], Sequence[Policy]]]
-
-    def __init__(self, env: VectorEnv, window: int) -> None:
-        super().__init__(env)
-        self.window = window
-        self.policies_getter_fn = None
-
-    def _assignment_and_indexes(self) -> Tuple[List[Optional[Policy]], List[bool]]:
-        assignments: List[Optional[Policy]] = [None] * self.env.num_envs  # type: ignore
-        policies = (
-            list(reversed(self.policies_getter_fn()))
-            if self.policies_getter_fn
-            else [None] * self.env.num_envs
-        )
-        for i in range(self.num_envs):
-            policy = policies[i % len(policies)]
-            assignments[2 * i + (i % 2)] = policy
-        return assignments, [p is None for p in assignments]
-
-    def close(self) -> None:
-        self.policies_getter_fn = None
-        super().close()

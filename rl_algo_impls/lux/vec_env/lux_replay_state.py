@@ -32,9 +32,14 @@ class ReplayPath(NamedTuple):
 
 
 class LuxReplayState:
-    def __init__(self, replay_path: ReplayPath) -> None:
+    def __init__(
+        self,
+        replay_path: ReplayPath,
+        use_simplified_spaces: bool = False,
+    ) -> None:
         self.replay_path = replay_path.replay_path
         self.team_name = replay_path.team_name
+        self.use_simplified_spaces = use_simplified_spaces
 
     def step(self) -> Step:
         self.env_step += 1
@@ -106,7 +111,9 @@ class LuxReplayState:
         )  # type: ignore
         game_state = obs_to_game_state(self.env_step, self.env_cfg, obs_state_dict)
         enqueued_actions = {
-            u_id: enqueued_action_from_obs(u["action_queue"])
+            u_id: enqueued_action_from_obs(
+                u["action_queue"], self.use_simplified_spaces
+            )
             for p in self.units
             for u_id, u in self.units[p].items()
         }
