@@ -3014,11 +3014,11 @@ LuxAI_S2-v0-j1024env16-80m-lr30-opp-resources-rms:
 LuxAI_S2-v0-j1024env32-80m-lr20-opp-resources:
   &lux-j1024env32-80m-lr20-opp-resources
   <<: *lux-j1024env16-80m-lr20-opp-resources
-  env_hyperparams: &lux-j1024env32-opp-resources-lux
+  env_hyperparams: &lux-j1024env32-opp-resources-env
     <<: *lux-j1024env16-80m-lr20-opp-resources-env
-    make_kwargs: &lux-j1024env32-opp-resources-lux-make-kwargs
+    make_kwargs: &lux-j1024env32-opp-resources-env-make-kwargs
       <<: *lux-j1024env32-80m-a100-std-norm-retrain-env-overrides-make-kwargs
-  eval_hyperparams: &lux-j1024env32-opp-resources-lux-eval
+  eval_hyperparams: &lux-j1024env32-opp-resources-eval
     <<: *lux-j1024env32-80m-a100-std-norm-retrain-eval
   hyperparam_transitions_kwargs:
     interpolate_method: cosine
@@ -3047,7 +3047,7 @@ LuxAI_S2-v0-j1024env32-80m-lr20-opp-resources-rms:
   &lux-j1024env32-80m-lr20-opp-resources-rms
   <<: *lux-j1024env32-80m-lr20-opp-resources
   env_hyperparams: &lux-j1024env32-80m-lr20-opp-resources-rms-env
-    <<: *lux-j1024env32-opp-resources-lux
+    <<: *lux-j1024env32-opp-resources-env
     normalize_kwargs:
       <<: *lux-j1024env16-80m-lr30-opp-resources-rms-env-norm-kwargs
 
@@ -3055,7 +3055,7 @@ LuxAI_S2-v0-j512env64-80m-lr20-opp-resources:
   &lux-j512env64-80m-lr20-opp-resources
   <<: *lux-j1024env32-80m-lr20-opp-resources
   env_hyperparams: &lux-j512env64-opp-resources-env
-    <<: *lux-j1024env32-opp-resources-lux
+    <<: *lux-j1024env32-opp-resources-env
     n_envs: 512
     make_kwargs: &lux-j512env64-opp-resources-env-make-kwargs
       <<: *lux-j1024env32-80m-a100-std-norm-retrain-env-make-kwargs
@@ -3161,23 +3161,51 @@ LuxAI_S2-v0-j512env64-80m-a100-lr5-finetune:
       - 0.1
       - 0
 
+LuxAI_S2-v0-j1024env32-80m-a100-lr20-finetune:
+  &lux-j1024env32-80m-a100-lr20-finetune
+  <<: *lux-j1024env32-80m-lr20-opp-resources
+  policy_hyperparams: &lux-j1024env32-80m-a100-lr20-finetune-policy
+    <<: *lux-j512env64-80m-a100-lr20-finetune-policy
+  algo_hyperparams: &lux-j1024env32-80m-a100-lr20-finetune-algo
+    <<: *lux-j1024env32-80m-lr20-opp-resources-algo
+    batch_size: 2048
+  hyperparam_transitions_kwargs:
+    interpolate_method: cosine
+    phases:
+      - learning_rate: !!float 1e-7
+        ent_coef: 0.001
+      - learning_rate: !!float 2e-4
+        ent_coef: 0.001
+      - learning_rate: !!float 5e-5
+        ent_coef: 0.001
+      - learning_rate: !!float 1e-6
+        ent_coef: 0.0001
+    durations:
+      - 0
+      - 0.05 # 4M steps
+      - 0
+      - 0.45
+      - 0.4
+      - 0.1
+      - 0
+
 LuxAI_S2-v0-debug:
-  <<: *lux-j512env64-80m-a100-lr5-finetune
+  <<: *lux-j1024env32-80m-a100-lr20-finetune
   n_timesteps: !!float 10e6
   device: mps
   env_hyperparams:
-    <<: *lux-j512env64-opp-resources-env
+    <<: *lux-j1024env32-opp-resources-env
     make_kwargs:
-      <<: *lux-j512env64-opp-resources-env-make-kwargs
+      <<: *lux-j1024env32-opp-resources-env-make-kwargs
       verbose: 3
       verify: true
     # vec_env_class: sync
   eval_hyperparams:
-    <<: *lux-j512env64-opp-resources-eval
+    <<: *lux-j1024env32-opp-resources-eval
     env_overrides:
-      <<: *lux-j512env64-opp-resources-eval-env-overrides
+      <<: *lux-j1024env32-80m-a100-std-norm-retrain-env-overrides
       # vec_env_class: sync
       make_kwargs:
-        <<: *lux-j512env64-opp-resources-eval-env-overrides-make-kwargs
+        <<: *lux-j1024env32-80m-a100-std-norm-retrain-env-overrides-make-kwargs
         verbose: 3
         verify: true
