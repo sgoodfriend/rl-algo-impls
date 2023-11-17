@@ -106,7 +106,8 @@ class ExponentialMovingMeanVar:
         data = np.load(path)
         self.mean = data["mean"]
         self.var = data["var"]
-        self.initialized = data["initialized"]
+        self.squared_mean = self.var + self.mean**2
+        self.initialized = data["initialized"].item()
 
     def load_from(
         self: ExponentialMovingMeanVarSelf, existing: ExponentialMovingMeanVarSelf
