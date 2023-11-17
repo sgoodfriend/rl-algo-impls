@@ -698,7 +698,7 @@ def if_self_destruct_valid(
     # Only self-destruct on enemy lichen
     lichen_strain = state.board.lichen_strains[pos[0], pos[1]]
     if (
-        lichen_strain != 1
+        lichen_strain != -1
         and lichen_strain not in state.teams[agent_id(unit)].factory_strains
     ):
         return True
