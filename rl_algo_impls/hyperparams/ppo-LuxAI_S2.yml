@@ -3411,6 +3411,14 @@ LuxAI_S2-v0-j512env64-80m-lr10-2building: &lux-j512env64-80m-lr10-2building
     &lux-j512env64-80m-lr10-2building-hyperparam-transitions
     <<: *lux-j1024env32-80m-lr10-2building-hyperparam-transitions
 
+LuxAI_S2-v-j512env64-80m-lr10-ft32-2building:
+  &lux-j512env64-80m-lr10-ft32-2building
+  <<: *lux-j512env64-80m-lr10-2building
+  policy_hyperparams: &lux-j512env64-80m-lr10-ft32-2building-policy
+    <<: *lux-j512env64-80m-lr10-2heavy-policy
+    load_run_path: null
+    load_path: downloaded_models/ppo-LuxAI_S2-v0-j1024env32-80m-lr20-2building-S1
+
 LuxAI_S2-agent: &lux-agent
   <<: *lux-j512env64-80m-a100-lr20-finetune
   device: cpu
@@ -3427,7 +3435,7 @@ LuxAI_S2-agent: &lux-agent
       play_checkpoints_kwargs: null
 
 LuxAI_S2-v0-debug:
-  <<: *lux-j512env64-80m-lr10-2building
+  <<: *lux-j512env64-80m-lr10-ft32-2building
   n_timesteps: !!float 10e6
   device: mps
   env_hyperparams:
