@@ -127,7 +127,7 @@ def get_action_mask_per_position(
             u, state, config, move_mask, move_validity_map, enqueued_action
         )
         transfer_resource_mask = (
-            valid_transfer_resource_mask(u, enqueued_action)
+            valid_transfer_resource_mask(u)
             if np.any(transfer_direction_mask)
             else np.zeros(5)
         )
@@ -223,7 +223,7 @@ def get_simple_action_mask_per_position(
             agent_cfg,
         )
         transfer_resource_mask = (
-            valid_transfer_resource_mask(u, enqueued_action, only_transfer_power)
+            valid_transfer_resource_mask(u, only_transfer_power)
             if np.any(transfer_direction_mask)
             else np.zeros(5)
         )
