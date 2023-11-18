@@ -598,22 +598,17 @@ def valid_simple_transfer_direction_mask(
 
 def valid_transfer_resource_mask(
     unit: LuxUnit,
-    enqueued_action: Optional[np.ndarray],
     only_transfer_power: bool = False,
 ) -> np.ndarray:
+    if unit.power < unit.unit_cfg.ACTION_QUEUE_POWER_COST:
+        return np.full(5, False)
+
     transferrable_cargo = (
         np.array((0, 0, 0, 0) if only_transfer_power else astuple(unit.cargo)) > 0
     )
     has_resources = np.concatenate(
         (transferrable_cargo, (unit.power > unit.unit_cfg.INIT_POWER,))
     )
-    if unit.power < unit.unit_cfg.ACTION_QUEUE_POWER_COST:
-        zeros = np.full(5, False)
-        if enqueued_action is not None and enqueued_action[0] == 1:
-            prior_resource = enqueued_action[3]
-            zeros[prior_resource] = has_resources[prior_resource]
-        return zeros
-
     return has_resources
 
 
