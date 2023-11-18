@@ -3246,9 +3246,107 @@ LuxAI_S2-v0-j1024env32-80m-lr5-finetune: &lux-j1024env32-80m-lr5-finetune
 LuxAI_S2-v0-j1024env16-80m-lr20-finetune: &lux-j1024env16-80m-lr20-finetune
   <<: *lux-j1024env16-80m-lr20-opp-resources
   policy_hyperparams: &lux-j1024env16-80m-lr20-finetune-policy
-    <<: *lux-j1024env32-80m-a100-lr20-finetune-policy
+    <<: *lux-j1024env16-80m-lr20-opp-resources-policy
+    load_run_path: sgoodfriend/rl-algo-impls-lux-nips1/jk8u688d
+    load_run_path_best: true
   hyperparam_transitions_kwargs:
     <<: *lux-j1024env32-80m-a100-lr20-finetune-hyperparam-transitions
+
+LuxAI_S2-v0-j1024env16-80m-lr20-2heavy: &lux-j1024env16-80m-lr20-2heavy
+  <<: *lux-j1024env16-80m-lr20-finetune
+  algo_hyperparams: &lux-j1024env16-80m-lr20-2heavy-algo
+    <<: *lux-j1024env16-80m-lr20-opp-resources-algo
+    multi_reward_weights:
+      - 1 # WinLoss
+      - 0.1 # ice
+      - 0.1 # ore
+      - 0.1 # water
+      - 0.1 # metal
+      - 0 # power
+      - 0.1 # light bots
+      - 0.2 # heavy bots
+      - 0.1 # opponent kills
+      - 0 # resources lichen
+      - 0.1 # resources factory
+      - 0 # game length
+      - 0 # opponent resources lichen
+      - 0 # opponent resources factory
+  hyperparam_transitions_kwargs:
+    &lux-j1024env16-80m-lr20-2heavy-hyperparam-transitions
+    interpolate_method: cosine
+    phases:
+      - learning_rate: !!float 1e-7
+        ent_coef: 0.001
+      - learning_rate: !!float 2e-4
+        ent_coef: 0.001
+      - learning_rate: !!float 1e-6
+        ent_coef: 0.0001
+    durations:
+      - 0
+      - 0.1 # 8M steps
+      - 0.3 # 24M steps
+      - 0.6 # 48M steps
+      - 0
+
+LuxAI_S2-v0-j1024env16-80m-lr20-4heavy: &lux-j1024env16-80m-lr20-4heavy
+  <<: *lux-j1024env16-80m-lr20-2heavy
+  algo_hyperparams: &lux-j1024env16-80m-lr20-4heavy-algo
+    <<: *lux-j1024env16-80m-lr20-2heavy-algo
+    multi_reward_weights:
+      - 1 # WinLoss
+      - 0.1 # ice
+      - 0.1 # ore
+      - 0.1 # water
+      - 0.1 # metal
+      - 0 # power
+      - 0.1 # light bots
+      - 0.4 # heavy bots
+      - 0.1 # opponent kills
+      - 0 # resources lichen
+      - 0.1 # resources factory
+      - 0 # game length
+      - 0 # opponent resources lichen
+      - 0 # opponent resources factory
+
+LuxAI_S2-v0-j1024env16-80m-lr2-2building: &lux-j1024env16-80m-lr20-2building
+  <<: *lux-j1024env16-80m-lr20-2heavy
+  algo_hyperparams: &lux-j1024env16-80m-lr20-2building-algo
+    <<: *lux-j1024env16-80m-lr20-2heavy-algo
+    multi_reward_weights:
+      - 1 # WinLoss
+      - 0.1 # ice
+      - 0.2 # ore
+      - 0.1 # water
+      - 0.2 # metal
+      - 0 # power
+      - 0.2 # light bots
+      - 0.2 # heavy bots
+      - 0.2 # opponent kills
+      - 0 # resources lichen
+      - 0.1 # resources factory
+      - 0 # game length
+      - 0 # opponent resources lichen
+      - 0 # opponent resources factory
+
+LuxAI_S2-v0-j1024env16-80m-lr20-4mhk: &lux-j1024env16-80m-lr20-4mhk
+  <<: *lux-j1024env16-80m-lr20-2heavy
+  algo_hyperparams: &lux-j1024env16-80m-lr20-4mhk-algo
+    <<: *lux-j1024env16-80m-lr20-2heavy-algo
+    multi_reward_weights:
+      - 1 # WinLoss
+      - 0.1 # ice
+      - 0.1 # ore
+      - 0.1 # water
+      - 0.4 # metal
+      - 0 # power
+      - 0.1 # light bots
+      - 0.4 # heavy bots
+      - 0.4 # opponent kills
+      - 0.1 # resources lichen
+      - 0.1 # resources factory
+      - 0 # game length
+      - 0 # opponent resources lichen
+      - 0 # opponent resources factory
 
 LuxAI_S2-agent: &lux-agent
   <<: *lux-j512env64-80m-a100-lr20-finetune
@@ -3266,7 +3364,7 @@ LuxAI_S2-agent: &lux-agent
       play_checkpoints_kwargs: null
 
 LuxAI_S2-v0-debug:
-  <<: *lux-j1024env16-80m-lr20-finetune
+  <<: *lux-j1024env16-80m-lr20-2heavy
   n_timesteps: !!float 10e6
   device: mps
   env_hyperparams:
