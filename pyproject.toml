@@ -1,6 +1,6 @@
 [project]
 name = "rl_algo_impls"
-version = "0.0.47"
+version = "0.0.49"
 description = "Implementations of reinforcement learning algorithms"
 authors = [
     {name = "Scott Goodfriend", email = "goodfriend.scott@gmail.com"},
