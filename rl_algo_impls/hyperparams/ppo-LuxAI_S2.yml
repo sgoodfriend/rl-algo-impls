@@ -3328,16 +3328,6 @@ LuxAI_S2-v0-j1024env16-80m-lr2-2building: &lux-j1024env16-80m-lr20-2building
       - 0 # opponent resources lichen
       - 0 # opponent resources factory
 
-LuxAI_S2-v0-j1024env32-80m-lr20-2building: &lux-j1024env32-80m-lr20-2building
-  <<: *lux-j1024env32-80m-lr10-finetune
-  policy_hyperparams:
-    <<: *lux-j1024env16-80m-lr20-finetune-policy
-  algo_hyperparams:
-    <<: *lux-j1024env16-80m-lr20-2building-algo
-    batch_size: 1024
-  hyperparam_transitions_kwargs:
-    <<: *lux-j1024env16-80m-lr20-2heavy-hyperparam-transitions
-
 LuxAI_S2-v0-j1024env16-80m-lr20-4mhk: &lux-j1024env16-80m-lr20-4mhk
   <<: *lux-j1024env16-80m-lr20-2heavy
   algo_hyperparams: &lux-j1024env16-80m-lr20-4mhk-algo
@@ -3358,6 +3348,49 @@ LuxAI_S2-v0-j1024env16-80m-lr20-4mhk: &lux-j1024env16-80m-lr20-4mhk
       - 0 # opponent resources lichen
       - 0 # opponent resources factory
 
+LuxAI_S2-v0-j1024env32-80m-lr20-2building: &lux-j1024env32-80m-lr20-2building
+  <<: *lux-j1024env32-80m-lr10-finetune
+  policy_hyperparams: &lux-j1024env32-80m-lr20-2building-policy
+    <<: *lux-j1024env16-80m-lr20-finetune-policy
+  algo_hyperparams: &lux-j1024env32-80m-lr20-2building-algo
+    <<: *lux-j1024env16-80m-lr20-2building-algo
+    batch_size: 1024
+  hyperparam_transitions_kwargs:
+    <<: *lux-j1024env16-80m-lr20-2heavy-hyperparam-transitions
+
+LuxAI_S2-v0-j1024env32-80m-lr20-2heavy: &lux-j1024env32-80m-lr20-2heavy
+  <<: *lux-j1024env32-80m-lr20-2building
+  policy_hyperparams: &lux-j1024env32-80m-lr20-2heavy-policy
+    <<: *lux-j1024env32-80m-lr20-2building-policy
+    load_run_path: sgoodfriend/rl-algo-impls-lux-nips1/qw8efbmg
+    load_run_path_best: true
+  algo_hyperparams:
+    <<: *lux-j1024env16-80m-lr20-2heavy-algo
+    batch_size: 1024
+  hyperparam_transitions_kwargs:
+    <<: *lux-j1024env16-80m-lr20-2heavy-hyperparam-transitions
+
+LuxAI_S2-v0-j1024env32-80m-lr10-2building: &lux-j1024env32-80m-lr10-2building
+  <<: *lux-j1024env32-80m-lr20-2heavy
+  algo_hyperparams: &lux-j1024env32-80m-lr10-2building-algo
+    <<: *lux-j1024env32-80m-lr20-2building-algo
+  hyperparam_transitions_kwargs:
+    &lux-j1024env32-80m-lr10-2building-hyperparam-transitions
+    interpolate_method: cosine
+    phases:
+      - learning_rate: !!float 1e-7
+        ent_coef: 0.001
+      - learning_rate: !!float 1e-4
+        ent_coef: 0.001
+      - learning_rate: !!float 1e-7
+        ent_coef: 0.00001
+    durations:
+      - 0
+      - 0.1 # 8M steps
+      - 0.3 # 24M steps
+      - 0.6 # 48M steps
+      - 0
+
 LuxAI_S2-agent: &lux-agent
   <<: *lux-j512env64-80m-a100-lr20-finetune
   device: cpu
@@ -3374,7 +3407,7 @@ LuxAI_S2-agent: &lux-agent
       play_checkpoints_kwargs: null
 
 LuxAI_S2-v0-debug:
-  <<: *lux-j1024env32-80m-lr20-2building
+  <<: *lux-j1024env32-80m-lr10-2building
   n_timesteps: !!float 10e6
   device: mps
   env_hyperparams:
