@@ -83,7 +83,7 @@ class LuxEnvGridnet(VectorEnv):
         observation_sample, _ = self.reset()
         single_obs_shape = observation_sample.shape[1:]
         self.single_observation_space = Box(
-            low=0,
+            low=-1,
             high=1,
             shape=single_obs_shape,
             dtype=np.float32,
