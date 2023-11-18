@@ -54,6 +54,22 @@ def make_eval_env(
 ) -> VectorEnv:
     kwargs = kwargs.copy()
     kwargs["training"] = False
+    hparams = get_eval_env_hyperparams(config, hparams, override_hparams)
+    env = make_env(config, hparams, **kwargs)
+
+    eval_self_play_wrapper = find_wrapper(env, SelfPlayEvalWrapper)
+    if eval_self_play_wrapper:
+        assert self_play_wrapper
+        eval_self_play_wrapper.train_wrapper = self_play_wrapper
+
+    return env
+
+
+def get_eval_env_hyperparams(
+    config: Config,
+    hparams: EnvHyperparams,
+    override_hparams: Optional[Dict[str, Any]] = None,
+) -> EnvHyperparams:
     env_overrides = config.eval_hyperparams.get("env_overrides")
     if env_overrides:
         hparams_kwargs = asdict(hparams)
@@ -83,11 +99,4 @@ def make_eval_env(
                         break
                     hparams_kwargs["bots"] = one_bot_dict
         hparams = EnvHyperparams(**hparams_kwargs)
-    env = make_env(config, hparams, **kwargs)
-
-    eval_self_play_wrapper = find_wrapper(env, SelfPlayEvalWrapper)
-    if eval_self_play_wrapper:
-        assert self_play_wrapper
-        eval_self_play_wrapper.train_wrapper = self_play_wrapper
-
-    return env
+    return hparams

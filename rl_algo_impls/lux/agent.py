@@ -19,10 +19,14 @@ from rl_algo_impls.lux.kit.config import EnvConfig
 from rl_algo_impls.lux.kit.kit import obs_to_game_state
 from rl_algo_impls.lux.observation import observation_and_action_mask
 from rl_algo_impls.lux.stats import ActionStats
+from rl_algo_impls.lux.vec_env.lux_agent_env import LuxAgentEnv
 from rl_algo_impls.runner.config import Config, EnvHyperparams, RunArgs
 from rl_algo_impls.runner.running_utils import get_device, load_hyperparams, make_policy
 from rl_algo_impls.shared.tensor_utils import batch_dict_keys
-from rl_algo_impls.shared.vec_env.make_env import make_eval_env
+from rl_algo_impls.shared.vec_env.make_env import (
+    get_eval_env_hyperparams,
+    make_eval_env,
+)
 from rl_algo_impls.wrappers.hwc_to_chw_observation import HwcToChwVectorObservation
 from rl_algo_impls.wrappers.vector_wrapper import find_wrapper
 
@@ -45,52 +49,23 @@ class Agent:
             str(root_dir),
         )
 
-        env = make_eval_env(
+        env_hparams = get_eval_env_hyperparams(
             config,
             EnvHyperparams(**config.env_hyperparams),
             override_hparams={"n_envs": 1},
         )
-        device = get_device(config, env)
+        env_make_kwargs = env_hparams.make_kwargs or {}
+        self.env = LuxAgentEnv(env_hparams.n_envs, env_cfg, **env_make_kwargs)
+        device = get_device(config, self.env)
         config.policy_hyperparams["load_path"] = os.path.join(
             root_dir, config.policy_hyperparams["load_path"]
         )
         self.policy = make_policy(
             config,
-            env,
+            self.env,
             device,
             **config.policy_hyperparams,
         ).eval()
-        self.agent_cfg = LuxAgentConfig.from_kwargs(
-            **config.env_hyperparams["make_kwargs"]
-        )
-        self.bid_std_dev = config.env_hyperparams["make_kwargs"].get("bid_std_dev", 5)
-
-        self.map_size = env_cfg.map_size
-        self.num_map_tiles = self.map_size * self.map_size
-        action_sizes = (
-            SIMPLE_ACTION_SIZES
-            if self.agent_cfg.use_simplified_spaces
-            else ACTION_SIZES
-        )
-        self.action_plane_space = MultiDiscrete(action_sizes)
-        self.action_space = DictSpace(
-            {
-                "per_position": MultiDiscrete(
-                    np.array(action_sizes * self.num_map_tiles).flatten().tolist()
-                ),
-                "pick_position": MultiDiscrete([self.num_map_tiles]),
-            }
-        )
-        self.action_mask_shape = {
-            "per_position": (
-                self.num_map_tiles,
-                self.action_plane_space.nvec.sum(),
-            ),
-            "pick_position": (
-                len(self.action_space["pick_position"].nvec),
-                self.num_map_tiles,
-            ),
-        }
 
     def act(
         self, step: int, lux_obs: ObservationStateDict, remainingOverageTime: int = 60
@@ -98,7 +73,7 @@ class Agent:
         state = obs_to_game_state(step, self.env_cfg, lux_obs)
         enqueued_actions = {
             u_id: enqueued_action_from_obs(
-                u["action_queue"], self.agent_cfg.use_simplified_spaces
+                u["action_queue"], self.env.agent_cfg.use_simplified_spaces
             )
             for p in self.agents
             for u_id, u in lux_obs["units"][p].items()
@@ -107,9 +82,9 @@ class Agent:
             self.player,
             lux_obs,
             state,
-            self.action_mask_shape,
+            self.env.action_mask_shape,
             enqueued_actions,
-            self.agent_cfg,
+            self.env.agent_cfg,
         )
         obs = np.expand_dims(obs, axis=0)
         action_mask = np.expand_dims(action_mask, axis=0)
@@ -125,11 +100,11 @@ class Agent:
             action_mask[0],
             enqueued_actions,
             action_stats,
-            self.agent_cfg,
+            self.env.agent_cfg,
         )
         return lux_action
 
     def bid_policy(
         self, step: int, lux_obs: ObservationStateDict, remainingOverageTime: int = 60
     ) -> Dict[str, Any]:
-        return bid_action(self.bid_std_dev, self.faction)
+        return bid_action(self.env.bid_std_dev, self.faction)
