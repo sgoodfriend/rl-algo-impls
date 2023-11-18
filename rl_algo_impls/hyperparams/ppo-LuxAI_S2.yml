@@ -3364,7 +3364,7 @@ LuxAI_S2-agent: &lux-agent
       play_checkpoints_kwargs: null
 
 LuxAI_S2-v0-debug:
-  <<: *lux-j1024env16-80m-lr20-2heavy
+  <<: *lux-j1024env16-80m-lr20-4mhk
   n_timesteps: !!float 10e6
   device: mps
   env_hyperparams:
