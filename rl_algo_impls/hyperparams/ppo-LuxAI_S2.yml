@@ -3328,6 +3328,15 @@ LuxAI_S2-v0-j1024env16-80m-lr2-2building: &lux-j1024env16-80m-lr20-2building
       - 0 # opponent resources lichen
       - 0 # opponent resources factory
 
+LuxAI_S2-v0-j1024env32-80m-lr20-2building: &lux-j1024env32-80m-lr20-2building
+  <<: *lux-j1024env32-80m-a100-lr20-finetune
+  policy_hyperparams:
+    <<: *lux-j1024env16-80m-lr20-finetune-policy
+  algo_hyperparams:
+    <<: *lux-j1024env16-80m-lr20-2building-algo
+  hyperparam_transitions_kwargs:
+    <<: *lux-j1024env16-80m-lr20-2heavy-hyperparam-transitions
+
 LuxAI_S2-v0-j1024env16-80m-lr20-4mhk: &lux-j1024env16-80m-lr20-4mhk
   <<: *lux-j1024env16-80m-lr20-2heavy
   algo_hyperparams: &lux-j1024env16-80m-lr20-4mhk-algo
