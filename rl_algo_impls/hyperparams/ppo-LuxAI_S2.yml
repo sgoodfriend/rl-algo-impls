@@ -3530,7 +3530,7 @@ LuxAI_S2-agent: &lux-agent
   policy_hyperparams:
     <<: *lux-j512env64-80m-a100-lr20-finetune-policy
     load_run_path: null
-    load_path: lux_models/ppo-LuxAI_S2-v-j512env64-80m-lr10-ft32-2building-S1
+    load_path: lux_models/ppo-LuxAI_S2-v-j512env64-80m-lr10-ft32-2building-S1-best
   eval_hyperparams:
     <<: *lux-j512env64-opp-resources-eval
     env_overrides:
