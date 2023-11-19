@@ -3418,7 +3418,7 @@ LuxAI_S2-v-j512env64-80m-lr10-ft32-2building:
   policy_hyperparams: &lux-j512env64-80m-lr10-ft32-2building-policy
     <<: *lux-j512env64-80m-lr10-2heavy-policy
     load_run_path: null
-    load_path: downloaded_models/ppo-LuxAI_S2-v0-j1024env32-80m-lr20-2building-S1
+    load_path: downloaded_models/ppo-LuxAI_S2-v0-j1024env32-80m-lr20-2building-S1-best
   hyperparam_transitions_kwargs:
     &lux-j512env64-80m-lr10-ft32-2building-hyperparam-transitions
     interpolate_method: cosine
