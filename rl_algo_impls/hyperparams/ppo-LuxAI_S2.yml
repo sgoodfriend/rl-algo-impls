@@ -3519,7 +3519,7 @@ LuxAI_S2-v0-j1024env32-80m-lr10-2o3m4h: &lux-j1024env32-80m-lr10-2o3m4h
     &lux-j1024env32-80m-lr10-2o3m4h-hyperparam-transitions
     <<: *lux-j512env64-80m-lr10-ft32-2building-hyperparam-transitions
 
-LuxAI-S2-v0-j1024env32-80m-lr5-2o3m4h: &lux-j1024env32-80m-lr5-2o3m4h
+LuxAI_S2-v0-j1024env32-80m-lr5-2o3m4h: &lux-j1024env32-80m-lr5-2o3m4h
   <<: *lux-j1024env32-80m-lr10-2o3m4h
   hyperparam_transitions_kwargs:
     <<: *lux-j512env64-80m-lr5-ft32-2building-hyperparam-transitions
