@@ -21,6 +21,7 @@ class SyncStepRolloutGenerator(RolloutGenerator):
         include_logp: bool = True,
         subaction_mask: Optional[Dict[int, Dict[int, int]]] = None,
         num_envs_reset_every_rollout: int = 0,
+        rolling_num_envs_reset_every_rollout: int = 0,
     ) -> None:
         super().__init__(policy, vec_env)
         self.policy = policy
@@ -32,6 +33,8 @@ class SyncStepRolloutGenerator(RolloutGenerator):
         self.include_logp = include_logp
         self.subaction_mask = subaction_mask
         self.num_envs_reset_every_rollout = num_envs_reset_every_rollout
+        self.rolling_num_envs_reset_every_rollout = rolling_num_envs_reset_every_rollout
+        self.rolling_mask_idx = 0
 
         self.get_action_mask = getattr(vec_env, "get_action_mask", None)
         if self.get_action_mask:
@@ -128,6 +131,25 @@ class SyncStepRolloutGenerator(RolloutGenerator):
             masked_reset_mask[-self.num_envs_reset_every_rollout :] = True
             next_obs, action_mask, _ = self.vec_env.masked_reset(masked_reset_mask)
             self.next_obs[-self.num_envs_reset_every_rollout :] = next_obs
+            if self.next_action_masks is not None:
+                fold_in(
+                    self.next_action_masks,
+                    batch_dict_keys(action_mask),
+                    masked_reset_mask,
+                )
+        if self.rolling_num_envs_reset_every_rollout > 0:
+            masked_reset_mask = np.zeros(self.vec_env.num_envs, dtype=np.bool_)
+            end_idx = self.rolling_mask_idx + self.rolling_num_envs_reset_every_rollout
+            if end_idx >= self.vec_env.num_envs:
+                masked_reset_mask[self.rolling_mask_idx :] = True
+                end_idx = end_idx % self.vec_env.num_envs
+                masked_reset_mask[:end_idx] = True
+            else:
+                masked_reset_mask[self.rolling_mask_idx : end_idx] = True
+            self.rolling_mask_idx = end_idx
+
+            next_obs, action_mask, _ = self.vec_env.masked_reset(masked_reset_mask)
+            self.next_obs[masked_reset_mask] = next_obs
             if self.next_action_masks is not None:
                 fold_in(
                     self.next_action_masks,

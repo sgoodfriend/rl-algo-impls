@@ -3524,6 +3524,15 @@ LuxAI_S2-v0-j1024env32-80m-lr5-2o3m4h: &lux-j1024env32-80m-lr5-2o3m4h
   hyperparam_transitions_kwargs:
     <<: *lux-j512env64-80m-lr5-ft32-2building-hyperparam-transitions
 
+LuxAI_S2-v0-j1024env32-80m-lr10-rolling-reset:
+  &lux-j1024env32-80m-lr10-rolling-reset
+  <<: *lux-j1024env32-80m-lr10-2o3m4h
+  rollout_hyperparams: &lux-j1024env32-80m-lr10-rolling-reset-rollout
+    <<: *lux-ssqnet-j1024env16-r32-80m-rollout
+    n_steps: 32
+    num_envs_reset_every_rollout: 0
+    rolling_num_envs_reset_every_rollout: 4
+
 LuxAI_S2-agent: &lux-agent
   <<: *lux-j512env64-80m-a100-lr10-ft32-2building
   device: cpu
@@ -3540,7 +3549,7 @@ LuxAI_S2-agent: &lux-agent
       play_checkpoints_kwargs: null
 
 LuxAI_S2-v0-debug:
-  <<: *lux-j1024env32-80m-lr5-2o3m4h
+  <<: *lux-j1024env32-80m-lr10-rolling-reset
   n_timesteps: !!float 10e6
   device: mps
   env_hyperparams:
