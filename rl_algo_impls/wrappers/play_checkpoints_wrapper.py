@@ -85,20 +85,24 @@ class PlayCheckpointsWrapper(VectorWrapper, ABC, Generic[ObsType]):
         learning_mask = _learning_mask(policy_assignments)
         mapped_mask = np.zeros_like(learning_mask)
         mapped_mask[learning_mask] = env_mask
-        for idx in range(0, self.num_envs, 2):
-            reset_1, reset_2 = mapped_mask[idx : idx + 2]
-            policy_1, policy_2 = policy_assignments[idx : idx + 2]
-            if reset_1 != reset_2:
-                if policy_1:
-                    mapped_mask[idx] = True
-                elif policy_2:
-                    mapped_mask[idx + 1] = True
-                else:
-                    raise ValueError(
-                        "Expect mapped_mask to be the same for player 1 and 2: "
-                        f"{idx}: {reset_1}, {policy_1}; {idx+1}: {reset_2}, {policy_2}"
-                    )
-        return self.env.masked_reset(mapped_mask)  # type: ignore
+        # bool[N/2]
+        paired_envs_mask = mapped_mask[::2] | mapped_mask[1::2]
+        # bool[N]
+        filled_mapped_mask = np.repeat(paired_envs_mask, 2)
+        # bool[sum(paired_envs_mask)]
+        env_masked_reset_mask = mapped_mask[filled_mapped_mask]
+        # bool[sum(paired_envs_mask)]
+        policy_assigned_mask = np.array([bool(p) for p in policy_assignments])[
+            filled_mapped_mask
+        ]
+        assert np.logical_or(env_masked_reset_mask, policy_assigned_mask).all()
+        _assert_filled_mapped_mask(filled_mapped_mask, mapped_mask, policy_assignments)
+        obs, action_mask, info = self.env.masked_reset(filled_mapped_mask)  # type: ignore
+        return (
+            obs[env_masked_reset_mask],
+            action_mask[env_masked_reset_mask],
+            filter_info(info, env_masked_reset_mask),
+        )
 
     def get_action_mask(self) -> Optional[np.ndarray]:
         if self.next_action_masks is None:
@@ -131,3 +135,22 @@ class PlayCheckpointsWrapper(VectorWrapper, ABC, Generic[ObsType]):
 
 def _learning_mask(policy_assignments: List[Optional[Policy]]) -> List[bool]:
     return [p is None for p in policy_assignments]
+
+
+def _assert_filled_mapped_mask(
+    filled_mapped_mask: np.ndarray, mapped_mask: np.ndarray, policy_assignments
+) -> None:
+    for idx in range(0, len(mapped_mask), 2):
+        reset_1, reset_2 = mapped_mask[idx : idx + 2]
+        policy_1, policy_2 = policy_assignments[idx : idx + 2]
+        if reset_1 != reset_2:
+            if policy_1:
+                mapped_mask[idx] = True
+            elif policy_2:
+                mapped_mask[idx + 1] = True
+            else:
+                raise ValueError(
+                    "Expect mapped_mask to be the same for player 1 and 2: "
+                    f"{idx}: {reset_1}, {policy_1}; {idx+1}: {reset_2}, {policy_2}"
+                )
+    assert np.all(mapped_mask == filled_mapped_mask)
