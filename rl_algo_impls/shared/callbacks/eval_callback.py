@@ -10,7 +10,6 @@ from typing import Deque, Dict, List, Optional, Sequence, Union
 import numpy as np
 from torch.utils.tensorboard.writer import SummaryWriter
 
-from rl_algo_impls.lux.vec_env.jux_vector_env import JuxVectorEnv
 from rl_algo_impls.lux.vec_env.vec_lux_env import VecLuxEnv
 from rl_algo_impls.shared.callbacks import Callback
 from rl_algo_impls.shared.policy.policy import Policy
@@ -120,6 +119,7 @@ def evaluate(
             from jux.state.state import State as JuxState
 
             from rl_algo_impls.lux.jux.observation import observation_and_action_mask
+            from rl_algo_impls.lux.vec_env.jux_vector_env import JuxVectorEnv
 
             jux_env = policy.env.unwrapped
             assert isinstance(jux_env, JuxVectorEnv)
