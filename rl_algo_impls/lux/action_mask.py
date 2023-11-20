@@ -680,13 +680,15 @@ def if_self_destruct_valid(
     if unit.power < power_cost:
         return False
     pos = pos_to_numpy(unit.pos)
-    # Only self-destruct on enemy lichen
+
+    # Only self-destruct on enemy lichen above digging capability
     lichen_strain = state.board.lichen_strains[pos[0], pos[1]]
     if (
         lichen_strain != -1
         and lichen_strain not in state.teams[agent_id(unit)].factory_strains
     ):
-        return True
+        return state.board.lichen[pos[0], pos[1]] > unit.unit_cfg.DIG_LICHEN_REMOVED
+
     return False
 
 
