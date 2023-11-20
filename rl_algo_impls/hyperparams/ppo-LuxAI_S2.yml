@@ -3646,10 +3646,10 @@ LuxAI_S2-v0-j512env64-80m-lr20-r16-rr2-a100:
     batch_size: 512
 
 LuxAI_S2-agent: &lux-agent
-  <<: *lux-j512env64-80m-a100-lr10-ft32-2building
+  <<: *lux-j512env64-80m-lr10-ft32-2building
   device: cpu
   policy_hyperparams:
-    <<: *lux-j512env64-80m-a100-lr20-finetune-policy
+    <<: *lux-j512env64-80m-lr10-ft32-2building-policy
     load_run_path: null
     load_path: lux_models/ppo-LuxAI_S2-v-j512env64-80m-lr10-ft32-2building-S1-best
   eval_hyperparams:
