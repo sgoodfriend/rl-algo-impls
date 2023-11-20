@@ -18,6 +18,8 @@ from rl_algo_impls.wrappers.play_checkpoints_wrapper import PlayCheckpointsWrapp
 from rl_algo_impls.wrappers.vec_episode_recorder import VecEpisodeRecorder
 from rl_algo_impls.wrappers.vector_wrapper import VectorEnv, find_wrapper
 
+JUX_VERIFY = True
+
 
 class EvaluateAccumulator(EpisodeAccumulator):
     def __init__(
@@ -109,6 +111,30 @@ def evaluate(
             else None,
         )
         obs, rew, terminations, truncations, info = env.step(act)
+        if JUX_VERIFY:
+            import jax
+            import jax.numpy as jnp
+            from jux.state.state import State as JuxState
+
+            from rl_algo_impls.lux.jux.observation import observation_and_action_mask
+
+            jux_env = policy.env.unwrapped
+            assert isinstance(jux_env, JuxVectorEnv)
+            jux_state = JuxState.from_lux_state(
+                env.unwrapped.envs[0].env.state, jux_env.buf_cfg
+            )
+            vec_jux_state = jax.tree_util.tree_map(
+                lambda a: jnp.expand_dims(a, 0), jux_state
+            )
+            jux_obs, jux_action_mask = observation_and_action_mask(
+                vec_jux_state, jux_env.env_cfg, jux_env.buf_cfg, jux_env.agent_cfg
+            )
+            assert np.allclose(obs, jux_obs[0])
+            assert np.allclose(
+                get_action_mask(),
+                jax.tree_util.tree_map(lambda a: a[0], jux_action_mask),
+            )
+
         done = terminations | truncations
         episodes.step(rew, done, info)
         if render:
