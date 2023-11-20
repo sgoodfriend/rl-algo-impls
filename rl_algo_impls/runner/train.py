@@ -130,15 +130,6 @@ def train(args: TrainArgs):
                 config, env, **(config.hyperparams.reward_decay_callback_kwargs or {})
             )
         )
-    if config.hyperparams.hyperparam_transitions_kwargs:
-        callbacks.append(
-            HyperparamTransitions(
-                config,
-                env,
-                algo,
-                **config.hyperparams.hyperparam_transitions_kwargs,
-            )
-        )
     if self_play_wrapper:
         callbacks.append(SelfPlayCallback(policy, self_play_wrapper))
 
@@ -170,14 +161,24 @@ def train(args: TrainArgs):
     else:
         rollout_generator_cls = DEFAULT_ROLLOUT_GENERATORS[args.algo]
 
-    # TODO: Remove
-    eval_callback.generate_video()
-
     rollout_generator = rollout_generator_cls(
         policy,  # type: ignore
         env,
         **rollout_hyperparams,
     )
+    if config.hyperparams.hyperparam_transitions_kwargs:
+        callbacks.append(
+            HyperparamTransitions(
+                config,
+                env,
+                algo,
+                rollout_generator,
+                **config.hyperparams.hyperparam_transitions_kwargs,
+            )
+        )
+
+    # TODO: Remove
+    eval_callback.generate_video()
     algo.learn(config.n_timesteps, rollout_generator, callbacks=callbacks)
 
     policy.save(config.model_dir_path(best=False))

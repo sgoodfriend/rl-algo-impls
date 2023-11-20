@@ -3,6 +3,7 @@ from typing import Any, Dict, List, Optional
 import numpy as np
 
 from rl_algo_impls.lux.rewards import LuxRewardWeights
+from rl_algo_impls.rollout.rollout import RolloutGenerator
 from rl_algo_impls.runner.config import Config
 from rl_algo_impls.shared.algorithm import Algorithm
 from rl_algo_impls.shared.callbacks.callback import Callback
@@ -27,6 +28,8 @@ ALGO_BOOL_NAMES = {"freeze_policy_head", "freeze_value_head", "freeze_backbone"}
 
 LUX_REWARD_WEIGHTS_NAME = "reward_weights"
 
+ROLLOUT_GENERATOR_NAMES = {"rolling_num_envs_reset_every_rollout"}
+
 
 class HyperparamTransitions(Callback):
     def __init__(
@@ -34,6 +37,7 @@ class HyperparamTransitions(Callback):
         config: Config,
         env: VectorEnv,
         algo: Algorithm,
+        rollout_generator: RolloutGenerator,
         phases: List[Dict[str, Any]],
         durations: List[float],
         start_timesteps: int = 0,
@@ -42,6 +46,7 @@ class HyperparamTransitions(Callback):
         super().__init__()
         self.env = env
         self.algo = algo
+        self.rollout_generator = rollout_generator
 
         self.phases = phases
         assert (
@@ -99,6 +104,9 @@ class HyperparamTransitions(Callback):
             elif k == LUX_REWARD_WEIGHTS_NAME:
                 assert hasattr(self.env, k)
                 setattr(self.env.unwrapped, k, LuxRewardWeights(**v))
+            elif k in ROLLOUT_GENERATOR_NAMES:
+                assert hasattr(self.rollout_generator, k)
+                setattr(self.rollout_generator, k, v)
             else:
                 raise ValueError(f"{k} not supported in {self.__class__.__name__}")
 
@@ -137,6 +145,18 @@ class HyperparamTransitions(Callback):
                     k,
                     LuxRewardWeights.interpolate(
                         old_v, next_v, transition_progress, self.interpolate_method
+                    ),
+                )
+            elif k in ROLLOUT_GENERATOR_NAMES:
+                assert hasattr(self.rollout_generator, k)
+                setattr(
+                    self.rollout_generator,
+                    k,
+                    interpolate(
+                        old_v,
+                        next_v,
+                        transition_progress,
+                        self.interpolate_method,
                     ),
                 )
             else:
