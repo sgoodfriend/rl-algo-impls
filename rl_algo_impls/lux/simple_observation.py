@@ -116,7 +116,7 @@ def simple_obs_from_lux_observation(
 
         grow_lichen_positions = f_state.grow_lichen_positions
         water_cost = 1 - np.exp(
-            -WATER_COST_LAMBDA * factory_water_cost(f_state, env_cfg)
+            -WATER_COST_LAMBDA * factory_water_cost(f_state, state, env_cfg)
         )
         for gl_x, gl_y in grow_lichen_positions:
             obs[SimpleObservationFeature.WATER_COST, gl_x, gl_y] = water_cost

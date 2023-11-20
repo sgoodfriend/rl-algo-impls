@@ -34,9 +34,14 @@ def idx_to_pos(idx: int, map_size: int) -> Tuple[int, int]:
     return (idx // map_size, idx % map_size)
 
 
-def factory_water_cost(factory: LuxFactory, env_cfg: LuxEnvConfig) -> int:
+def factory_water_cost(
+    factory: LuxFactory, state: LuxGameState, env_cfg: LuxEnvConfig
+) -> int:
     if isinstance(factory, Factory):
+        assert isinstance(state, State)
         assert isinstance(env_cfg, EnvConfig)
+        if not factory.grow_lichen_positions:
+            factory.cache_water_info(state.board, env_cfg)
         return factory.water_cost(env_cfg)
     elif isinstance(factory, KitFactory):
         return factory.water_cost()

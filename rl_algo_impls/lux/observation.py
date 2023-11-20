@@ -170,7 +170,7 @@ def _from_lux_observation(
         obs[ObservationFeature.CAN_BUILD_HEAVY_ROBOT, x, y] = is_build_heavy_valid(
             f_state, env_cfg
         )
-        _water_lichen_cost = factory_water_cost(f_state, env_cfg)
+        _water_lichen_cost = factory_water_cost(f_state, state, env_cfg)
         obs[ObservationFeature.CAN_WATER_LICHEN, x, y] = _water > _water_lichen_cost
         _water_supply = _water + _ice / env_cfg.ICE_WATER_RATIO
         obs[ObservationFeature.DAY_SURVIVE_FACTORY, x, y] = max(
@@ -356,7 +356,7 @@ def _old_from_lux_observation(
 
         can_build_light_robot[x, y] = is_build_light_valid(f_state, env_cfg)
         can_build_heavy_robot[x, y] = is_build_heavy_valid(f_state, env_cfg)
-        _water_lichen_cost = factory_water_cost(f_state, env_cfg)
+        _water_lichen_cost = factory_water_cost(f_state, state, env_cfg)
         can_water_lichen[x, y] = _water > _water_lichen_cost
         _water_supply = _water + _ice / env_cfg.ICE_WATER_RATIO
         _day_water_consumption = (
