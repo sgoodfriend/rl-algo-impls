@@ -3645,6 +3645,64 @@ LuxAI_S2-v0-j512env64-80m-lr20-r16-rr2-a100:
     <<: *lux-j512env64-80m-lr5-ft32-2o3m4h-algo
     batch_size: 512
 
+LuxAI_S2-v0-j512env64-80m-lr10-r16-rr2-a100:
+  &lux-j512env64-80m-lr10-r16-rr2-a100
+  <<: *lux-j512env64-80m-lr20-r16-rr2-a100
+  hyperparam_transitions_kwargs:
+    &lux-j512env64-80m-lr10-r16-rr2-a100-hyperparam-transitions
+    <<: *lux-j512env64-80m-lr20-r16-rr2-hyperparam-transitions
+    phases:
+      - learning_rate: !!float 1e-7
+        ent_coef: 0.01
+        rolling_num_envs_reset_every_rollout: 16
+      - learning_rate: !!float 1e-7
+        ent_coef: 0.01
+        rolling_num_envs_reset_every_rollout: 2
+      - learning_rate: !!float 1e-4
+        ent_coef: 0.001
+        rolling_num_envs_reset_every_rollout: 2
+      - learning_rate: !!float 1e-7
+        ent_coef: 0.00001
+        rolling_num_envs_reset_every_rollout: 2
+
+LuxAI_S2-v0-j512env16-80m-lr5-r16-rr2-a100: &lux-j512env16-80m-lr5-r16-rr2-a100
+  <<: *lux-j512env64-80m-lr10-r16-rr2-a100
+  hyperparam_transitions_kwargs:
+    &lux-j512env16-80m-lr5-r16-rr2-a100-hyperparam-transitions
+    <<: *lux-j512env64-80m-lr10-r16-rr2-a100-hyperparam-transitions
+    phases:
+      - learning_rate: !!float 1e-7
+        ent_coef: 0.01
+        rolling_num_envs_reset_every_rollout: 16
+      - learning_rate: !!float 1e-7
+        ent_coef: 0.01
+        rolling_num_envs_reset_every_rollout: 2
+      - learning_rate: !!float 5e-5
+        ent_coef: 0.001
+        rolling_num_envs_reset_every_rollout: 2
+      - learning_rate: !!float 1e-7
+        ent_coef: 0.00001
+        rolling_num_envs_reset_every_rollout: 2
+
+LuxAI_S2-v0-j1024env32-80m-lr10-r16-rr2: &lux-j1024env32-80m-lr10-r16-rr2
+  <<: *lux-j1024env32-80m-lr20-r16-rr2
+  hyperparam_transitions_kwargs:
+    &lux-j1024env32-80m-lr10-r16-rr2-hyperparam-transitions
+    <<: *lux-j1024env32-80m-lr20-r16-rr2-hyperparam-transitions
+    phases:
+      - learning_rate: !!float 1e-7
+        ent_coef: 0.01
+        rolling_num_envs_reset_every_rollout: 16
+      - learning_rate: !!float 1e-7
+        ent_coef: 0.01
+        rolling_num_envs_reset_every_rollout: 2
+      - learning_rate: !!float 1e-4
+        ent_coef: 0.001
+        rolling_num_envs_reset_every_rollout: 2
+      - learning_rate: !!float 1e-7
+        ent_coef: 0.00001
+        rolling_num_envs_reset_every_rollout: 2
+
 LuxAI_S2-agent: &lux-agent
   <<: *lux-j512env64-80m-a100-lr5-ft32-2heavy
   device: cpu
@@ -3667,6 +3725,9 @@ LuxAI_S2-v0-debug:
   env_hyperparams:
     <<: *lux-j512env64-opp-resources-env
     # <<: *lux-j1024env32-opp-resources-env
+    n_envs: 32
+    play_checkpoints_kwargs:
+      n_envs_against_checkpoints: 16
     make_kwargs:
       <<: *lux-j512env64-opp-resources-env-make-kwargs
       # <<: *lux-j1024env32-opp-resources-env-make-kwargs
@@ -3679,7 +3740,7 @@ LuxAI_S2-v0-debug:
     env_overrides:
       <<: *lux-j512env64-opp-resources-eval-env-overrides
       # <<: *lux-j1024env32-80m-a100-std-norm-retrain-env-overrides
-      n_envs: 32
+      n_envs: 16
       # vec_env_class: sync
       make_kwargs:
         <<: *lux-j512env64-opp-resources-eval-env-overrides-make-kwargs
