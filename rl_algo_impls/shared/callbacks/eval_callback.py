@@ -20,7 +20,7 @@ from rl_algo_impls.wrappers.play_checkpoints_wrapper import PlayCheckpointsWrapp
 from rl_algo_impls.wrappers.vec_episode_recorder import VecEpisodeRecorder
 from rl_algo_impls.wrappers.vector_wrapper import VectorEnv, find_wrapper
 
-JUX_VERIFY = True
+JUX_VERIFY = False
 
 
 class EvaluateAccumulator(EpisodeAccumulator):
