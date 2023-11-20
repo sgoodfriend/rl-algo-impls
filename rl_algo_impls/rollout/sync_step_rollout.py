@@ -139,10 +139,11 @@ class SyncStepRolloutGenerator(RolloutGenerator):
                 )
         if self.rolling_num_envs_reset_every_rollout > 0:
             masked_reset_mask = np.zeros(self.vec_env.num_envs, dtype=np.bool_)
-            end_idx = self.rolling_mask_idx + self.rolling_num_envs_reset_every_rollout
-            if end_idx >= self.vec_env.num_envs:
+            end_idx = (
+                self.rolling_mask_idx + self.rolling_num_envs_reset_every_rollout
+            ) % self.vec_env.num_envs
+            if end_idx < self.rolling_mask_idx:
                 masked_reset_mask[self.rolling_mask_idx :] = True
-                end_idx = end_idx % self.vec_env.num_envs
                 masked_reset_mask[:end_idx] = True
             else:
                 masked_reset_mask[self.rolling_mask_idx : end_idx] = True
