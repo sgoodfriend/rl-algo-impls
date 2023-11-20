@@ -5,7 +5,7 @@ import shutil
 from collections import deque
 from copy import deepcopy
 from time import perf_counter
-from typing import Callable, Deque, Dict, List, Optional, Sequence, Union
+from typing import Deque, Dict, List, Optional, Sequence, Union
 
 import numpy as np
 from torch.utils.tensorboard.writer import SummaryWriter
