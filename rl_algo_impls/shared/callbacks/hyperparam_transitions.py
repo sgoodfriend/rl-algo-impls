@@ -149,14 +149,17 @@ class HyperparamTransitions(Callback):
                 )
             elif k in ROLLOUT_GENERATOR_NAMES:
                 assert hasattr(self.rollout_generator, k)
+                v_type = type(getattr(self.rollout_generator, k))
                 setattr(
                     self.rollout_generator,
                     k,
-                    interpolate(
-                        old_v,
-                        next_v,
-                        transition_progress,
-                        self.interpolate_method,
+                    v_type(
+                        interpolate(
+                            old_v,
+                            next_v,
+                            transition_progress,
+                            self.interpolate_method,
+                        )
                     ),
                 )
             else:
