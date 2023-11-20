@@ -3752,9 +3752,9 @@ LuxAI_S2-v0-debug:
   env_hyperparams:
     <<: *lux-j512env64-opp-resources-env
     # <<: *lux-j1024env32-opp-resources-env
-    n_envs: 16
+    n_envs: 32
     play_checkpoints_kwargs:
-      n_envs_against_checkpoints: 8
+      n_envs_against_checkpoints: 16
     make_kwargs:
       <<: *lux-j512env64-opp-resources-env-make-kwargs
       # <<: *lux-j1024env32-opp-resources-env-make-kwargs
@@ -3767,7 +3767,7 @@ LuxAI_S2-v0-debug:
     env_overrides:
       <<: *lux-j512env64-opp-resources-eval-env-overrides
       # <<: *lux-j1024env32-80m-a100-std-norm-retrain-env-overrides
-      n_envs: 8
+      n_envs: 16
       # vec_env_class: sync
       make_kwargs:
         <<: *lux-j512env64-opp-resources-eval-env-overrides-make-kwargs

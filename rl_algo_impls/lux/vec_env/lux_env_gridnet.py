@@ -29,12 +29,6 @@ from rl_algo_impls.wrappers.vector_wrapper import (
     merge_info,
 )
 
-VERIFY = False
-if VERIFY:
-    import platform
-
-    assert platform.system() == "Darwin", "LuxEnvGridnet VERIFY only works on Mac"
-
 
 class LuxEnvGridnet(VectorEnv):
     def __init__(
@@ -107,8 +101,6 @@ class LuxEnvGridnet(VectorEnv):
         return getattr(self.env, name)
 
     def step(self, action: np.ndarray) -> VecEnvStepReturn:
-        if VERIFY:
-            self._prior_action = action
         lux_actions = self._to_lux_actions(action)
         lux_obs, lux_rewards, terminations, truncations, info = self.env.step(
             lux_actions
