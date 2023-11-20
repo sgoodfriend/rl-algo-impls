@@ -3610,6 +3610,10 @@ LuxAI_S2-v0-j512env64-80m-lr20-r32-rr4: &lux-j512env64-80m-lr20-r32-rr4
 
 LuxAI_S2-v0-j512env64-80m-lr10-r32-rr4: &lux-j512env64-80m-lr10-r32-rr4
   <<: *lux-j512env64-80m-lr20-r32-rr4
+  policy_hyperparams: &lux-j512env64-80m-lr10-r32-rr4-policy
+    <<: *lux-j512env64-80m-lr20-r32-rr4-policy
+    load_run_path: null
+    load_path: downloaded_models/ppo-LuxAI_S2-v0-j512env64-80m-lr5-ft32-2o3m4h-S1-best
   hyperparam_transitions_kwargs:
     &lux-j512env64-80m-lr10-r32-rr4-hyperparam-transitions
     <<: *lux-j512env64-80m-lr20-r32-rr4-hyperparam-transitions
@@ -3667,6 +3671,10 @@ LuxAI_S2-v0-j512env64-80m-lr20-r16-rr2-a100:
 LuxAI_S2-v0-j512env64-80m-lr10-r16-rr2-a100:
   &lux-j512env64-80m-lr10-r16-rr2-a100
   <<: *lux-j512env64-80m-lr20-r16-rr2-a100
+  policy_hyperparams: &lux-j512env64-80m-lr10-r16-rr2-a100-policy
+    <<: *lux-j512env64-80m-lr20-r32-rr4-policy
+    load_run_path: null
+    load_path: downloaded_models/ppo-LuxAI_S2-v0-j512env64-80m-lr5-ft32-2o3m4h-S1-best
   hyperparam_transitions_kwargs:
     &lux-j512env64-80m-lr10-r16-rr2-a100-hyperparam-transitions
     <<: *lux-j512env64-80m-lr20-r16-rr2-hyperparam-transitions
@@ -3723,12 +3731,12 @@ LuxAI_S2-v0-j1024env32-80m-lr10-r16-rr2: &lux-j1024env32-80m-lr10-r16-rr2
         rolling_num_envs_reset_every_rollout: 2
 
 LuxAI_S2-agent: &lux-agent
-  <<: *lux-j512env64-80m-a100-lr5-ft32-2heavy
+  <<: *lux-j512env64-80m-lr5-ft32-2o3m4h
   device: cpu
   policy_hyperparams:
     <<: *lux-j512env64-80m-lr10-ft32-2building-policy
     load_run_path: null
-    load_path: lux_models/ppo-LuxAI_S2-v0-j512env64-80m-a100-lr5-ft32-2heavy-S1-best
+    load_path: lux_models/ppo-LuxAI_S2-v0-j512env64-80m-lr5-ft32-2o3m4h-S1-best
   eval_hyperparams:
     <<: *lux-j512env64-opp-resources-eval
     env_overrides:
