@@ -1,6 +1,7 @@
 # Support for PyTorch mps mode (https://pytorch.org/docs/stable/notes/mps.html)
 import logging
 import os
+import platform
 import sys
 
 from rl_algo_impls.rollout.guided_learner_rollout import GuidedLearnerRolloutGenerator
@@ -42,6 +43,10 @@ from rl_algo_impls.shared.stats import EpisodesStats
 from rl_algo_impls.shared.vec_env import make_env, make_eval_env
 from rl_algo_impls.wrappers.self_play_wrapper import SelfPlayWrapper
 from rl_algo_impls.wrappers.vector_wrapper import find_wrapper
+
+VIDEO_VERIFY = False
+if VIDEO_VERIFY:
+    assert platform.system() == "Darwin", f"Video verification only works on Mac"
 
 
 @dataclass
@@ -177,8 +182,9 @@ def train(args: TrainArgs):
             )
         )
 
-    # TODO: Remove
-    eval_callback.generate_video()
+    if VIDEO_VERIFY:
+        for _ in range(5):
+            eval_callback.generate_video()
     algo.learn(config.n_timesteps, rollout_generator, callbacks=callbacks)
 
     policy.save(config.model_dir_path(best=False))
