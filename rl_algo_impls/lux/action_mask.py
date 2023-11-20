@@ -480,13 +480,9 @@ def valid_simple_move_mask(
         ):
             return False
         rubble = int(state.board.rubble[pos[0], pos[1]])
-        power_cost = move_power_cost(unit, rubble)
-        if (
-            enqueued_action is None
-            or enqueued_action[0] != 0
-            or enqueued_action[1] != move_direction
-        ):
-            power_cost += unit.unit_cfg.ACTION_QUEUE_POWER_COST
+        power_cost = (
+            move_power_cost(unit, rubble) + unit.unit_cfg.ACTION_QUEUE_POWER_COST
+        )
         if unit.power < power_cost:
             return False
         return True
@@ -549,18 +545,12 @@ def valid_simple_transfer_direction_mask(
     enqueued_action: Optional[np.ndarray],
     agent_cfg: LuxAgentConfig,
 ) -> Tuple[np.ndarray, bool]:
-    if (
-        enqueued_action is None or enqueued_action[0] != 1
-    ) and unit.power < unit.unit_cfg.ACTION_QUEUE_POWER_COST:
+    if unit.power < unit.unit_cfg.ACTION_QUEUE_POWER_COST:
         return np.full(4, False), False
 
     digger_dirs = []
 
     def is_valid_target(pos: np.ndarray, move_direction: int) -> bool:
-        if (
-            enqueued_action is None or enqueued_action[2] != move_direction
-        ) and unit.power < unit.unit_cfg.ACTION_QUEUE_POWER_COST:
-            return False
         if not is_position_in_map(pos, config):
             return False
 
@@ -619,8 +609,7 @@ def valid_pickup_resource_mask(
     agent_cfg: LuxAgentConfig,
 ) -> np.ndarray:
     config = state.env_cfg
-    has_power_to_change = unit.power >= unit.unit_cfg.ACTION_QUEUE_POWER_COST
-    if (enqueued_action is None or enqueued_action[0] != 2) and not has_power_to_change:
+    if unit.power < unit.unit_cfg.ACTION_QUEUE_POWER_COST:
         return np.zeros(5)
     pos = pos_to_numpy(unit.pos)
     factory = factory_at_pos(state, pos)
@@ -641,14 +630,7 @@ def valid_pickup_resource_mask(
             (unit.power < unit.battery_capacity * 0.9,),
         ]
     )
-    has_power = np.array(
-        [
-            has_power_to_change
-            or (enqueued_action is not None and enqueued_action[4] == idx)
-            for idx in range(5)
-        ]
-    )
-    return has_resource * has_capacity * has_power
+    return has_resource * has_capacity
 
 
 def is_dig_valid(
@@ -657,9 +639,7 @@ def is_dig_valid(
     enqueued_action: Optional[np.ndarray],
     adjacent_rubble: np.ndarray,
 ) -> bool:
-    power_cost = unit.unit_cfg.DIG_COST
-    if enqueued_action is None or enqueued_action[0] != 3:
-        power_cost += unit.unit_cfg.ACTION_QUEUE_POWER_COST
+    power_cost = unit.unit_cfg.DIG_COST + unit.unit_cfg.ACTION_QUEUE_POWER_COST
     if unit.power < power_cost:
         return False
     pos = pos_to_numpy(unit.pos)
@@ -684,9 +664,9 @@ def if_self_destruct_valid(
     # Only lights allowed to self-destruct
     if unit.is_heavy():
         return False
-    power_cost = unit.unit_cfg.SELF_DESTRUCT_COST
-    if enqueued_action is None or enqueued_action[0] != 4:
-        power_cost += unit.unit_cfg.ACTION_QUEUE_POWER_COST
+    power_cost = (
+        unit.unit_cfg.SELF_DESTRUCT_COST + unit.unit_cfg.ACTION_QUEUE_POWER_COST
+    )
     if unit.power < power_cost:
         return False
     pos = pos_to_numpy(unit.pos)
