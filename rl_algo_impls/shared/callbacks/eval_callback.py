@@ -11,6 +11,7 @@ import numpy as np
 from torch.utils.tensorboard.writer import SummaryWriter
 
 from rl_algo_impls.lux.vec_env.jux_vector_env import JuxVectorEnv
+from rl_algo_impls.lux.vec_env.vec_lux_env import VecLuxEnv
 from rl_algo_impls.shared.callbacks import Callback
 from rl_algo_impls.shared.policy.policy import Policy
 from rl_algo_impls.shared.stats import Episode, EpisodeAccumulator, EpisodesStats
@@ -101,6 +102,7 @@ def evaluate(
         additional_keys_to_log=additional_keys_to_log,
     )
 
+    is_vec_lux_env = isinstance(env.unwrapped, VecLuxEnv)
     obs, _ = env.reset()
     get_action_mask = getattr(env, "get_action_mask", None)
     while not episodes.is_done():
@@ -112,7 +114,7 @@ def evaluate(
             else None,
         )
         obs, rew, terminations, truncations, info = env.step(act)
-        if JUX_VERIFY:
+        if JUX_VERIFY and is_vec_lux_env:
             import jax
             import jax.numpy as jnp
             from jux.state.state import State as JuxState
@@ -132,10 +134,10 @@ def evaluate(
             assert np.allclose(obs[0], jux_obs[1])
             action_mask = get_action_mask()
             assert np.allclose(
-                action_mask["per_position"], jux_action_mask["per_position"][1]
+                action_mask[0]["per_position"], jux_action_mask["per_position"][1]
             )
             assert np.allclose(
-                action_mask["pick_position"], jux_action_mask["pick_position"][1]
+                action_mask[0]["pick_position"], jux_action_mask["pick_position"][1]
             )
 
         done = terminations | truncations
