@@ -122,6 +122,7 @@ def simple_obs_from_lux_observation(
         grow_lichen_positions = f_state.grow_lichen_positions
         for gl_x, gl_y in grow_lichen_positions:
             obs[SimpleObservationFeature.WATER_COST, gl_x, gl_y] = water_cost
+        obs[(SimpleObservationFeature.WATER_COST, *f_state.pos_slice)] = water_cost
 
     for f in lux_obs["factories"][p1].values():
         add_factory(f, p1, True)
