@@ -624,17 +624,13 @@ def _observation_and_per_position_action_mask(
         .repeat(2, axis=0)
     )
     # Shape: bool[B*P, R5, W, H]
-    _unit_has_pickup_headroom = (
-        jnp.concatenate(
-            (
-                ~cargo_at_capacity,
-                power_of_capacity < 0.9,
-            ),
-            axis=2,
-        )
-        .any(1)
-        .repeat(2, axis=0)
-    )
+    _unit_has_pickup_headroom = jnp.concatenate(
+        (
+            ~jnp.any(cargo_at_capacity, axis=1),
+            jnp.sum(power_of_capacity, axis=1) < 0.9,
+        ),
+        axis=1,
+    ).repeat(2, axis=0)
     # bool[B*P, R5, W, H]
     unit_can_pickup_resource = jnp.logical_and(
         is_own_unit[:, None],
