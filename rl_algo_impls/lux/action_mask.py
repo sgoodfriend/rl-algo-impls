@@ -548,6 +548,11 @@ def valid_simple_transfer_direction_mask(
     if unit.power < unit.unit_cfg.ACTION_QUEUE_POWER_COST:
         return np.full(4, False), False
 
+    unit_pos = pos_to_numpy(unit.pos)
+    # Units can't stand on opponent factories
+    is_unit_on_factory = (
+        state.board.factory_occupancy_map[unit_pos[0], unit_pos[1]] != -1
+    )
     digger_dirs = []
 
     def is_valid_target(pos: np.ndarray, move_direction: int) -> bool:
@@ -557,6 +562,7 @@ def valid_simple_transfer_direction_mask(
         if (
             agent_cfg.disable_unit_to_unit_transfers
             and agent_cfg.enable_factory_to_digger_power_transfers
+            and is_unit_on_factory
         ):
             if unit_at_transfer_destination[pos[0], pos[1]]:
                 digger_dirs.append(move_direction)
