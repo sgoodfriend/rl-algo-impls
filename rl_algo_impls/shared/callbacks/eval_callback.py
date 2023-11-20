@@ -20,6 +20,10 @@ from rl_algo_impls.wrappers.vec_episode_recorder import VecEpisodeRecorder
 from rl_algo_impls.wrappers.vector_wrapper import VectorEnv, find_wrapper
 
 JUX_VERIFY = False
+if JUX_VERIFY:
+    import platform
+
+    assert platform.system() == "Darwin", f"Only allowed to JUX_VERIFY on Mac"
 
 
 class EvaluateAccumulator(EpisodeAccumulator):
