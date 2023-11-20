@@ -10,6 +10,7 @@ from typing import Deque, Dict, List, Optional, Sequence, Union
 import numpy as np
 from torch.utils.tensorboard.writer import SummaryWriter
 
+from rl_algo_impls.lux.vec_env.jux_vector_env import JuxVectorEnv
 from rl_algo_impls.shared.callbacks import Callback
 from rl_algo_impls.shared.policy.policy import Policy
 from rl_algo_impls.shared.stats import Episode, EpisodeAccumulator, EpisodesStats
@@ -120,19 +121,21 @@ def evaluate(
 
             jux_env = policy.env.unwrapped
             assert isinstance(jux_env, JuxVectorEnv)
-            jux_state = JuxState.from_lux_state(
-                env.unwrapped.envs[0].env.state, jux_env.buf_cfg
-            )
+            lux_state = env.unwrapped.envs[0].env.state
+            jux_state = JuxState.from_lux(lux_state, jux_env.buf_cfg)
             vec_jux_state = jax.tree_util.tree_map(
                 lambda a: jnp.expand_dims(a, 0), jux_state
             )
             jux_obs, jux_action_mask = observation_and_action_mask(
                 vec_jux_state, jux_env.env_cfg, jux_env.buf_cfg, jux_env.agent_cfg
             )
-            assert np.allclose(obs, jux_obs[0])
+            assert np.allclose(obs[0], jux_obs[1])
+            action_mask = get_action_mask()
             assert np.allclose(
-                get_action_mask(),
-                jax.tree_util.tree_map(lambda a: a[0], jux_action_mask),
+                action_mask["per_position"], jux_action_mask["per_position"][1]
+            )
+            assert np.allclose(
+                action_mask["pick_position"], jux_action_mask["pick_position"][1]
             )
 
         done = terminations | truncations
