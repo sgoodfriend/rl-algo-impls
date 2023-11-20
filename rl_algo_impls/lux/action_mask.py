@@ -687,7 +687,7 @@ def if_self_destruct_valid(
 
 
 def is_recharge_valid(unit: LuxUnit, enqueued_action: Optional[np.ndarray]) -> bool:
-    return unit.power > unit.unit_cfg.ACTION_QUEUE_POWER_COST
+    return unit.power >= unit.unit_cfg.ACTION_QUEUE_POWER_COST
 
 
 def get_adjacent_rubble(state: LuxGameState, player: str) -> np.ndarray:
