@@ -649,18 +649,22 @@ def is_dig_valid(
     if unit.power < power_cost:
         return False
     pos = pos_to_numpy(unit.pos)
-    if (
-        state.board.ice[pos[0], pos[1]]
-        or state.board.ore[pos[0], pos[1]]
-        or adjacent_rubble[pos[0], pos[1]]
-    ):
+
+    if adjacent_rubble[pos[0], pos[1]]:
         return True
+
     lichen_strain = state.board.lichen_strains[pos[0], pos[1]]
     if (
         lichen_strain != -1
         and lichen_strain not in state.teams[agent_id(unit)].factory_strains
     ):
         return True
+
+    if state.board.ice[pos[0], pos[1]] and unit.cargo.ice < unit.cargo_space:
+        return True
+    if state.board.ore[pos[0], pos[1]] and unit.cargo.ore < unit.cargo_space:
+        return True
+
     return False
 
 
