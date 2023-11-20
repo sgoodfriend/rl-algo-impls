@@ -3585,7 +3585,7 @@ LuxAI_S2-v0-j512env64-80m-lr20-r32-rr4: &lux-j512env64-80m-lr20-r32-rr4
   policy_hyperparams: &lux-j512env64-80m-lr20-r32-rr4-policy
     <<: *lux-j512env64-80m-lr10-ft32-2building-policy
     load_run_path: null
-    load_path: downloaded_models/ppo-LuxAI_S2-v0-j1024env32-80m-lr10-2building-S1-best
+    load_path: downloaded_models/ppo-LuxAI_S2-v0-j512env64-80m-lr5-ft32-2o3m4h-S1-best
   rollout_hyperparams: &lux-j512env64-80m-lr20-r32-rr4-rollout
     <<: *lux-j512env64-close-ore-ice2-rollout
     n_steps: 32
