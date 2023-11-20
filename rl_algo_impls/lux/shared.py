@@ -40,8 +40,12 @@ def factory_water_cost(
     if isinstance(factory, Factory):
         assert isinstance(state, State)
         assert isinstance(env_cfg, EnvConfig)
-        if not factory.grow_lichen_positions:
+        if (
+            hasattr(factory, "cache_water_info_step")
+            and getattr(factory, "cache_water_info_step") != state.env_steps
+        ):
             factory.cache_water_info(state.board, env_cfg)
+            setattr(factory, "cache_water_info_step", state.env_steps)
         return factory.water_cost(env_cfg)
     elif isinstance(factory, KitFactory):
         return factory.water_cost()
