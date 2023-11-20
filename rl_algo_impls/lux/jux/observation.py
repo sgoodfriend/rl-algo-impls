@@ -841,7 +841,7 @@ def _enqueued_actions(
         action_zeros(SIMPLE_UNIT_ACTION_SIZES[1])
         .at[
             jnp.where(move_direction != -1, batch_indices, -1),
-            move_direction,
+            move_direction - 1,
             unit_pos[:, 0],
             unit_pos[:, 1],
         ]
@@ -851,7 +851,7 @@ def _enqueued_actions(
         action_zeros(SIMPLE_UNIT_ACTION_SIZES[2])
         .at[
             jnp.where(transfer_direction != -1, batch_indices, -1),
-            transfer_direction,
+            transfer_direction - 1,
             unit_pos[:, 0],
             unit_pos[:, 1],
         ]
