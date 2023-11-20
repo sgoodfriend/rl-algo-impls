@@ -3631,6 +3631,20 @@ LuxAI_S2-v0-j512env64-80m-lr20-r16-rr2: &lux-j512env64-80m-lr20-r16-rr2
         ent_coef: 0.00001
         rolling_num_envs_reset_every_rollout: 2
 
+LuxAI_S2-v0-j512env64-80m-lr20-r32-rr4-a100:
+  &lux-j512env64-80m-lr20-r32-rr4-a100
+  <<: *lux-j512env64-80m-lr20-r32-rr4
+  algo_hyperparams: &lux-j512env64-80m-lr20-r32-rr4-a100-algo
+    <<: *lux-j512env64-80m-lr5-ft32-2o3m4h-algo
+    batch_size: 512
+
+LuxAI_S2-v0-j512env64-80m-lr20-r16-rr2-a100:
+  &lux-j512env64-80m-lr20-r16-rr2-a100
+  <<: *lux-j512env64-80m-lr20-r16-rr2
+  algo_hyperparams: &lux-j512env64-80m-lr20-r16-rr2-a100-algo
+    <<: *lux-j512env64-80m-lr5-ft32-2o3m4h-algo
+    batch_size: 512
+
 LuxAI_S2-agent: &lux-agent
   <<: *lux-j512env64-80m-a100-lr10-ft32-2building
   device: cpu
@@ -3647,7 +3661,7 @@ LuxAI_S2-agent: &lux-agent
       play_checkpoints_kwargs: null
 
 LuxAI_S2-v0-debug:
-  <<: *lux-j512env64-80m-lr20-r16-rr2
+  <<: *lux-j512env64-80m-lr20-r16-rr2-a100
   n_timesteps: !!float 10e6
   device: mps
   env_hyperparams:
