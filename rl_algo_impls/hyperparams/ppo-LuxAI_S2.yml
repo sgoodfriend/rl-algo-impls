@@ -3608,6 +3608,25 @@ LuxAI_S2-v0-j512env64-80m-lr20-r32-rr4: &lux-j512env64-80m-lr20-r32-rr4
         ent_coef: 0.00001
         rolling_num_envs_reset_every_rollout: 4
 
+LuxAI_S2-v0-j512env64-80m-lr10-r32-rr4: &lux-j512env64-80m-lr10-r32-rr4
+  <<: *lux-j512env64-80m-lr20-r32-rr4
+  hyperparam_transitions_kwargs:
+    &lux-j512env64-80m-lr10-r32-rr4-hyperparam-transitions
+    <<: *lux-j512env64-80m-lr20-r32-rr4-hyperparam-transitions
+    phases:
+      - learning_rate: !!float 1e-7
+        ent_coef: 0.01
+        rolling_num_envs_reset_every_rollout: 32
+      - learning_rate: !!float 1e-7
+        ent_coef: 0.01
+        rolling_num_envs_reset_every_rollout: 4
+      - learning_rate: !!float 1e-4
+        ent_coef: 0.001
+        rolling_num_envs_reset_every_rollout: 4
+      - learning_rate: !!float 1e-7
+        ent_coef: 0.00001
+        rolling_num_envs_reset_every_rollout: 4
+
 LuxAI_S2-v0-j512env64-80m-lr20-r16-rr2: &lux-j512env64-80m-lr20-r16-rr2
   <<: *lux-j512env64-80m-lr20-r32-rr4
   rollout_hyperparams: &lux-j512env64-80m-lr20-r16-rr2-rollout
