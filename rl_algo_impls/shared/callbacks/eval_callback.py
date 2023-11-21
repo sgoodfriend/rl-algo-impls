@@ -225,7 +225,7 @@ def evaluate(
             )
             assert jux_run_done[0] == terminations[0]
 
-            old_vec_jux_state = vec_jux_state
+            old_vec_jux_state = jux_run_state
             old_jux_obs = jux_obs
             old_jux_action_mask = jux_action_mask
 
