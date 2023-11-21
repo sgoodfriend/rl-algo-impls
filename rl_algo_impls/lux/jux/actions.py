@@ -502,11 +502,16 @@ def get_late_game_actions(
     )
     jux_unit_direction = _get_attribute_by_unit(state, action_direction_by_pos)
     jux_unit_resource_type = _get_attribute_by_unit(state, unit_resource_type_by_pos)
-    jux_unit_amount = jnp.minimum(
-        _get_attribute_by_unit(state, transfer_amount_by_pos)
-        + _get_attribute_by_unit(state, pickup_amount_by_pos),
-        env_cfg.max_transfer_amount,
+
+    unit_amount_by_pos = (
+        jnp.where(
+            action_type_by_pos == UnitActionType.TRANSFER, transfer_amount_by_pos, 0
+        )
+        + jnp.where(
+            action_type_by_pos == UnitActionType.PICKUP, pickup_amount_by_pos, 0
+        )
     ).astype(jnp.int16)
+    jux_unit_amount = _get_attribute_by_unit(state, unit_amount_by_pos)
 
     unit_action_queue_shape = jux_unit_action_type.shape + (
         env_cfg.UNIT_ACTION_QUEUE_SIZE,
