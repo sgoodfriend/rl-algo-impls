@@ -1,7 +1,18 @@
 import logging
+from collections import defaultdict
 from dataclasses import astuple
 from functools import total_ordering
-from typing import Any, Dict, List, NamedTuple, Optional, TypeVar, Union
+from typing import (
+    Any,
+    DefaultDict,
+    Dict,
+    List,
+    NamedTuple,
+    Optional,
+    Tuple,
+    TypeVar,
+    Union,
+)
 
 import numpy as np
 from luxai_s2.actions import move_deltas
@@ -13,7 +24,6 @@ from rl_algo_impls.lux.shared import (
     LuxGameState,
     LuxUnit,
     idx_to_pos,
-    move_power_cost,
     pos_to_idx,
     pos_to_numpy,
 )
@@ -92,31 +102,10 @@ def to_lux_actions(
 
     def cancel_action(unit: LuxUnit):
         enqueued_action = enqueued_actions.get(unit.unit_id)
-        if enqueued_action is not None and enqueued_action[0] != 5:
-            lux_actions[unit.unit_id] = [
-                np.array([5, 0, 0, unit.battery_capacity, 0, cfg.max_episode_length])
-            ]
+        if enqueued_action is not None:
+            lux_actions[unit.unit_id] = []
         elif unit.unit_id in lux_actions:
             del lux_actions[unit.unit_id]
-
-    def cancel_move(unit: LuxUnit, target_pos_idx: int):
-        cancel_action(unit)
-
-        action_stats.move_cancelled += 1
-
-        if positions_occupied.get(target_pos_idx) == unit.unit_id:
-            del positions_occupied[target_pos_idx]
-        current_pos_idx = pos_to_idx(unit.pos, cfg.map_size)
-        if current_pos_idx in positions_occupied:
-            occupier_id = positions_occupied[current_pos_idx]
-            # BUILD is a special case for factory robot build. In this case, the factory
-            # will cancel it's build action.
-            if occupier_id != "BUILD":
-                cancel_move(
-                    state.units[player][occupier_id],
-                    current_pos_idx,
-                )
-        positions_occupied[current_pos_idx] = unit.unit_id
 
     def resource_amount(unit: Union[LuxUnit, LuxFactory], idx: int) -> int:
         if idx == 4:
@@ -133,6 +122,10 @@ def to_lux_actions(
             continue
         unit_actions.append(UnitAction(u, actions[pos_to_idx(u.pos, cfg.map_size), 1:]))
     unit_actions = sorted(unit_actions)
+
+    pickups_by_factory_resource: DefaultDict[
+        Tuple[str, int], List[Tuple[int, str]]
+    ] = defaultdict(list)
 
     for u, a in unit_actions:
         action_stats.action_type[a[0]] += 1
@@ -169,9 +162,12 @@ def to_lux_actions(
             )
             if amount <= 0:
                 cancel_action(u)
-                action_stats.pickup_cancelled += 1
+                action_stats.pickup_cancelled_insufficient_resource += 1
                 continue
             num_executions = 1
+            pickups_by_factory_resource[(_factory.unit_id, resource)].append(
+                (amount, u.unit_id)
+            )
         elif a[0] == 3:  # dig
             direction = 0
             resource = 0
@@ -199,9 +195,23 @@ def to_lux_actions(
             continue
 
         assert u.power >= u.unit_cfg.ACTION_QUEUE_POWER_COST
-        lux_actions[u.unit_id] = [
-            np.array([a[0], direction, resource, amount, 0, num_executions])
-        ]
+        if a[0] == 5:
+            lux_actions[u.unit_id] = []
+        else:
+            lux_actions[u.unit_id] = [
+                np.array([a[0], direction, resource, amount, 0, num_executions])
+            ]
+
+    for (f_id, resource), pickups in pickups_by_factory_resource.items():
+        if len(pickups) == 1:
+            continue
+        factory = state.factories[player][f_id]
+        factory_amount = resource_amount(factory, resource)
+        if factory_amount >= sum(amount for (amount, _) in pickups):
+            continue
+        for _, u_id in pickups:
+            cancel_action(state.units[player][u_id])
+            action_stats.pickup_cancelled_simultaneous_pickups += 1
 
     for f in state.factories[player].values():
         if no_valid_factory_actions(f, action_mask, cfg.map_size):
@@ -214,17 +224,55 @@ def to_lux_actions(
             else:
                 positions_occupied[pos_to_idx(f.pos, cfg.map_size)] = "BUILD"
 
-    for u, a in unit_actions:
-        if a[0] != 0:
-            # Non-moves handled in prior unit loop
-            continue
+    def cancel_move(unit: LuxUnit):
+        cancel_action(unit)
+        action_stats.move_cancelled += 1
+        u_pos = pos_to_idx(unit.pos, cfg.map_size)
+        assert (
+            u_pos not in positions_occupied or positions_occupied[u_pos] == "BUILD"
+        ), f"{unit} trying to cancel move on occupied position"
+        positions_occupied[u_pos] = unit.unit_id
+
+    moving_actions: List[Tuple[str, np.ndarray]] = [
+        (u.unit_id, a) for u, a in unit_actions if a[0] == 0
+    ]
+    needs_to_compute_move = True
+    while needs_to_compute_move and moving_actions:
+        needs_to_compute_move = False
+
+        moves_occupied: DefaultDict[int, List[Tuple[str, np.ndarray]]] = defaultdict(
+            list
+        )
+        for u_id, a in moving_actions:
+            u = state.units[player][u_id]
+            direction = a[1] + (1 if agent_cfg.use_simplified_spaces else 0)
+            move_delta = move_deltas[direction]
+            target_pos_idx = pos_to_idx(pos_to_numpy(u.pos) + move_delta, cfg.map_size)
+            if target_pos_idx in positions_occupied:
+                cancel_move(u)
+                needs_to_compute_move = True
+                continue
+            moves_occupied[target_pos_idx].append((u_id, a))
+
+        moving_actions = []
+        for moves_to_dest in moves_occupied.values():
+            if len(moves_to_dest) == 1:
+                moving_actions.extend(moves_to_dest)
+                continue
+            needs_to_compute_move = True
+            for cancel_u_id, _ in moves_to_dest:
+                cancel_u = state.units[player][cancel_u_id]
+                cancel_move(cancel_u)
+
+    for u_id, a in moving_actions:
+        u = state.units[player][u_id]
         direction = a[1] + (1 if agent_cfg.use_simplified_spaces else 0)
         move_delta = move_deltas[direction]
         target_pos_idx = pos_to_idx(pos_to_numpy(u.pos) + move_delta, cfg.map_size)
-        if target_pos_idx in positions_occupied:
-            cancel_move(u, target_pos_idx)
-            continue
+
+        assert target_pos_idx not in positions_occupied
         positions_occupied[target_pos_idx] = u.unit_id
+
         resource = 0
         amount = 0
         num_executions = cfg.max_episode_length

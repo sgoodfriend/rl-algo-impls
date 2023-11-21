@@ -167,7 +167,8 @@ class ActionStats:
     transfer_cancelled_no_target = 0
     transfer_cancelled_target_full = 0
     transfer_cancelled_no_resource = 0
-    pickup_cancelled = 0
+    pickup_cancelled_insufficient_resource = 0
+    pickup_cancelled_simultaneous_pickups = 0
     build_cancelled = 0
 
     def stats_dict(self, prefix: str) -> Dict[str, int]:
@@ -187,7 +188,12 @@ class ActionStats:
         _dict[
             f"{prefix}transfer_cancelled_no_resource"
         ] = self.transfer_cancelled_no_resource
-        _dict[f"{prefix}pickup_cancelled"] = self.pickup_cancelled
+        _dict[
+            f"{prefix}pickup_cancelled_insufficient_resource"
+        ] = self.pickup_cancelled_insufficient_resource
+        _dict[
+            "{prefix}pickup_cancelled_simultaneous_pickups"
+        ] = self.pickup_cancelled_simultaneous_pickups
         _dict[f"{prefix}build_cancelled"] = self.build_cancelled
         return _dict
 
