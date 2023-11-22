@@ -3762,6 +3762,39 @@ LuxAI_S2-v0-j1024env32-80m-lr10-r32-rr4: &lux-j1024env32-80m-lr10-r32-rr4
         rolling_num_envs_reset_every_rollout: 0
         random_num_envs_reset_every_rollout: 4
 
+LuxAI_S2-v0-j512env64-80m-lr5-r64-rr4: &lux-j512env64-80m-lr5-r64-rr4
+  <<: *lux-j512env64-80m-lr10-r32-rr4
+  policy_hyperparams: &lux-j512env64-80m-lr5-r64-rr4-policy
+    <<: *lux-j512env64-80m-lr10-r32-rr4-policy
+    load_run_path: sgoodfriend/rl-algo-impls-lux-nips1/1mr4mafh
+    load_run_path_best: true
+    load_path: null
+  rollout_hyperparams: &lux-j512env64-80m-lr5-r64-rr4-rollout
+    <<: *lux-j512env64-80m-lr20-r32-rr4-rollout
+    n_steps: 64
+    rolling_num_envs_reset_every_rollout: 0
+    random_num_envs_reset_every_rollout: 4
+  hyperparam_transitions_kwargs:
+    &lux-j512env64-80m-lr5-r64-rr4-hyperparam-transitions
+    <<: *lux-j512env64-80m-lr10-r32-rr4-hyperparam-transitions
+    phases:
+      - learning_rate: !!float 1e-7
+        ent_coef: 0.01
+        rolling_num_envs_reset_every_rollout: 64
+        random_num_envs_reset_every_rollout: 0
+      - learning_rate: !!float 1e-7
+        ent_coef: 0.01
+        rolling_num_envs_reset_every_rollout: 0
+        random_num_envs_reset_every_rollout: 4
+      - learning_rate: !!float 5e-5
+        ent_coef: 0.001
+        rolling_num_envs_reset_every_rollout: 0
+        random_num_envs_reset_every_rollout: 4
+      - learning_rate: !!float 1e-7
+        ent_coef: 0.00001
+        rolling_num_envs_reset_every_rollout: 0
+        random_num_envs_reset_every_rollout: 4
+
 LuxAI_S2-agent: &lux-agent
   <<: *lux-j512env64-80m-lr5-ft32-2o3m4h
   device: cpu
@@ -3778,31 +3811,31 @@ LuxAI_S2-agent: &lux-agent
       play_checkpoints_kwargs: null
 
 LuxAI_S2-v0-debug:
-  <<: *lux-j1024env32-80m-lr10-r32-rr4
+  <<: *lux-j512env64-80m-lr5-r64-rr4
   n_timesteps: !!float 10e6
   device: mps
   env_hyperparams:
-    # <<: *lux-j512env64-opp-resources-env
-    <<: *lux-j1024env32-opp-resources-env
+    <<: *lux-j512env64-opp-resources-env
+    # <<: *lux-j1024env32-opp-resources-env
     n_envs: 16
     play_checkpoints_kwargs:
       n_envs_against_checkpoints: 8
     make_kwargs:
-      # <<: *lux-j512env64-opp-resources-env-make-kwargs
-      <<: *lux-j1024env32-opp-resources-env-make-kwargs
+      <<: *lux-j512env64-opp-resources-env-make-kwargs
+      # <<: *lux-j1024env32-opp-resources-env-make-kwargs
       verbose: 3
       verify: true
     # vec_env_class: sync
   eval_hyperparams:
-    # <<: *lux-j512env64-opp-resources-eval
-    <<: *lux-j1024env32-opp-resources-eval
+    <<: *lux-j512env64-opp-resources-eval
+    # <<: *lux-j1024env32-opp-resources-eval
     env_overrides:
-      # <<: *lux-j512env64-opp-resources-eval-env-overrides
-      <<: *lux-j1024env32-80m-a100-std-norm-retrain-env-overrides
+      <<: *lux-j512env64-opp-resources-eval-env-overrides
+      # <<: *lux-j1024env32-80m-a100-std-norm-retrain-env-overrides
       n_envs: 8
       # vec_env_class: sync
       make_kwargs:
-        # <<: *lux-j512env64-opp-resources-eval-env-overrides-make-kwargs
-        <<: *lux-j1024env32-80m-a100-std-norm-retrain-env-overrides-make-kwargs
+        <<: *lux-j512env64-opp-resources-eval-env-overrides-make-kwargs
+        # <<: *lux-j1024env32-80m-a100-std-norm-retrain-env-overrides-make-kwargs
         verbose: 3
         verify: true
