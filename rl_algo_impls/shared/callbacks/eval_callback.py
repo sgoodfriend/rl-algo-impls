@@ -211,16 +211,22 @@ def evaluate(
                 old_jux_obs,
                 jux_env.agent_cfg,
             )
-            assert np.allclose(obs[0], jux_run_obs[1])
-            assert np.allclose(
-                action_mask[0]["per_position"], jux_run_action_mask["per_position"][1]
-            )
-            assert np.allclose(
-                action_mask[0]["pick_position"], jux_run_action_mask["pick_position"][1]
-            )
-            assert jux_run_done[0] == terminations[0]
 
-            old_vec_jux_state = jux_run_state
+            assert jux_run_done[1] == terminations[0]
+            if not terminations[0]:
+                assert np.allclose(obs[0], jux_run_obs[1])
+                assert np.allclose(
+                    action_mask[0]["per_position"],
+                    jux_run_action_mask["per_position"][1],
+                )
+                assert np.allclose(
+                    action_mask[0]["pick_position"],
+                    jux_run_action_mask["pick_position"][1],
+                )
+
+                old_vec_jux_state = jux_run_state
+            else:
+                old_vec_jux_state = vec_jux_state
             old_jux_obs = jux_obs
             old_jux_action_mask = jux_action_mask
 
