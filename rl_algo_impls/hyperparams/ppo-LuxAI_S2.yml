@@ -3827,7 +3827,7 @@ LuxAI_S2-v0-j1024env64-80m-lr5-r32-rr4-a100:
 LuxAI_S2-v0-j1024env64-80m-lr10-r32-rr4-a100:
   &lux-j1024env64-80m-lr10-r32-rr4-a100
   <<: *lux-j1024env64-80m-lr5-r32-rr4-a100
-  hyperparam_transition_kwargs:
+  hyperparam_transitions_kwargs:
     &lux-j1024env64-80m-lr10-r32-rr4-a100-hyperparam-transitions
     <<: *lux-j1024env64-80m-lr5-r32-rr4-a100-hyperparam-transitions
     phases:
