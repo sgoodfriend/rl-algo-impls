@@ -87,8 +87,8 @@ class VecLuxEnv(BaseVectorEnv):
         ]
         obs = np.concatenate([sr[0] for sr in step_returns])
         rewards = np.concatenate([sr[1] for sr in step_returns])
-        truncations = np.concatenate([sr[2] for sr in step_returns])
-        terminations = np.concatenate([sr[3] for sr in step_returns])
+        terminations = np.concatenate([sr[2] for sr in step_returns])
+        truncations = np.concatenate([sr[3] for sr in step_returns])
         infos = merge_infos(self, [sr[4] for sr in step_returns], 2)
         return obs, rewards, terminations, truncations, infos
 
