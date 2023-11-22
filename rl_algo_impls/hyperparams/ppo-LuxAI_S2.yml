@@ -3798,6 +3798,20 @@ LuxAI_S2-v0-j512env64-80m-lr5-r64-rr4: &lux-j512env64-80m-lr5-r64-rr4
 LuxAI_S2-v0-j1024env64-80m-lr5-r32-rr4-a100:
   &lux-j1024env64-80m-lr5-r32-rr4-a100
   <<: *lux-j512env64-80m-lr5-r64-rr4
+  env_hyperparams: &lux-j1024env64-a100-env
+    <<: *lux-j512env64-opp-resources-env
+    n_envs: 1024
+    make_kwargs: &lux-j1024env64-a100-env-make-kwargs
+      <<: *lux-j512env64-opp-resources-env-make-kwargs
+    play_checkpoints_kwargs:
+      n_envs_against_checkpoints: 256
+  eval_hyperparams: &lux-j1024env64-a100-eval
+    <<: *lux-j512env64-opp-resources-eval
+    env_overrides: &lux-j1024env64-a100-eval-env-overrides
+      <<: *lux-j512env64-opp-resources-eval-env-overrides
+      n_envs: 128
+      make_kwargs: &lux-j1024env64-a100-eval-env-overrides-make-kwargs
+        <<: *lux-j512env64-opp-resources-eval-env-overrides-make-kwargs
   rollout_hyperparams: &lux-j1024env64-80m-lr5-r32-rr4-a100-rollout
     <<: *lux-j512env64-80m-lr5-r64-rr4-rollout
     n_steps: 32
@@ -3868,27 +3882,32 @@ LuxAI_S2-v0-debug:
   n_timesteps: !!float 10e6
   device: mps
   env_hyperparams:
-    <<: *lux-j512env64-opp-resources-env
     # <<: *lux-j1024env32-opp-resources-env
+    <<: *lux-j1024env64-a100-env
+    # <<: *lux-j512env64-opp-resources-env
     n_envs: 16
     play_checkpoints_kwargs:
       n_envs_against_checkpoints: 8
     make_kwargs:
-      <<: *lux-j512env64-opp-resources-env-make-kwargs
       # <<: *lux-j1024env32-opp-resources-env-make-kwargs
+      <<: *lux-j1024env64-a100-env-make-kwargs
+      # <<: *lux-j512env64-opp-resources-env-make-kwargs
       verbose: 3
       verify: true
     # vec_env_class: sync
   eval_hyperparams:
-    <<: *lux-j512env64-opp-resources-eval
     # <<: *lux-j1024env32-opp-resources-eval
+    <<: *lux-j1024env64-a100-eval
+    # <<: *lux-j512env64-opp-resources-eval
     env_overrides:
-      <<: *lux-j512env64-opp-resources-eval-env-overrides
       # <<: *lux-j1024env32-80m-a100-std-norm-retrain-env-overrides
+      <<: *lux-j1024env64-a100-eval-env-overrides
+      # <<: *lux-j512env64-opp-resources-eval-env-overrides
       n_envs: 8
       # vec_env_class: sync
       make_kwargs:
-        <<: *lux-j512env64-opp-resources-eval-env-overrides-make-kwargs
         # <<: *lux-j1024env32-80m-a100-std-norm-retrain-env-overrides-make-kwargs
+        <<: *lux-j1024env64-a100-eval-env-overrides-make-kwargs
+        # <<: *lux-j512env64-opp-resources-eval-env-overrides-make-kwargs
         verbose: 3
         verify: true
