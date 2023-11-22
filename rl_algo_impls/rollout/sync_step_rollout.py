@@ -135,9 +135,15 @@ class SyncStepRolloutGenerator(RolloutGenerator):
             )
 
         next_values = self.policy.value(self.next_obs)
-
         self.policy.train()
+
         assert isinstance(self.next_obs, np.ndarray)
+        assert (
+            bool(self.num_envs_reset_every_rollout)
+            + bool(self.rolling_num_envs_reset_every_rollout)
+            + bool(self.random_num_envs_reset_every_rollout)
+            <= 1
+        ), "Only one of num_envs_reset_every_rollout, rolling_num_envs_reset_every_rollout, random_num_envs_reset_every_rollout can be set"
         masked_reset_mask = np.zeros(self.vec_env.num_envs, dtype=np.bool_)
         if self.num_envs_reset_every_rollout > 0:
             masked_reset_mask[-self.num_envs_reset_every_rollout :] = True
@@ -161,6 +167,12 @@ class SyncStepRolloutGenerator(RolloutGenerator):
                 )
             ] = True
             masked_reset_mask[pairs_mask.repeat(2)] = True
+
+        assert masked_reset_mask.sum() == (
+            self.num_envs_reset_every_rollout
+            + self.rolling_num_envs_reset_every_rollout
+            + self.random_num_envs_reset_every_rollout
+        ), f"Expected {self.num_envs_reset_every_rollout + self.rolling_num_envs_reset_every_rollout + self.random_num_envs_reset_every_rollout} masked resets, got {masked_reset_mask.sum()}"
 
         if masked_reset_mask.any():
             next_obs, action_mask, _ = self.vec_env.masked_reset(masked_reset_mask)  # type: ignore
