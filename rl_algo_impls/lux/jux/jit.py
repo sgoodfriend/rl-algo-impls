@@ -1,6 +1,6 @@
 import functools
 import logging
-import platform
+import os
 
 from rl_algo_impls.lux.jux.jax_init import jax_init
 
@@ -8,14 +8,13 @@ jax_init()
 
 import jax
 
-JIT_ENABLED = True
-if not JIT_ENABLED:
+JIT_DISABLED = os.getenv("JUX_JIT_DISABLED", "0") == "1"
+if JIT_DISABLED:
     logging.warn("JIT is disabled. This will be slow.")
-    assert platform.system() == "Darwin", f"Only allowed to disable JIT on Mac"
 
 
 def toggleable_jit(func=None, **jit_kwargs):
-    if not JIT_ENABLED:
+    if JIT_DISABLED:
         return func
     if func is None:
         return functools.partial(jax.jit, **jit_kwargs)
