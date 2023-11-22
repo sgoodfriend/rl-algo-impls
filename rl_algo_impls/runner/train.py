@@ -4,6 +4,7 @@ import os
 import platform
 import sys
 
+from rl_algo_impls.lux.jux_verify import jux_verify_enabled
 from rl_algo_impls.rollout.guided_learner_rollout import GuidedLearnerRolloutGenerator
 from rl_algo_impls.rollout.random_guided_learner_rollout import (
     RandomGuidedLearnerRolloutGenerator,
@@ -43,10 +44,6 @@ from rl_algo_impls.shared.stats import EpisodesStats
 from rl_algo_impls.shared.vec_env import make_env, make_eval_env
 from rl_algo_impls.wrappers.self_play_wrapper import SelfPlayWrapper
 from rl_algo_impls.wrappers.vector_wrapper import find_wrapper
-
-VIDEO_VERIFY = False
-if VIDEO_VERIFY:
-    assert platform.system() == "Darwin", f"Video verification only works on Mac"
 
 
 @dataclass
@@ -182,9 +179,8 @@ def train(args: TrainArgs):
             )
         )
 
-    if VIDEO_VERIFY:
-        for _ in range(5):
-            eval_callback.generate_video()
+    if jux_verify_enabled():
+        eval_callback.generate_video()
     algo.learn(config.n_timesteps, rollout_generator, callbacks=callbacks)
 
     policy.save(config.model_dir_path(best=False))

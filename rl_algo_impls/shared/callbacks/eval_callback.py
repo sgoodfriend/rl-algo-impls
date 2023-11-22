@@ -10,6 +10,7 @@ from typing import Deque, Dict, List, Optional, Sequence, Union
 import numpy as np
 from torch.utils.tensorboard.writer import SummaryWriter
 
+from rl_algo_impls.lux.jux_verify import jux_verify_enabled
 from rl_algo_impls.lux.vec_env.vec_lux_env import VecLuxEnv
 from rl_algo_impls.shared.callbacks import Callback
 from rl_algo_impls.shared.policy.policy import Policy
@@ -18,12 +19,6 @@ from rl_algo_impls.shared.tensor_utils import batch_dict_keys
 from rl_algo_impls.wrappers.play_checkpoints_wrapper import PlayCheckpointsWrapper
 from rl_algo_impls.wrappers.vec_episode_recorder import VecEpisodeRecorder
 from rl_algo_impls.wrappers.vector_wrapper import VectorEnv, find_wrapper
-
-JUX_VERIFY = False
-if JUX_VERIFY:
-    import platform
-
-    assert platform.system() == "Darwin", f"Only allowed to JUX_VERIFY on Mac"
 
 
 class EvaluateAccumulator(EpisodeAccumulator):
@@ -113,7 +108,7 @@ def evaluate(
     old_jux_obs = None
     old_jux_action_mask = None
     jux_env_batch = None
-    if JUX_VERIFY and is_vec_lux_env:
+    if jux_verify_enabled() and is_vec_lux_env:
         import jax
         import jax.numpy as jnp
         from jux.env import JuxEnvBatch
@@ -156,7 +151,7 @@ def evaluate(
         )
         obs, rew, terminations, truncations, info = env.step(act)
 
-        if JUX_VERIFY and is_vec_lux_env:
+        if jux_verify_enabled() and is_vec_lux_env:
             import jax
             import jax.numpy as jnp
             from jux.state.state import State as JuxState
