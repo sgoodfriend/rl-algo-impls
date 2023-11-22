@@ -22,6 +22,7 @@ class SyncStepRolloutGenerator(RolloutGenerator):
         subaction_mask: Optional[Dict[int, Dict[int, int]]] = None,
         num_envs_reset_every_rollout: int = 0,
         rolling_num_envs_reset_every_rollout: int = 0,
+        random_num_envs_reset_every_rollout: int = 0,
     ) -> None:
         super().__init__(policy, vec_env)
         self.policy = policy
@@ -32,9 +33,20 @@ class SyncStepRolloutGenerator(RolloutGenerator):
         self.full_batch_off_accelerator = full_batch_off_accelerator
         self.include_logp = include_logp
         self.subaction_mask = subaction_mask
+
+        assert (
+            num_envs_reset_every_rollout % 2 == 0
+        ), f"num_envs_reset_every_rollout must be even, got {num_envs_reset_every_rollout}"
         self.num_envs_reset_every_rollout = num_envs_reset_every_rollout
+        assert (
+            rolling_num_envs_reset_every_rollout % 2 == 0
+        ), f"rolling_num_envs_reset_every_rollout must be even, got {rolling_num_envs_reset_every_rollout}"
         self.rolling_num_envs_reset_every_rollout = rolling_num_envs_reset_every_rollout
         self.rolling_mask_idx = 0
+        assert (
+            random_num_envs_reset_every_rollout % 2 == 0
+        ), f"random_num_envs_reset_every_rollout must be even, got {random_num_envs_reset_every_rollout}"
+        self.random_num_envs_reset_every_rollout = random_num_envs_reset_every_rollout
 
         self.get_action_mask = getattr(vec_env, "get_action_mask", None)
         if self.get_action_mask:
@@ -126,19 +138,10 @@ class SyncStepRolloutGenerator(RolloutGenerator):
 
         self.policy.train()
         assert isinstance(self.next_obs, np.ndarray)
+        masked_reset_mask = np.zeros(self.vec_env.num_envs, dtype=np.bool_)
         if self.num_envs_reset_every_rollout > 0:
-            masked_reset_mask = np.zeros(self.vec_env.num_envs, dtype=np.bool_)
             masked_reset_mask[-self.num_envs_reset_every_rollout :] = True
-            next_obs, action_mask, _ = self.vec_env.masked_reset(masked_reset_mask)
-            self.next_obs[-self.num_envs_reset_every_rollout :] = next_obs
-            if self.next_action_masks is not None:
-                fold_in(
-                    self.next_action_masks,
-                    batch_dict_keys(action_mask),
-                    masked_reset_mask,
-                )
         if self.rolling_num_envs_reset_every_rollout > 0:
-            masked_reset_mask = np.zeros(self.vec_env.num_envs, dtype=np.bool_)
             end_idx = (
                 self.rolling_mask_idx + self.rolling_num_envs_reset_every_rollout
             ) % self.vec_env.num_envs
@@ -148,8 +151,19 @@ class SyncStepRolloutGenerator(RolloutGenerator):
             else:
                 masked_reset_mask[self.rolling_mask_idx : end_idx] = True
             self.rolling_mask_idx = end_idx
+        if self.random_num_envs_reset_every_rollout > 0:
+            pairs_mask = np.zeros(self.vec_env.num_envs // 2, dtype=np.bool_)
+            pairs_mask[
+                np.random.choice(
+                    pairs_mask.shape[0],
+                    self.random_num_envs_reset_every_rollout // 2,
+                    replace=False,
+                )
+            ] = True
+            masked_reset_mask[pairs_mask.repeat(2)] = True
 
-            next_obs, action_mask, _ = self.vec_env.masked_reset(masked_reset_mask)
+        if masked_reset_mask.any():
+            next_obs, action_mask, _ = self.vec_env.masked_reset(masked_reset_mask)  # type: ignore
             self.next_obs[masked_reset_mask] = next_obs
             if self.next_action_masks is not None:
                 fold_in(

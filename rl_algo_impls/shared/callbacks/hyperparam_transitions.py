@@ -28,7 +28,10 @@ ALGO_BOOL_NAMES = {"freeze_policy_head", "freeze_value_head", "freeze_backbone"}
 
 LUX_REWARD_WEIGHTS_NAME = "reward_weights"
 
-ROLLOUT_GENERATOR_NAMES = {"rolling_num_envs_reset_every_rollout"}
+ROLLOUT_GENERATOR_NAMES = {
+    "rolling_num_envs_reset_every_rollout",
+    "random_num_envs_reset_every_rollout",
+}
 
 
 class HyperparamTransitions(Callback):
