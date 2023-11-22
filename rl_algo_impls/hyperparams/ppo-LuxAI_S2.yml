@@ -3923,7 +3923,7 @@ LuxAI_S2-v0-j1024env32-80m-lr2-r32-rr4: &lux-j1024env32-80m-lr2-r32-rr4
         ent_coef: 0.01
         rolling_num_envs_reset_every_rollout: 0
         random_num_envs_reset_every_rollout: 4
-      - learning_rate: !!float 5e-5
+      - learning_rate: !!float 2e-5
         ent_coef: 0.001
         rolling_num_envs_reset_every_rollout: 0
         random_num_envs_reset_every_rollout: 4
