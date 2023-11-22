@@ -3955,7 +3955,7 @@ LuxAI_S2-v0-debug:
     <<: *lux-j1024env32-opp-resources-env
     # <<: *lux-j1024env64-a100-env
     # <<: *lux-j512env64-opp-resources-env
-    n_envs: 16
+    n_envs: 64
     play_checkpoints_kwargs:
       n_envs_against_checkpoints: 8
     make_kwargs:

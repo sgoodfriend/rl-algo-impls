@@ -47,6 +47,11 @@ class SyncStepRolloutGenerator(RolloutGenerator):
             random_num_envs_reset_every_rollout % 2 == 0
         ), f"random_num_envs_reset_every_rollout must be even, got {random_num_envs_reset_every_rollout}"
         self.random_num_envs_reset_every_rollout = random_num_envs_reset_every_rollout
+        assert self.vec_env.num_envs > (
+            self.num_envs_reset_every_rollout
+            + self.rolling_num_envs_reset_every_rollout
+            + self.random_num_envs_reset_every_rollout
+        ), f"num_envs_reset_every_rollout + rolling_num_envs_reset_every_rollout + random_num_envs_reset_every_rollout must be less than or equal to num_envs, got {self.num_envs_reset_every_rollout + self.rolling_num_envs_reset_every_rollout + self.random_num_envs_reset_every_rollout} > {self.vec_env.num_envs}"
 
         self.get_action_mask = getattr(vec_env, "get_action_mask", None)
         if self.get_action_mask:
