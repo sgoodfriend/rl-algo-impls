@@ -3823,12 +3823,13 @@ LuxAI_S2-v0-j1024env64-80m-lr5-r32-rr4-a100:
         random_num_envs_reset_every_rollout: 4
   algo_hyperparams: &lux-j1024env64-80m-lr5-r32-rr4-a100-algo
     <<: *lux-j512env64-80m-lr20-r32-rr4-a100-algo
-    
-LuxAI_S2-v0-j1024env64-80m-lr10-r32-rr4-a100: &lux-j1024env64-80m-lr10-r32-rr4-a100
+
+LuxAI_S2-v0-j1024env64-80m-lr10-r32-rr4-a100:
+  &lux-j1024env64-80m-lr10-r32-rr4-a100
   <<: *lux-j1024env64-80m-lr5-r32-rr4-a100
   hyperparam_transition_kwargs:
-  &lux-j1024env64-80m-lr10-r32-rr4-a100-hyperparam-transitions
-  <<: *lux-j1024env64-80m-lr5-r32-rr4-a100-hyperparam-transitions
+    &lux-j1024env64-80m-lr10-r32-rr4-a100-hyperparam-transitions
+    <<: *lux-j1024env64-80m-lr5-r32-rr4-a100-hyperparam-transitions
     phases:
       - learning_rate: !!float 1e-7
         ent_coef: 0.01
@@ -3863,7 +3864,7 @@ LuxAI_S2-agent: &lux-agent
       play_checkpoints_kwargs: null
 
 LuxAI_S2-v0-debug:
-  <<: *lux-j1024env64-80m-lr5-r32-rr4-a100
+  <<: *lux-j1024env64-80m-lr10-r32-rr4-a100
   n_timesteps: !!float 10e6
   device: mps
   env_hyperparams:
