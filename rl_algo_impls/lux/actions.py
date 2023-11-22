@@ -206,8 +206,10 @@ def to_lux_actions(
         if len(pickups) == 1:
             continue
         factory = state.factories[player][f_id]
-        factory_amount = resource_amount(factory, resource)
-        if factory_amount >= sum(amount for (amount, _) in pickups):
+        pickupable_factory_amount = resource_amount(factory, resource) - int(
+            min_factory_resources(cfg)[resource]
+        )
+        if pickupable_factory_amount >= sum(amount for (amount, _) in pickups):
             continue
         for _, u_id in pickups:
             cancel_action(state.units[player][u_id])
