@@ -50,7 +50,7 @@ research. Iteratively fine-tuning the base policy and transfer learning to speci
 critical to \agentName's winning performance. These strategies can be used in
 economically training future DRL agents. Further work in Imitation Learning using Behavior Cloning and
 fine-tuning these models with DRL has proven promising as an efficient way
-to bootstrap models with novel behaviors.
+to bootstrap models with demonstrated, competitive behaviors.
 \end{abstract}
 \section{Introduction}
 Deep reinforcement learning (DRL) has proven to be powerful at solving complex
@@ -129,14 +129,15 @@ Despite UAS's better performance, MicroRTS-Py is deprecating UAS in favor of Gri
 because of UAS's more complex implementation and difficulty to incorporate self-play and
 imitation learning, both features important in \agentName\ and our further work.
 
-They also tried self-play, training the policy in games where the policy played itself. 
-They found self-play didn't improve the win rate,
-neither when only using self-play nor when training with half self-play and half scripted
-bots. The other policies were trained as only the first player while self-play required
-the policy train as both players, so the comparison might not be equivalent.
+They tried training with self-play, where the policy plays against itself.
+They found self-play didn't improve the win rate, neither when only using self-play nor
+when training with half self-play and half scripted bots. We found a bug where resources
+(which should be unowned) were being counted as owned by the opponent if the agent was
+the second player, which likely contributed to their finding no improvement.
 
 We reimplement much of MicroRTS-Py and extend its capabilities to support training on
-more maps, extend training capabilities, fix self-play, and add imitation learning.
+more maps, extend training capabilities, fix
+self-play\footnote{\unownedFixGitHubCommit}, and add imitation learning.
 
 \subsection{DeepMind AlphaStar}
 \citet{Vinyals2019GrandmasterLI}'s AlphaStar is a grandmaster-level AI trained with DRL to play the RTS game
@@ -197,10 +198,7 @@ existing codebase. We extended the observation representation in two ways:
 \end{inparaenum}
 Only the unit's current location was considered invalid in MicroRTS-Py; however, 
 microRTS doesn't allow units to move where another unit is moving into.
-Padded positions were represented as walls, which are impassable and noninteractive. 
-We also fixed a bug where resources (which are unowned) were being counted as
-owned by the opponent if the agent was the second
-player\footnote{\unownedFixGitHubCommit}.
+Padded positions were represented as walls, which are impassable and noninteractive.
 
 \agentName\ loads 7 different policy networks. Only one network is used
 for a given map (Table~\ref{tab:policy-networks}). 
@@ -356,10 +354,13 @@ behavior cloning the policy and fitting the value heads:
     L^{BC+VF}(\theta) &= \hat{\mathbb{E}}_t \left[ L^{BC}(\theta) - c_1 L^{VF}(\theta) \right], \\
     L^{BC}(\theta) &= -\frac{1}{\|a_t\|} \log \pi_{\theta}(a_t|s_t),
 \end{align}
-where $c_1$ and $L^{VF}$ are the same as in the PPO loss function. The behavior
-cloning policy loss is the cross-entropy loss between the policy logits and the actions taken
-by the Mayari bot. We found scaling the loss by the number of units that could take an
-action critical for behavior cloning to train.
+where $c_1$ and $L^{VF}$ are the same as in the PPO loss function. The behavior cloning
+policy loss is the cross-entropy loss between the policy logits and the actions taken by
+the Mayari bot. We found scaling the loss by the number of units accepting actions
+allowed the learning rate to be significantly increased. Scaling down the loss by the
+number of units keeps the losses for all turns roughly similar in scale as otherwise
+large unit count turns would have much larger losses as each unit's loss contribution is
+summed together (each unit's actions are assumed to be independent).
 
 We trained 3 behavior cloned models (16x16, 32x32, and 64x64) on the same maps for each
 map size as \agentName\ training. The 64x64 model used the weights of the 32x32 model 
@@ -542,6 +543,11 @@ rates on each map and against each opponent. However, the biggest exceptions are
 POLightRush on \texttt{TwoBasesBarracks16x16} (from 100\% to 0\%) and the largest map
 where the fine-tuned model can no longer beat CoacAI and Mayari.
 
+While \agentName\ required map-specific fine-tuned models to be competitive on
+\texttt{NoWhereToRun9x8}, \texttt{DoubleGame24x24}, and \texttt{BWDistantResources32x32},
+\bcPPOAgent\ only has models for the different map-sizes. This demonstrates promise for
+creating generalized agents that can play across a wide range of maps.
+
 \section{Discussion}
 \subsection{Improving inference time in microRTS competitions}
 \agentName's underperformance in the 2023 competition suggests that job
@@ -597,6 +603,13 @@ Advantage Actor Critic (A2C) \citep{DBLP:journals/corr/MnihBMGLHSK16} uses a los
 function similar to behavior cloning, and thus policy training might more smoothly
 transition from behavior cloning to DRL.
 
+Extending the curriculum to include more game states could also improve large map
+training. For example, varied existing agents can be used to advance the game before
+switching to a training agent to finish the game \citep{10.5555/3618408.3619847}.
+Another way is to utilize a prioritized fictitious self-play mechanism used by
+\citet{Vinyals2019GrandmasterLI} that prioritizes training the agent on the
+most difficult prior agent checkpoints.
+
 \subsection{Behavior cloning, transfer learning, and academic competitions}
 Training multiple models for \agentName\ took 70 GPU-days. Imitation learning \bcAgent\
 trained for 23 GPU-days, and PPO fine-tuning \bcPPOAgent\ took another 49 GPU-days. 
@@ -617,11 +630,13 @@ on the 5 Open maps up to size 16x16 in about 7.5 days.
 
 Fine-tuning and transfer learning were critical to making \agentName\ competitive. Both
 took significantly less time than training from randomly initialized weights because the
-policy already makes reasonable tactical actions and the critic already makes
-reasonable value estimates. If future competitions change the Open maps, fine-tuning and transfer learning
-will significantly help \agentName\ and \bcPPOAgent. We didn't train \bcPPOAgent\ on
-specific maps, so fine-tuning there could improve win rates. Novel behaviors can be
-trained through behavior cloning other agents, such as the new baseline \texttt{2L}.
+policy already makes reasonable tactical actions and the critic already makes reasonable
+value estimates. If future competitions change the Open maps, fine-tuning and transfer
+learning will significantly help \agentName\ and \bcPPOAgent. We didn't train
+\bcPPOAgent\ on specific maps, so fine-tuning there could improve win rates. Behavior
+cloning other agents (possibly several agents simultaneously), will bootstrap DRL agents
+to effective policies that would be extremely difficult to obtain with naive DRL
+training.
 
 \agentName's DoubleCone and \bcPPOAgent's deep squnet are relatively large neural
 networks, each at around 5 million parameters.
@@ -631,13 +646,12 @@ inference time, and there's no definitive evidence so far that they are worse th
 larger networks.
 
 \section{Conclusion}
-\agentName\ is the first DRL agent to win a microRTS competition. It demonstrates that an
-iterative training process of fine-tuning and transfer learning is effective for
-creating competitive DRL agents. Such a training process can be used by 
-resource-constrained researchers and students to create novel DRL agents for future 
+\agentName\ is the first DRL agent to win a microRTS competition. It demonstrates that
+an iterative training process of fine-tuning and transfer learning is effective for
+creating competitive DRL agents. Such a training process can be used by
+resource-constrained researchers and students to create novel DRL agents for future
 competitions and experiments. Fine-tuning behavior cloning with PPO is a promising way
-to create competitive DRL agents with novel behaviors without needing to handcraft
-shaped reward functions.
+to create competitive DRL agents without needing to handcraft shaped reward functions.
 
 \section{Reproducibility Statement}
 Our Methods section describes the architectures and training processes for \agentName,
@@ -1170,6 +1184,16 @@ The adaptive average pooling layer allows the network to be used on different ma
 \end{table}
 
 \section{Training durations}
+We trained using Lambda Labs GPU on-demand instances. We used single Nvidia GPU instances, but
+different ones to be able to fit larger minibatches onto the GPU. A10 (24 GB VRAM) and
+A100 (40 GB VRAM) machines had 30 vCPUs and 200 GB RAM. A6000 (48 GB VRAM) machines had
+14 vCPUs and 46 GB RAM. We did not fully utilize the CPU, RAM, or hard drive resources
+during training.
+
+Behavior cloning and PPO fine-tuning of behavior cloned models were trained only using
+A10 machines. We had implemented gradient accumulation at this point to support larger
+batch sizes that did not need to fit on the GPU all-at-once.
+
 \label{appendix:training-durations}
 \begin{table}[H]
     \caption{\agentName\ training durations. Blank models are intermediate models that
@@ -1178,28 +1202,29 @@ The adaptive average pooling layer allows the network to be used on different ma
     for squnet-DistantResources (\microRTSWBProjectPath).}
     \label{tab:training-durations}
     \begin{center}
-    \begin{tabular}{ccc}
-        Model & Run ID & Days Training \\
+    \begin{tabular}{lccc}
+        \multicolumn{1}{c}{Map} & Run ID & GPU & Days Training \\
         \midrule
-         & \texttt{df4flrs4} & 12.5 \\
-         & \texttt{9bz7wsuv} & 2.7 \\
-         & \texttt{tff7xk4b} & 4.1 \\
-        16x16 & \texttt{1ilo9yae} & 4.3 \\
+         & \texttt{df4flrs4} & A10 & 12.5 \\
+         & \texttt{9bz7wsuv} & A6000 & 2.7 \\
+         & \texttt{tff7xk4b} & A6000 & 4.1 \\
+        \multicolumn{1}{c}{16x16} & \texttt{1ilo9yae} & A6000 & 4.3 \\
+         \hline
+         & \texttt{hpp5pffx} & A10 & 1.9 \\
+        \multicolumn{1}{c}{NoWhereToRun9x8} & \texttt{vmns9sbe} & A10 & 1.7 \\
+         \hline
+        \multicolumn{1}{c}{DoubleGame24x24} & \texttt{unnxtprk} & A6000 & 5.3 \\
+         \hline
+        \multicolumn{1}{c}{BWDistantResources32x32} & \texttt{x4tg80vk} & A100 & 3.6 \\
+         \hline
+        \multicolumn{1}{c}{32x32} & \texttt{tga53t25} & A6000 & 10.2 \\
+        \multicolumn{1}{c}{squnet-DistantResources} & \texttt{jl8zkpfr} & A6000 & 5.0 \\
+         \hline
+        \multicolumn{1}{c}{64x64} & \texttt{nh5pdv4o} & A6000 & 19.0 \\
         \hline
-         & \texttt{hpp5pffx} & 1.9 \\
-        NoWhereToRun9x8 & \texttt{vmns9sbe} & 1.7 \\
-        \hline
-        DoubleGame24x24 & \texttt{unnxtprk} & 5.3 \\
-        \hline
-        BWDistantResources32x32 & \texttt{x4tg80vk} & 3.6 \\
-        \hline
-        32x32 & \texttt{tga53t25} & 10.2 \\
-        squnet-DistantResources & \texttt{jl8zkpfr} & 5.0 \\
-        \hline
-        64x64 & \texttt{nh5pdv4o} & 19.0 \\
-        \hline
-         &  & 70.4
-    \end{tabular}
+         & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & 70.4 \\
+         & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{}
+        \end{tabular}
 \end{center}
 \end{table}
 

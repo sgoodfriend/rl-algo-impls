@@ -318,3 +318,16 @@
   biburl     = {https://dblp.org/rec/journals/corr/MnihBMGLHSK16.bib},
   bibsource  = {dblp computer science bibliography, https://dblp.org}
 }
+
+@inproceedings{10.5555/3618408.3619847,
+  author    = {Uchendu, Ikechukwu and Xiao, Ted and Lu, Yao and Zhu, Banghua and Yan, Mengyuan and Simon, Jos\'{e}phine and Bennice, Matthew and Fu, Chuyuan and Ma, Cong and Jiao, Jiantao and Levine, Sergey and Hausman, Karol},
+  title     = {Jump-Start Reinforcement Learning},
+  year      = {2023},
+  publisher = {JMLR.org},
+  abstract  = {Reinforcement learning (RL) provides a theoretical framework for continuously improving an agent's behavior via trial and error. However, efficiently learning policies from scratch can be very difficult, particularly for tasks that present exploration challenges. In such settings, it might be desirable to initialize RL with an existing policy, offline data, or demonstrations. However, naively performing such initialization in RL often works poorly, especially for value-based methods. In this paper, we present a meta algorithm that can use offline data, demonstrations, or a pre-existing policy to initialize an RL policy, and is compatible with any RL approach. In particular, we propose Jump-Start Reinforcement Learning (JSRL), an algorithm that employs two policies to solve tasks: a guide-policy, and an exploration-policy. By using the guide-policy to form a curriculum of starting states for the exploration-policy, we are able to efficiently improve performance on a set of simulated robotic tasks. We show via experiments that it is able to significantly outperform existing imitation and reinforcement learning algorithms, particularly in the small-data regime. In addition, we provide an upper bound on the sample complexity of JSRL and show that with the help of a guide-policy, one can improve the sample complexity for non-optimism exploration methods from exponential in horizon to polynomial.},
+  booktitle = {Proceedings of the 40th International Conference on Machine Learning},
+  articleno = {1439},
+  numpages  = {28},
+  location  = {Honolulu, Hawaii, USA},
+  series    = {ICML'23}
+}
