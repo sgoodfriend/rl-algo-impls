@@ -95,7 +95,7 @@ class PlayCheckpointsWrapper(VectorWrapper, ABC, Generic[ObsType]):
         policy_assigned_mask = np.array([bool(p) for p in policy_assignments])[
             filled_mapped_mask
         ]
-        assert np.logical_or(env_masked_reset_mask, policy_assigned_mask).all()
+        assert np.logical_xor(env_masked_reset_mask, policy_assigned_mask).all()
         _assert_filled_mapped_mask(filled_mapped_mask, mapped_mask, policy_assignments)
         obs, action_mask, info = self.env.masked_reset(filled_mapped_mask)  # type: ignore
         return (
