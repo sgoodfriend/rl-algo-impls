@@ -29,7 +29,7 @@ been added to the Discussions sections.
 We replaced most instances of "novel" with "demonstrated", "competitive", and
 "effective".
 1. **Training hardware details:** Sorry, this was an oversight. This has been added to
-Training Durations Supplementary Section .
+Training Durations Supplementary Section.
 
 ## nGmd Responses
 ** SCC and related works discussion:** Thanks for pointing us to the SCC paper. It's
