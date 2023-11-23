@@ -38,11 +38,14 @@ class SyncStepRolloutGenerator(RolloutGenerator):
             num_envs_reset_every_rollout % 2 == 0
         ), f"num_envs_reset_every_rollout must be even, got {num_envs_reset_every_rollout}"
         self.num_envs_reset_every_rollout = num_envs_reset_every_rollout
+
         assert (
             rolling_num_envs_reset_every_rollout % 2 == 0
         ), f"rolling_num_envs_reset_every_rollout must be even, got {rolling_num_envs_reset_every_rollout}"
         self.rolling_num_envs_reset_every_rollout = rolling_num_envs_reset_every_rollout
         self.rolling_mask_idx = 0
+        self.rolling_reset_indexes = np.random.permutation(self.vec_env.num_envs // 2)
+
         assert (
             random_num_envs_reset_every_rollout % 2 == 0
         ), f"random_num_envs_reset_every_rollout must be even, got {random_num_envs_reset_every_rollout}"
@@ -52,6 +55,14 @@ class SyncStepRolloutGenerator(RolloutGenerator):
             + self.rolling_num_envs_reset_every_rollout
             + self.random_num_envs_reset_every_rollout
         ), f"num_envs_reset_every_rollout + rolling_num_envs_reset_every_rollout + random_num_envs_reset_every_rollout must be less than or equal to num_envs, got {self.num_envs_reset_every_rollout + self.rolling_num_envs_reset_every_rollout + self.random_num_envs_reset_every_rollout} > {self.vec_env.num_envs}"
+
+        if (
+            rolling_num_envs_reset_every_rollout > 0
+            or random_num_envs_reset_every_rollout > 0
+        ):
+            assert (
+                self.vec_env.num_envs % 2 == 0
+            ), f"num_envs must be even for rolling_num_envs_reset_every_rollout or random_num_envs_reset_every_rollout, got {self.vec_env.num_envs}"
 
         self.get_action_mask = getattr(vec_env, "get_action_mask", None)
         if self.get_action_mask:
@@ -154,13 +165,23 @@ class SyncStepRolloutGenerator(RolloutGenerator):
             masked_reset_mask[-self.num_envs_reset_every_rollout :] = True
         if self.rolling_num_envs_reset_every_rollout > 0:
             end_idx = (
-                self.rolling_mask_idx + self.rolling_num_envs_reset_every_rollout
-            ) % self.vec_env.num_envs
+                self.rolling_mask_idx + self.rolling_num_envs_reset_every_rollout // 2
+            ) % len(self.rolling_reset_indexes)
             if end_idx < self.rolling_mask_idx:
-                masked_reset_mask[self.rolling_mask_idx :] = True
-                masked_reset_mask[:end_idx] = True
+                indexes = np.concatenate(
+                    (
+                        self.rolling_reset_indexes[self.rolling_mask_idx :],
+                        self.rolling_reset_indexes[:end_idx],
+                    )
+                )
+                self.rolling_reset_indexes = np.random.permutation(
+                    self.vec_env.num_envs // 2
+                )
             else:
-                masked_reset_mask[self.rolling_mask_idx : end_idx] = True
+                indexes = self.rolling_reset_indexes[self.rolling_mask_idx : end_idx]
+            rolling_reset_mask = np.zeros(self.vec_env.num_envs // 2, dtype=np.bool_)
+            rolling_reset_mask[indexes] = True
+            masked_reset_mask[rolling_reset_mask.repeat(2)] = True
             self.rolling_mask_idx = end_idx
         if self.random_num_envs_reset_every_rollout > 0:
             pairs_mask = np.zeros(self.vec_env.num_envs // 2, dtype=np.bool_)
