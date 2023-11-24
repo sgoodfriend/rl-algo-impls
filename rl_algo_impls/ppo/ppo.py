@@ -15,12 +15,7 @@ from rl_algo_impls.shared.algorithm import Algorithm
 from rl_algo_impls.shared.autocast import maybe_autocast
 from rl_algo_impls.shared.callbacks import Callback
 from rl_algo_impls.shared.policy.actor_critic import ActorCritic
-from rl_algo_impls.shared.schedule import (
-    constant_schedule,
-    linear_schedule,
-    schedule,
-    update_learning_rate,
-)
+from rl_algo_impls.shared.schedule import update_learning_rate
 from rl_algo_impls.shared.stats import log_scalars
 from rl_algo_impls.shared.tensor_utils import NumOrList, num_or_array
 
