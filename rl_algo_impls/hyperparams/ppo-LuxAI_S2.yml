@@ -3983,7 +3983,7 @@ LuxAI_S2-v0-j1024env64-80m-lr05-r32-rr4-a100:
 LuxAI_S2-v0-j1024env16-80m-lr20-r32-rr4: &lux-j1024env16-80m-lr20-r32-rr4
   <<: *lux-j1024env64-80m-lr05-r32-rr4-a100
   env_hyperparams: &lux-j1024env16-env
-    <<: *lux-j1024env16-80m-lr30-opp-resources-rms-env
+    <<: *lux-j1024env16-80m-lr20-opp-resources-env
   eval_hyperparams: &lux-j1024env16-eval
     <<: *lux-j1024env16-power-diggers-eval
   policy_hyperparams: &lux-j1024env16-80m-lr20-r32-rr4-policy
