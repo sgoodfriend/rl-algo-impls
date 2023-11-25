@@ -3980,6 +3980,35 @@ LuxAI_S2-v0-j1024env64-80m-lr05-r32-rr4-a100:
         rolling_num_envs_reset_every_rollout: 0
         random_num_envs_reset_every_rollout: 4
 
+LuxAI_S2-v0-j1024env16-80m-lr20-r32-rr4: &lux-j1024env16-80m-lr20-r32-rr4
+  <<: *lux-j1024env64-80m-lr05-r32-rr4-a100
+  env_hyperparams: &lux-j1024env16-env
+    <<: *lux-j1024env16-80m-lr30-opp-resources-rms-env
+  eval_hyperparams: &lux-j1024env16-eval
+    <<: *lux-j1024env16-80m-lr30-opp-resources-rms-eval
+  policy_hyperparams: &lux-j1024env16-80m-lr20-r32-rr4-policy
+    <<: *lux-j512env64-80m-lr5-r64-rr4-policy
+    load_run_path: null
+  algo_hyperparams: &lux-j1024env16-80m-lr20-r32-rr4-algo
+    <<: *lux-j1024env64-80m-lr5-r32-rr4-a100-algo
+    batch_size: 1024
+  hyperparam_transitions_kwargs:
+    &lux-j1024env16-80m-lr20-r32-rr4-hyperparam-transitions
+    <<: *lux-j1024env64-80m-lr05-r32-rr4-a100-hyperparam-transitions
+    phases:
+      - learning_rate: !!float 1e-7
+        ent_coef: 0.01
+        rolling_num_envs_reset_every_rollout: 32
+        random_num_envs_reset_every_rollout: 0
+      - learning_rate: !!float 2e-4
+        ent_coef: 0.001
+        rolling_num_envs_reset_every_rollout: 0
+        random_num_envs_reset_every_rollout: 4
+    durations:
+      - 0.0125 # reset 32 envs every rollout, 1M steps
+      - 0
+      - 0.9875 # reset 4 envs every rollout, 79M steps
+
 LuxAI_S2-agent: &lux-agent
   <<: *lux-j512env64-80m-lr5-ft32-2o3m4h
   device: cpu
