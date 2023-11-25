@@ -3991,7 +3991,7 @@ LuxAI_S2-v0-j1024env16-80m-lr20-r32-rr4: &lux-j1024env16-80m-lr20-r32-rr4
     load_run_path: null
   algo_hyperparams: &lux-j1024env16-80m-lr20-r32-rr4-algo
     <<: *lux-j1024env64-80m-lr5-r32-rr4-a100-algo
-    batch_size: 1024
+    batch_size: 4096
   hyperparam_transitions_kwargs:
     &lux-j1024env16-80m-lr20-r32-rr4-hyperparam-transitions
     <<: *lux-j1024env64-80m-lr05-r32-rr4-a100-hyperparam-transitions
