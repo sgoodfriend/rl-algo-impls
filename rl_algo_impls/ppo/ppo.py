@@ -267,10 +267,6 @@ class PPO(Algorithm):
                     if multi_reward_weights is not None:
                         mb_adv = mb_adv @ multi_reward_weights
 
-                approx_kl = []
-                clipped_frac = []
-                val_clipped_frac = []
-
                 with maybe_autocast(self.autocast_loss, self.device):
                     new_logprobs, entropy, new_values = self.policy(
                         mb_obs, mb_actions, action_masks=mb_action_masks
@@ -297,26 +293,7 @@ class PPO(Algorithm):
 
                     entropy_loss = -entropy.mean()
                     with torch.no_grad():
-                        approx_kl.append(
-                            ((ratio - 1) - logratio).mean().cpu().numpy().item()
-                        )
-                        clipped_frac.append(
-                            ((ratio - 1).abs() > pi_clip)
-                            .float()
-                            .mean()
-                            .cpu()
-                            .numpy()
-                            .item()
-                        )
-                        val_clipped_frac.append(
-                            ((new_values - mb_values).abs() > v_clip)
-                            .float()
-                            .mean(0)
-                            .cpu()
-                            .numpy()
-                            if v_clip is not None
-                            else np.zeros(v_loss.shape)
-                        )
+                        approx_kl = ((ratio - 1) - logratio).mean().cpu().numpy().item()
                     if self.kl_cutoff is not None and approx_kl > self.kl_cutoff:
                         pi_coef = 0
 
@@ -328,13 +305,28 @@ class PPO(Algorithm):
 
                     if self.gradient_accumulation:
                         loss /= r.num_minibatches(self.batch_size)
-
                 loss.backward()
                 if not self.gradient_accumulation:
                     self.optimizer_step()
-                    approx_kl = approx_kl[-1:]
-                    clipped_frac = clipped_frac[-1:]
-                    val_clipped_frac = val_clipped_frac[-1:]
+
+                with torch.no_grad():
+                    clipped_frac = (
+                        ((ratio - 1).abs() > pi_clip)
+                        .float()
+                        .mean()
+                        .cpu()
+                        .numpy()
+                        .item()
+                    )
+                    val_clipped_frac = (
+                        ((new_values - mb_values).abs() > v_clip)
+                        .float()
+                        .mean(0)
+                        .cpu()
+                        .numpy()
+                        if v_clip is not None
+                        else np.zeros(v_loss.shape)
+                    )
 
                 step_stats.append(
                     TrainStepStats(
@@ -342,9 +334,9 @@ class PPO(Algorithm):
                         pi_loss.item(),
                         v_loss.detach().cpu().numpy(),
                         entropy_loss.item(),
-                        np.mean(approx_kl),
-                        np.mean(clipped_frac),
-                        np.mean(val_clipped_frac, 0),
+                        approx_kl,
+                        clipped_frac,
+                        val_clipped_frac,
                     )
                 )
             if self.gradient_accumulation:
