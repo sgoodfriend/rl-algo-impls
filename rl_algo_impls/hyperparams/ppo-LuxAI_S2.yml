@@ -4011,8 +4011,8 @@ LuxAI_S2-v0-j1024env16-80m-lr20-r32-rr4: &lux-j1024env16-80m-lr20-r32-rr4
     durations:
       - 0.0125 # reset 32 envs every rollout, 1M steps
       - 0
-      - 0.2 # reset 4 envs every rollout, 16M steps
-      - 0.7875 # lr 2e-4 -> 1e-6, 63M steps
+      - 0.1 # reset 4 envs every rollout, 16M steps
+      - 0.8875 # lr 2e-4 -> 1e-6, 63M steps
       - 0
 
 LuxAI_S2-agent: &lux-agent
