@@ -7,6 +7,7 @@ from typing import List, NamedTuple, Optional, Tuple, TypeVar, Union
 import numpy as np
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from torch.optim import Adam
 from torch.utils.tensorboard.writer import SummaryWriter
 
@@ -116,6 +117,7 @@ class PPO(Algorithm):
         guide_probability: Optional[float] = None,
         normalize_advantages_after_scaling: bool = False,
         autocast_loss: bool = False,
+        vf_loss_fn: str = "mse_loss",
     ) -> None:
         super().__init__(policy, device, tb_writer)
         self.policy = policy
@@ -156,6 +158,8 @@ class PPO(Algorithm):
         self.normalize_advantages_after_scaling = normalize_advantages_after_scaling
 
         self.autocast_loss = autocast_loss
+
+        self.vf_loss_fn = getattr(F, vf_loss_fn)
 
     def learn(
         self: PPOSelf,
@@ -277,13 +281,13 @@ class PPO(Algorithm):
                     clipped_ratio = torch.clamp(ratio, min=1 - pi_clip, max=1 + pi_clip)
                     pi_loss = -torch.min(ratio * mb_adv, clipped_ratio * mb_adv).mean()
 
-                    v_loss_unclipped = (new_values - mb_returns) ** 2
+                    v_loss_unclipped = self.vf_loss_fn(new_values, mb_returns)
                     if v_clip is not None:
-                        v_loss_clipped = (
+                        v_loss_clipped = self.vf_loss_fn(
                             mb_values
-                            + torch.clamp(new_values - mb_values, -v_clip, v_clip)
-                            - mb_returns
-                        ) ** 2
+                            + torch.clamp(new_values - mb_values, -v_clip, v_clip),
+                            mb_returns,
+                        )
                         v_loss = torch.max(v_loss_unclipped, v_loss_clipped).mean(0)
                     else:
                         v_loss = v_loss_unclipped.mean(0)
