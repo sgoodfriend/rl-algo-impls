@@ -17,7 +17,7 @@ class SelfPlayCallback(Callback):
         self.self_play_wrapper = self_play_wrapper
         self.checkpoint_policy()
 
-    def on_step(self, timesteps_elapsed: int = 1) -> bool:
+    def on_step(self, timesteps_elapsed: int = 1, **kwargs) -> bool:
         super().on_step(timesteps_elapsed)
         if (
             self.timesteps_elapsed

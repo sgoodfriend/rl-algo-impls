@@ -338,7 +338,7 @@ class EvalCallback(Callback):
         else:
             self.prior_policies = None
 
-    def on_step(self, timesteps_elapsed: int = 1) -> bool:
+    def on_step(self, timesteps_elapsed: int = 1, **kwargs) -> bool:
         super().on_step(timesteps_elapsed)
         desired_num_stats = self.timesteps_elapsed // self.step_freq
         if not self.skip_evaluate_at_start:

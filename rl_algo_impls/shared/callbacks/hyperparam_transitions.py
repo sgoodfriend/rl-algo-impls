@@ -65,7 +65,7 @@ class HyperparamTransitions(Callback):
 
         self.update()
 
-    def on_step(self, timesteps_elapsed: int = 1) -> bool:
+    def on_step(self, timesteps_elapsed: int = 1, **kwargs) -> bool:
         super().on_step(timesteps_elapsed)
         self.update()
         return True

@@ -5,6 +5,8 @@ import platform
 import sys
 
 from rl_algo_impls.lux.jux_verify import jux_verify_enabled
+from rl_algo_impls.ppo.learning_rate_by_kl_divergence import LearningRateByKLDivergence
+from rl_algo_impls.ppo.ppo import PPO
 from rl_algo_impls.rollout.guided_learner_rollout import GuidedLearnerRolloutGenerator
 from rl_algo_impls.rollout.random_guided_learner_rollout import (
     RandomGuidedLearnerRolloutGenerator,
@@ -168,6 +170,16 @@ def train(args: TrainArgs):
         env,
         **rollout_hyperparams,
     )
+    if config.hyperparams.lr_by_kl_kwargs:
+        assert isinstance(
+            algo, PPO
+        ), f"lr_by_kl_kwargs only supported for PPO, not {algo.__class__.__name__}"
+        callbacks.append(
+            LearningRateByKLDivergence(
+                algo,
+                **config.hyperparams.lr_by_kl_kwargs,
+            )
+        )
     if config.hyperparams.hyperparam_transitions_kwargs:
         callbacks.append(
             HyperparamTransitions(

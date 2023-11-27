@@ -35,7 +35,7 @@ class RewardDecayCallback(Callback):
         self.increase_indexes = set(increase_indexes or tuple())
         self.on_step(timesteps_elapsed=0)
 
-    def on_step(self, timesteps_elapsed: int = 1) -> bool:
+    def on_step(self, timesteps_elapsed: int = 1, **kwargs) -> bool:
         super().on_step(timesteps_elapsed)
 
         progress = self.timesteps_elapsed / self.total_train_timesteps

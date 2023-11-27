@@ -49,7 +49,7 @@ class OptimizeCallback(Callback):
         self.last_train_stat = None
         self.last_score = -np.inf
 
-    def on_step(self, timesteps_elapsed: int = 1) -> bool:
+    def on_step(self, timesteps_elapsed: int = 1, **kwargs) -> bool:
         super().on_step(timesteps_elapsed)
         if self.timesteps_elapsed >= self.eval_step * self.step_freq:
             self.evaluate()

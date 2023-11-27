@@ -4021,6 +4021,33 @@ LuxAI_S2-v0-j1024env16-80m-lr20-clip-vf: &lux-j1024env16-80m-lr20-clip-vf
     <<: *lux-j1024env16-80m-lr20-r32-rr4-algo
     clip_range_vf: 0.2
 
+LuxAI_S2-v0-j1024env16-80m-lr20-lr-by-kl: &lux-j1024env16-80m-lr20-lr-by-kl
+  <<: *lux-j1024env16-80m-lr20-r32-rr4
+  algo_hyperparams: &lux-j1024env16-80m-lr20-lr-by-kl-algo
+    <<: *lux-j1024env16-80m-lr20-r32-rr4-algo
+    learning_rate: !!float 1e-6
+  lr_by_kl_kwargs:
+    target_kl: 0.01
+  hyperparam_transitions_kwargs:
+    &lux-j1024env16-80m-lr20-lr-by-kl-hyperparam-transitions
+    <<: *lux-j1024env16-80m-lr20-r32-rr4-hyperparam-transitions
+    phases:
+      - ent_coef: 0.01
+        rolling_num_envs_reset_every_rollout: 32
+        random_num_envs_reset_every_rollout: 0
+      - ent_coef: 0.001
+        rolling_num_envs_reset_every_rollout: 0
+        random_num_envs_reset_every_rollout: 4
+      - ent_coef: 0.0001
+        rolling_num_envs_reset_every_rollout: 0
+        random_num_envs_reset_every_rollout: 4
+    durations:
+      - 0.0125 # reset 32 envs every rollout, 1M steps
+      - 0
+      - 0.4875 # reset 4 envs every rollout, 39M steps
+      - 0.5 # ent_coef 0.001 -> 0.0001, 40M steps
+      - 0
+
 LuxAI_S2-agent: &lux-agent
   <<: *lux-j512env64-80m-lr5-ft32-2o3m4h
   device: cpu
@@ -4037,36 +4064,41 @@ LuxAI_S2-agent: &lux-agent
       play_checkpoints_kwargs: null
 
 LuxAI_S2-v0-debug:
-  <<: *lux-j1024env64-80m-lr1-r32-rr4-a100
+  <<: *lux-j1024env16-80m-lr20-lr-by-kl
   n_timesteps: !!float 10e6
   device: mps
   env_hyperparams:
+    <<: *lux-j1024env16-env
     # <<: *lux-j1024env32-opp-resources-env
-    <<: *lux-j1024env64-a100-env
+    # <<: *lux-j1024env64-a100-env
     # <<: *lux-j512env64-opp-resources-env
     n_envs: 64
     play_checkpoints_kwargs:
       n_envs_against_checkpoints: 8
     make_kwargs:
+      <<: *lux-j1024env16-power-diggers-env-make-kwargs
       # <<: *lux-j1024env32-opp-resources-env-make-kwargs
-      <<: *lux-j1024env64-a100-env-make-kwargs
+      # <<: *lux-j1024env64-a100-env-make-kwargs
       # <<: *lux-j512env64-opp-resources-env-make-kwargs
       verbose: 3
       verify: true
     # vec_env_class: sync
   eval_hyperparams:
+    <<: *lux-j1024env16-eval
     # <<: *lux-j1024env32-opp-resources-eval
-    <<: *lux-j1024env64-a100-eval
+    # <<: *lux-j1024env64-a100-eval
     # <<: *lux-j512env64-opp-resources-eval
     env_overrides:
+      <<: *lux-j1024env16-power-diggers-eval-env-overrides
       # <<: *lux-j1024env32-80m-a100-std-norm-retrain-env-overrides
-      <<: *lux-j1024env64-a100-eval-env-overrides
+      # <<: *lux-j1024env64-a100-eval-env-overrides
       # <<: *lux-j512env64-opp-resources-eval-env-overrides
       n_envs: 8
       # vec_env_class: sync
       make_kwargs:
+        <<: *lux-j1024env16-power-diggers-eval-env-overrides-make-kwargs
         # <<: *lux-j1024env32-80m-a100-std-norm-retrain-env-overrides-make-kwargs
-        <<: *lux-j1024env64-a100-eval-env-overrides-make-kwargs
+        # <<: *lux-j1024env64-a100-eval-env-overrides-make-kwargs
         # <<: *lux-j512env64-opp-resources-eval-env-overrides-make-kwargs
         verbose: 3
         verify: true

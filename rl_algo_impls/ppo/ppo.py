@@ -348,9 +348,8 @@ class PPO(Algorithm):
         explained_var = (
             np.nan if var_y == 0 else 1 - np.var(r.y_true - r.y_pred).item() / var_y
         )
-        TrainStats(step_stats, explained_var).write_to_tensorboard(
-            self.tb_writer, timesteps_elapsed
-        )
+        train_stats = TrainStats(step_stats, explained_var)
+        train_stats.write_to_tensorboard(self.tb_writer, timesteps_elapsed)
 
         end_time = perf_counter()
         rollout_steps = r.total_steps
@@ -361,7 +360,10 @@ class PPO(Algorithm):
         )
 
         if callbacks:
-            if not all(c.on_step(timesteps_elapsed=rollout_steps) for c in callbacks):
+            if not all(
+                c.on_step(timesteps_elapsed=rollout_steps, train_stats=train_stats)
+                for c in callbacks
+            ):
                 logging.info(
                     f"Callback terminated training at {timesteps_elapsed} timesteps"
                 )
