@@ -281,12 +281,15 @@ class PPO(Algorithm):
                     clipped_ratio = torch.clamp(ratio, min=1 - pi_clip, max=1 + pi_clip)
                     pi_loss = -torch.min(ratio * mb_adv, clipped_ratio * mb_adv).mean()
 
-                    v_loss_unclipped = self.vf_loss_fn(new_values, mb_returns)
+                    v_loss_unclipped = self.vf_loss_fn(
+                        new_values, mb_returns, reduction="none"
+                    )
                     if v_clip is not None:
                         v_loss_clipped = self.vf_loss_fn(
                             mb_values
                             + torch.clamp(new_values - mb_values, -v_clip, v_clip),
                             mb_returns,
+                            reduction="none",
                         )
                         v_loss = torch.max(v_loss_unclipped, v_loss_clipped).mean(0)
                     else:
