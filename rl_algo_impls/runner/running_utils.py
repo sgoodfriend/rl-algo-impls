@@ -262,4 +262,3 @@ def hparam_dict(
         else:
             flattened[k] = v  # type: ignore
     return flattened  # type: ignore
-    return flattened  # type: ignore
