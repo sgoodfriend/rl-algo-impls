@@ -29,7 +29,7 @@ class LearningRateByKLDivergence(Callback):
     ) -> bool:
         super().on_step(timesteps_elapsed)
 
-        self.rms_kl.update(np.array(train_stats.approx_kl))
+        self.rms_kl.update(np.array([train_stats.approx_kl]))
         self.rms_updates += 1
 
         if self.rms_updates > self.moving_window_size:
