@@ -4071,7 +4071,7 @@ LuxAI_S2-v0-j1024env16-80m-lr-by-kl-huber: &lux-j1024env16-80m-lr-by-kl-huber
     <<: *lux-j1024env16-80m-lr-by-kl-huber-clipvf05-algo
     clip_range_vf: null
 
-LuxAI_S2-v0-j1024env16-80m-decay-lrkl: &luxAI_S2-v0-j1024env16-80m-decay-lrkl
+LuxAI_S2-v0-j1024env16-80m-decay-lrkl: &lux-j1024env16-80m-decay-lrkl
   <<: *lux-j1024env16-80m-lr-by-kl-huber
   hyperparam_transitions_kwargs:
     <<: *lux-j1024env16-80m-lr-by-kl-hyperparam-transitions
@@ -4095,6 +4095,12 @@ LuxAI_S2-v0-j1024env16-80m-decay-lrkl: &luxAI_S2-v0-j1024env16-80m-decay-lrkl
       - 0.2 # ent_coef 0.001 -> 0.0001, target_kl 0.01 -> 0.001, 16M steps
       - 0
 
+LuxAI_S2-v0-j1024env16-80m-decay-lrkl-a100: &lux-j1024env16-80m-decay-lrkl-a100
+  <<: *lux-j1024env16-80m-decay-lrkl
+  algo_hyperparams: &lux-j1024env16-80m-decay-lrkl-a100-algo
+    <<: *lux-j1024env16-80m-lr-by-kl-huber-algo
+    batch_size: 8192
+
 LuxAI_S2-agent: &lux-agent
   <<: *lux-j512env64-80m-lr5-ft32-2o3m4h
   device: cpu
@@ -4111,7 +4117,7 @@ LuxAI_S2-agent: &lux-agent
       play_checkpoints_kwargs: null
 
 LuxAI_S2-v0-debug:
-  <<: *luxAI_S2-v0-j1024env16-80m-decay-lrkl
+  <<: *lux-j1024env16-80m-decay-lrkl-a100
   n_timesteps: !!float 10e6
   device: mps
   env_hyperparams:
