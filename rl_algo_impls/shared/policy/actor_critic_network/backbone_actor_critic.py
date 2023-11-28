@@ -56,8 +56,10 @@ class BackboneActorCritic(ActorCriticNetwork):
         self.range_size = np.max(observation_space.high) - np.min(observation_space.low)
         self.action_vec = action_plane_space.nvec
         if isinstance(action_space, DictSpace):
-            action_space_per_position = action_space["per_position"]  # type: ignore
-            self.pick_vec = action_space["pick_position"].nvec  # type: ignore
+            action_space_per_position = action_space["per_position"]
+            pick_position_space = action_space["pick_position"]
+            assert isinstance(pick_position_space, MultiDiscrete)
+            self.pick_vec = pick_position_space.nvec
         elif isinstance(action_space, MultiDiscrete):
             action_space_per_position = action_space
             self.pick_vec = None
@@ -74,7 +76,10 @@ class BackboneActorCritic(ActorCriticNetwork):
             ), "Cannot save critic separate if sharing backbone"
         self.shared_critic_head = shared_critic_head
 
-        self.map_size = len(action_space_per_position.nvec) // len(action_plane_space.nvec)  # type: ignore
+        assert isinstance(action_space_per_position, MultiDiscrete)
+        self.map_size = len(action_space_per_position.nvec) // len(
+            action_plane_space.nvec
+        )
 
         self.actor_head = nn.Sequential(
             *[
