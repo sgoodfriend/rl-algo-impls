@@ -170,16 +170,16 @@ def train(args: TrainArgs):
         env,
         **rollout_hyperparams,
     )
+    lr_by_kl_callback = None
     if config.hyperparams.lr_by_kl_kwargs:
         assert isinstance(
             algo, PPO
         ), f"lr_by_kl_kwargs only supported for PPO, not {algo.__class__.__name__}"
-        callbacks.append(
-            LearningRateByKLDivergence(
-                algo,
-                **config.hyperparams.lr_by_kl_kwargs,
-            )
+        lr_by_kl_callback = LearningRateByKLDivergence(
+            algo,
+            **config.hyperparams.lr_by_kl_kwargs,
         )
+        callbacks.append(lr_by_kl_callback)
     if config.hyperparams.hyperparam_transitions_kwargs:
         callbacks.append(
             HyperparamTransitions(
@@ -188,6 +188,7 @@ def train(args: TrainArgs):
                 algo,
                 rollout_generator,
                 **config.hyperparams.hyperparam_transitions_kwargs,
+                lr_by_kl_callback=lr_by_kl_callback,
             )
         )
 

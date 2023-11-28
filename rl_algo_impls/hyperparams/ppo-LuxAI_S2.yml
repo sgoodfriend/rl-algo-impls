@@ -4071,6 +4071,30 @@ LuxAI_S2-v0-j1024env16-80m-lr-by-kl-huber: &lux-j1024env16-80m-lr-by-kl-huber
     <<: *lux-j1024env16-80m-lr-by-kl-huber-clipvf05-algo
     clip_range_vf: null
 
+LuxAI_S2-v0-j1024env16-80m-decay-lrkl: &luxAI_S2-v0-j1024env16-80m-decay-lrkl
+  <<: *lux-j1024env16-80m-lr-by-kl-huber
+  hyperparam_transitions_kwargs:
+    <<: *lux-j1024env16-80m-lr-by-kl-hyperparam-transitions
+    phases:
+      - ent_coef: 0.01
+        rolling_num_envs_reset_every_rollout: 32
+        random_num_envs_reset_every_rollout: 0
+        target_kl: 0.01
+      - ent_coef: 0.001
+        rolling_num_envs_reset_every_rollout: 0
+        random_num_envs_reset_every_rollout: 4
+        target_kl: 0.01
+      - ent_coef: 0.0001
+        rolling_num_envs_reset_every_rollout: 0
+        random_num_envs_reset_every_rollout: 4
+        target_kl: 0.001
+    durations:
+      - 0.0125 # reset 32 envs every rollout, 1M steps
+      - 0
+      - 0.7875 # reset 4 envs every rollout, 63M steps
+      - 0.2 # ent_coef 0.001 -> 0.0001, target_kl 0.01 -> 0.001, 16M steps
+      - 0
+
 LuxAI_S2-agent: &lux-agent
   <<: *lux-j512env64-80m-lr5-ft32-2o3m4h
   device: cpu
@@ -4087,7 +4111,7 @@ LuxAI_S2-agent: &lux-agent
       play_checkpoints_kwargs: null
 
 LuxAI_S2-v0-debug:
-  <<: *lux-j1024env16-80m-lr-by-kl-huber
+  <<: *luxAI_S2-v0-j1024env16-80m-decay-lrkl
   n_timesteps: !!float 10e6
   device: mps
   env_hyperparams:

@@ -3,6 +3,7 @@ from typing import Any, Dict, List, Optional
 import numpy as np
 
 from rl_algo_impls.lux.rewards import LuxRewardWeights
+from rl_algo_impls.ppo.learning_rate_by_kl_divergence import LearningRateByKLDivergence
 from rl_algo_impls.rollout.rollout import RolloutGenerator
 from rl_algo_impls.runner.config import Config
 from rl_algo_impls.shared.algorithm import Algorithm
@@ -33,6 +34,10 @@ ROLLOUT_GENERATOR_NAMES = {
     "random_num_envs_reset_every_rollout",
 }
 
+LEARNING_RATE_BY_KL_DIVERGENCE_NAMES = {
+    "target_kl",
+}
+
 
 class HyperparamTransitions(Callback):
     def __init__(
@@ -45,11 +50,13 @@ class HyperparamTransitions(Callback):
         durations: List[float],
         start_timesteps: int = 0,
         interpolate_method: str = "linear",
+        lr_by_kl_callback: Optional[LearningRateByKLDivergence] = None,
     ) -> None:
         super().__init__()
         self.env = env
         self.algo = algo
         self.rollout_generator = rollout_generator
+        self.lr_by_kl_callback = lr_by_kl_callback
 
         self.phases = phases
         assert (
@@ -110,6 +117,10 @@ class HyperparamTransitions(Callback):
             elif k in ROLLOUT_GENERATOR_NAMES:
                 assert hasattr(self.rollout_generator, k)
                 setattr(self.rollout_generator, k, v)
+            elif k in LEARNING_RATE_BY_KL_DIVERGENCE_NAMES:
+                assert self.lr_by_kl_callback is not None
+                assert hasattr(self.lr_by_kl_callback, k)
+                setattr(self.lr_by_kl_callback, k, v)
             else:
                 raise ValueError(f"{k} not supported in {self.__class__.__name__}")
 
@@ -163,6 +174,19 @@ class HyperparamTransitions(Callback):
                             transition_progress,
                             self.interpolate_method,
                         )
+                    ),
+                )
+            elif k in LEARNING_RATE_BY_KL_DIVERGENCE_NAMES:
+                assert self.lr_by_kl_callback is not None
+                assert hasattr(self.lr_by_kl_callback, k)
+                setattr(
+                    self.lr_by_kl_callback,
+                    k,
+                    interpolate(
+                        old_v,
+                        next_v,
+                        transition_progress,
+                        self.interpolate_method,
                     ),
                 )
             else:
