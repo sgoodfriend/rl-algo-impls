@@ -4101,6 +4101,16 @@ LuxAI_S2-v0-j1024env16-80m-decay-lrkl-a100: &lux-j1024env16-80m-decay-lrkl-a100
     <<: *lux-j1024env16-80m-lr-by-kl-huber-algo
     batch_size: 8192
 
+LuxAI_S2-v0-j1024env32-80m-decay-lrkl-a100: &lux-j1024env32-80m-decay-lrkl-a100
+  <<: *lux-j1024env16-80m-decay-lrkl-a100
+  env_hyperparams: &lux-j1024env32-80m-decay-lrkl-a100-env
+    <<: *lux-j1024env32-opp-resources-env
+  eval_hyperparams: &lux-j1024env32-80m-decay-lrkl-a100-eval
+    <<: *lux-j1024env32-opp-resources-eval
+  algo_hyperparams: &lux-j1024env32-80m-decay-lrkl-a100-algo
+    <<: *lux-j1024env16-80m-decay-lrkl-a100-algo
+    batch_size: 2048
+
 LuxAI_S2-agent: &lux-agent
   <<: *lux-j512env64-80m-lr5-ft32-2o3m4h
   device: cpu
@@ -4117,40 +4127,40 @@ LuxAI_S2-agent: &lux-agent
       play_checkpoints_kwargs: null
 
 LuxAI_S2-v0-debug:
-  <<: *lux-j1024env16-80m-decay-lrkl-a100
+  <<: *lux-j1024env32-80m-decay-lrkl-a100
   n_timesteps: !!float 10e6
   device: mps
   env_hyperparams:
-    <<: *lux-j1024env16-env
-    # <<: *lux-j1024env32-opp-resources-env
+    # <<: *lux-j1024env16-env
+    <<: *lux-j1024env32-opp-resources-env
     # <<: *lux-j1024env64-a100-env
     # <<: *lux-j512env64-opp-resources-env
     n_envs: 64
     play_checkpoints_kwargs:
       n_envs_against_checkpoints: 8
     make_kwargs:
-      <<: *lux-j1024env16-power-diggers-env-make-kwargs
-      # <<: *lux-j1024env32-opp-resources-env-make-kwargs
+      # <<: *lux-j1024env16-power-diggers-env-make-kwargs
+      <<: *lux-j1024env32-opp-resources-env-make-kwargs
       # <<: *lux-j1024env64-a100-env-make-kwargs
       # <<: *lux-j512env64-opp-resources-env-make-kwargs
       verbose: 3
       verify: true
     # vec_env_class: sync
   eval_hyperparams:
-    <<: *lux-j1024env16-eval
-    # <<: *lux-j1024env32-opp-resources-eval
+    # <<: *lux-j1024env16-eval
+    <<: *lux-j1024env32-opp-resources-eval
     # <<: *lux-j1024env64-a100-eval
     # <<: *lux-j512env64-opp-resources-eval
     env_overrides:
-      <<: *lux-j1024env16-power-diggers-eval-env-overrides
-      # <<: *lux-j1024env32-80m-a100-std-norm-retrain-env-overrides
+      # <<: *lux-j1024env16-power-diggers-eval-env-overrides
+      <<: *lux-j1024env32-80m-a100-std-norm-retrain-env-overrides
       # <<: *lux-j1024env64-a100-eval-env-overrides
       # <<: *lux-j512env64-opp-resources-eval-env-overrides
       n_envs: 8
       # vec_env_class: sync
       make_kwargs:
-        <<: *lux-j1024env16-power-diggers-eval-env-overrides-make-kwargs
-        # <<: *lux-j1024env32-80m-a100-std-norm-retrain-env-overrides-make-kwargs
+        # <<: *lux-j1024env16-power-diggers-eval-env-overrides-make-kwargs
+        <<: *lux-j1024env32-80m-a100-std-norm-retrain-env-overrides-make-kwargs
         # <<: *lux-j1024env64-a100-eval-env-overrides-make-kwargs
         # <<: *lux-j512env64-opp-resources-eval-env-overrides-make-kwargs
         verbose: 3
