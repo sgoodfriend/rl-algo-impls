@@ -11,6 +11,7 @@ from rl_algo_impls.runner.running_utils import (
     get_device,
     load_hyperparams,
     make_policy,
+    set_device_optimizations,
     set_seeds,
 )
 from rl_algo_impls.runner.wandb_load import load_player
@@ -46,7 +47,7 @@ def onnx_export(args: ExportArgs, root_dir: str):
         config = Config(args, hyperparams, root_dir)
         model_path = config.model_dir_path(best=args.best)
 
-    set_seeds(args.seed, args.use_deterministic_algorithms)
+    set_seeds(args.seed)
 
     override_hparams = args.override_hparams or {}
     if args.n_envs:
@@ -58,6 +59,7 @@ def onnx_export(args: ExportArgs, root_dir: str):
         render=False,
     )
     device = get_device(config, env)
+    set_device_optimizations(device, **config.device_hyperparams)
     policy = make_policy(
         config,
         env,

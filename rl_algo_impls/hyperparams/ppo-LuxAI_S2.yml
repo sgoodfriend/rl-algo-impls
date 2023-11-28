@@ -593,7 +593,7 @@ LuxAI_S2-v0-short-squnet-rl-robot: &lux-short-squnet-rl-robot
 
 LuxAI_S2-v0-short-squnet-cuda-opt: &lux-short-squnet-cuda-opt
   <<: *lux-short-squnet-rl-robot
-  device_hyperparams:
+  device_hyperparams: &lux-short-squnet-cuda-opt-device
     set_float32_matmul_precision: high
   algo_hyperparams: &lux-short-squnet-cuda-opt-algo
     <<: *lux-short-squnet-rl-robot-algo
@@ -4120,6 +4120,9 @@ LuxAI_S2-v0-j1024env16-80m-sacus: &lux-j1024env16-80m-sacus
 LuxAI_S2-v0-j1024env16-80m-sacus-avg-max-pool:
   &lux-j1024env16-80m-sacus-avg-max-pool
   <<: *lux-j1024env16-80m-sacus
+  device_hyperparams: &lux-j1024env16-80m-sacus-avg-max-pool-device
+    <<: *lux-short-squnet-cuda-opt-device
+    use_deterministic_algorithms: false
   policy_hyperparams: &lux-j1024env16-80m-sacus-avg-max-pool-policy
     <<: *lux-j1024env16-80m-sacus-policy
     critic_avg_max_pool: true

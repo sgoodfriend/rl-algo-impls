@@ -11,6 +11,7 @@ from rl_algo_impls.runner.running_utils import (
     get_device,
     load_hyperparams,
     make_policy,
+    set_device_optimizations,
     set_seeds,
 )
 from rl_algo_impls.runner.wandb_load import load_player
@@ -52,7 +53,7 @@ def selfplay_evaluate(args: SelfplayEvalArgs, root_dir: str) -> Evaluation:
 
     print(args)
 
-    set_seeds(args.seed, args.use_deterministic_algorithms)
+    set_seeds(args.seed)
 
     env_make_kwargs = (
         config.eval_hyperparams.get("env_overrides", {}).get("make_kwargs", {}).copy()
@@ -82,6 +83,7 @@ def selfplay_evaluate(args: SelfplayEvalArgs, root_dir: str) -> Evaluation:
             env, args.video_path, max_video_length=18000, num_episodes=args.n_episodes
         )
     device = get_device(config, env)
+    set_device_optimizations(device, **config.device_hyperparams)
     policy = make_policy(
         config,
         env,

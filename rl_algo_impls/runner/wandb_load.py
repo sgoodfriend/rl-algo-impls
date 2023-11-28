@@ -23,7 +23,6 @@ def load_player(
     args.algo = params["algo"]
     args.env = params["env"]
     args.seed = params.get("seed", None)
-    args.use_deterministic_algorithms = params.get("use_deterministic_algorithms", True)
     config = Config(args, Hyperparams.from_dict_with_extra_fields(params), root_dir)
     model_path = config.model_dir_path(best=best, downloaded=True)
 

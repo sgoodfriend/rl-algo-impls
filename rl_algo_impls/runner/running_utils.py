@@ -159,8 +159,11 @@ def get_device(config: Config, env: VectorEnv) -> torch.device:
 
 
 def set_device_optimizations(
-    device: torch.device, set_float32_matmul_precision: Optional[str] = None
+    device: torch.device,
+    set_float32_matmul_precision: Optional[str] = None,
+    use_deterministic_algorithms: bool = True,
 ) -> None:
+    torch.use_deterministic_algorithms(use_deterministic_algorithms)
     if device.type == "cuda":
         if set_float32_matmul_precision:
             logging.info(
@@ -169,14 +172,13 @@ def set_device_optimizations(
             torch.set_float32_matmul_precision(set_float32_matmul_precision)
 
 
-def set_seeds(seed: Optional[int], use_deterministic_algorithms: bool) -> None:
+def set_seeds(seed: Optional[int]) -> None:
     if seed is None:
         return
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
     torch.backends.cudnn.benchmark = False
-    torch.use_deterministic_algorithms(use_deterministic_algorithms)
     os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
     # Stop warning and it would introduce stochasticity if I was using TF
     os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"

@@ -82,7 +82,7 @@ def train(args: TrainArgs):
 
     tb_writer = SummaryWriter(config.tensorboard_summary_path)
 
-    set_seeds(args.seed, args.use_deterministic_algorithms)
+    set_seeds(args.seed)
 
     env = make_env(
         config, EnvHyperparams(**config.env_hyperparams), tb_writer=tb_writer

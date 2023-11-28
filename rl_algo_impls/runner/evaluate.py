@@ -12,6 +12,7 @@ from rl_algo_impls.runner.running_utils import (
     get_device,
     load_hyperparams,
     make_policy,
+    set_device_optimizations,
     set_seeds,
 )
 from rl_algo_impls.shared.callbacks.eval_callback import evaluate
@@ -55,9 +56,6 @@ def evaluate_model(args: EvalArgs, root_dir: str) -> Evaluation:
         args.algo = params["algo"]
         args.env = params["env"]
         args.seed = params.get("seed", None)
-        args.use_deterministic_algorithms = params.get(
-            "use_deterministic_algorithms", True
-        )
 
         config = Config(args, Hyperparams.from_dict_with_extra_fields(params), root_dir)
         model_path = config.model_dir_path(best=args.best, downloaded=True)
@@ -76,7 +74,7 @@ def evaluate_model(args: EvalArgs, root_dir: str) -> Evaluation:
 
     print(args)
 
-    set_seeds(args.seed, args.use_deterministic_algorithms)
+    set_seeds(args.seed)
 
     override_hparams = args.override_hparams or {}
     if args.n_envs:
@@ -92,6 +90,7 @@ def evaluate_model(args: EvalArgs, root_dir: str) -> Evaluation:
             env, args.video_path, max_video_length=18000, num_episodes=args.n_episodes
         )
     device = get_device(config, env)
+    set_device_optimizations(device, **config.device_hyperparams)
     policy = make_policy(
         config,
         env,

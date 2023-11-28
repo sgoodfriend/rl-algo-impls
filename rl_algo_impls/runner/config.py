@@ -14,7 +14,6 @@ class RunArgs:
     algo: str
     env: str
     seed: Optional[int] = None
-    use_deterministic_algorithms: bool = True
 
     @classmethod
     def expand_from_dict(

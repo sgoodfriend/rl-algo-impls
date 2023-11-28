@@ -24,6 +24,7 @@ from rl_algo_impls.runner.running_utils import (
     hparam_dict,
     load_hyperparams,
     make_policy,
+    set_device_optimizations,
     set_seeds,
 )
 from rl_algo_impls.shared.callbacks import Callback
@@ -195,12 +196,13 @@ def simple_optimize(trial: optuna.Trial, args: RunArgs, study_args: StudyArgs) -
         wandb.config.update(args)
 
     tb_writer = SummaryWriter(config.tensorboard_summary_path)
-    set_seeds(args.seed, args.use_deterministic_algorithms)
+    set_seeds(args.seed)
 
     env = make_env(
         config, EnvHyperparams(**config.env_hyperparams), tb_writer=tb_writer
     )
     device = get_device(config, env)
+    set_device_optimizations(device, **config.device_hyperparams)
     policy = make_policy(config, env, device, **config.policy_hyperparams)
     algo = ALGOS[args.algo](policy, device, tb_writer, **config.algo_hyperparams)
 
@@ -320,7 +322,7 @@ def stepwise_optimize(
             config = Config(arg, hyperparams, os.getcwd())
 
             tb_writer = SummaryWriter(config.tensorboard_summary_path)
-            set_seeds(arg.seed, arg.use_deterministic_algorithms)
+            set_seeds(arg.seed)
 
             env = make_env(
                 config,
@@ -328,6 +330,7 @@ def stepwise_optimize(
                 tb_writer=tb_writer,
             )
             device = get_device(config, env)
+            set_device_optimizations(device, **config.device_hyperparams)
             policy = make_policy(config, env, device, **config.policy_hyperparams)
             if i > 0:
                 policy.load(config.model_dir_path())
