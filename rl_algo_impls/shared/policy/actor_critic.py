@@ -28,6 +28,9 @@ from rl_algo_impls.shared.policy.actor_critic_network.backbone_actor_critic impo
 from rl_algo_impls.shared.policy.actor_critic_network.double_cone import (
     DoubleConeActorCritic,
 )
+from rl_algo_impls.shared.policy.actor_critic_network.sacus import (
+    SplitActorCriticUShapedNetwork,
+)
 from rl_algo_impls.shared.policy.actor_critic_network.squeeze_unet import (
     SqueezeUnetActorCriticNetwork,
 )
@@ -210,6 +213,29 @@ class ActorCritic(OnPolicy, Generic[ObsType]):
                 save_critic_separate=save_critic_separate
                 if save_critic_separate is not None
                 else False,
+                shared_critic_head=shared_critic_head
+                if shared_critic_head is not None
+                else False,
+            )
+        elif actor_head_style == "sacus":
+            assert action_plane_space is not None
+            self.network = SplitActorCriticUShapedNetwork(
+                observation_space,
+                action_space,
+                action_plane_space,
+                init_layers_orthogonal=init_layers_orthogonal,
+                cnn_layers_init_orthogonal=cnn_layers_init_orthogonal,
+                num_additional_critics=num_additional_critics,
+                additional_critic_activation_functions=additional_critic_activation_functions,
+                critic_channels=critic_channels,
+                channels_per_level=channels_per_level,
+                strides_per_level=strides_per_level,
+                deconv_strides_per_level=deconv_strides_per_level,
+                encoder_residual_blocks_per_level=encoder_residual_blocks_per_level,
+                decoder_residual_blocks_per_level=decoder_residual_blocks_per_level,
+                increment_kernel_size_on_down_conv=increment_kernel_size_on_down_conv,
+                output_activation_fn=output_activation_fn,
+                subaction_mask=subaction_mask,
                 shared_critic_head=shared_critic_head
                 if shared_critic_head is not None
                 else False,
