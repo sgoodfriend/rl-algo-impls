@@ -4117,6 +4117,13 @@ LuxAI_S2-v0-j1024env16-80m-sacus: &lux-j1024env16-80m-sacus
     <<: *lux-j1024env16-80m-lr20-r32-rr4-policy
     actor_head_style: sacus
 
+LuxAI_S2-v0-j1024env16-80m-sacus-avg-max-pool:
+  &lux-j1024env16-80m-sacus-avg-max-pool
+  <<: *lux-j1024env16-80m-sacus
+  policy_hyperparams: &lux-j1024env16-80m-sacus-avg-max-pool-policy
+    <<: *lux-j1024env16-80m-sacus-policy
+    critic_avg_max_pool: true
+
 LuxAI_S2-agent: &lux-agent
   <<: *lux-j512env64-80m-lr5-ft32-2o3m4h
   device: cpu
@@ -4133,7 +4140,7 @@ LuxAI_S2-agent: &lux-agent
       play_checkpoints_kwargs: null
 
 LuxAI_S2-v0-debug:
-  <<: *lux-j1024env16-80m-sacus
+  <<: *lux-j1024env16-80m-sacus-avg-max-pool
   n_timesteps: !!float 10e6
   device: mps
   env_hyperparams:

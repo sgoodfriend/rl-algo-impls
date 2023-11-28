@@ -145,6 +145,7 @@ class ActorCritic(OnPolicy, Generic[ObsType]):
         critic_shares_backbone: Optional[bool] = None,
         save_critic_separate: Optional[bool] = None,
         shared_critic_head: Optional[bool] = None,
+        critic_avg_max_pool: bool = False,
         **kwargs,
     ) -> None:
         super().__init__(env, **kwargs)
@@ -239,6 +240,7 @@ class ActorCritic(OnPolicy, Generic[ObsType]):
                 shared_critic_head=shared_critic_head
                 if shared_critic_head is not None
                 else False,
+                critic_avg_max_pool=critic_avg_max_pool,
             )
         elif share_features_extractor:
             self.network = ConnectedTrioActorCriticNetwork(

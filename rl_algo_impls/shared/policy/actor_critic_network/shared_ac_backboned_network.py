@@ -11,6 +11,7 @@ from gymnasium.spaces import MultiDiscrete
 from rl_algo_impls.shared.actor import pi_forward
 from rl_algo_impls.shared.actor.gridnet import GridnetDistribution, ValueDependentMask
 from rl_algo_impls.shared.actor.gridnet_decoder import Transpose
+from rl_algo_impls.shared.module.adaptive_avg_max_pool import AdaptiveAvgMaxPool2d
 from rl_algo_impls.shared.module.channelwise_activation import ChannelwiseActivation
 from rl_algo_impls.shared.module.stack import HStack
 from rl_algo_impls.shared.module.utils import layer_init
@@ -51,6 +52,7 @@ class SplitActorCriticBackbonedNetwork(ActorCriticNetwork):
         output_activation_fn: str = "identity",
         subaction_mask: Optional[Dict[int, Dict[int, int]]] = None,
         shared_critic_head: bool = False,
+        critic_avg_max_pool: bool = False,
     ) -> None:
         if num_additional_critics and not additional_critic_activation_functions:
             additional_critic_activation_functions = [
@@ -104,11 +106,17 @@ class SplitActorCriticBackbonedNetwork(ActorCriticNetwork):
         def critic_head(
             output_activation_layer: nn.Module, num_output_channels: int = 1
         ) -> nn.Module:
+            linear_in_channels = critic_channels
+            if critic_avg_max_pool:
+                linear_in_channels *= 2
+                pool_layer = AdaptiveAvgMaxPool2d(pool_output_size=1)
+            else:
+                pool_layer = nn.AdaptiveAvgPool2d(1)
             return nn.Sequential(
-                nn.AdaptiveAvgPool2d(1),
+                pool_layer,
                 nn.Flatten(),
                 layer_init(
-                    nn.Linear(critic_channels, critic_channels),
+                    nn.Linear(linear_in_channels, critic_channels),
                     init_layers_orthogonal=init_layers_orthogonal,
                 ),
                 nn.GELU(),

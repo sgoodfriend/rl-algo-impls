@@ -35,6 +35,7 @@ class SplitActorCriticUShapedNetwork(SplitActorCriticBackbonedNetwork):
         output_activation_fn: str = "identity",
         subaction_mask: Optional[Dict[int, Dict[int, int]]] = None,
         shared_critic_head: bool = False,
+        critic_avg_max_pool: bool = False,
     ):
         if cnn_layers_init_orthogonal is None:
             cnn_layers_init_orthogonal = False
@@ -82,6 +83,7 @@ class SplitActorCriticUShapedNetwork(SplitActorCriticBackbonedNetwork):
             output_activation_fn=output_activation_fn,
             subaction_mask=subaction_mask,
             shared_critic_head=shared_critic_head,
+            critic_avg_max_pool=critic_avg_max_pool,
         )
 
 
