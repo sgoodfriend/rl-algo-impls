@@ -35,7 +35,7 @@ class LearningRateByKLDivergence(Callback):
         if self.rms_updates > self.moving_window_size:
             kl = self.rms_kl.mean.item()
             correction_ratio = np.clip(
-                self.target_kl / kl,
+                self.target_kl / np.abs(kl),
                 self.min_decrease_fraction,
                 self.max_increase_fraction,
             )
