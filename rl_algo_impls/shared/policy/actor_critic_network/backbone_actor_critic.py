@@ -53,8 +53,8 @@ class BackboneActorCritic(ActorCriticNetwork):
 
         assert isinstance(observation_space, Box)
         assert isinstance(action_plane_space, MultiDiscrete)
-        self.range_size = np.max(observation_space.high) - np.min(observation_space.low)  # type: ignore
-        self.action_vec = action_plane_space.nvec  # type: ignore
+        self.range_size = np.max(observation_space.high) - np.min(observation_space.low)
+        self.action_vec = action_plane_space.nvec
         if isinstance(action_space, DictSpace):
             action_space_per_position = action_space["per_position"]  # type: ignore
             self.pick_vec = action_space["pick_position"].nvec  # type: ignore
