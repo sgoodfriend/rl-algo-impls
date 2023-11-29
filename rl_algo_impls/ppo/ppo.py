@@ -351,7 +351,7 @@ class PPO(Algorithm):
                     TrainStepStats(
                         loss.item(),
                         pi_loss.item(),
-                        v_loss.detach().cpu().numpy(),
+                        v_loss.detach().float().cpu().numpy(),
                         entropy_loss.item(),
                         approx_kl,
                         clipped_frac,
