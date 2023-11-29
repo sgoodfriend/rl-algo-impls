@@ -4231,7 +4231,7 @@ LuxAI_S2-v0-j1024env16-80m-vfc003-vlthresh: &lux-j1024env16-80m-vfc003-vlthresh
   <<: *lux-j1024env16-80m-vfc003
   lr_by_kl_kwargs: &lux-j1024env16-80m-vfc003-vlthresh-lr-by-kl-kwargs
     <<: *lux-j1024env16-80m-lr-by-kl-huber-clipvf05-lr-by-kl-kwargs
-    v_loss_threshold: 1.1
+    v_loss_threshold: 1.2
 
 LuxAI_S2-v0-j1024env32-80m-vfc003-vlthresh-a100:
   &lux-j1024env32-80m-vfc003-vlthresh-a100

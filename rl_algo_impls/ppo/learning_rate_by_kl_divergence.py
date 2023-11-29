@@ -17,7 +17,7 @@ class LearningRateByKLDivergence(Callback):
         min_decrease_fraction: float = 0.5,
         v_loss_threshold: Optional[float] = None,
         v_loss_fast_moving_window_size: int = 10,
-        v_loss_slow_moving_window_size: int = 100,
+        v_loss_slow_moving_window_size: int = 50,
     ) -> None:
         super().__init__()
         self.algo = algo
@@ -57,7 +57,7 @@ class LearningRateByKLDivergence(Callback):
             and self.num_updates > self.slow_v_loss_rms.window_size
         ):
             v_loss_ratio = (
-                self.slow_v_loss_rms.mean.item() / self.fast_v_loss_rms.mean.item()
+                self.fast_v_loss_rms.mean.item() / self.slow_v_loss_rms.mean.item()
             )
             if v_loss_ratio > self.v_loss_threshold:
                 max_increase_fraction -= v_loss_ratio - self.v_loss_threshold
