@@ -118,6 +118,7 @@ class PPO(Algorithm):
         normalize_advantages_after_scaling: bool = False,
         autocast_loss: bool = False,
         vf_loss_fn: str = "mse_loss",
+        vf_weights: Optional[List[int]] = None,
     ) -> None:
         super().__init__(policy, device, tb_writer)
         self.policy = policy
@@ -138,6 +139,7 @@ class PPO(Algorithm):
 
         self.ent_coef = ent_coef
         self.vf_coef = num_or_array(vf_coef)
+        self.vf_weights = np.array(vf_weights) if vf_weights is not None else None
         self.ppo2_vf_coef_halving = ppo2_vf_coef_halving
 
         self.batch_size = batch_size
@@ -221,6 +223,8 @@ class PPO(Algorithm):
             ), f"rollout_generator assumed to have guide_probability attribute"
             setattr(rollout_generator, "guide_probability", self.guide_probability)
             chart_scalars["guide_probability"] = self.guide_probability
+        if self.vf_weights is not None:
+            chart_scalars["vf_weights"] = self.vf_weights
         log_scalars(self.tb_writer, "charts", chart_scalars, timesteps_elapsed)
 
         r = rollout_generator.rollout(gamma=self.gamma, gae_lambda=self.gae_lambda)
@@ -234,6 +238,11 @@ class PPO(Algorithm):
             else None
         )
         vf_coef = torch.Tensor(np.array(self.vf_coef)).to(self.device)
+        vf_weights = (
+            torch.Tensor(self.vf_weights).to(self.device)
+            if self.vf_weights is not None
+            else None
+        )
         pi_coef = 1
         if self.freeze_policy_head or self.freeze_value_head or self.freeze_backbone:
             self.policy.freeze(
@@ -291,9 +300,12 @@ class PPO(Algorithm):
                             mb_returns,
                             reduction="none",
                         )
-                        v_loss = torch.max(v_loss_unclipped, v_loss_clipped).mean(0)
+                        v_loss = torch.max(v_loss_unclipped, v_loss_clipped)
                     else:
-                        v_loss = v_loss_unclipped.mean(0)
+                        v_loss = v_loss_unclipped
+                    if vf_weights is not None:
+                        v_loss = v_loss @ vf_weights
+                    v_loss = v_loss.mean(0)
 
                     if self.ppo2_vf_coef_halving:
                         v_loss *= 0.5
