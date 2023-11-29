@@ -190,20 +190,3 @@ python -m pip install -e '.[microrts]'
 ```
 
 Requires Java SDK to also be installed.
-
-## Lux-specific setup
-
-echo -e "-----BEGIN OPENSSH PRIVATE KEY-----
-b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW
-QyNTUxOQAAACCOTzAh5SrfmhWlBJy2xcHDDfVTtF9R0kP9bL28weXEgAAAAKBuva03br2t
-NwAAAAtzc2gtZWQyNTUxOQAAACCOTzAh5SrfmhWlBJy2xcHDDfVTtF9R0kP9bL28weXEgA
-AAAEBjxbAPBG13KIS2rttbBUWLBgXij5rgGKOPCbWCMn/koY5PMCHlKt+aFaUEnLbFwcMN
-9VO0X1HSQ/1svbzB5cSAAAAAGmdvb2RmcmllbmQuc2NvdHRAZ21haWwuY29tAQID
------END OPENSSH PRIVATE KEY-----
-" > ~/.ssh/id_ed25519
-ssh-keyscan -t ed25519 github.com >> ~/.ssh/known_hosts
-chmod go-rwx ~/.ssh/id_ed25519
-git clone git@github.com:sgoodfriend/rl-algo-impls-lux-nips1.git
-cd rl-algo-impls-lux-nips1
-bash ./scripts/setup-lux.sh
-bash ./scripts/lux.sh [-a {"ppo"}] [-e ENVS]
