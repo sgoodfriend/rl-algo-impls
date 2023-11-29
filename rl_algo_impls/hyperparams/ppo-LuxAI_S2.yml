@@ -4148,6 +4148,12 @@ LuxAI_S2-v0-j1024env16-80m-vf-weights: &lux-j1024env16-80m-vf-weights
       - 0.2 # opponent resources lichen
       - 0.2 # opponent resources factory
 
+LuxAI_S2-v0-j1024env16-80m-squnet-vf-weights:
+  &lux-j1024env16-80m-squnet-vf-weights
+  <<: *lux-j1024env16-80m-vf-weights
+  policy_hyperparams: &lux-j1024env16-80m-squnet-vf-weights-policy
+    <<: *lux-j1024env16-80m-lr20-r32-rr4-policy
+
 LuxAI_S2-v0-j1024env32-80m-vf-weights-a100: &lux-j1024env32-80m-vf-weights-a100
   <<: *lux-j1024env16-80m-vf-weights
   env_hyperparams: &lux-j1024env32-80m-vf-weights-a100-env
@@ -4174,7 +4180,7 @@ LuxAI_S2-agent: &lux-agent
       play_checkpoints_kwargs: null
 
 LuxAI_S2-v0-debug:
-  <<: *lux-j1024env16-80m-vf-weights
+  <<: *lux-j1024env16-80m-squnet-vf-weights
   n_timesteps: !!float 10e6
   device: mps
   env_hyperparams:
