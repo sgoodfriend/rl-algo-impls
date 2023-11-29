@@ -4164,6 +4164,33 @@ LuxAI_S2-v0-j1024env32-80m-vf-weights-a100: &lux-j1024env32-80m-vf-weights-a100
     <<: *lux-j1024env16-80m-vf-weights-algo
     batch_size: 2048
 
+LuxAI_S2-v0-j1024env16-80m-vfc003: &lux-j1024env16-80m-vfc003
+  <<: *lux-j1024env16-80m-vf-weights
+  algo_hyperparams: &lux-j1024env16-80m-vfc003-algo
+    <<: *lux-j1024env16-80m-vf-weights-algo
+    vf_coef: 0.03
+
+LuxAI_S2-v0-j1024env16-80m-vfw01: &lux-j1024env16-80m-vfw01
+  <<: *lux-j1024env16-80m-vf-weights
+  algo_hyperparams: &lux-j1024env16-80m-vfw01-algo
+    <<: *lux-j1024env16-80m-vf-weights-algo
+    vf_coef: 0.1
+    vf_weights:
+      - 1 # WinLoss
+      - 0.1 # ice
+      - 0.1 # ore
+      - 0.1 # water
+      - 0.1 # metal
+      - 0.1 # power
+      - 0.1 # light bots
+      - 0.1 # heavy bots
+      - 0.1 # opponent kills
+      - 0.1 # resources lichen
+      - 0.1 # resources factory
+      - 0.1 # game length
+      - 0.1 # opponent resources lichen
+      - 0.1 # opponent resources factory
+
 LuxAI_S2-agent: &lux-agent
   <<: *lux-j512env64-80m-lr5-ft32-2o3m4h
   device: cpu
@@ -4180,7 +4207,7 @@ LuxAI_S2-agent: &lux-agent
       play_checkpoints_kwargs: null
 
 LuxAI_S2-v0-debug:
-  <<: *lux-j1024env16-80m-squnet-vf-weights
+  <<: *lux-j1024env16-80m-vfw01
   n_timesteps: !!float 10e6
   device: mps
   env_hyperparams:
