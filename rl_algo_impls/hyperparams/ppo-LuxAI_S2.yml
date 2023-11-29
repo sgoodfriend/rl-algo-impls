@@ -4130,7 +4130,7 @@ LuxAI_S2-v0-j1024env16-80m-sacus-avg-max-pool:
 LuxAI_S2-v0-j1024env16-80m-vf-weights: &lux-j1024env16-80m-vf-weights
   <<: *lux-j1024env16-80m-sacus-avg-max-pool
   algo_hyperparams: &lux-j1024env16-80m-vf-weights-algo
-    <<: *lux-j1024env16-80m-lr-by-kl-huber-clipvf05-algo
+    <<: *lux-j1024env16-80m-lr-by-kl-huber-algo
     vf_coef: 0.2
     vf_weights:
       - 1 # WinLoss
