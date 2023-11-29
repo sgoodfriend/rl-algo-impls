@@ -141,6 +141,7 @@ class HybridMovingMeanVar:
             self.rms.mean if self.rms.count < self.emmv.window_size else self.emmv.mean
         )
 
+    @property
     def var(self) -> NDArray:
         return self.rms.var if self.rms.count < self.emmv.window_size else self.emmv.var
 
