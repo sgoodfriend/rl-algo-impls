@@ -4169,6 +4169,21 @@ LuxAI_S2-v0-j1024env16-80m-vfc003: &lux-j1024env16-80m-vfc003
   algo_hyperparams: &lux-j1024env16-80m-vfc003-algo
     <<: *lux-j1024env16-80m-vf-weights-algo
     vf_coef: 0.03
+    vf_weights:
+      - 1 # WinLoss
+      - 0.5 # ice
+      - 0.5 # ore
+      - 0.5 # water
+      - 0.5 # metal
+      - 0.5 # power
+      - 0.5 # light bots
+      - 0.5 # heavy bots
+      - 0.5 # opponent kills
+      - 0.5 # resources lichen
+      - 0.5 # resources factory
+      - 0.5 # game length
+      - 0.5 # opponent resources lichen
+      - 0.5 # opponent resources factory
 
 LuxAI_S2-v0-j1024env16-80m-vfw01: &lux-j1024env16-80m-vfw01
   <<: *lux-j1024env16-80m-vf-weights
