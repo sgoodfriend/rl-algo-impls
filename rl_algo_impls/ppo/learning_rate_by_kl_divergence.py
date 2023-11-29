@@ -32,11 +32,9 @@ class LearningRateByKLDivergence(Callback):
         if v_loss_threshold is not None:
             self.slow_v_loss_rms = ExponentialMovingMeanVar(
                 window_size=v_loss_slow_moving_window_size,
-                shape=algo.policy.value_shape,
             )
             self.fast_v_loss_rms = ExponentialMovingMeanVar(
                 window_size=v_loss_fast_moving_window_size,
-                shape=algo.policy.value_shape,
             )
 
     def on_step(
@@ -48,9 +46,9 @@ class LearningRateByKLDivergence(Callback):
         self.num_updates += 1
 
         if self.v_loss_threshold is not None:
-            v_loss_array = np.array(train_stats.v_loss)
-            self.slow_v_loss_rms.update(v_loss_array)
-            self.fast_v_loss_rms.update(v_loss_array)
+            v_loss = np.array(train_stats.v_loss).mean()
+            self.slow_v_loss_rms.update(v_loss)
+            self.fast_v_loss_rms.update(v_loss)
 
         min_decrease_fraction = self.min_decrease_fraction
         max_increase_fraction = self.max_increase_fraction
@@ -59,7 +57,7 @@ class LearningRateByKLDivergence(Callback):
             and self.num_updates > self.slow_v_loss_rms.window_size
         ):
             v_loss_ratio = (
-                self.slow_v_loss_rms.mean.mean() / self.fast_v_loss_rms.mean.mean()
+                self.slow_v_loss_rms.mean.item() / self.fast_v_loss_rms.mean.item()
             )
             if v_loss_ratio > self.v_loss_threshold:
                 max_increase_fraction -= v_loss_ratio - self.v_loss_threshold
