@@ -69,6 +69,7 @@ class ExponentialMovingMeanVar:
         assert alpha is not None, "Either alpha or window_size must be specified"
         assert 0 < alpha < 1, f"alpha ({alpha}) must be between 0 and 1 (exclusive)"
         self.alpha = alpha
+        self.window_size = window_size if window_size is not None else (2 / alpha - 1)
 
         self.mean = np.zeros(shape, np.float64)
         self.squared_mean = np.zeros(shape, np.float64)
@@ -117,43 +118,46 @@ class ExponentialMovingMeanVar:
         self.initialized = np.copy(existing.initialized)
 
 
-class CheckRunningMeanVar:
+HybridMovingMeanVarSelf = TypeVar(
+    "HybridMovingMeanVarSelf", bound="HybridMovingMeanVar"
+)
+
+
+class HybridMovingMeanVar:
     def __init__(
-        self, window_size: Optional[Union[int, float]], shape: Tuple[int, ...] = ()
+        self,
+        alpha: Optional[float] = None,
+        window_size: Optional[Union[int, float]] = None,
+        shape: Tuple[int, ...] = (),
     ) -> None:
         self.rms = RunningMeanStd(shape=shape)
-        self.emmv = ExponentialMovingMeanVar(window_size=window_size, shape=shape)
-        self.next_check_at = 500_000
+        self.emmv = ExponentialMovingMeanVar(
+            alpha=alpha, window_size=window_size, shape=shape
+        )
 
     @property
     def mean(self) -> NDArray:
-        return self.emmv.mean
+        return (
+            self.rms.mean if self.rms.count < self.emmv.window_size else self.emmv.mean
+        )
 
-    @property
     def var(self) -> NDArray:
-        return self.emmv.var
+        return self.rms.var if self.rms.count < self.emmv.window_size else self.emmv.var
 
     def update(self, x: NDArray) -> None:
         self.rms.update(x)
         self.emmv.update(x)
-        if self.rms.count >= self.next_check_at:
-            rms_std = np.sqrt(self.rms.var)
-            emmv_std = np.sqrt(self.emmv.var)
-            if not np.allclose(emmv_std, rms_std, rtol=0.25, atol=1):
-                logging.warn(
-                    f"Step {self.rms.count}: std differ by more than 25%: "
-                    f"{np.round(np.stack((rms_std, emmv_std), axis=-1)).astype(int)}"
-                )
-            self.next_check_at += 500_000
 
     def save(self, path: str) -> None:
-        self.rms.save(path + ".rms")
-        self.emmv.save(path + ".emmv")
+        self.rms.save(path + "-rms")
+        self.emmv.save(path + "-emmv")
 
     def load(self, path: str, count_override: Optional[int] = None) -> None:
-        self.rms.load(path + ".rms", count_override=count_override)
-        self.emmv.load(path + ".emmv", count_override=count_override)
+        self.rms.load(path + "-rms", count_override=count_override)
+        self.emmv.load(path + "-emmv", count_override=count_override)
 
-    def load_from(self, existing: "CheckRunningMeanVar") -> None:
+    def load_from(
+        self: HybridMovingMeanVarSelf, existing: HybridMovingMeanVarSelf
+    ) -> None:
         self.rms.load_from(existing.rms)
         self.emmv.load_from(existing.emmv)

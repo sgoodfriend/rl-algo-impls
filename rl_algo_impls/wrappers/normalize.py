@@ -3,10 +3,7 @@ from typing import Optional, Tuple, TypeVar, Union
 import numpy as np
 from numpy.typing import NDArray
 
-from rl_algo_impls.utils.running_mean_std import (
-    ExponentialMovingMeanVar,
-    RunningMeanStd,
-)
+from rl_algo_impls.utils.running_mean_std import HybridMovingMeanVar, RunningMeanStd
 from rl_algo_impls.wrappers.vector_wrapper import (
     VecEnvMaskedResetReturn,
     VectorEnv,
@@ -79,7 +76,7 @@ class NormalizeReward(VectorWrapper):
     ) -> None:
         super().__init__(env)
         self.rms = (
-            ExponentialMovingMeanVar(window_size=emv_window_size, shape=shape)
+            HybridMovingMeanVar(window_size=emv_window_size, shape=shape)
             if exponential_moving_mean_var
             else RunningMeanStd(shape=shape)
         )
