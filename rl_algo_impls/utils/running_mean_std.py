@@ -137,13 +137,19 @@ class HybridMovingMeanVar:
 
     @property
     def mean(self) -> NDArray:
-        return (
-            self.rms.mean if self.rms.count < self.emmv.window_size else self.emmv.mean
-        )
+        emmv_frac = self.rms.count / self.emmv.window_size
+        if emmv_frac >= 1:
+            return self.emmv.mean
+        else:
+            return self.rms.mean * (1 - emmv_frac) + self.emmv.mean * emmv_frac
 
     @property
     def var(self) -> NDArray:
-        return self.rms.var if self.rms.count < self.emmv.window_size else self.emmv.var
+        emmv_frac = self.rms.count / self.emmv.window_size
+        if emmv_frac >= 1:
+            return self.emmv.var
+        else:
+            return self.rms.var * (1 - emmv_frac) + self.emmv.var * emmv_frac
 
     def update(self, x: NDArray) -> None:
         self.rms.update(x)
