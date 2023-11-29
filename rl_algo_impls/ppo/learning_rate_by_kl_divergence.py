@@ -46,7 +46,7 @@ class LearningRateByKLDivergence(Callback):
         self.num_updates += 1
 
         if self.v_loss_threshold is not None:
-            v_loss = np.array(train_stats.v_loss).mean()
+            v_loss = np.array([np.mean(train_stats.v_loss)])
             self.slow_v_loss_rms.update(v_loss)
             self.fast_v_loss_rms.update(v_loss)
 
