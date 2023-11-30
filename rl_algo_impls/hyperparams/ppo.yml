@@ -86,7 +86,7 @@ LunarLander-v2: &lunarlander
     n_envs: 16
   rollout_hyperparams:
     n_steps: 1024
-  algo_hyperparams:
+  algo_hyperparams: &lunarlander-algo
     batch_size: 64
     n_epochs: 4
     gae_lambda: 0.98
@@ -106,9 +106,12 @@ LunarLander-v2: &lunarlander
 LunarLander-v2-lr-by-kl: &lunarlander-lr-by-kl
   <<: *lunarlander
   env_id: LunarLander-v2
+  algo_hyperparams:
+    <<: *lunarlander-algo
+    learning_rate: !!float 2e-4
   lr_by_kl_kwargs:
     target_kl: 0.01
-    min_decrease_fraction: 0.8
+    min_decrease_fraction: 0.9
     max_increase_fraction: 1.05
   hyperparam_transitions_kwargs:
     durations:
@@ -193,7 +196,7 @@ CarRacing-v2-lr-by-kl: &carracing-lr-by-kl
   env_id: CarRacing-v2
   lr_by_kl_kwargs:
     target_kl: 0.01
-    min_decrease_fraction: 0.8
+    min_decrease_fraction: 0.9
     max_increase_fraction: 1.05
   hyperparam_transitions_kwargs:
     durations:
@@ -289,7 +292,7 @@ _atari-lr-by-kl: &atari-lr-by-kl
   <<: *atari-defaults
   lr_by_kl_kwargs:
     target_kl: 0.01
-    min_decrease_fraction: 0.8
+    min_decrease_fraction: 0.9
     max_increase_fraction: 1.05
   hyperparam_transitions_kwargs:
     durations:
@@ -345,7 +348,7 @@ HalfCheetah-v4-lr-by-kl: &mujoco-lr-by-kl
   env_id: HalfCheetah-v4
   lr_by_kl_kwargs: &mujoco-lr-by-kl-kwargs
     target_kl: 0.01
-    min_decrease_fraction: 0.8
+    min_decrease_fraction: 0.9
     max_increase_fraction: 1.05
   hyperparam_transitions_kwargs:
     durations:
