@@ -134,11 +134,11 @@ class Policy(nn.Module, ABC, Generic[ObsType]):
         current = destination_env
         while current != current.unwrapped:
             if isinstance(current, NormalizeObservation):
-                assert self.norm_observation
-                current.rms = deepcopy(self.norm_observation.rms)
+                assert self.norm_observation_rms
+                current.rms = deepcopy(self.norm_observation_rms)
             elif isinstance(current, NormalizeReward):
-                assert self.norm_reward
-                current.rms = deepcopy(self.norm_reward.rms)
+                assert self.norm_reward_rms
+                current.rms = deepcopy(self.norm_reward_rms)
             current = getattr(current, "env", current)
             if not current:
                 raise AttributeError(f"{type(current)} doesn't include env attribute")
