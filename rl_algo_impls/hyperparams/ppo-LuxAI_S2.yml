@@ -4263,6 +4263,32 @@ LuxAI_S2-v0-j1024env32-80m-vfw01-vlthresh-a100:
   algo_hyperparams: &lux-j1024env32-80m-vfw01-vlthresh-a100-algo
     <<: *lux-j1024env32-80m-vfw01-a100-algo
 
+LuxAI_S2-v0-j1024env16-80m-vfc006-vlthresh: &lux-j1024env16-80m-vfc006-vlthresh
+  <<: *lux-j1024env16-80m-vfc003-vlthresh
+  algo_hyperparams: &lux-j1024env16-80m-vfc006-vlthresh-algo
+    <<: *lux-j1024env16-80m-vfc003-vlthresh-algo
+    vf_coef: 0.06
+  lr_by_kl_kwargs: &lux-j1024env16-80m-vfc006-vlthresh-lr-by-kl-kwargs
+    <<: *lux-j1024env16-80m-vfc003-vlthresh-lr-by-kl-kwargs
+    moving_window_size: 3
+    min_decrease_fraction: 0.9
+    max_increase_fraction: 1.05
+    v_loss_threshold: 1.5
+    v_loss_fast_moving_window_size: 5
+    v_loss_slow_moving_window_size: 25
+
+LuxAI_S2-v0-j1024env16-80m-vfc012-vlthresh: &lux-j1024env16-80m-vfc012-vlthresh
+  <<: *lux-j1024env16-80m-vfc006-vlthresh
+  algo_hyperparams: &lux-j1024env16-80m-vfc012-vlthresh-algo
+    <<: *lux-j1024env16-80m-vfc006-vlthresh-algo
+    vf_coef: 0.12
+
+LuxAI_S2-v0-j1024env16-80m-vfc024-vlthresh: &lux-j1024env16-80m-vfc024-vlthresh
+  <<: *lux-j1024env16-80m-vfc012-vlthresh
+  algo_hyperparams: &lux-j1024env16-80m-vfc024-vlthresh-algo
+    <<: *lux-j1024env16-80m-vfc012-vlthresh-algo
+    vf_coef: 0.24
+
 LuxAI_S2-agent: &lux-agent
   <<: *lux-j512env64-80m-lr5-ft32-2o3m4h
   device: cpu
