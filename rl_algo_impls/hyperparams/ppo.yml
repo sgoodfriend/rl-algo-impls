@@ -80,7 +80,7 @@ Acrobot-v1:
     gamma: 0.99
     ent_coef: 0.0
 
-LunarLander-v2:
+LunarLander-v2: &lunarlander
   n_timesteps: !!float 4e6
   env_hyperparams:
     n_envs: 16
@@ -102,6 +102,21 @@ LunarLander-v2:
         clip_range: 0.2
       - learning_rate: 0
         clip_range: 0
+
+LunarLander-v2-lr-by-kl: &lunarlander-lr-by-kl
+  <<: *lunarlander
+  env_id: LunarLander-v2
+  lr_by_kl_kwargs:
+    target_kl: 0.01
+    max_increase_fraction: 1.05
+  hyperparam_transitions_kwargs:
+    durations:
+      - 0.8
+      - 0.2
+      - 0
+    phases:
+      - target_kl: 0.01
+      - target_kl: 0.001
 
 BipedalWalker-v3:
   n_timesteps: !!float 10e6
@@ -171,6 +186,21 @@ impala-CarRacing-v2:
     init_layers_orthogonal: true
     cnn_layers_init_orthogonal: false
     hidden_sizes: []
+
+CarRacing-v2-lr-by-kl: &carracing-lr-by-kl
+  <<: *carracing-defaults
+  env_id: CarRacing-v2
+  lr_by_kl_kwargs:
+    target_kl: 0.01
+    max_increase_fraction: 1.05
+  hyperparam_transitions_kwargs:
+    durations:
+      - 0.8
+      - 0.2
+      - 0
+    phases:
+      - target_kl: 0.01
+      - target_kl: 0.001
 
 # BreakoutNoFrameskip-v4
 # PongNoFrameskip-v4
@@ -253,6 +283,36 @@ impala-QbertNoFrameskip-v4:
   <<: *impala-atari-defaults
   env_id: QbertNoFrameskip-v4
 
+_atari-lr-by-kl: &atari-lr-by-kl
+  <<: *atari-defaults
+  lr_by_kl_kwargs:
+    target_kl: 0.01
+    max_increase_fraction: 1.05
+  hyperparam_transitions_kwargs:
+    durations:
+      - 0.8
+      - 0.2
+      - 0
+    phases:
+      - target_kl: 0.01
+      - target_kl: 0.001
+
+PongNoFrameskip-v4-lr-by-kl:
+  <<: *atari-lr-by-kl
+  env_id: PongNoFrameskip-v4
+
+BreakoutNoFrameskip-v4-lr-by-kl:
+  <<: *atari-lr-by-kl
+  env_id: BreakoutNoFrameskip-v4
+
+SpaceInvadersNoFrameskip-v4-lr-by-kl:
+  <<: *atari-lr-by-kl
+  env_id: SpaceInvadersNoFrameskip-v4
+
+QbertNoFrameskip-v4-lr-by-kl:
+  <<: *atari-lr-by-kl
+  env_id: QbertNoFrameskip-v4
+
 HalfCheetah-v4: &mujoco-defaults
   n_timesteps: !!float 1e6
   env_hyperparams: &mujoco-env-defaults
@@ -277,12 +337,31 @@ HalfCheetah-v4: &mujoco-defaults
     learning_rate: !!float 2.0633e-05
     clip_range: 0.1
 
+HalfCheetah-v4-lr-by-kl: &mujoco-lr-by-kl
+  <<: *mujoco-defaults
+  env_id: HalfCheetah-v4
+  lr_by_kl_kwargs: &mujoco-lr-by-kl-kwargs
+    target_kl: 0.01
+    max_increase_fraction: 1.05
+  hyperparam_transitions_kwargs:
+    durations:
+      - 0.8
+      - 0.2
+      - 0
+    phases:
+      - target_kl: 0.01
+      - target_kl: 0.001
+
 Ant-v4:
   <<: *mujoco-defaults
 
-Walker2d-v4:
+Ant-v4-lr-by-kl: &ant-lr-by-kl
+  <<: *mujoco-lr-by-kl
+  env_id: Ant-v4
+
+Walker2d-v4: &walker2d
   <<: *mujoco-defaults
-  algo_hyperparams:
+  algo_hyperparams: &walker2d-algo
     <<: *mujoco-algo-defaults
     batch_size: 32
     gamma: 0.99
@@ -294,9 +373,15 @@ Walker2d-v4:
     max_grad_norm: 1
     vf_coef: 0.871923
 
-Hopper-v4:
+Walker2d-v4-lr-by-kl: &walker2d-lr-by-kl
+  <<: *mujoco-lr-by-kl
+  env_id: Walker2d-v4
+  algo_hyperparams: &walker2d-lr-by-kl-algo
+    <<: *walker2d-algo
+
+Hopper-v4: &hopper
   <<: *mujoco-defaults
-  algo_hyperparams:
+  algo_hyperparams: &hopper-algo
     <<: *mujoco-algo-defaults
     batch_size: 32
     gamma: 0.999
@@ -307,6 +392,12 @@ Hopper-v4:
     gae_lambda: 0.99
     max_grad_norm: 0.7
     vf_coef: 0.835671
+
+Hopper-v4-lr-by-kl: &hopper-lr-by-kl
+  <<: *mujoco-lr-by-kl
+  env_id: Hopper-v4
+  algo_hyperparams: &hopper-lr-by-kl-algo
+    <<: *hopper-algo
 
 _procgen: &procgen-defaults
   env_hyperparams: &procgen-env-defaults
