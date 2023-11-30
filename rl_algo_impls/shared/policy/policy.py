@@ -100,7 +100,8 @@ class Policy(nn.Module, ABC, Generic[ObsType]):
             self.norm_observation_rms.load_from(policy.norm_observation_rms)
         if self.norm_reward_rms:
             assert policy.norm_reward_rms
-            self.norm_reward_rms.load_from(policy.norm_reward_rms)
+            assert type(self.norm_reward_rms) == type(policy.norm_reward_rms)
+            self.norm_reward_rms.load_from(policy.norm_reward_rms)  # type: ignore
         return self
 
     def __deepcopy__(self: PolicySelf, memo: Dict[int, Any]) -> PolicySelf:
