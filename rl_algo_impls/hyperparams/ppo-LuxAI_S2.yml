@@ -4349,7 +4349,7 @@ LuxAI_S2-v0-j1024env32-80m-vfc024-squnet-slow-a100:
       - 0.0125 # reset 32 envs every rollout, 1M steps
       - 0
       - 0.7875 # reset 4 envs every rollout, 63M steps
-      - 0.2 # ent_coef 0.001 -> 0.0001, target_kl 0.01 -> 0.001, 16M steps
+      - 0.2 # ent_coef 0.005 -> 0.001, target_kl 0.01 -> 0.001, 16M steps
       - 0
 
 LuxAI_S2-v0-j1024env32-80m-vfc012-squnet-slow-a100:
