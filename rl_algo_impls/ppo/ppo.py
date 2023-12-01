@@ -41,8 +41,14 @@ class TrainStats:
     clipped_frac: float
     val_clipped_frac: Union[float, np.ndarray]
     explained_var: float
+    grad_norm: float
 
-    def __init__(self, step_stats: List[TrainStepStats], explained_var: float) -> None:
+    def __init__(
+        self,
+        step_stats: List[TrainStepStats],
+        explained_var: float,
+        grad_norms: List[float],
+    ) -> None:
         self.loss = np.mean([s.loss for s in step_stats]).item()
         self.pi_loss = np.mean([s.pi_loss for s in step_stats]).item()
         self.v_loss = np.mean([s.v_loss for s in step_stats], axis=0)
@@ -53,6 +59,7 @@ class TrainStats:
             [s.val_clipped_frac for s in step_stats], axis=0
         )
         self.explained_var = explained_var
+        self.grad_norm = np.mean(grad_norms).item()
 
     def write_to_tensorboard(self, tb_writer: SummaryWriter, global_step: int) -> None:
         for name, value in asdict(self).items():
@@ -232,6 +239,7 @@ class PPO(Algorithm):
         timesteps_elapsed += r.total_steps
 
         step_stats = []
+        grad_norms = []
         multi_reward_weights = (
             torch.Tensor(self.multi_reward_weights).to(self.device)
             if self.multi_reward_weights is not None
@@ -253,6 +261,7 @@ class PPO(Algorithm):
         for _ in range(self.n_epochs):
             # Only record last epoch's stats
             step_stats.clear()
+            grad_norms.clear()
             for mb in r.minibatches(self.batch_size, self.device):
                 self.policy.reset_noise(self.batch_size)
 
@@ -326,7 +335,7 @@ class PPO(Algorithm):
                         loss /= r.num_minibatches(self.batch_size)
                 loss.backward()
                 if not self.gradient_accumulation:
-                    self.optimizer_step()
+                    grad_norms.append(self.optimizer_step())
 
                 with torch.no_grad():
                     clipped_frac = (
@@ -359,7 +368,7 @@ class PPO(Algorithm):
                     )
                 )
             if self.gradient_accumulation:
-                self.optimizer_step()
+                grad_norms.append(self.optimizer_step())
         if self.freeze_policy_head or self.freeze_value_head or self.freeze_backbone:
             self.policy.unfreeze()
 
@@ -367,7 +376,7 @@ class PPO(Algorithm):
         explained_var = (
             np.nan if var_y == 0 else 1 - np.var(r.y_true - r.y_pred).item() / var_y
         )
-        train_stats = TrainStats(step_stats, explained_var)
+        train_stats = TrainStats(step_stats, explained_var, grad_norms)
         train_stats.write_to_tensorboard(self.tb_writer, timesteps_elapsed)
 
         end_time = perf_counter()
@@ -389,7 +398,10 @@ class PPO(Algorithm):
                 return timesteps_elapsed, False
         return timesteps_elapsed, True
 
-    def optimizer_step(self) -> None:
-        nn.utils.clip_grad_norm_(self.policy.parameters(), self.max_grad_norm)
+    def optimizer_step(self) -> float:
+        grad_norm = nn.utils.clip_grad_norm_(
+            self.policy.parameters(), self.max_grad_norm
+        ).item()
         self.optimizer.step()
         self.optimizer.zero_grad(set_to_none=True)
+        return grad_norm

@@ -18,6 +18,7 @@ class LearningRateByKLDivergence(Callback):
         v_loss_threshold: Optional[float] = None,
         v_loss_fast_moving_window_size: int = 10,
         v_loss_slow_moving_window_size: int = 50,
+        grad_norm_threshold: Optional[float] = None,
     ) -> None:
         super().__init__()
         self.algo = algo
@@ -36,6 +37,8 @@ class LearningRateByKLDivergence(Callback):
             self.fast_v_loss_rms = ExponentialMovingMeanVar(
                 window_size=v_loss_fast_moving_window_size,
             )
+
+        self.grad_norm_threshold = grad_norm_threshold
 
     def on_step(
         self, train_stats: TrainStats, timesteps_elapsed: int = 1, **kwargs
@@ -64,6 +67,11 @@ class LearningRateByKLDivergence(Callback):
                 max_increase_fraction = max(
                     max_increase_fraction, min_decrease_fraction
                 )
+        if (
+            self.grad_norm_threshold is not None
+            and train_stats.grad_norm > self.grad_norm_threshold
+        ):
+            max_increase_fraction = min(max_increase_fraction, 1.0)
 
         if self.num_updates > self.rms_kl.window_size:
             kl = self.rms_kl.mean.item()
