@@ -4330,7 +4330,8 @@ LuxAI_S2-v0-j1024env32-80m-vfc024-squnet-slow-a100:
     <<: *lux-j1024env32-80m-vfc012-a100-lr-by-kl-kwargs
     max_increase_fraction: 1.02
     moving_window_size: 5
-  hyperparam_transitions_kwargs: &lux-j1024env32-80m-vfc024-squnet-slow-a100
+  hyperparam_transitions_kwargs:
+    &lux-j1024env32-80m-vfc024-squnet-slow-a100-hyperparam-transitions
     <<: *lux-j1024env16-80m-decay-lrkl-hyperparam-transitions
     phases:
       - ent_coef: 0.01
