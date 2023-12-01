@@ -307,6 +307,9 @@ PongNoFrameskip-v4-lr-by-kl:
 BreakoutNoFrameskip-v4-lr-by-kl:
   <<: *atari-lr-by-kl
   env_id: BreakoutNoFrameskip-v4
+  algo_hyperparams:
+    <<: *atari-algo-defaults
+    learning_rate: !!float 5e-4
 
 SpaceInvadersNoFrameskip-v4-lr-by-kl:
   <<: *atari-lr-by-kl
