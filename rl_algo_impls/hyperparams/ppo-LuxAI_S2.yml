@@ -4429,6 +4429,14 @@ LuxAI_S2-v0-j1024env16-80m-vfc048-squnet-slow:
     <<: *lux-j1024env16-80m-vfc024-squnet-slow-algo
     vf_coef: 0.48
 
+LuxAI_S2-v0-j1024env16-80m-vfc024-squnet-grad-norm-stop:
+  &lux-j1024env16-80m-vfc024-squnet-grad-norm-stop
+  <<: *lux-j1024env16-80m-vfc024-squnet-slow
+  lr_by_kl_kwargs:
+    &lux-j1024env16-80m-vfc024-squnet-grad-norm-stop-lr-by-kl-kwargs
+    <<: *lux-j1024env16-80m-vfc024-squnet-slow-lr-by-kl-kwargs
+    grad_norm_threshold: 0.5
+
 LuxAI_S2-agent: &lux-agent
   <<: *lux-j512env64-80m-lr5-ft32-2o3m4h
   device: cpu
