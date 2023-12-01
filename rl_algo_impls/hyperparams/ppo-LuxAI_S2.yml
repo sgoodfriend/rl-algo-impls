@@ -4360,6 +4360,20 @@ LuxAI_S2-v0-j1024env32-80m-vfc012-squnet-slow-a100:
     <<: *lux-j1024env32-80m-vfc024-squnet-slow-a100-algo
     vf_coef: 0.12
 
+LuxAI_S2-v0-j1024env32-80m-vfc048-squnet-slow-a100:
+  &lux-j1024env32-80m-vfc048-squnet-slow-a100
+  <<: *lux-j1024env32-80m-vfc012-squnet-slow-a100
+  algo_hyperparams: &lux-j1024env32-80m-vfc048-squnet-slow-a100-algo
+    <<: *lux-j1024env32-80m-vfc024-squnet-slow-a100-algo
+    vf_coef: 0.48
+
+LuxAI_S2-v0-j1024env32-80m-vfc006-squnet-slow-a100:
+  &lux-j1024env32-80m-vfc006-squnet-slow-a100
+  <<: *lux-j1024env32-80m-vfc024-squnet-slow-a100
+  algo_hyperparams: &lux-j1024env32-80m-vfc006-squnet-slow-a100-algo
+    <<: *lux-j1024env32-80m-vfc024-squnet-slow-a100-algo
+    vf_coef: 0.06
+
 LuxAI_S2-agent: &lux-agent
   <<: *lux-j512env64-80m-lr5-ft32-2o3m4h
   device: cpu
