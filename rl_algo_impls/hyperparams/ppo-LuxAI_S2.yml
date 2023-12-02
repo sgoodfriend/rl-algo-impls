@@ -4456,7 +4456,7 @@ LuxAI_S2-v0-j1024env16-80m-vfc012-squnet-grad-norm-stop:
 
 LuxAI_S2-v0-j1024env16-80m-vfc048-squnet-grad-norm-stop:
   &lux-j1024env16-80m-vfc048-squnet-grad-norm-stop
-  <<: *lux-j1024env16-80m-vfc048-squnet-grad-norm-stop
+  <<: *lux-j1024env16-80m-vfc012-squnet-grad-norm-stop
   algo_hyperparams: &lux-j1024env16-80m-vfc048-squnet-grad-norm-stop-algo
     <<: *lux-j1024env16-80m-vfc012-squnet-grad-norm-stop-algo
     vf_coef: 0.48
