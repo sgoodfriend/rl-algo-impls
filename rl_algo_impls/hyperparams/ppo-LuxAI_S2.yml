@@ -4444,11 +4444,11 @@ LuxAI_S2-v0-j1024env32-80m-vfc006-squnet-grad-norm-stop-a100:
   lr_by_kl_kwargs:
     &lux-j1024env32-80m-vfc006-squnet-grad-norm-stop-a100-lr-by-kl-kwargs
     <<: *lux-j1024env32-80m-vfc024-squnet-slow-a100-lr-by-kl-kwargs
-    grad_norm_threshold: 1.0
+    grad_norm_threshold: 10.0
     v_loss_threshold: null
   algo_hyperparams: &lux-j1024env32-80m-vfc006-squnet-grad-norm-stop-a100-algo
     <<: *lux-j1024env32-80m-vfc006-squnet-slow-a100-algo
-    max_grad_norm: 1.0
+    max_grad_norm: 10.0
 
 LuxAI_S2-v0-j1024env16-80m-vfc012-squnet-grad-norm-stop:
   &lux-j1024env16-80m-vfc012-squnet-grad-norm-stop
