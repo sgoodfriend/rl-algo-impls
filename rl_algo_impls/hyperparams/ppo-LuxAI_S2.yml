@@ -4444,6 +4444,7 @@ LuxAI_S2-v0-j1024env32-80m-vfc006-squnet-grad-norm-stop-a100:
     &lux-j1024env32-80m-vfc006-squnet-grad-norm-stop-a100-lr-by-kl-kwargs
     <<: *lux-j1024env32-80m-vfc024-squnet-slow-a100-lr-by-kl-kwargs
     grad_norm_threshold: 0.5
+    v_loss_threshold: null
 
 LuxAI_S2-agent: &lux-agent
   <<: *lux-j512env64-80m-lr5-ft32-2o3m4h
