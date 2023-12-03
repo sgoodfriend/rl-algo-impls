@@ -52,10 +52,10 @@ LR_BY_KL_ENVS=(
     "Hopper-v4-lr-by-kl"
     "Walker2d-v4-lr-by-kl"
     # Atari
-    "HalfCheetah-v4-lr-by-kl"
-    "Ant-v4-lr-by-kl"
-    "Hopper-v4-lr-by-kl"
-    "Walker2d-v4-lr-by-kl"
+    "PongNoFrameskip-v4-lr-by-kl"
+    "BreakoutNoFrameskip-v4-lr-by-kl"
+    "SpaceInvadersNoFrameskip-v4-lr-by-kl"
+    "QbertNoFrameskip-v4-lr-by-kl"
     # CarRacing
     "CarRacing-v2-lr-by-kl"
 )
