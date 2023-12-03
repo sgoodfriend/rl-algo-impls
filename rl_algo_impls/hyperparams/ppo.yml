@@ -82,7 +82,7 @@ Acrobot-v1:
 
 LunarLander-v2: &lunarlander
   n_timesteps: !!float 4e6
-  env_hyperparams:
+  env_hyperparams: &lunarlander-env
     n_envs: 16
   rollout_hyperparams:
     n_steps: 1024
@@ -106,18 +106,31 @@ LunarLander-v2: &lunarlander
 LunarLander-v2-lr-by-kl: &lunarlander-lr-by-kl
   <<: *lunarlander
   env_id: LunarLander-v2
+  env_hyperparams:
+    <<: *lunarlander-env
+    normalize: true
+    normalize_kwargs:
+      gamma_reward: 0.999
+  algo_hyperparams:
+    <<: *lunarlander-algo
+    max_grad_norm: 1.0
+    vf_coef: 2.0
+    normalize_advantage: true
   lr_by_kl_kwargs:
     target_kl: 0.01
     min_decrease_fraction: 0.9
     max_increase_fraction: 1.05
+    grad_norm_threshold: 1.0
   hyperparam_transitions_kwargs:
     durations:
-      - 0.8
-      - 0.2
+      - 0
+      - 1.0
       - 0
     phases:
-      - target_kl: 0.01
-      - target_kl: 0.001
+      - target_kl: 0.02
+        ent_coef: 0.02
+      - target_kl: 0.0001
+        ent_coef: 0
 
 BipedalWalker-v3:
   n_timesteps: !!float 10e6

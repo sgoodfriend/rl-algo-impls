@@ -175,6 +175,7 @@ def make_vec_env(
                 envs = NormalizeReward(
                     envs,
                     training=training,
+                    gamma=normalize_kwargs.get("gamma_reward", 0.99),
                     clip=normalize_kwargs.get("clip_reward", 10.0),
                 )
         else:
