@@ -42,7 +42,7 @@ class SqueezeExcitation(nn.Module):
         return x * scale
 
 
-class ResidualBlock(nn.Module):
+class SEResidualBlock(nn.Module):
     def __init__(
         self,
         channels: int,
@@ -94,7 +94,7 @@ class DoubleConeBlock(nn.Module):
         self.gelu = nn.GELU() if gelu_pool_conv else nn.Identity()
         self.res_blocks = nn.Sequential(
             *[
-                ResidualBlock(
+                SEResidualBlock(
                     pooled_channels, init_layers_orthogonal=init_layers_orthogonal
                 )
                 for _ in range(num_residual_blocks)
@@ -145,7 +145,7 @@ class DoubleConeBackbone(nn.Module):
                     nn.GELU(),
                 ]
                 + [
-                    ResidualBlock(
+                    SEResidualBlock(
                         channels, init_layers_orthogonal=init_layers_orthogonal
                     )
                     for _ in range(in_num_res_blocks)
@@ -161,7 +161,7 @@ class DoubleConeBackbone(nn.Module):
         )
         self.out_block = nn.Sequential(
             *[
-                ResidualBlock(channels, init_layers_orthogonal=init_layers_orthogonal)
+                SEResidualBlock(channels, init_layers_orthogonal=init_layers_orthogonal)
                 for _ in range(out_num_res_blocks)
             ]
         )

@@ -9,7 +9,7 @@ from rl_algo_impls.shared.module.utils import layer_init
 from rl_algo_impls.shared.policy.actor_critic_network.backbone_actor_critic import (
     BackboneActorCritic,
 )
-from rl_algo_impls.shared.policy.actor_critic_network.double_cone import ResidualBlock
+from rl_algo_impls.shared.policy.actor_critic_network.double_cone import SEResidualBlock
 
 
 class SqueezeUnetBackbone(nn.Module):
@@ -71,7 +71,7 @@ class SqueezeUnetBackbone(nn.Module):
         encoder_head_layers.append(nn.GELU())
         encoder_head_layers.extend(
             [
-                ResidualBlock(
+                SEResidualBlock(
                     channels_per_level[0],
                     init_layers_orthogonal=init_layers_orthogonal,
                     batch_norm=batch_norm,
@@ -91,7 +91,7 @@ class SqueezeUnetBackbone(nn.Module):
                     *(
                         down_conv(in_channels, channels, stride)
                         + [
-                            ResidualBlock(
+                            SEResidualBlock(
                                 channels,
                                 init_layers_orthogonal=init_layers_orthogonal,
                                 batch_norm=batch_norm,
@@ -146,7 +146,7 @@ class SqueezeUnetBackbone(nn.Module):
                 nn.Sequential(
                     *(
                         [
-                            ResidualBlock(
+                            SEResidualBlock(
                                 channels,
                                 init_layers_orthogonal=init_layers_orthogonal,
                                 batch_norm=batch_norm,
@@ -160,7 +160,7 @@ class SqueezeUnetBackbone(nn.Module):
         self.decoders.append(
             nn.Sequential(
                 *[
-                    ResidualBlock(
+                    SEResidualBlock(
                         channels_per_level[0],
                         init_layers_orthogonal=init_layers_orthogonal,
                         batch_norm=batch_norm,
