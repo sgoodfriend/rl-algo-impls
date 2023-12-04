@@ -42,6 +42,7 @@ class BackboneActorCritic(ActorCriticNetwork):
         critic_shares_backbone: bool = True,
         save_critic_separate: bool = False,
         shared_critic_head: bool = False,
+        batch_norm: bool = False,
     ):
         if num_additional_critics and not additional_critic_activation_functions:
             additional_critic_activation_functions = [
@@ -105,7 +106,7 @@ class BackboneActorCritic(ActorCriticNetwork):
                 in_channels: int, out_channels: int, stride: int
             ) -> List[nn.Module]:
                 kernel_size = max(3, stride)
-                return [
+                layers = [
                     layer_init(
                         nn.Conv2d(
                             in_channels,
@@ -115,9 +116,12 @@ class BackboneActorCritic(ActorCriticNetwork):
                             padding=1 if kernel_size % 2 else 0,
                         ),
                         init_layers_orthogonal=cnn_layers_init_orthogonal,
-                    ),
-                    nn.GELU(),
+                    )
                 ]
+                if batch_norm:
+                    layers.append(nn.BatchNorm2d(out_channels))
+                layers.append(nn.GELU())
+                return layers
 
             flattened_strides = []
             for s in strides:
@@ -136,26 +140,26 @@ class BackboneActorCritic(ActorCriticNetwork):
             )
             for s in flattened_strides[1:]:
                 down_convs.extend(down_conv(critic_channels, critic_channels, s))
-            return nn.Sequential(
-                *(
-                    down_convs
-                    + [
-                        nn.AdaptiveAvgPool2d(1),
-                        nn.Flatten(),
-                        layer_init(
-                            nn.Linear(critic_channels, critic_channels),
-                            init_layers_orthogonal=init_layers_orthogonal,
-                        ),
-                        nn.GELU(),
-                        layer_init(
-                            nn.Linear(critic_channels, num_output_channels),
-                            init_layers_orthogonal=init_layers_orthogonal,
-                            std=1.0,
-                        ),
-                        output_activation_layer,
-                    ]
+            _layers = down_convs + [
+                nn.AdaptiveAvgPool2d(1),
+                nn.Flatten(),
+                layer_init(
+                    nn.Linear(critic_channels, critic_channels),
+                    init_layers_orthogonal=init_layers_orthogonal,
+                ),
+            ]
+            if batch_norm:
+                _layers.append(nn.BatchNorm1d(critic_channels))
+            _layers.append(nn.GELU())
+            _layers.append(
+                layer_init(
+                    nn.Linear(critic_channels, num_output_channels),
+                    init_layers_orthogonal=init_layers_orthogonal,
+                    std=1.0,
                 )
             )
+            _layers.append(output_activation_layer)
+            return nn.Sequential(*_layers)
 
         output_activations = [
             ACTIVATION[act_fn_name]()

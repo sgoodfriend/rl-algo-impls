@@ -47,20 +47,30 @@ class ResidualBlock(nn.Module):
         self,
         channels: int,
         init_layers_orthogonal: bool = False,
+        batch_norm: bool = False,
     ) -> None:
         super().__init__()
-        self.residual = nn.Sequential(
+        layers = [
             layer_init(
                 nn.Conv2d(channels, channels, 3, padding=1),
                 init_layers_orthogonal=init_layers_orthogonal,
-            ),
-            nn.GELU(),
+            )
+        ]
+        if batch_norm:
+            layers.append(nn.BatchNorm2d(channels))
+        layers.append(nn.GELU())
+        layers.append(
             layer_init(
                 nn.Conv2d(channels, channels, 3, padding=1),
                 init_layers_orthogonal=init_layers_orthogonal,
-            ),
-            SqueezeExcitation(channels, init_layers_orthogonal=init_layers_orthogonal),
+            )
         )
+        if batch_norm:
+            layers.append(nn.BatchNorm2d(channels))
+        layers.append(
+            SqueezeExcitation(channels, init_layers_orthogonal=init_layers_orthogonal)
+        )
+        self.residual = nn.Sequential(*layers)
         self.gelu = nn.GELU()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:

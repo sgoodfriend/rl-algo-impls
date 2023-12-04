@@ -23,6 +23,7 @@ class SqueezeUnetBackbone(nn.Module):
         deconv_strides_per_level: Optional[List[Union[int, List[int]]]] = None,
         init_layers_orthogonal: bool = False,
         increment_kernel_size_on_down_conv: bool = False,
+        batch_norm: bool = False,
     ) -> None:
         super().__init__()
 
@@ -42,47 +43,43 @@ class SqueezeUnetBackbone(nn.Module):
                     else:
                         kernel_size += 1
                         padding = 1
-                layers.extend(
-                    [
-                        layer_init(
-                            nn.Conv2d(
-                                in_channels if idx == 0 else out_channels,
-                                out_channels,
-                                kernel_size=kernel_size,
-                                stride=s,
-                                padding=padding,
-                            ),
-                            init_layers_orthogonal=init_layers_orthogonal,
+                layers.append(
+                    layer_init(
+                        nn.Conv2d(
+                            in_channels if idx == 0 else out_channels,
+                            out_channels,
+                            kernel_size=kernel_size,
+                            stride=s,
+                            padding=padding,
                         ),
-                        nn.GELU(),
-                    ]
-                )
-            return layers
-
-        self.encoders = nn.ModuleList(
-            [
-                nn.Sequential(
-                    *(
-                        [
-                            layer_init(
-                                nn.Conv2d(
-                                    in_channels, channels_per_level[0], 3, padding=1
-                                ),
-                                init_layers_orthogonal=init_layers_orthogonal,
-                            ),
-                            nn.GELU(),
-                        ]
-                        + [
-                            ResidualBlock(
-                                channels_per_level[0],
-                                init_layers_orthogonal=init_layers_orthogonal,
-                            )
-                            for _ in range(encoder_residual_blocks_per_level[0])
-                        ]
+                        init_layers_orthogonal=init_layers_orthogonal,
                     )
                 )
+                if batch_norm:
+                    layers.append(nn.BatchNorm2d(out_channels))
+                layers.append(nn.GELU())
+            return layers
+
+        encoder_head_layers = [
+            layer_init(
+                nn.Conv2d(in_channels, channels_per_level[0], 3, padding=1),
+                init_layers_orthogonal=init_layers_orthogonal,
+            )
+        ]
+        if batch_norm:
+            encoder_head_layers.append(nn.BatchNorm2d(channels_per_level[0]))
+        encoder_head_layers.append(nn.GELU())
+        encoder_head_layers.extend(
+            [
+                ResidualBlock(
+                    channels_per_level[0],
+                    init_layers_orthogonal=init_layers_orthogonal,
+                    batch_norm=batch_norm,
+                )
+                for _ in range(encoder_residual_blocks_per_level[0])
             ]
         )
+        self.encoders = nn.ModuleList([nn.Sequential(*encoder_head_layers)])
         for in_channels, channels, stride, num_residual_blocks in zip(
             channels_per_level[:-1],
             channels_per_level[1:],
@@ -95,7 +92,9 @@ class SqueezeUnetBackbone(nn.Module):
                         down_conv(in_channels, channels, stride)
                         + [
                             ResidualBlock(
-                                channels, init_layers_orthogonal=init_layers_orthogonal
+                                channels,
+                                init_layers_orthogonal=init_layers_orthogonal,
+                                batch_norm=batch_norm,
                             )
                             for _ in range(num_residual_blocks)
                         ]
@@ -120,6 +119,8 @@ class SqueezeUnetBackbone(nn.Module):
                         init_layers_orthogonal=init_layers_orthogonal,
                     )
                 )
+                if batch_norm:
+                    layers.append(nn.BatchNorm2d(out_channels))
                 layers.append(nn.GELU())
             return layers
 
@@ -148,6 +149,7 @@ class SqueezeUnetBackbone(nn.Module):
                             ResidualBlock(
                                 channels,
                                 init_layers_orthogonal=init_layers_orthogonal,
+                                batch_norm=batch_norm,
                             )
                             for _ in range(num_residual_blocks)
                         ]
@@ -161,6 +163,7 @@ class SqueezeUnetBackbone(nn.Module):
                     ResidualBlock(
                         channels_per_level[0],
                         init_layers_orthogonal=init_layers_orthogonal,
+                        batch_norm=batch_norm,
                     )
                     for _ in range(decoder_residual_blocks_per_level[0])
                 ]
@@ -202,6 +205,7 @@ class SqueezeUnetActorCriticNetwork(BackboneActorCritic):
         critic_shares_backbone: bool = True,
         save_critic_separate: bool = False,
         shared_critic_head: bool = False,
+        batch_norm: bool = False,
     ) -> None:
         if cnn_layers_init_orthogonal is None:
             cnn_layers_init_orthogonal = False
@@ -231,6 +235,7 @@ class SqueezeUnetActorCriticNetwork(BackboneActorCritic):
             deconv_strides_per_level=deconv_strides_per_level,
             init_layers_orthogonal=cnn_layers_init_orthogonal,
             increment_kernel_size_on_down_conv=increment_kernel_size_on_down_conv,
+            batch_norm=batch_norm,
         )
         super().__init__(
             observation_space,
@@ -249,4 +254,5 @@ class SqueezeUnetActorCriticNetwork(BackboneActorCritic):
             critic_shares_backbone=critic_shares_backbone,
             save_critic_separate=save_critic_separate,
             shared_critic_head=shared_critic_head,
+            batch_norm=batch_norm,
         )

@@ -34,7 +34,9 @@ def mlp(
 
 
 def layer_init(
-    layer: nn.Module, init_layers_orthogonal: bool, std: float = np.sqrt(2)
+    layer: nn.Module,
+    init_layers_orthogonal: bool,
+    std: float = np.sqrt(2),
 ) -> nn.Module:
     if not init_layers_orthogonal:
         return layer
