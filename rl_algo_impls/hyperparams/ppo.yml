@@ -116,6 +116,7 @@ LunarLander-v2-lr-by-kl: &lunarlander-lr-by-kl
     max_grad_norm: 1.0
     vf_coef: 2.0
     normalize_advantage: true
+    learning_rate: !!float 1e-3
   lr_by_kl_kwargs:
     target_kl: 0.01
     min_decrease_fraction: 0.9
