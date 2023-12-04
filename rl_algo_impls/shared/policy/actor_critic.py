@@ -147,6 +147,7 @@ class ActorCritic(OnPolicy, Generic[ObsType]):
         shared_critic_head: Optional[bool] = None,
         critic_avg_max_pool: bool = False,
         batch_norm: bool = False,
+        layer_norm: bool = False,
         **kwargs,
     ) -> None:
         super().__init__(env, **kwargs)
@@ -219,6 +220,7 @@ class ActorCritic(OnPolicy, Generic[ObsType]):
                 if shared_critic_head is not None
                 else False,
                 batch_norm=batch_norm,
+                layer_norm=layer_norm,
             )
         elif actor_head_style == "sacus":
             assert action_plane_space is not None

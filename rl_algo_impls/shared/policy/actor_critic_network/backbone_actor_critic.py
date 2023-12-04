@@ -43,6 +43,7 @@ class BackboneActorCritic(ActorCriticNetwork):
         save_critic_separate: bool = False,
         shared_critic_head: bool = False,
         batch_norm: bool = False,
+        layer_norm: bool = False,
     ):
         if num_additional_critics and not additional_critic_activation_functions:
             additional_critic_activation_functions = [
@@ -82,6 +83,8 @@ class BackboneActorCritic(ActorCriticNetwork):
             action_plane_space.nvec
         )
 
+        assert not (batch_norm and layer_norm), "Cannot use both batch and layer norm"
+
         self.actor_head = nn.Sequential(
             *[
                 layer_init(
@@ -120,6 +123,8 @@ class BackboneActorCritic(ActorCriticNetwork):
                 ]
                 if batch_norm:
                     layers.append(nn.BatchNorm2d(out_channels))
+                elif layer_norm:
+                    layers.append(nn.LayerNorm(out_channels))
                 layers.append(nn.GELU())
                 return layers
 
@@ -150,6 +155,8 @@ class BackboneActorCritic(ActorCriticNetwork):
             ]
             if batch_norm:
                 _layers.append(nn.BatchNorm1d(critic_channels))
+            elif layer_norm:
+                _layers.append(nn.LayerNorm(critic_channels))
             _layers.append(nn.GELU())
             _layers.append(
                 layer_init(

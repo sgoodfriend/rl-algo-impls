@@ -24,8 +24,13 @@ class SqueezeUnetBackbone(nn.Module):
         init_layers_orthogonal: bool = False,
         increment_kernel_size_on_down_conv: bool = False,
         batch_norm: bool = False,
+        layer_norm: bool = False,
     ) -> None:
         super().__init__()
+
+        assert not (
+            batch_norm and layer_norm
+        ), f"batch_norm and layer_norm are mutually exclusive"
 
         def down_conv(
             in_channels: int, out_channels: int, stride: Union[int, List[int]]
@@ -57,6 +62,8 @@ class SqueezeUnetBackbone(nn.Module):
                 )
                 if batch_norm:
                     layers.append(nn.BatchNorm2d(out_channels))
+                elif layer_norm:
+                    layers.append(nn.LayerNorm(out_channels))
                 layers.append(nn.GELU())
             return layers
 
@@ -68,6 +75,8 @@ class SqueezeUnetBackbone(nn.Module):
         ]
         if batch_norm:
             encoder_head_layers.append(nn.BatchNorm2d(channels_per_level[0]))
+        elif layer_norm:
+            encoder_head_layers.append(nn.LayerNorm(channels_per_level[0]))
         encoder_head_layers.append(nn.GELU())
         encoder_head_layers.extend(
             [
@@ -75,6 +84,7 @@ class SqueezeUnetBackbone(nn.Module):
                     channels_per_level[0],
                     init_layers_orthogonal=init_layers_orthogonal,
                     batch_norm=batch_norm,
+                    layer_norm=layer_norm,
                 )
                 for _ in range(encoder_residual_blocks_per_level[0])
             ]
@@ -95,6 +105,7 @@ class SqueezeUnetBackbone(nn.Module):
                                 channels,
                                 init_layers_orthogonal=init_layers_orthogonal,
                                 batch_norm=batch_norm,
+                                layer_norm=layer_norm,
                             )
                             for _ in range(num_residual_blocks)
                         ]
@@ -121,6 +132,8 @@ class SqueezeUnetBackbone(nn.Module):
                 )
                 if batch_norm:
                     layers.append(nn.BatchNorm2d(out_channels))
+                elif layer_norm:
+                    layers.append(nn.LayerNorm(out_channels))
                 layers.append(nn.GELU())
             return layers
 
@@ -150,6 +163,7 @@ class SqueezeUnetBackbone(nn.Module):
                                 channels,
                                 init_layers_orthogonal=init_layers_orthogonal,
                                 batch_norm=batch_norm,
+                                layer_norm=layer_norm,
                             )
                             for _ in range(num_residual_blocks)
                         ]
@@ -164,6 +178,7 @@ class SqueezeUnetBackbone(nn.Module):
                         channels_per_level[0],
                         init_layers_orthogonal=init_layers_orthogonal,
                         batch_norm=batch_norm,
+                        layer_norm=layer_norm,
                     )
                     for _ in range(decoder_residual_blocks_per_level[0])
                 ]
@@ -206,6 +221,7 @@ class SqueezeUnetActorCriticNetwork(BackboneActorCritic):
         save_critic_separate: bool = False,
         shared_critic_head: bool = False,
         batch_norm: bool = False,
+        layer_norm: bool = False,
     ) -> None:
         if cnn_layers_init_orthogonal is None:
             cnn_layers_init_orthogonal = False
@@ -236,6 +252,7 @@ class SqueezeUnetActorCriticNetwork(BackboneActorCritic):
             init_layers_orthogonal=cnn_layers_init_orthogonal,
             increment_kernel_size_on_down_conv=increment_kernel_size_on_down_conv,
             batch_norm=batch_norm,
+            layer_norm=layer_norm,
         )
         super().__init__(
             observation_space,
@@ -255,4 +272,5 @@ class SqueezeUnetActorCriticNetwork(BackboneActorCritic):
             save_critic_separate=save_critic_separate,
             shared_critic_head=shared_critic_head,
             batch_norm=batch_norm,
+            layer_norm=layer_norm,
         )

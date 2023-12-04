@@ -48,6 +48,7 @@ class SEResidualBlock(nn.Module):
         channels: int,
         init_layers_orthogonal: bool = False,
         batch_norm: bool = False,
+        layer_norm: bool = False,
     ) -> None:
         super().__init__()
         layers = [
@@ -56,8 +57,13 @@ class SEResidualBlock(nn.Module):
                 init_layers_orthogonal=init_layers_orthogonal,
             )
         ]
+        assert not (
+            batch_norm and layer_norm
+        ), "Cannot use both batch norm and layer norm"
         if batch_norm:
             layers.append(nn.BatchNorm2d(channels))
+        elif layer_norm:
+            layers.append(nn.LayerNorm(channels))
         layers.append(nn.GELU())
         layers.append(
             layer_init(
@@ -67,6 +73,8 @@ class SEResidualBlock(nn.Module):
         )
         if batch_norm:
             layers.append(nn.BatchNorm2d(channels))
+        elif layer_norm:
+            layers.append(nn.LayerNorm(channels))
         layers.append(
             SqueezeExcitation(channels, init_layers_orthogonal=init_layers_orthogonal)
         )

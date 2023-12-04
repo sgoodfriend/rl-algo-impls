@@ -4571,6 +4571,53 @@ LuxAI_S2-v0-j1024env32-80m-vfc006-batch-norm-max-gn-4-a100:
     &lux-j1024env32-80m-vfc006-batch-norm-max-gn-4-a100-hyperparam-transitions
     <<: *lux-j1024env16-80m-vfc024-bn-max-gn-2-hyperparam-transitions
 
+LuxAI_S2-v0-j1024env16-80m-vfc024-ln-max-gn-2:
+  &lux-j1024env16-80m-vfc024-ln-max-gn-2
+  <<: *lux-j1024env16-80m-vfc024-bn-max-gn-2
+  policy_hyperparams: &lux-j1024env16-80m-vfc024-ln-max-gn-2-policy
+    <<: *lux-j1024env16-80m-vfc024-batch-norm-policy
+    batch_norm: false
+    layer_norm: true
+
+LuxAI_S2-v0-j1024env16-80m-vfc024-ln-max-gn-4:
+  &lux-j1024env16-80m-vfc024-ln-max-gn-4
+  <<: *lux-j1024env16-80m-vfc024-ln-max-gn-2
+  algo_hyperparams: &lux-j1024env16-80m-vfc024-ln-max-gn-4-algo
+    <<: *lux-j1024env16-80m-vfc024-bn-max-gn-4-algo
+    max_grad_norm: 4.0
+
+LuxAI_S2-v0-j1024env16-80m-vfc012-ln-max-gn-2:
+  &lux-j1024env16-80m-vfc012-ln-max-gn-2
+  <<: *lux-j1024env16-80m-vfc024-ln-max-gn-2
+  algo_hyperparams: &lux-j1024env16-80m-vfc012-ln-max-gn-2-algo
+    <<: *lux-j1024env16-80m-vfc024-bn-max-gn-2-algo
+    vf_coef: 0.12
+
+LuxAI_S2-v0-j1024env32-80m-vfc006-ln-max-gn-2-a100:
+  &lux-j1024env32-80m-vfc006-ln-max-gn-2-a100
+  <<: *lux-j1024env32-80m-vfc006-batch-norm-max-gn-4-a100
+  policy_hyperparams: &lux-j1024env32-80m-vfc006-ln-max-gn-2-a100-policy
+    <<: *lux-j1024env32-80m-vfc003-batch-norm-a100-policy
+    batch_norm: false
+    layer_norm: true
+  algo_hyperparams: &lux-j1024env32-80m-vfc006-ln-max-gn-2-a100-algo
+    <<: *lux-j1024env32-80m-vfc006-batch-norm-max-gn-4-a100-algo
+    max_grad_norm: 2.0
+
+LuxAI_S2-v0-j1024env32-80m-vfc003-ln-max-gn-2-a100:
+  &lux-j1024env32-80m-vfc003-ln-max-gn-2-a100
+  <<: *lux-j1024env32-80m-vfc006-ln-max-gn-2-a100
+  algo_hyperparams: &lux-j1024env32-80m-vfc003-ln-max-gn-2-a100-algo
+    <<: *lux-j1024env32-80m-vfc006-ln-max-gn-2-a100-algo
+    vf_coef: 0.03
+
+LuxAI_S2-v0-j1024env32-80m-vfc003-ln-max-gn-1-a100:
+  &lux-j1024env32-80m-vfc003-ln-max-gn-1-a100
+  <<: *lux-j1024env32-80m-vfc003-ln-max-gn-2-a100
+  algo_hyperparams: &lux-j1024env32-80m-vfc003-ln-max-gn-1-a100-algo
+    <<: *lux-j1024env32-80m-vfc003-ln-max-gn-2-a100-algo
+    max_grad_norm: 1.0
+
 LuxAI_S2-agent: &lux-agent
   <<: *lux-j512env64-80m-lr5-ft32-2o3m4h
   device: cpu
@@ -4587,7 +4634,7 @@ LuxAI_S2-agent: &lux-agent
       play_checkpoints_kwargs: null
 
 LuxAI_S2-v0-debug:
-  <<: *lux-j1024env16-80m-vfc024-batch-norm
+  <<: *lux-j1024env16-80m-vfc012-ln-max-gn-2
   n_timesteps: !!float 10e6
   device: mps
   env_hyperparams:
