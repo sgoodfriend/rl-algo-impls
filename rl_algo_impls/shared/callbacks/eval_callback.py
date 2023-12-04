@@ -417,7 +417,9 @@ class EvalCallback(Callback):
                     logging.info(
                         f"Checkpointing best policy at {self.timesteps_elapsed}"
                     )
-            self.prior_policies.appendleft(deepcopy(self.policy))
+            checkpoint = deepcopy(self.policy)
+            checkpoint.eval()
+            self.prior_policies.appendleft(checkpoint)
 
     def generate_video(self) -> None:
         assert self.video_env and self.video_dir
