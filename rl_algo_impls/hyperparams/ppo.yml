@@ -128,8 +128,8 @@ LunarLander-v2-lr-by-kl: &lunarlander-lr-by-kl
       - 0
     phases:
       - target_kl: 0.02
-        ent_coef: 0.02
-      - target_kl: 0.0001
+        ent_coef: 0.01
+      - target_kl: 0.001
         ent_coef: 0
 
 BipedalWalker-v3:
