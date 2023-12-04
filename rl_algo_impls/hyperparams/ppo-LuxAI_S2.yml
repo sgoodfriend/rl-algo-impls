@@ -4511,6 +4511,66 @@ LuxAI_S2-v0-j1024env32-80m-vfc006-batch-norm-a100:
     <<: *lux-j1024env32-80m-vfc003-squnet-grad-norm-stop-a100-algo
     vf_coef: 0.06
 
+LuxAI_S2-v0-j1024env16-80m-vfc024-bn-max-gn-2:
+  &lux-j1024env16-80m-vfc024-bn-max-gn-2
+  <<: *lux-j1024env16-80m-vfc024-batch-norm
+  algo_hyperparams: &lux-j1024env16-80m-vfc024-bn-max-gn-2-algo
+    <<: *lux-j1024env16-80m-vfc024-clip-reward-1-algo
+    max_grad_norm: 2.0
+  lr_by_kl_kwargs: &lux-j1024env16-80m-vfc024-bn-max-gn-2-lr-by-kl-kwargs
+    <<: *lux-j1024env16-80m-vfc012-clip-reward-1-lr-by-kl-kwargs
+    grad_norm_threshold: 2.0
+  hyperparam_transitions_kwargs:
+    &lux-j1024env16-80m-vfc024-bn-max-gn-2-hyperparam-transitions
+    <<: *lux-j1024env16-80m-vfc024-squnet-slow-hyperparam-transitions
+    phases:
+      - ent_coef: 0.01
+        rolling_num_envs_reset_every_rollout: 32
+        random_num_envs_reset_every_rollout: 0
+        target_kl: 0.01
+      - ent_coef: 0.005
+        rolling_num_envs_reset_every_rollout: 0
+        random_num_envs_reset_every_rollout: 4
+        target_kl: 0.01
+    durations:
+      - 0.0125 # reset 32 envs every rollout, 1M steps
+      - 0
+      - 0.9875 # reset 4 envs every rollout, 79M steps
+
+LuxAI_S2-v0-j1024env16-80m-vfc024-bn-max-gn-4:
+  &lux-j1024env16-80m-vfc024-bn-max-gn-4
+  <<: *lux-j1024env16-80m-vfc024-bn-max-gn-2
+  algo_hyperparams: &lux-j1024env16-80m-vfc024-bn-max-gn-4-algo
+    <<: *lux-j1024env16-80m-vfc024-bn-max-gn-2-algo
+    max_grad_norm: 4.0
+  lr_by_kl_kwargs: &lux-j1024env16-80m-vfc024-bn-max-gn-4-lr-by-kl-kwargs
+    <<: *lux-j1024env16-80m-vfc024-bn-max-gn-2-lr-by-kl-kwargs
+    grad_norm_threshold: 4.0
+
+LuxAI_S2-v0-j1024env16-80m-vfc024-bn-max-gn-8:
+  &lux-j1024env16-80m-vfc024-bn-max-gn-8
+  <<: *lux-j1024env16-80m-vfc024-bn-max-gn-2
+  algo_hyperparams: &lux-j1024env16-80m-vfc024-bn-max-gn-8-algo
+    <<: *lux-j1024env16-80m-vfc024-bn-max-gn-2-algo
+    max_grad_norm: 8.0
+  lr_by_kl_kwargs: &lux-j1024env16-80m-vfc024-bn-max-gn-8-lr-by-kl-kwargs
+    <<: *lux-j1024env16-80m-vfc024-bn-max-gn-2-lr-by-kl-kwargs
+    grad_norm_threshold: 8.0
+
+LuxAI_S2-v0-j1024env32-80m-vfc006-batch-norm-max-gn-4-a100:
+  &lux-j1024env32-80m-vfc006-batch-norm-max-gn-4-a100
+  <<: *lux-j1024env32-80m-vfc006-batch-norm-a100
+  algo_hyperparams: &lux-j1024env32-80m-vfc006-batch-norm-max-gn-4-a100-algo
+    <<: *lux-j1024env32-80m-vfc006-batch-norm-a100-algo
+    max_grad_norm: 4.0
+  lr_by_kl_kwargs:
+    &lux-j1024env32-80m-vfc006-batch-norm-max-gn-4-a100-lr-by-kl-kwargs
+    <<: *lux-j1024env32-80m-vfc006-squnet-grad-norm-stop-a100-lr-by-kl-kwargs
+    grad_norm_threshold: 4.0
+  hyperparam_transitions_kwargs:
+    &lux-j1024env32-80m-vfc006-batch-norm-max-gn-4-a100-hyperparam-transitions
+    <<: *lux-j1024env16-80m-vfc024-bn-max-gn-2-hyperparam-transitions
+
 LuxAI_S2-agent: &lux-agent
   <<: *lux-j512env64-80m-lr5-ft32-2o3m4h
   device: cpu
