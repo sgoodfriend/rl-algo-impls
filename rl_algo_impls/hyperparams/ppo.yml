@@ -121,7 +121,7 @@ LunarLander-v2-lr-by-kl: &lunarlander-lr-by-kl
     target_kl: 0.01
     min_decrease_fraction: 0.9
     max_increase_fraction: 1.05
-    grad_norm_threshold: 1.0
+    no_increase_on_max_grad_norm: true
   hyperparam_transitions_kwargs:
     durations:
       - 0
@@ -305,7 +305,7 @@ _atari-lr-by-kl: &atari-lr-by-kl
     target_kl: 0.01
     min_decrease_fraction: 0.9
     max_increase_fraction: 1.05
-    grad_norm_threshold: 0.5
+    no_increase_on_max_grad_norm: true
   hyperparam_transitions_kwargs:
     durations:
       - 0.8

@@ -4435,7 +4435,7 @@ LuxAI_S2-v0-j1024env16-80m-vfc024-squnet-grad-norm-stop:
   lr_by_kl_kwargs:
     &lux-j1024env16-80m-vfc024-squnet-grad-norm-stop-lr-by-kl-kwargs
     <<: *lux-j1024env16-80m-vfc024-squnet-slow-lr-by-kl-kwargs
-    grad_norm_threshold: 0.5
+    no_increase_on_max_grad_norm: true
     v_loss_threshold: null
 
 LuxAI_S2-v0-j1024env32-80m-vfc006-squnet-grad-norm-stop-a100:
@@ -4444,7 +4444,7 @@ LuxAI_S2-v0-j1024env32-80m-vfc006-squnet-grad-norm-stop-a100:
   lr_by_kl_kwargs:
     &lux-j1024env32-80m-vfc006-squnet-grad-norm-stop-a100-lr-by-kl-kwargs
     <<: *lux-j1024env32-80m-vfc024-squnet-slow-a100-lr-by-kl-kwargs
-    grad_norm_threshold: 1.0
+    no_increase_on_max_grad_norm: true
     v_loss_threshold: null
   algo_hyperparams: &lux-j1024env32-80m-vfc006-squnet-grad-norm-stop-a100-algo
     <<: *lux-j1024env32-80m-vfc006-squnet-slow-a100-algo
@@ -4481,7 +4481,7 @@ LuxAI_S2-v0-j1024env16-80m-vfc012-clip-reward-1:
       clip_reward: 1
   lr_by_kl_kwargs: &lux-j1024env16-80m-vfc012-clip-reward-1-lr-by-kl-kwargs
     <<: *lux-j1024env16-80m-vfc024-squnet-grad-norm-stop-lr-by-kl-kwargs
-    grad_norm_threshold: 1.0
+    no_increase_on_max_grad_norm: true
 
 LuxAI_S2-v0-j1024env16-80m-vfc024-clip-reward-1:
   &lux-j1024env16-80m-vfc024-clip-reward-1
@@ -4519,7 +4519,7 @@ LuxAI_S2-v0-j1024env16-80m-vfc024-bn-max-gn-2:
     max_grad_norm: 2.0
   lr_by_kl_kwargs: &lux-j1024env16-80m-vfc024-bn-max-gn-2-lr-by-kl-kwargs
     <<: *lux-j1024env16-80m-vfc012-clip-reward-1-lr-by-kl-kwargs
-    grad_norm_threshold: 2.0
+    no_increase_on_max_grad_norm: true
   hyperparam_transitions_kwargs:
     &lux-j1024env16-80m-vfc024-bn-max-gn-2-hyperparam-transitions
     <<: *lux-j1024env16-80m-vfc024-squnet-slow-hyperparam-transitions
@@ -4545,7 +4545,7 @@ LuxAI_S2-v0-j1024env16-80m-vfc024-bn-max-gn-4:
     max_grad_norm: 4.0
   lr_by_kl_kwargs: &lux-j1024env16-80m-vfc024-bn-max-gn-4-lr-by-kl-kwargs
     <<: *lux-j1024env16-80m-vfc024-bn-max-gn-2-lr-by-kl-kwargs
-    grad_norm_threshold: 4.0
+    no_increase_on_max_grad_norm: true
 
 LuxAI_S2-v0-j1024env16-80m-vfc024-bn-max-gn-8:
   &lux-j1024env16-80m-vfc024-bn-max-gn-8
@@ -4555,7 +4555,7 @@ LuxAI_S2-v0-j1024env16-80m-vfc024-bn-max-gn-8:
     max_grad_norm: 8.0
   lr_by_kl_kwargs: &lux-j1024env16-80m-vfc024-bn-max-gn-8-lr-by-kl-kwargs
     <<: *lux-j1024env16-80m-vfc024-bn-max-gn-2-lr-by-kl-kwargs
-    grad_norm_threshold: 8.0
+    no_increase_on_max_grad_norm: true
 
 LuxAI_S2-v0-j1024env32-80m-vfc006-batch-norm-max-gn-4-a100:
   &lux-j1024env32-80m-vfc006-batch-norm-max-gn-4-a100
@@ -4566,7 +4566,7 @@ LuxAI_S2-v0-j1024env32-80m-vfc006-batch-norm-max-gn-4-a100:
   lr_by_kl_kwargs:
     &lux-j1024env32-80m-vfc006-batch-norm-max-gn-4-a100-lr-by-kl-kwargs
     <<: *lux-j1024env32-80m-vfc006-squnet-grad-norm-stop-a100-lr-by-kl-kwargs
-    grad_norm_threshold: 4.0
+    no_increase_on_max_grad_norm: true
   hyperparam_transitions_kwargs:
     &lux-j1024env32-80m-vfc006-batch-norm-max-gn-4-a100-hyperparam-transitions
     <<: *lux-j1024env16-80m-vfc024-bn-max-gn-2-hyperparam-transitions

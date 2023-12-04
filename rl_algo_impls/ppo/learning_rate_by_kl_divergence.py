@@ -18,7 +18,7 @@ class LearningRateByKLDivergence(Callback):
         v_loss_threshold: Optional[float] = None,
         v_loss_fast_moving_window_size: int = 10,
         v_loss_slow_moving_window_size: int = 50,
-        grad_norm_threshold: Optional[float] = None,
+        no_increase_on_max_grad_norm: bool = False,
     ) -> None:
         super().__init__()
         self.algo = algo
@@ -38,7 +38,7 @@ class LearningRateByKLDivergence(Callback):
                 window_size=v_loss_fast_moving_window_size,
             )
 
-        self.grad_norm_threshold = grad_norm_threshold
+        self.no_increase_on_max_grad_norm = no_increase_on_max_grad_norm
 
     def on_step(
         self, train_stats: TrainStats, timesteps_elapsed: int = 1, **kwargs
@@ -68,8 +68,8 @@ class LearningRateByKLDivergence(Callback):
                     max_increase_fraction, min_decrease_fraction
                 )
         if (
-            self.grad_norm_threshold is not None
-            and train_stats.grad_norm > self.grad_norm_threshold
+            self.no_increase_on_max_grad_norm
+            and train_stats.grad_norm > self.algo.max_grad_norm
         ):
             max_increase_fraction = min(max_increase_fraction, 1.0)
 
