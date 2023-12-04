@@ -4497,6 +4497,20 @@ LuxAI_S2-v0-j1024env16-80m-vfc024-batch-norm:
     <<: *lux-j1024env16-80m-vfc012-squnet-policy
     batch_norm: true
 
+LuxAI_S2-v0-j1024env32-80m-vfc003-batch-norm-a100:
+  &lux-j1024env32-80m-vfc003-batch-norm-a100
+  <<: *lux-j1024env32-80m-vfc003-squnet-grad-norm-stop-a100
+  policy_hyperparams: &lux-j1024env32-80m-vfc003-batch-norm-a100-policy
+    <<: *lux-j1024env32-80m-vfc024-squnet-a100-policy
+    batch_norm: true
+
+LuxAI_S2-v0-j1024env32-80m-vfc006-batch-norm-a100:
+  &lux-j1024env32-80m-vfc006-batch-norm-a100
+  <<: *lux-j1024env32-80m-vfc003-batch-norm-a100
+  algo_hyperparams: &lux-j1024env32-80m-vfc006-batch-norm-a100-algo
+    <<: *lux-j1024env32-80m-vfc003-squnet-grad-norm-stop-a100-algo
+    vf_coef: 0.06
+
 LuxAI_S2-agent: &lux-agent
   <<: *lux-j512env64-80m-lr5-ft32-2o3m4h
   device: cpu
