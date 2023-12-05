@@ -4578,19 +4578,22 @@ LuxAI_S2-v0-j1024env16-80m-vfc024-ln-max-gn-2:
     <<: *lux-j1024env16-80m-vfc024-batch-norm-policy
     batch_norm: false
     layer_norm: true
+  algo_hyperparams: &lux-j1024env16-80m-vfc024-ln-max-gn-2-algo
+    <<: *lux-j1024env16-80m-vfc024-bn-max-gn-2-algo
+    batch_size: 2048
 
 LuxAI_S2-v0-j1024env16-80m-vfc024-ln-max-gn-4:
   &lux-j1024env16-80m-vfc024-ln-max-gn-4
   <<: *lux-j1024env16-80m-vfc024-ln-max-gn-2
   algo_hyperparams: &lux-j1024env16-80m-vfc024-ln-max-gn-4-algo
-    <<: *lux-j1024env16-80m-vfc024-bn-max-gn-4-algo
+    <<: *lux-j1024env16-80m-vfc024-ln-max-gn-2-algo
     max_grad_norm: 4.0
 
 LuxAI_S2-v0-j1024env16-80m-vfc012-ln-max-gn-2:
   &lux-j1024env16-80m-vfc012-ln-max-gn-2
   <<: *lux-j1024env16-80m-vfc024-ln-max-gn-2
   algo_hyperparams: &lux-j1024env16-80m-vfc012-ln-max-gn-2-algo
-    <<: *lux-j1024env16-80m-vfc024-bn-max-gn-2-algo
+    <<: *lux-j1024env16-80m-vfc024-ln-max-gn-2-algo
     vf_coef: 0.12
 
 LuxAI_S2-v0-j1024env32-80m-vfc006-ln-max-gn-2-a100:
