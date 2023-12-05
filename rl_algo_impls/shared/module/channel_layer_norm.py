@@ -2,12 +2,12 @@ import torch
 import torch.nn as nn
 
 
-class ChannelLayerNorm(nn.Module):
+class ChannelLayerNorm2d(nn.Module):
     def __init__(self, num_channels: int, eps: float = 1e-5) -> None:
         super().__init__()
         self.eps = eps
-        self.gamma = nn.Parameter(torch.ones(num_channels))
-        self.beta = nn.Parameter(torch.zeros(num_channels))
+        self.gamma = nn.Parameter(torch.ones(1, num_channels, 1, 1))
+        self.beta = nn.Parameter(torch.zeros(1, num_channels, 1, 1))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         mean = x.mean(dim=1, keepdim=True)
