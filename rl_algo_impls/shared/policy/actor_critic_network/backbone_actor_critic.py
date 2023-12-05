@@ -11,6 +11,7 @@ from gymnasium.spaces import MultiDiscrete, Space
 from rl_algo_impls.shared.actor import pi_forward
 from rl_algo_impls.shared.actor.gridnet import GridnetDistribution, ValueDependentMask
 from rl_algo_impls.shared.actor.gridnet_decoder import Transpose
+from rl_algo_impls.shared.module.channel_layer_norm import ChannelLayerNorm
 from rl_algo_impls.shared.module.channelwise_activation import ChannelwiseActivation
 from rl_algo_impls.shared.module.stack import HStack
 from rl_algo_impls.shared.module.utils import layer_init
@@ -124,7 +125,7 @@ class BackboneActorCritic(ActorCriticNetwork):
                 if batch_norm:
                     layers.append(nn.BatchNorm2d(out_channels))
                 elif layer_norm:
-                    layers.append(nn.LayerNorm(out_channels))
+                    layers.append(ChannelLayerNorm(out_channels))
                 layers.append(nn.GELU())
                 return layers
 

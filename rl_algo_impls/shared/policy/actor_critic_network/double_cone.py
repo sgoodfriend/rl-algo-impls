@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 from gymnasium.spaces import Box, Space
 
+from rl_algo_impls.shared.module.channel_layer_norm import ChannelLayerNorm
 from rl_algo_impls.shared.module.utils import layer_init
 from rl_algo_impls.shared.policy.actor_critic_network.backbone_actor_critic import (
     BackboneActorCritic,
@@ -63,7 +64,7 @@ class SEResidualBlock(nn.Module):
         if batch_norm:
             layers.append(nn.BatchNorm2d(channels))
         elif layer_norm:
-            layers.append(nn.LayerNorm(channels))
+            layers.append(ChannelLayerNorm(channels))
         layers.append(nn.GELU())
         layers.append(
             layer_init(
@@ -74,7 +75,7 @@ class SEResidualBlock(nn.Module):
         if batch_norm:
             layers.append(nn.BatchNorm2d(channels))
         elif layer_norm:
-            layers.append(nn.LayerNorm(channels))
+            layers.append(ChannelLayerNorm(channels))
         layers.append(
             SqueezeExcitation(channels, init_layers_orthogonal=init_layers_orthogonal)
         )

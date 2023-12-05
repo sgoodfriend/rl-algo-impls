@@ -4,6 +4,7 @@ from typing import Dict, List, Optional, Union
 import torch
 import torch.nn as nn
 from gymnasium.spaces import Box, Space
+from rl_algo_impls.shared.module.channel_layer_norm import ChannelLayerNorm
 
 from rl_algo_impls.shared.module.utils import layer_init
 from rl_algo_impls.shared.policy.actor_critic_network.backbone_actor_critic import (
@@ -63,7 +64,7 @@ class SqueezeUnetBackbone(nn.Module):
                 if batch_norm:
                     layers.append(nn.BatchNorm2d(out_channels))
                 elif layer_norm:
-                    layers.append(nn.LayerNorm(out_channels))
+                    layers.append(ChannelLayerNorm(out_channels))
                 layers.append(nn.GELU())
             return layers
 
@@ -76,7 +77,7 @@ class SqueezeUnetBackbone(nn.Module):
         if batch_norm:
             encoder_head_layers.append(nn.BatchNorm2d(channels_per_level[0]))
         elif layer_norm:
-            encoder_head_layers.append(nn.LayerNorm(channels_per_level[0]))
+            encoder_head_layers.append(ChannelLayerNorm(channels_per_level[0]))
         encoder_head_layers.append(nn.GELU())
         encoder_head_layers.extend(
             [
@@ -133,7 +134,7 @@ class SqueezeUnetBackbone(nn.Module):
                 if batch_norm:
                     layers.append(nn.BatchNorm2d(out_channels))
                 elif layer_norm:
-                    layers.append(nn.LayerNorm(out_channels))
+                    layers.append(ChannelLayerNorm(out_channels))
                 layers.append(nn.GELU())
             return layers
 
