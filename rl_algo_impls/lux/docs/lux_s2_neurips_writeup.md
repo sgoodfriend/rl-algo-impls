@@ -1,10 +1,11 @@
 # Lux AI Season 2 - NeurIPS Stage 2 - PPO using Jux for environment vectorization
 
 Kaggle code submission:
-[https://www.kaggle.com/code/sgoodfriend/lux2-neurips-stage-2](https://www.kaggle.com/code/sgoodfriend/lux2-neurips-stage-2)
+[https://www.kaggle.com/sgoodfriend/lux2-neurips2-ppo-using-jux](https://www.kaggle.com/sgoodfriend/lux2-neurips2-ppo-using-jux)
 
 Training repo:
-[https://github.com/sgoodfriend/rl-algo-impls-lux-nips1/commit/30800ac](https://github.com/sgoodfriend/rl-algo-impls-lux-nips1/commit/30800ac)
+[https://github.com/sgoodfriend/rl-algo-impls](https://github.com/sgoodfriend/rl-algo-impls).
+Best submission is from [28e662d](https://github.com/sgoodfriend/rl-algo-impls/commit/28e662dc34fb32a22a14ec2018e13a3b30aa6699).
 
 JUX repo: [https://github.com/sgoodfriend/jux](https://github.com/sgoodfriend/jux):
 biggest changes are to support environments not being in lockstep, stats collection,
