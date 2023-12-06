@@ -1,4 +1,7 @@
-# Lux AI Season 2 - NeurIPS Stage 2 - PPO using Jux for environment vectorization
+# PPO using Jux - Lux AI Season 2 - NeurIPS Stage 2 Competition
+
+Kaggle competition: [Lux AI Season 2 - NeurIPS Stage
+2](https://www.kaggle.com/competitions/lux-ai-season-2-neurips-stage-2)
 
 Kaggle code submission:
 [https://www.kaggle.com/sgoodfriend/lux2-neurips2-ppo-using-jux](https://www.kaggle.com/sgoodfriend/lux2-neurips2-ppo-using-jux)
@@ -7,17 +10,18 @@ Training repo:
 [https://github.com/sgoodfriend/rl-algo-impls](https://github.com/sgoodfriend/rl-algo-impls).
 Best submission is from [28e662d](https://github.com/sgoodfriend/rl-algo-impls/commit/28e662dc34fb32a22a14ec2018e13a3b30aa6699).
 
-JUX repo: [https://github.com/sgoodfriend/jux](https://github.com/sgoodfriend/jux):
-biggest changes are to support environments not being in lockstep, stats collection,
+JUX fork: [https://github.com/sgoodfriend/jux](https://github.com/sgoodfriend/jux). Biggest changes are to support environments not being in lockstep, stats collection,
 and allowing for adjacent factories (for 16x16 map training).
 
 Weights & Biases report: [Lux S2 NeurIPS Training Report](https://wandb.ai/sgoodfriend/rl-algo-impls-lux-nips1/reports/Lux-S2-NeurIPS-Training-Report--Vmlldzo2MTMyODc3?accessToken=a8xwpu4xi7zavhwmyavxt5lbiejk6wjn1o2eh3v8c3lc416bo11oatirp2pxlzet)
 
 ## Environment
 Jux allows training with vectorized environments. I used 1024 environments for training
-on 16x16 and 32x32 maps and 512 environments for training on 64x64 maps. I'm using a fork of [Jux](https://github.com/sgoodfriend/jux) for training. The fork has
-the following changes and extensions:
-- Fix incorrectly computing valid_spawns_mask
+on 16x16 and 32x32 maps and 512 environments for training on 64x64 maps. I'm using a
+fork of [Jux](https://github.com/sgoodfriend/jux) for training. The fork has the
+following changes and extensions:
+
+- [Fix incorrectly computing valid_spawns_mask.](https://github.com/sgoodfriend/jux/commit/5f40da58e5fd05537484abcd02d2c9af48bb6fc4) This was broken on 16x16 maps. I'm not certain if it was wrong on competition-size maps.
 - EnvConfig option to support adjacent factory spawns (default off). I use this for
   16x16 map training because the default requirement of 6 spaces away could push
   factories too far away from resources on such small maps.
@@ -71,6 +75,7 @@ I take care of computing amounts of resources in my action handling logic. The m
 only handles position for factory placement while I assign the initial water per factory
 (150) and enough metal for 1 or 2 heavy units (100 or 200) or 150 if not possible. For
 example, for 1 to 4 factories to place:
+
 | Factories to place | Metal |     |     |     |
 | ------------------ | ----- | --- | --- | --- |
 | 1                  | 150   |     |     |     |
@@ -84,6 +89,7 @@ ore and build robots.
 
 I split direction and resources between the action subtypes, resulting in the following
 action space per position:
+
 |                    | 0          | 1           | 2           | 3            | 4             | 5        |
 | ------------------ | ---------- | ----------- | ----------- | ------------ | ------------- | -------- |
 | Factory Action     | do nothing | build light | build heavy | water lichen |               |          |
@@ -94,8 +100,9 @@ action space per position:
 | Pickup Resource    | ice        | ore         | water       | metal        | power         |
 
 I heavily used invalid action masking to both eliminate no-op actions (e.g. actions on
-non-own unit or factory positions, moves or transfers off map or on opponent factory, or invalid actions
+non-own unit or factory positions, moves or transfers off map or onto opponent factory, or invalid actions
 because insufficient power or resources) and ill-advised actions:
+
 - Don't water lichen if it would result in water being less than the number of game
   steps remaining.
 - Don't transfer resources off factory tiles.
@@ -110,7 +117,9 @@ because insufficient power or resources) and ill-advised actions:
 - Only lights can self-destruct and only if they are on opponent lichen that isn't
   eliminable by a single dig action.
 
-The action handling logic will also cancel conflicting actions (instead of attempting to resolve them):
+The action handling logic will also cancel conflicting actions (instead of attempting to
+resolve them):
+
 - Cancel moves if they are to a stationary own unit, unit to be spawned, or into the
   destination of another moving own unit. This is done iteratively until no more
   collisions occur.
@@ -125,30 +134,32 @@ DoubleCone](https://www.kaggle.com/competitions/lux-ai-season-2/discussion/40670
 added an additional 4x-downsampling layer within the original 4x-downsampling layer to get
 the receptive field to 64x64:
 
-|                               |                  |
-| ----------------------------- | ---------------- |
-| levels                        | 3                |
-| encoder residual blocks/level | [3, 2, 2]        |
-| decoder residual blocks/level | [3, 2]           |
-| stride per level              | [4, 4]           |
-| deconvolution strides per     | [[2, 2], [2, 2]] |
-| channels per level            | [128, 128, 128]  |
-| trainable parameters          | 4,719,403        |
-| value output size             | 14               |
-| value output activation       | identity         |
-| policy output per position    | 29               |
+|                                 |                  |
+| ------------------------------- | ---------------- |
+| levels                          | 3                |
+| encoder residual blocks/level   | [3, 2, 2]        |
+| decoder residual blocks/level   | [3, 2]           |
+| stride per level                | [4, 4]           |
+| deconvolution strides per level | [[2, 2], [2, 2]] |
+| channels per level              | [128, 128, 128]  |
+| trainable parameters            | 4,719,403        |
+| value output size               | 14               |
+| value output activation         | identity         |
+| policy output per position      | 29               |
 
 The policy output consists of 24 logits for unit actions, 4 logits for factory actions,
-and 1 logit for factory placement. Each unit's action type and subactions are assumed
-independent and identically distributed, as is the factory actions. The factory
-placement logit is used to compute a probability of factory placement across all valid
-factory spawn positions (all factory spawn positions are masked out if it's not the
-agent's turn to place factories).
+and 1 logit for factory placement. Each unit’s action type and subactions are assumed
+independent and identically distributed, as are the factory actions. The factory
+placement logit undergoes a softmax transformation across all valid factory spawn
+positions (all factory spawn positions are masked out if it’s not the agent’s turn to
+place factories).
 
 ## PPO Training
-Similarly to the [2023 microRTS competition](../../microrts/technical-description.md)
-and [FLG's Lux AI Season 2 Approach](https://www.kaggle.com/competitions/lux-ai-season-2/discussion/406702), I
-progressively trained the model on larger maps, starting with 16x16, then 32x32, and
+Similar to [FLG’s Lux AI Season 2
+Approach](https://www.kaggle.com/competitions/lux-ai-season-2/discussion/406702) and [my
+2023 microRTS competition
+solution](https://github.com/sgoodfriend/rl-algo-impls/blob/07083d6e5170ae9d2a16668e2aeadf04225f637c/rl_algo_impls/microrts/technical-description.md),
+I progressively trained the model on larger maps, starting with 16x16, then 32x32, and
 finally 64x64. The best performing agent had the following training runs:
 
 | Name                                                                                                                                                  | Map Size |
@@ -161,7 +172,8 @@ Each larger map training run was initialized with the weights from the best perf
 checkpoint of the previous map size. The 16x16 map training run's weights were
 initialized randomly.
 
-I used my own implementation of PPO with the following hyperparameters:
+I used my [own implementation of PPO](https://github.com/sgoodfriend/rl-algo-impls/blob/07083d6e5170ae9d2a16668e2aeadf04225f637c/rl_algo_impls/ppo/ppo.py) (inspired by [Costa Huang's implementation](https://github.com/vwxyzjn/ppo-implementation-details/blob/fbef824effc284137943ff9c058125435ec68cd3/ppo_multidiscrete_mask.py)) with the following hyperparameters:
+
 | map size              | 16    | 32   | 64  |
 | --------------------- | ----- | ---- | --- |
 | batch size            | 32768 | "    | "   |
@@ -178,6 +190,7 @@ I used my own implementation of PPO with the following hyperparameters:
 
 Each training run was for 80 million steps with the following schedule for learning rate
 and entropy coefficient (cosine interpolation during transition phases):
+
 | 16x16         | Start           | Transition ->1 | Phase 1           | Transition 1->2 | Phase 2           | Transition 2-> | End             |
 | ------------- | --------------- | -------------- | ----------------- | --------------- | ----------------- | -------------- | --------------- |
 | steps         |                 | 4M             |                   | 36M             | 32M               | 8M             |                 |
@@ -207,14 +220,7 @@ looked like progress was stuck. This let me schedule different training runs wit
 limited resources.
 
 ### Reward structure
-RL solutions from the prior Lux Season 2 competition had to start training with shaped
-rewards. Similar to my prior solution, I used generation and resource statistics to
-generate the reward. However, instead of determining the scaling factors myself, I
-scaled each statistic by dividing each statistic by its exponential moving variance
-(window size 5 million steps). The environment would return all of these scaled
-statistics and a WinLoss reward (+1 win, -1 loss, 0 otherwise), and the rollout computes
-an advantage for each statistic. The PPO implementation has element-wise scaling factors
-for each advantage and reward for computing policy and value losses:
+RL solutions from the prior Lux Season 2 competition had to start training with shaped rewards. Similar to my prior solution, I used generation and resource statistics to generate the reward. However, instead of determining the scaling factors myself, I scaled each statistic by dividing each statistic by its exponential moving standard deviation (window size 5 million steps). The environment would return all of these scaled statistics and a WinLoss reward (+1 win, -1 loss, 0 otherwise), and the rollout computes an advantage for each statistic. The PPO implementation has element-wise scaling factors for each advantage and reward for computing policy and value losses:
 
 |                    | value coef | reward weights - 16 | reward weights - 32 | reward weights - 64 |
 | ------------------ | :--------: | :-----------------: | :-----------------: | :-----------------: |
@@ -242,12 +248,7 @@ reward weights for ore, metal, and robot generation.
 ### Reaches End of Game
 ![reach_game_end.png](lux_s2_neurips_writeup/reach_game_end.png)
 
-The chart above shows the rate of games that reach the step limit $1000+2*n_f+1$ ($n_f$
-is number of factories per player). The 16x16 agent (light green) averages about 600
-steps/game by the end of training. Even though I require maps to have at least 2 ice and
-ore each, later agents I've trained rarely reach over 900 steps/game, implying the small
-map with competitive resources is a difficult environment to reliably reach the step
-limit. The 32x32 (magenta) and 64x64 agents (blue) get to the step limit regularly.
+The chart above shows the rate of games that reach the step limit. The 16x16 agent (light green) averages about 600 steps/game by the end of training. Even though I require maps to have at least 2 ice and ore each, later agents I’ve trained rarely reach over 900 steps/game, implying the small map with competitive resources is a difficult environment to reliably reach the step limit. The 32x32 (magenta) and 64x64 agents (blue) get to the step limit regularly.
 
 ### Metal Generation
 ![metal_generation.png](lux_s2_neurips_writeup/metal_generation.png)
@@ -264,6 +265,7 @@ before the end.
 ![losses.png](lux_s2_neurips_writeup/losses.png)
 
 The charts above shows the KL divergence and training loss. 3 things jump out at me:
+
 1. KL divergence for 32x32 is too high (over 0.02), especially after 30 million steps. This is
    around when metal generation drops below 100.
 2. Losses are periodically spiky for 64x64 (and to a lesser extent 32x32). This is
@@ -278,6 +280,7 @@ The charts above shows the KL divergence and training loss. 3 things jump out at
 ## Next steps
 I spent a lot of time creating a GridNet observation space from Jux using Jax. I believe
 there are a few things I could do to improve the model:
+
 1. Fix the periodic spikes in losses by doing a rolling reset of environments at the
    beginning of training.
 2. Track L2 gradient norm to gauge training stability. Loss, value loss, policy loss, KL
@@ -302,6 +305,7 @@ there are a few things I could do to improve the model:
 
 ## Appendix
 Environment hyperparameters:
+
 | map size                       | 16   | 32    | 64    |
 | ------------------------------ | ---- | ----- | ----- |
 | \# envs                        | 1024 | "     | 512   |
