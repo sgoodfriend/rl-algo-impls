@@ -4606,6 +4606,7 @@ LuxAI_S2-v0-j1024env32-80m-vfc006-ln-max-gn-2-a100:
   algo_hyperparams: &lux-j1024env32-80m-vfc006-ln-max-gn-2-a100-algo
     <<: *lux-j1024env32-80m-vfc006-batch-norm-max-gn-4-a100-algo
     max_grad_norm: 2.0
+    batch_size: 1024
 
 LuxAI_S2-v0-j1024env32-80m-vfc003-ln-max-gn-2-a100:
   &lux-j1024env32-80m-vfc003-ln-max-gn-2-a100
