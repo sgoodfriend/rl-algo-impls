@@ -156,12 +156,12 @@ class HybridMovingMeanVar:
         self.emmv.update(x)
 
     def save(self, path: str) -> None:
-        self.rms.save(path + "-rms")
-        self.emmv.save(path + "-emmv")
+        self.rms.save(path + "-rms.npz")
+        self.emmv.save(path + "-emmv.npz")
 
     def load(self, path: str, count_override: Optional[int] = None) -> None:
-        self.rms.load(path + "-rms", count_override=count_override)
-        self.emmv.load(path + "-emmv", count_override=count_override)
+        self.rms.load(path + "-rms.npz", count_override=count_override)
+        self.emmv.load(path + "-emmv.npz", count_override=count_override)
 
     def load_from(
         self: HybridMovingMeanVarSelf, existing: HybridMovingMeanVarSelf
