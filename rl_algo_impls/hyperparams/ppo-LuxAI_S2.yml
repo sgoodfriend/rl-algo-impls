@@ -4719,6 +4719,43 @@ LuxAI_S2-v0-j1024env32-80m-vfc006-mgn4-base-rewards-a100:
     min_lr: !!float 5e-5
     max_lr: !!float 1e-2
 
+LuxAI_S2-v0-j1024env16-80m-vfc024-ln-mgn-2-baserew-finetune:
+  &lux-j1024env16-80m-vfc024-ln-mgn-2-baserew-finetune
+  <<: *lux-j1024env16-80m-vfc024-ln-mgn-2-base-rewards
+  policy_hyperparams:
+    &lux-j1024env16-80m-vfc024-ln-mgn-2-baserew-finetune-policy
+    <<: *lux-j1024env16-80m-vfc024-ln-max-gn-2-policy
+    load_run_path: sgoodfriend/rl-algo-impls-lux-nips1/ahjfwkjh
+    load_run_path_best: true
+
+LuxAI_S2-v0-j1024env16-80m-vfc024-ln-mgn-2-2o2m2hrew-finetune:
+  &lux-j1024env16-80m-vfc024-ln-mgn-2-2o2m2hrew-finetune
+  <<: *lux-j1024env16-80m-vfc024-ln-mgn-2-baserew-finetune
+  algo_hyperparams: &lux-j1024env16-80m-vfc024-ln-mgn-2-2o2m2hrew-finetune-algo
+    <<: *lux-j1024env16-80m-vfc024-ln-mgn-2-base-rewards-algo
+    multi_reward_weights:
+      - 1 # WinLoss
+      - 0.1 # ice
+      - 0.2 # ore
+      - 0.1 # water
+      - 0.2 # metal
+      - 0 # power
+      - 0.1 # light bots
+      - 0.2 # heavy bots
+      - 0.1 # opponent kills
+      - 0 # resources lichen
+      - 0.1 # resources factory
+      - 0 # game length
+      - 0 # opponent resources lichen
+      - 0 # opponent resources factory
+
+LuxAI_S2-v0-j1024env16-80m-vfc024-ln-mgn-1-base-rewards:
+  &lux-j1024env16-80m-vfc024-ln-mgn-1-base-rewards
+  <<: *lux-j1024env16-80m-vfc024-ln-mgn-2-base-rewards
+  algo_hyperparams: &lux-j1024env16-80m-vfc024-ln-mgn-1-base-rewards-algo
+    <<: *lux-j1024env16-80m-vfc024-ln-mgn-2-base-rewards-algo
+    max_grad_norm: 1.0
+
 LuxAI_S2-agent: &lux-agent
   <<: *lux-j512env64-80m-lr5-ft32-2o3m4h
   device: cpu
