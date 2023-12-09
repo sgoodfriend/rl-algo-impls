@@ -11,7 +11,6 @@ import numpy as np
 from torch.utils.tensorboard.writer import SummaryWriter
 
 from rl_algo_impls.lux.jux_verify import jux_verify_enabled
-from rl_algo_impls.lux.vec_env.vec_lux_env import VecLuxEnv
 from rl_algo_impls.shared.callbacks import Callback
 from rl_algo_impls.shared.policy.policy import Policy
 from rl_algo_impls.shared.stats import Episode, EpisodeAccumulator, EpisodesStats
@@ -103,12 +102,11 @@ def evaluate(
     obs, _ = env.reset()
     get_action_mask = getattr(env, "get_action_mask", None)
 
-    is_vec_lux_env = isinstance(env.unwrapped, VecLuxEnv)
     old_vec_jux_state = None
     old_jux_obs = None
     old_jux_action_mask = None
     jux_env_batch = None
-    if jux_verify_enabled() and is_vec_lux_env:
+    if jux_verify_enabled(env):
         import jax
         import jax.numpy as jnp
         from jux.env import JuxEnvBatch
@@ -151,7 +149,7 @@ def evaluate(
         )
         obs, rew, terminations, truncations, info = env.step(act)
 
-        if jux_verify_enabled() and is_vec_lux_env:
+        if jux_verify_enabled(env):
             import jax
             import jax.numpy as jnp
             from jux.state.state import State as JuxState

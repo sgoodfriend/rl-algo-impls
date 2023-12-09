@@ -2,16 +2,19 @@ from typing import Any, Dict, List, Optional
 
 import numpy as np
 
-from rl_algo_impls.lux.rewards import LuxRewardWeights
 from rl_algo_impls.ppo.learning_rate_by_kl_divergence import LearningRateByKLDivergence
 from rl_algo_impls.rollout.rollout import RolloutGenerator
 from rl_algo_impls.runner.config import Config
 from rl_algo_impls.shared.algorithm import Algorithm
 from rl_algo_impls.shared.callbacks.callback import Callback
-from rl_algo_impls.shared.schedule import constant_schedule
 from rl_algo_impls.shared.tensor_utils import num_or_array
 from rl_algo_impls.utils.interpolate import InterpolateMethod, interpolate
 from rl_algo_impls.wrappers.vector_wrapper import VectorEnv
+
+try:
+    from rl_algo_impls.lux.rewards import LuxRewardWeights
+except ImportError:
+    pass
 
 ALGO_SET_NAMES = {
     "gae_lambda",
