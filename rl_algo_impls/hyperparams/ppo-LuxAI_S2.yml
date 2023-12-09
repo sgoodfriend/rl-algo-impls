@@ -4621,6 +4621,8 @@ LuxAI_S2-v0-j1024env32-80m-vfc003-ln-max-gn-1-a100:
   algo_hyperparams: &lux-j1024env32-80m-vfc003-ln-max-gn-1-a100-algo
     <<: *lux-j1024env32-80m-vfc003-ln-max-gn-2-a100-algo
     max_grad_norm: 1.0
+    min_lr: !!float 5e-5
+    max_lr: !!float 1e-2
 
 LuxAI_S2-v0-j1024env16-80m-vfc024-ln-max-gn-1:
   &lux-j1024env16-80m-vfc024-ln-max-gn-1
