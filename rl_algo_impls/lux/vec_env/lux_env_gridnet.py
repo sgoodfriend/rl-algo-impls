@@ -18,7 +18,7 @@ from rl_algo_impls.lux.actions import (
 )
 from rl_algo_impls.lux.agent_config import LuxAgentConfig
 from rl_algo_impls.lux.early import bid_action
-from rl_algo_impls.lux.jux_verify import jux_verify_enabled
+from rl_algo_impls.lux.jux_verify import jux_verify_flag
 from rl_algo_impls.lux.observation import observation_and_action_mask
 from rl_algo_impls.lux.resource_distance_map import FactoryPlacementDistances
 from rl_algo_impls.lux.rewards import LuxRewardWeights, from_lux_rewards
@@ -102,7 +102,7 @@ class LuxEnvGridnet(VectorEnv):
         return getattr(self.env, name)
 
     def step(self, action: np.ndarray) -> VecEnvStepReturn:
-        if jux_verify_enabled():
+        if jux_verify_flag():
             self._prior_action = action
         lux_actions = self._to_lux_actions(action)
         lux_obs, lux_rewards, terminations, truncations, info = self.env.step(
