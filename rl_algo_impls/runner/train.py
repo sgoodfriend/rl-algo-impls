@@ -192,7 +192,7 @@ def train(args: TrainArgs):
             )
         )
 
-    if jux_verify_enabled():
+    if jux_verify_enabled(eval_env):
         eval_callback.generate_video()
     algo.learn(config.n_timesteps, rollout_generator, callbacks=callbacks)
 
