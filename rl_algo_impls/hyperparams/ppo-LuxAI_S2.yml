@@ -4940,6 +4940,82 @@ LuxAI_S2-v0-j1024env32-80m-vfc006-mgn05-ft2:
     <<: *lux-j1024env32-80m-vfc006-mgn1-ft2-algo
     max_grad_norm: 0.5
 
+LuxAI_S2-v0-j1024env32-80m-vfc006-mgn05-kl01-ent1-baserew-ft:
+  &lux-j1024env32-80m-vfc006-mgn05-kl01-ent1-baserew-ft
+  <<: *lux-j1024env32-80m-vfc006-mgn05-ft2
+  policy_hyperparams:
+    &lux-j1024env32-80m-vfc006-mgn05-kl01-ent1-baserew-ft-policy
+    <<: *lux-j1024env32-80m-vfc006-mgn4-finetune2-a100-policy
+    load_run_path: sgoodfriend/rl-algo-impls-lux-nips1/ulld3hur
+    load_run_path_best: true
+  algo_hyperparams: &lux-j1024env32-80m-vfc006-mgn05-kl01-ent1-baserew-ft-algo
+    <<: *lux-j1024env32-80m-vfc006-mgn05-ft2-algo
+    multi_reward_weights:
+      - 1 # WinLoss
+      - 0.1 # ice
+      - 0.1 # ore
+      - 0.1 # water
+      - 0.1 # metal
+      - 0 # power
+      - 0.1 # light bots
+      - 0.1 # heavy bots
+      - 0.1 # opponent kills
+      - 0 # resources lichen
+      - 0.1 # resources factory
+      - 0 # game length
+      - 0 # opponent resources lichen
+      - 0 # opponent resources factory
+  hyperparam_transitions_kwargs:
+    &lux-j1024env32-80m-vfc006-mgn05-kl01-ent1-baserew-ft-hyperparam-transitions
+    <<: *lux-j1024env16-80m-vfc024-mgn2-kl05-ent1-2o2m2h-ft2-hyperparam-transitions
+    phases:
+      - ent_coef: 0.005
+        rolling_num_envs_reset_every_rollout: 32
+        random_num_envs_reset_every_rollout: 0
+        target_kl: 0.01
+      - ent_coef: 0.005
+        rolling_num_envs_reset_every_rollout: 0
+        random_num_envs_reset_every_rollout: 4
+        target_kl: 0.01
+      - ent_coef: 0.001
+        rolling_num_envs_reset_every_rollout: 0
+        random_num_envs_reset_every_rollout: 4
+        target_kl: 0.001
+    durations:
+      - 0.0125 # reset 32 envs every rollout, 1M steps
+      - 0
+      - 0
+      - 0.9875 # kl 0.01 -> 0.001, ent 0.005 -> 0.001, 79M steps
+      - 0
+
+LuxAI_S2-v0-j1024env32-80m-vfc006-mgn05-kl01-ent1-m2o3h4-ft2-a100:
+  &lux-j1024env32-80m-vfc006-mgn05-kl01-ent1-m2o3h4-ft2-a100
+  <<: *lux-j1024env32-80m-vfc006-mgn05-kl01-ent1-baserew-ft
+  policy_hyperparams:
+    &lux-j1024env32-80m-vfc006-mgn05-kl01-ent1-m2o3h4-ft2-a100-policy
+    <<: *lux-j1024env32-80m-vfc006-mgn05-kl01-ent1-baserew-ft-policy
+    load_run_path: sgoodfriend/rl-algo-impls-lux-nips1/khqt7rtw
+    load_run_path_best: true
+  algo_hyperparams:
+    &lux-j1024env32-80m-vfc006-mgn05-kl01-ent1-m2o3h4-ft2-a100-algo
+    <<: *lux-j1024env32-80m-vfc006-mgn05-kl01-ent1-baserew-ft-algo
+    batch_size: 1024
+    multi_reward_weights:
+      - 1 # WinLoss
+      - 0.1 # ice
+      - 0.2 # ore
+      - 0.1 # water
+      - 0.3 # metal
+      - 0 # power
+      - 0.1 # light bots
+      - 0.4 # heavy bots
+      - 0.1 # opponent kills
+      - 0 # resources lichen
+      - 0.1 # resources factory
+      - 0 # game length
+      - 0 # opponent resources lichen
+      - 0 # opponent resources factory
+
 LuxAI_S2-agent: &lux-agent
   <<: *lux-j1024env64-80m-vfc006-ln-mgn4-2o3m4h-ft-a100
   device: cpu
@@ -4956,7 +5032,7 @@ LuxAI_S2-agent: &lux-agent
       play_checkpoints_kwargs: null
 
 LuxAI_S2-v0-debug:
-  <<: *lux-j1024env32-80m-vfc006-mgn05-ft2
+  <<: *lux-j1024env32-80m-vfc006-mgn05-kl01-ent1-m2o3h4-ft2-a100
   n_timesteps: !!float 10e6
   device: mps
   env_hyperparams:
