@@ -12,8 +12,9 @@ git lfs pull
 python3 -m pip install --upgrade pip
 pip install --upgrade torch torchvision torchaudio
 
-python3 -m pip install --user pipx
+python3 -m pip install --upgrade pipx
 python3 -m pipx ensurepath
+pipx install poetry
 
 poetry install -E all
 
