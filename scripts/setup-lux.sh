@@ -1,12 +1,12 @@
-export KAGGLE_USERNAME=sgoodfriend
-echo -n "Enter Kaggle Key: "
-read -s KAGGLE_KEY
-mkdir ~/.kaggle
-echo "{
-  \"username\": \"$KAGGLE_USERNAME\",
-  \"key\": \"$KAGGLE_KEY\"
-}" > ~/.kaggle/kaggle.json
-chmod 600 ~/.kaggle/kaggle.json
+# export KAGGLE_USERNAME=sgoodfriend
+# echo -n "Enter Kaggle Key: "
+# read -s KAGGLE_KEY
+# mkdir ~/.kaggle
+# echo "{
+#   \"username\": \"$KAGGLE_USERNAME\",
+#   \"key\": \"$KAGGLE_KEY\"
+# }" > ~/.kaggle/kaggle.json
+# chmod 600 ~/.kaggle/kaggle.json
 
 bash ./scripts/setup.sh
 python -m pip install vec-noise
