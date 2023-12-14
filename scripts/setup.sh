@@ -13,7 +13,7 @@ python3 -m pip install --upgrade pip
 pip install --upgrade torch torchvision torchaudio
 
 python3 -m pip install --upgrade pipx
-python3 -m pipx ensurepath
+python3 -m pipx ensurepath --force
 pipx install poetry
 
 poetry install -E all
