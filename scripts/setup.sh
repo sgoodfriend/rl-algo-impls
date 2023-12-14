@@ -18,4 +18,5 @@ pipx install poetry
 
 poetry install -E all
 
+poetry shell
 wandb login

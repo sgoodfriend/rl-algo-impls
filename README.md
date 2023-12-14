@@ -46,6 +46,7 @@ git clone https://github.com/sgoodfriend/rl-algo-impls.git
 cd rl-algo-impls
 # git checkout BRANCH_NAME if running on non-main branch
 bash ./scripts/setup.sh # End of script will prompt for WandB API key
+# Need to call `poetry shell` if running below commands in a new shell
 bash ./scripts/benchmark.sh [-a {"ppo"}] [-e ENVS] [-j {6}] [-p {rl-algo-impls-benchmarks}] [-s {"1 2 3"}]
 ```
 
@@ -64,7 +65,7 @@ git config --global credential.helper store
 huggingface-cli login
 # For example: python benchmark_publish.py --wandb-tags host_192-9-147-166 benchmark_1d4094f --wandb-report-url https://api.wandb.ai/links/sgoodfriend/099h4lvj
 # --virtual-display likely must be specified if running on a remote machine.
-python benchmark_publish.py --wandb-tags HOST_TAG COMMIT_TAG --wandb-report-url WANDB_REPORT_URL [--virtual-display]
+poetry run python benchmark_publish.py --wandb-tags HOST_TAG COMMIT_TAG --wandb-report-url WANDB_REPORT_URL [--virtual-display]
 ```
 
 #### Hyperparameter tuning with Optuna
@@ -75,6 +76,7 @@ before running `tuning/tuning.sh`:
 
 ```sh
 # Setup similar to training above
+poetry shell
 wandb login
 bash scripts/tuning.sh -a ALGO -e ENV -j N_JOBS -s NUM_SEEDS
 ```
@@ -138,7 +140,7 @@ Training, benchmarking, and watching the agents playing the environments can be 
 locally:
 
 ```sh
-python train.py [-h] [--algo {ppo}] [--env ENV [ENV ...]] [--seed [SEED ...]] [--wandb-project-name WANDB_PROJECT_NAME] [--wandb-tags [WANDB_TAGS ...]] [--pool-size POOL_SIZE] [-virtual-display]
+poetry run python train.py [-h] [--algo {ppo}] [--env ENV [ENV ...]] [--seed [SEED ...]] [--wandb-project-name WANDB_PROJECT_NAME] [--wandb-tags [WANDB_TAGS ...]] [--pool-size POOL_SIZE] [-virtual-display]
 ```
 
 train.py by default uploads to the rl-algo-impls WandB project. Training creates videos
@@ -148,9 +150,9 @@ created (1-5 minutes depending on environment). The --virtual-display flag shoul
 headless mode, but that hasn't been reliable on macOS.
 
 ```sh
-python enjoy.py [-h] [--algo {ppo}] [--env ENV] [--seed SEED] [--render RENDER] [--best BEST] [--n_episodes N_EPISODES] [--deterministic-eval DETERMINISTIC_EVAL] [--no-print-returns]
+poetry run python enjoy.py [-h] [--algo {ppo}] [--env ENV] [--seed SEED] [--render RENDER] [--best BEST] [--n_episodes N_EPISODES] [--deterministic-eval DETERMINISTIC_EVAL] [--no-print-returns]
 # OR
-python enjoy.py [--wandb-run-path WANDB_RUN_PATH]
+poetry run python enjoy.py [--wandb-run-path WANDB_RUN_PATH]
 ```
 
 The first enjoy.py where you specify algo, env, and seed loads a model you locally
@@ -166,19 +168,16 @@ special case for all Atari games).
 
 ## gym-microrts Setup
 
+Requires Java SDK to be installed first
+
 ```sh
-python -m pip install -e '.[microrts]'
+poetry install -E microrts
 ```
 
-Requires Java SDK to also be installed.
 
 ## Lux AI Season 2 Setup
-Lux training uses a [Jux fork](https://github.com/sgoodfriend/jux) that adds support for environments not being in lockstep, stats collection, and other improvements. The fork by default will install the CPU-only version of Jax, which isn't ideal for training, but useful for development. When doing actual training, you'll need an Nvidia GPU and follow these instructions to [install jax[cuda11_cudnn82]==0.4.7](https://github.com/sgoodfriend/jux#install-jax) before installing the jux dependencies:
-```sh
-pip install --upgrade "jax[cuda11_cudnn82]==0.4.7" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
-```
-
-After installing jax, install the lux dependencies (which includes jux):
+Lux training uses a [Jux fork](https://github.com/sgoodfriend/jux) that adds support for environments not being in lockstep, stats collection, and other improvements. The fork by default will install the CPU-only version of Jax, which isn't ideal for training, but useful for development. When doing actual training, you'll need an Nvidia GPU and follow these instructions to [install jax[cuda11_cudnn82]==0.4.7](https://github.com/sgoodfriend/jux#install-jax) after installing the lux dependencies:
 ```sh
 poetry install -E lux
+poetry run pip install --upgrade "jax[cuda11_cudnn82]==0.4.7" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
 ```
