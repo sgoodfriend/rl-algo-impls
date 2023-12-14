@@ -41,12 +41,11 @@ Labs A10 instances to be a good balance of performance (14 hours to train PPO in
 environments [5 basic gymnasium, 4 MuJoCo, CarRacing-v2, and 4 Atari] across 3 seeds) vs
 cost ($0.60/hr).
 
-```
+```sh
 git clone https://github.com/sgoodfriend/rl-algo-impls.git
 cd rl-algo-impls
 # git checkout BRANCH_NAME if running on non-main branch
-bash ./scripts/setup.sh
-wandb login
+bash ./scripts/setup.sh # End of script will prompt for WandB API key
 bash ./scripts/benchmark.sh [-a {"ppo"}] [-e ENVS] [-j {6}] [-p {rl-algo-impls-benchmarks}] [-s {"1 2 3"}]
 ```
 
@@ -60,7 +59,7 @@ hostname (i.e., `host_192-9-145-26`)
 Publishing benchmarks to Huggingface requires logging into Huggingface with a
 write-capable API token:
 
-```
+```sh
 git config --global credential.helper store
 huggingface-cli login
 # For example: python benchmark_publish.py --wandb-tags host_192-9-147-166 benchmark_1d4094f --wandb-report-url https://api.wandb.ai/links/sgoodfriend/099h4lvj
@@ -74,7 +73,7 @@ Hyperparameter tuning can be done with the `tuning/tuning.sh` script, which runs
 multiple processes of optimize.py. Start by doing all the setup meant for training
 before running `tuning/tuning.sh`:
 
-```
+```sh
 # Setup similar to training above
 wandb login
 bash scripts/tuning.sh -a ALGO -e ENV -j N_JOBS -s NUM_SEEDS
@@ -105,7 +104,7 @@ but these are the approximate setup and usage I've been using:
 
 1. Install libraries with homebrew
 
-```
+```sh
 brew install swig
 brew install --cask xquartz
 brew install pipx
@@ -113,7 +112,7 @@ brew install pipx
 
 2. Download and install Miniconda for arm64
 
-```
+```sh
 curl -O https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-arm64.sh
 sh Miniconda3-latest-MacOSX-arm64.sh
 ```
@@ -121,14 +120,14 @@ sh Miniconda3-latest-MacOSX-arm64.sh
 3. Create a conda environment from this repo's
    [environment.yml](https://github.com/sgoodfriend/rl-algo-impls/blob/main/environment.yml)
 
-```
+```sh
 conda env create -f environment.yml -n rai_py38_poetry
 conda activate rai_py38_poetry
 ```
 
 4. Install other dependencies with poetry
 
-```
+```sh
 pipx install poetry
 poetry install -E all
 ```
@@ -138,7 +137,7 @@ poetry install -E all
 Training, benchmarking, and watching the agents playing the environments can be done
 locally:
 
-```
+```sh
 python train.py [-h] [--algo {ppo}] [--env ENV [ENV ...]] [--seed [SEED ...]] [--wandb-project-name WANDB_PROJECT_NAME] [--wandb-tags [WANDB_TAGS ...]] [--pool-size POOL_SIZE] [-virtual-display]
 ```
 
@@ -148,7 +147,7 @@ display, so you shouldn't shutoff the display until the video of the initial mod
 created (1-5 minutes depending on environment). The --virtual-display flag should allow
 headless mode, but that hasn't been reliable on macOS.
 
-```
+```sh
 python enjoy.py [-h] [--algo {ppo}] [--env ENV] [--seed SEED] [--render RENDER] [--best BEST] [--n_episodes N_EPISODES] [--deterministic-eval DETERMINISTIC_EVAL] [--no-print-returns]
 # OR
 python enjoy.py [--wandb-run-path WANDB_RUN_PATH]
@@ -167,7 +166,7 @@ special case for all Atari games).
 
 ## gym-microrts Setup
 
-```
+```sh
 python -m pip install -e '.[microrts]'
 ```
 

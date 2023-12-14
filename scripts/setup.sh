@@ -16,3 +16,5 @@ sudo apt install -y pipx
 pipx install poetry
 
 poetry install -E all
+
+wandb login
