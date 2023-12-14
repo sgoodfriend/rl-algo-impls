@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "rl_algo_impls"
-version = "0.0.60"
+version = "0.1.0"
 description = "Implementations of reinforcement learning algorithms"
 authors = ["Scott Goodfriend <goodfriend.scott@gmail.com>"]
 license = "MIT"
@@ -40,17 +40,17 @@ scikit-learn = {version = "*", optional = true}
 matplotlib = {version = "^3.7.1", optional = true}
 huggingface-hub = {version = "*", optional = true}
 glfw = {version = "^1.12.0", optional = true}
-numexpr = {version = "^2.8.4", optional = true}
 JPype1 = {version = "^1.3.0", optional = true}
 peewee = {version = "^3.14.8", optional = true}
 PettingZoo = {version = "^1.16.0", optional = true}
 luxai_s2 = {version = "^3.0.1", optional = true}
 ray = {extras = ["air"], version = "^2.8.1", optional = true}
 typing_extensions = {version = "==4.5.0", optional = true}
-procgen = [
-    {version = "^0.10.7", markers = "platform_machine == 'x86_64'", optional = true},
-    {git = "https://github.com/sgoodfriend/procgen.git", branch = "master", markers = "platform_machine == 'arm64'", optional = true},
-]
+
+vec-noise = {version = "*", optional = true}  # for luxai_s2, but poetry fails for pep517. Installed through conda
+jaxlib = {version = "==0.4.7", optional = true} # for juxai-s2, but poetry can't install jax. Install beforehand
+jax = {version = "==0.4.7", optional = true} # for juxai-s2, but poetry can't install jax. Install beforehand
+juxai-s2 = { git = "https://github.com/sgoodfriend/jux.git", branch = "main", optional = true }
 
 [tool.poetry.dev-dependencies]
 pytest = "*"
@@ -64,10 +64,10 @@ isort = "*"
 test = ["pytest", "black", "mypy", "flake8", "flake8-bugbear", "isort"]
 extra = ["cmake", "swig", "AutoROM", "pyglet", "scikit-learn", "matplotlib", "huggingface-hub", "pandas", "torchviz", "thop", "onnx", "glfw", "mujoco"]
 optuna = ["optuna", "dash", "kaleido"]
-procgen = ["numexpr", "glfw", "procgen"]
 microrts = ["JPype1", "peewee", "PettingZoo"]
-lux = ["luxai_s2", "ray", "kaggle", "polars", "typing_extensions"]
-all = ["test", "extra", "optuna", "procgen", "microrts", "lux"]
+all = ["test", "extra", "optuna", "microrts"]
+
+lux = ["luxai_s2", "ray", "kaggle", "polars", "typing_extensions", "juxai-s2"]
 
 [tool.poetry.scripts]
 rai_microrts = "rl_algo_impls.microrts.agent:main"

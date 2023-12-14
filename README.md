@@ -8,16 +8,17 @@ Implementations of reinforcement learning algorithms.
     Technical details in
     [technical-description.md](https://github.com/sgoodfriend/rl-algo-impls/blob/main/rl_algo_impls/microrts/technical-description.md).
   - [Lux AI Season 2](https://www.kaggle.com/competitions/lux-ai-season-2/discussion/406791)
+  - [Lux AI Season 2 - NeurIPS Stage 2](https://www.kaggle.com/competitions/lux-ai-season-2-neurips-stage-2/discussion/459891)
 - [WandB benchmark reports](https://wandb.ai/sgoodfriend/rl-algo-impls-benchmarks/reportlist)
   - [Basic, MuJoCo, and Atari games
     (v0.0.9)](https://api.wandb.ai/links/sgoodfriend/fdp5mg6h)
     - [v0.0.8](https://api.wandb.ai/links/sgoodfriend/jh3cqbon)
     - [v0.0.4](https://api.wandb.ai/links/sgoodfriend/09frjfcs)
-  - [procgen
-    (starpilot, hard)](https://api.wandb.ai/links/sgoodfriend/v1p4976e) and [procgen (easy)](https://api.wandb.ai/links/sgoodfriend/f3w1hwyb)
-  - [Gridnet MicroRTS](https://api.wandb.ai/links/sgoodfriend/zdee7ovm)
+  - [procgen (starpilot, hard)](https://api.wandb.ai/links/sgoodfriend/v1p4976e) and [procgen (easy)](https://api.wandb.ai/links/sgoodfriend/f3w1hwyb): *procgen is no longer supported by this library given its dependence on gym 0.21*
+  - [GridNet MicroRTS](https://api.wandb.ai/links/sgoodfriend/zdee7ovm)
   - [MicroRTS Selfplay](https://api.wandb.ai/links/sgoodfriend/5qjlr8ob)
   - [Lux AI Season 2 Training](https://api.wandb.ai/links/sgoodfriend/0yrxywnd)
+  - [Lux AI Season 2 NeurIPS Stage 2 Training](https://api.wandb.ai/links/sgoodfriend/ssxupw6m) & [Follow-up](https://api.wandb.ai/links/sgoodfriend/8ozskssn)
 - [Huggingface models](https://huggingface.co/models?other=rl-algo-impls)
 
 ## Prerequisites: Weights & Biases (WandB)
@@ -107,6 +108,7 @@ but these are the approximate setup and usage I've been using:
 ```
 brew install swig
 brew install --cask xquartz
+brew install pipx
 ```
 
 2. Download and install Miniconda for arm64
@@ -120,14 +122,15 @@ sh Miniconda3-latest-MacOSX-arm64.sh
    [environment.yml](https://github.com/sgoodfriend/rl-algo-impls/blob/main/environment.yml)
 
 ```
-conda env create -f environment.yml -n rl_algo_impls
-conda activate rl_algo_impls
+conda env create -f environment.yml -n rai_py38_poetry
+conda activate rai_py38_poetry
 ```
 
 4. Install other dependencies with poetry
 
 ```
-poetry install
+pipx install poetry
+poetry install -E all
 ```
 
 #### Usage
@@ -162,27 +165,6 @@ example run path is `sgoodfriend/rl-algo-impls-benchmarks/09gea50g`
 These are specified in yaml files in the hyperparams directory by game (`atari` is a
 special case for all Atari games).
 
-## procgen Setup
-
-procgen envs use gym3, which don't expose a straightforward way to set seed to allow for
-repeatable runs.
-
-[openai/procgen](https://github.com/openai/procgen) doesn't support Apple Silicon, but [patch
-instructions exist](https://github.com/openai/procgen/issues/69). The changes to the
-repo are for now in a fork since the openai/procgen project is in maintenance mode:
-
-```
-brew install wget cmake glow qt5
-git clone https://github.com/sgoodfriend/procgen.git
-cd procgen
-pip install -e .
-python -c "from procgen import ProcgenGym3Env; ProcgenGym3Env(num=1, env_name='coinrun')"
-python -m procgen.interactive
-```
-
-amd64 Linux machines (e.g., Lambda Labs and Google Colab) should install procgen with
-`python -m pip install '.[procgen]'`
-
 ## gym-microrts Setup
 
 ```
@@ -190,3 +172,14 @@ python -m pip install -e '.[microrts]'
 ```
 
 Requires Java SDK to also be installed.
+
+## Lux AI Season 2 Setup
+Lux training uses a [Jux fork](https://github.com/sgoodfriend/jux) that adds support for environments not being in lockstep, stats collection, and other improvements. The fork by default will install the CPU-only version of Jax, which isn't ideal for training, but useful for development. When doing actual training, you'll need an Nvidia GPU and follow these instructions to [install jax[cuda11_cudnn82]==0.4.7](https://github.com/sgoodfriend/jux#install-jax) before installing the jux dependencies:
+```sh
+pip install --upgrade "jax[cuda11_cudnn82]==0.4.7" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
+```
+
+After installing jax, install the lux dependencies (which includes jux):
+```sh
+poetry install -E lux
+```
