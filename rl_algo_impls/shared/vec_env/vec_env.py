@@ -13,13 +13,11 @@ from stable_baselines3.common.atari_wrappers import MaxAndSkipEnv, NoopResetEnv
 from torch.utils.tensorboard.writer import SummaryWriter
 
 from rl_algo_impls.runner.config import Config, EnvHyperparams
-from rl_algo_impls.shared.policy.policy import VEC_NORMALIZE_FILENAME
 from rl_algo_impls.shared.vec_env.utils import (
     import_for_env_id,
     is_atari,
     is_car_racing,
     is_gym_procgen,
-    is_lux,
     is_microrts,
 )
 from rl_algo_impls.wrappers.action_mask_wrapper import SingleActionMaskWrapper
