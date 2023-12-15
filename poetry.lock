@@ -1705,7 +1705,7 @@ torch = ["torch"]
 type = "git"
 url = "https://github.com/sgoodfriend/jux.git"
 reference = "main"
-resolved_reference = "b8dd0c913183b415ae89a3bad35debf494417f14"
+resolved_reference = "a3b923a4aa0ad4ab9160af502fef0b056ae51817"
 
 [[package]]
 name = "kiwisolver"
