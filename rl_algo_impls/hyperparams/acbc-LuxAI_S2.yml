@@ -21,6 +21,8 @@ LuxAI_S2-v0-squnet-iDeimos: &lux-squnet-ideimos
     n_steps: 512
     full_batch_off_accelerator: true
     include_logp: false
+  checkpoints_kwargs:
+    history_size: 32
   eval_hyperparams: &lux-eval-defaults
     deterministic: false
     step_freq: !!float 5e6
@@ -39,7 +41,6 @@ LuxAI_S2-v0-squnet-iDeimos: &lux-squnet-ideimos
       score_reward_kwargs: null
       play_checkpoints_kwargs:
         n_envs_against_checkpoints: null
-    n_checkpoints: 32
   policy_hyperparams: &lux-squnet-ideimos-policy
     actor_head_style: squeeze_unet
     subaction_mask:

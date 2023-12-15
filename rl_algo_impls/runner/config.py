@@ -91,6 +91,7 @@ class Hyperparams:
     rollout_type: Optional[str] = None
     device_hyperparams: Dict[str, Any] = dataclasses.field(default_factory=dict)
     lr_by_kl_kwargs: Dict[str, Any] = dataclasses.field(default_factory=dict)
+    checkpoints_kwargs: Dict[str, Any] = dataclasses.field(default_factory=dict)
 
     @classmethod
     def from_dict_with_extra_fields(

@@ -21,6 +21,7 @@ def make_procgen_env(
     training: bool = True,
     render: bool = False,
     tb_writer: Optional[SummaryWriter] = None,
+    **kwargs,
 ) -> VectorEnv:
     from gym3 import ExtractDictObWrapper, ViewerWrapper
     from procgen.env import ProcgenGym3Env, ToBaselinesVecEnv

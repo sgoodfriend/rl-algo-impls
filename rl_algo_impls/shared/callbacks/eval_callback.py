@@ -10,6 +10,7 @@ from typing import Deque, Dict, List, Optional, Sequence, Union
 import numpy as np
 from torch.utils.tensorboard.writer import SummaryWriter
 
+from rl_algo_impls.checkpoints.checkpoints_manager import PolicyCheckpointsManager
 from rl_algo_impls.lux.jux_verify import jux_verify_enabled
 from rl_algo_impls.shared.callbacks import Callback
 from rl_algo_impls.shared.policy.policy import Policy
@@ -266,8 +267,8 @@ class EvalCallback(Callback):
         skip_evaluate_at_start: bool = False,
         only_checkpoint_initial_policy: bool = False,
         only_checkpoint_best_policies: bool = False,
-        n_checkpoints: int = 1,
         latest_model_path: Optional[str] = None,
+        checkpoints_manager: Optional[PolicyCheckpointsManager] = None,
     ) -> None:
         super().__init__()
         self.policy = policy
@@ -305,34 +306,15 @@ class EvalCallback(Callback):
         self.skip_evaluate_at_start = skip_evaluate_at_start
         self.latest_model_path = latest_model_path
 
-        play_checkpoints_wrappers = [
-            find_wrapper(env, PlayCheckpointsWrapper),
-            find_wrapper(video_env, PlayCheckpointsWrapper) if video_env else None,
-            find_wrapper(policy.env, PlayCheckpointsWrapper),
-        ]
-        if play_checkpoints_wrappers[0] and video_env:
-            assert play_checkpoints_wrappers[
-                1
-            ], f"video_env must have PlayCheckpointsWrapper given eval env does"
-        play_checkpoints_wrappers = [
-            wrapper for wrapper in play_checkpoints_wrappers if wrapper
-        ]
-        if play_checkpoints_wrappers:
+        self.checkpoints_manager = checkpoints_manager
+        if checkpoints_manager:
             if only_checkpoint_initial_policy:
                 assert (
-                    n_checkpoints == 1
-                ), f"n_checkpoints must be 1 if only_checkpoint_initial_policy is True"
-            self.prior_policies = deque(maxlen=n_checkpoints)
+                    checkpoints_manager.history_size == 1
+                ), f"checkpoints_manager's history_size must be 1 if only_checkpoint_initial_policy is True"
             self.only_checkpoint_initial_policy = only_checkpoint_initial_policy
             self.only_checkpoint_best_policies = only_checkpoint_best_policies
             self.checkpoint_policy(True)
-
-            def policies_getter_fn() -> Sequence[Policy]:
-                assert self.prior_policies
-                return self.prior_policies
-
-            for wrapper in play_checkpoints_wrappers:
-                wrapper.checkpoints_getter = policies_getter_fn
         else:
             self.prior_policies = None
 
@@ -405,19 +387,16 @@ class EvalCallback(Callback):
         return eval_stat
 
     def checkpoint_policy(self, is_best: bool):
-        if self.prior_policies is not None:
-            if len(self.prior_policies) > 0:
-                if self.only_checkpoint_initial_policy:
-                    return
-                if self.only_checkpoint_best_policies and not is_best:
-                    return
-                else:
-                    logging.info(
-                        f"Checkpointing best policy at {self.timesteps_elapsed}"
-                    )
-            checkpoint = deepcopy(self.policy)
-            checkpoint.eval()
-            self.prior_policies.appendleft(checkpoint)
+        if self.checkpoints_manager is None:
+            return
+        if len(self.checkpoints_manager.checkpoints) > 0:
+            if self.only_checkpoint_initial_policy:
+                return
+            if self.only_checkpoint_best_policies and not is_best:
+                return
+            else:
+                logging.info(f"Checkpointing best policy at {self.timesteps_elapsed}")
+        self.checkpoints_manager.create_checkpoint(self.policy)
 
     def generate_video(self) -> None:
         assert self.video_env and self.video_dir

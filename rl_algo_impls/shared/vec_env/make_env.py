@@ -3,6 +3,7 @@ from typing import Any, Dict, Optional
 
 from torch.utils.tensorboard.writer import SummaryWriter
 
+from rl_algo_impls.checkpoints.checkpoints_manager import PolicyCheckpointsManager
 from rl_algo_impls.runner.config import Config, EnvHyperparams
 from rl_algo_impls.shared.vec_env.procgen import make_procgen_env
 from rl_algo_impls.shared.vec_env.vec_env import make_vec_env
@@ -17,6 +18,7 @@ def make_env(
     training: bool = True,
     render: bool = False,
     tb_writer: Optional[SummaryWriter] = None,
+    checkpoints_manager: Optional[PolicyCheckpointsManager] = None,
 ) -> VectorEnv:
     if hparams.env_type == "procgen":
         make_env_fn = make_procgen_env
@@ -42,6 +44,7 @@ def make_env(
         training=training,
         render=render,
         tb_writer=tb_writer,
+        checkpoints_manager=checkpoints_manager,
     )
 
 

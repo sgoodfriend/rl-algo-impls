@@ -34,6 +34,7 @@ def make_microrts_env(
     training: bool = True,
     render: bool = False,
     tb_writer: Optional[SummaryWriter] = None,
+    **kwargs,
 ) -> VectorEnv:
     (
         _,  # env_type

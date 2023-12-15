@@ -31,6 +31,8 @@ LuxAI_S2-v0: &lux-defaults
     additional_win_loss_reward: true
     score_reward_kwargs:
       episode_end: true
+  checkpoints_kwargs:
+    history_size: 32
   eval_hyperparams: &lux-eval-defaults
     deterministic: false
     step_freq: !!float 5e6
@@ -48,7 +50,6 @@ LuxAI_S2-v0: &lux-defaults
       score_reward_kwargs: null
       play_checkpoints_kwargs:
         n_envs_against_checkpoints: null
-    n_checkpoints: 32
   policy_hyperparams: &lux-policy-defaults
     activation_fn: relu
     actor_head_style: unet
@@ -339,6 +340,8 @@ LuxAI_S2-v0-squnet-Deimos-jumpstart: &lux-squnet-deimos-jumpstart
   rollout_hyperparams:
     <<: *lux-squnet-rollout
     switch_range: 1
+  checkpoints_kwargs:
+    history_size: 1
   eval_hyperparams: &lux-squnet-deimos-jumpstart-eval
     <<: *lux-squnet-ideimos-eval
     score_threshold: null
@@ -347,7 +350,6 @@ LuxAI_S2-v0-squnet-Deimos-jumpstart: &lux-squnet-deimos-jumpstart
       <<: *lux-squnet-ideimos-eval-env-overrides
       play_checkpoints_kwargs:
         n_envs_against_checkpoints: null
-    n_checkpoints: 1
   hyperparam_transitions_kwargs:
     interpolate_method: cosine
     phases:
@@ -1176,6 +1178,8 @@ LuxAI_S2-v0-sSqunet-j256env16-80m: &lux-ssqnet-j256env16-80m
         - [relative_stats, resources, lichen] # 10
         - [relative_stats, resources, factories] # 11
         - [relative_stats, resources, water_in_factories] # 12
+  checkpoints_kwargs:
+    history_size: 4
   eval_hyperparams: &lux-ssqnet-j256env16-eval
     <<: *lux-ssqnet-78env16-eval
     env_overrides: &lux-ssqnet-j256env16-eval-env-overrides
@@ -1190,7 +1194,6 @@ LuxAI_S2-v0-sSqunet-j256env16-80m: &lux-ssqnet-j256env16-80m
       play_checkpoints_kwargs:
         n_envs_against_checkpoints: null
       info_rewards: null
-    n_checkpoints: 4
     only_checkpoint_initial_policy: false
     only_checkpoint_best_policies: true
     score_threshold: 0.14
@@ -1648,6 +1651,8 @@ LuxAI_S2-v0-sSqnet-j1024env16-80m-checkpoints:
     self_play_kwargs: null
     play_checkpoints_kwargs:
       n_envs_against_checkpoints: 256
+  checkpoints_kwargs:
+    history_size: 4
   eval_hyperparams: &lux-j1024env16-checkpoints-eval
     <<: *lux-j1024env16-2i2o-eval
     env_overrides:
@@ -1655,7 +1660,6 @@ LuxAI_S2-v0-sSqnet-j1024env16-80m-checkpoints:
       n_envs: 128
       play_checkpoints_kwargs:
         n_envs_against_checkpoints: null
-    n_checkpoints: 4
     only_checkpoint_initial_policy: false
     only_checkpoint_best_policies: true
     score_threshold: 0.14
@@ -1669,6 +1673,8 @@ LuxAI_S2-v0-sSqnet-j1024env16-80m-checkpoints-old-reward:
     self_play_kwargs: null
     play_checkpoints_kwargs:
       n_envs_against_checkpoints: 256
+  checkpoints_kwargs:
+    history_size: 4
   eval_hyperparams: &lux-j1024env16-checkpoints-old-reward-eval
     <<: *lux-j1024env16-2i2o-old-reward-eval
     env_overrides: &lux-j1024env16-checkpoints-old-reward-eval-env-overrides
@@ -1676,7 +1682,6 @@ LuxAI_S2-v0-sSqnet-j1024env16-80m-checkpoints-old-reward:
       n_envs: 128
       play_checkpoints_kwargs:
         n_envs_against_checkpoints: null
-    n_checkpoints: 4
     only_checkpoint_initial_policy: false
     only_checkpoint_best_policies: true
     score_threshold: 0.14

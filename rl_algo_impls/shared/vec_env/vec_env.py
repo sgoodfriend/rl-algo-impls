@@ -46,6 +46,7 @@ def make_vec_env(
     training: bool = True,
     render: bool = False,
     tb_writer: Optional[SummaryWriter] = None,
+    **kwargs,
 ) -> VectorEnv:
     (
         env_type,
