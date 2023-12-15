@@ -1,4 +1,4 @@
-name: rai_py38_poetry
+name: rl_algo_impls
 channels:
   - pytorch
   - conda-forge
