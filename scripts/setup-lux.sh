@@ -15,7 +15,21 @@ bash ./scripts/setup.sh
 poetry run pip install vec-noise
 
 poetry install -E lux
-poetry run pip install --upgrade "jax[cuda11_cudnn82]==0.4.7" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
+
+# Detect CUDA version
+cuda_version=$(nvcc --version | grep "release" | sed 's/.*release //' | sed 's/,.*//')
+
+# Check if CUDA version is 11 or 12 and install the appropriate jax version
+if [[ $cuda_version == 11.* ]]; then
+    echo "CUDA version 11 detected. Installing jax for CUDA 11."
+    poetry run pip install --upgrade "jax[cuda11_pip]==0.4.7" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
+elif [[ $cuda_version == 12.* ]]; then
+    echo "CUDA version 12 detected. Installing jax for CUDA 12."
+    poetry run pip install --upgrade "jax[cuda12_pip]==0.4.7" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
+else
+    echo "Unsupported CUDA version: $cuda_version"
+fi
+
 
 # kaggle datasets download -d sgoodfriend/lux-replays-flg-npz -p data/lux
 # mkdir -p data/lux/lux-replays-flg-npz
