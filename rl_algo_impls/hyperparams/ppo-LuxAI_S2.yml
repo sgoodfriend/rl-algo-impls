@@ -5046,34 +5046,6 @@ LuxAI_S2-v0-j1024env32-80m-vfc006-brn-mgn4-baserew-a100:
     <<: *lux-j1024env32-80m-vfc006-mgn4-base-rewards-a100-algo
     batch_size: 1024
 
-LuxAI_S2-v0-j1024env32-80m-vfc006-ln-mgn4-2o3m4h-ft-teacher-loss-a100:
-  &lux-j1024env32-80m-vfc006-ln-mgn4-2o3m4h-ft-teacher-loss-a100
-  <<: *lux-j1024env32-80m-vfc006-mgn4-finetune2-a100
-  algo_hyperparams:
-    &lux-j1024env32-80m-vfc006-ln-mgn4-2o3m4h-ft-teacher-loss-a100-algo
-    <<: *lux-j1024env32-80m-vfc006-ln-max-gn-4-a100-algo
-    ent_coef: 0.005
-    teacher_kl_loss_coef: 0.001
-  hyperparam_transitions_kwargs:
-    &lux-j1024env32-80m-vfc006-ln-mgn4-2o3m4h-ft-teacher-loss-a100-hyperparam-transitions
-    <<: *lux-j1024env32-80m-vfc006-batch-norm-max-gn-4-a100-hyperparam-transitions
-    phases:
-      - rolling_num_envs_reset_every_rollout: 32
-        random_num_envs_reset_every_rollout: 0
-        teacher_kl_loss_coef: 0.001
-      - rolling_num_envs_reset_every_rollout: 0
-        random_num_envs_reset_every_rollout: 4
-        teacher_kl_loss_coef: 0.001
-      - rolling_num_envs_reset_every_rollout: 0
-        random_num_envs_reset_every_rollout: 4
-        teacher_kl_loss_coef: 0
-    durations:
-      - 0.0125 # reset 32 envs every rollout, 1M steps
-      - 0
-      - 0
-      - 0.9875 # reset 4 envs every rollout, teacher_kl_loss 1 -> 0, 79M steps
-      - 0
-
 LuxAI_S2-v0-j1024env16-80m-vfc024-ln-mgn2-2o2m2h-ft-teacher5:
   &lux-j1024env16-80m-vfc024-ln-mgn2-2o2m2h-ft-teacher5
   <<: *lux-j1024env16-80m-vfc024-ln-mgn-2-2o2m2hrew-finetune
@@ -5093,7 +5065,7 @@ LuxAI_S2-v0-j1024env16-80m-vfc024-ln-mgn2-2o2m2h-ft-teacher5:
     max_lr: !!float 1e-3
   hyperparam_transitions_kwargs:
     &lux-j1024env16-80m-vfc024-ln-mgn2-2o2m2h-ft-teacher5-hyperparam-transitions
-    <<: *lux-j1024env32-80m-vfc006-ln-mgn4-2o3m4h-ft-teacher-loss-a100-hyperparam-transitions
+    <<: *lux-j1024env16-80m-vfc024-bn-max-gn-2-hyperparam-transitions
     phases:
       - rolling_num_envs_reset_every_rollout: 32
         random_num_envs_reset_every_rollout: 0
@@ -5137,6 +5109,30 @@ LuxAI_S2-v0-j1024env16-80m-vfc024-ln-mgn2-2o2m2h-ft-teacher05:
       - 0.9875 # reset 4 envs every rollout, teacher_kl_loss 5e-4 -> 0, 79M steps
       - 0
 
+LuxAI_S2-v0-j1024env16-80m-vfc024-lr5-ln-mgn2-2o2m2h-tkl5-ft:
+  &lux-j1024env16-80m-vfc024-lr5-ln-mgn2-2o2m2h-tkl5-ft
+  <<: *lux-j1024env16-80m-vfc024-ln-mgn2-2o2m2h-ft-teacher5
+  lr_by_kl_kwargs:
+    &lux-j1024env16-80m-vfc024-lr5-ln-mgn2-2o2m2h-tkl5-ft-lr-by-kl-kwargs
+    <<: *lux-j1024env16-80m-vfc024-ln-mgn2-2o2m2h-ft-teacher5-lr-by-kl-kwargs
+    min_lr: !!float 5e-5
+    max_lr: !!float 5e-4
+
+LuxAI_S2-v0-j1024env32-80m-vfc006-lr5-ln-mgn4-2o3m4h-tkl5-ft-a100:
+  &lux-j1024env32-80m-vfc006-lr5-ln-mgn4-2o3m4h-tkl5-ft-a100
+  <<: *lux-j1024env32-80m-vfc006-mgn4-finetune2-a100
+  algo_hyperparams:
+    &lux-j1024env32-80m-vfc006-lr5-ln-mgn4-2o3m4h-tkl5-ft-a100-algo
+    <<: *lux-j1024env32-80m-vfc006-ln-max-gn-4-a100-algo
+    ent_coef: 0.005
+    teacher_kl_loss_coef: !!float 5e-3
+  lr_by_kl_kwargs:
+    &lux-j1024env32-80m-vfc006-lr5-ln-mgn4-2o3m4h-tkl5-ft-a100-lr-by-kl-kwargs
+    <<: *lux-j1024env16-80m-vfc024-lr5-ln-mgn2-2o2m2h-tkl5-ft-lr-by-kl-kwargs
+  hyperparam_transitions_kwargs:
+    &lux-j1024env32-80m-vfc006-lr5-ln-mgn4-2o3m4h-tkl5-ft-a100-hyperparam-transitions
+    <<: *lux-j1024env16-80m-vfc024-ln-mgn2-2o2m2h-ft-teacher5-hyperparam-transitions
+
 LuxAI_S2-agent: &lux-agent
   <<: *lux-j1024env64-80m-vfc006-ln-mgn4-2o3m4h-ft-a100
   device: cpu
@@ -5153,40 +5149,40 @@ LuxAI_S2-agent: &lux-agent
       play_checkpoints_kwargs: null
 
 LuxAI_S2-v0-debug:
-  <<: *lux-j1024env16-80m-vfc024-ln-mgn2-2o2m2h-ft-teacher05
+  <<: *lux-j1024env32-80m-vfc006-lr5-ln-mgn4-2o3m4h-tkl5-ft-a100
   n_timesteps: !!float 10e6
   device: mps
   env_hyperparams:
-    <<: *lux-j1024env16-clip-reward-1-env
-    # <<: *lux-j1024env32-opp-resources-env
+    # <<: *lux-j1024env16-clip-reward-1-env
+    <<: *lux-j1024env32-opp-resources-env
     # <<: *lux-j1024env64-a100-env
     # <<: *lux-j512env64-opp-resources-env
     n_envs: 64
     play_checkpoints_kwargs:
       n_envs_against_checkpoints: 8
     make_kwargs:
-      <<: *lux-j1024env16-power-diggers-env-make-kwargs
-      # <<: *lux-j1024env32-opp-resources-env-make-kwargs
+      # <<: *lux-j1024env16-power-diggers-env-make-kwargs
+      <<: *lux-j1024env32-opp-resources-env-make-kwargs
       # <<: *lux-j1024env64-a100-env-make-kwargs
       # <<: *lux-j512env64-opp-resources-env-make-kwargs
       verbose: 3
       verify: true
     # vec_env_class: sync
   eval_hyperparams:
-    <<: *lux-j1024env16-eval
-    # <<: *lux-j1024env32-opp-resources-eval
+    # <<: *lux-j1024env16-eval
+    <<: *lux-j1024env32-opp-resources-eval
     # <<: *lux-j1024env64-a100-eval
     # <<: *lux-j512env64-opp-resources-eval
     env_overrides:
-      <<: *lux-j1024env16-power-diggers-eval-env-overrides
-      # <<: *lux-j1024env32-80m-a100-std-norm-retrain-env-overrides
+      # <<: *lux-j1024env16-power-diggers-eval-env-overrides
+      <<: *lux-j1024env32-80m-a100-std-norm-retrain-env-overrides
       # <<: *lux-j1024env64-a100-eval-env-overrides
       # <<: *lux-j512env64-opp-resources-eval-env-overrides
       n_envs: 8
       # vec_env_class: sync
       make_kwargs:
-        <<: *lux-j1024env16-power-diggers-eval-env-overrides-make-kwargs
-        # <<: *lux-j1024env32-80m-a100-std-norm-retrain-env-overrides-make-kwargs
+        # <<: *lux-j1024env16-power-diggers-eval-env-overrides-make-kwargs
+        <<: *lux-j1024env32-80m-a100-std-norm-retrain-env-overrides-make-kwargs
         # <<: *lux-j1024env64-a100-eval-env-overrides-make-kwargs
         # <<: *lux-j512env64-opp-resources-eval-env-overrides-make-kwargs
         verbose: 3
