@@ -5086,6 +5086,11 @@ LuxAI_S2-v0-j1024env16-80m-vfc024-ln-mgn2-2o2m2h-ft-teacher5:
     <<: *lux-j1024env16-80m-vfc024-ln-mgn-2-2o2m2hrew-finetune-algo
     ent_coef: 0.05
     teacher_kl_loss_coef: !!float 5e-3
+  lr_by_kl_kwargs:
+    &lux-j1024env16-80m-vfc024-ln-mgn2-2o2m2h-ft-teacher5-lr-by-kl-kwargs
+    <<: *lux-j1024env16-80m-vfc024-ln-mgn-2-base-rewards-lr-by-kl-kwargs
+    min_lr: !!float 5e-5
+    max_lr: !!float 1e-3
   hyperparam_transitions_kwargs:
     &lux-j1024env16-80m-vfc024-ln-mgn2-2o2m2h-ft-teacher5-hyperparam-transitions
     <<: *lux-j1024env32-80m-vfc006-ln-mgn4-2o3m4h-ft-teacher-loss-a100-hyperparam-transitions
