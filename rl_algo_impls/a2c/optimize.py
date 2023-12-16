@@ -31,7 +31,7 @@ def sample_params(
     )
 
     # algo_hyperparams
-    algo_hyperparams = hyperparams.algo_hyperparams
+    algo_hyperparams = hyperparams.algo_hyperparams()
 
     learning_rate = trial.suggest_float("learning_rate", 1e-5, 2e-3, log=True)
     n_steps_exp = trial.suggest_int("n_steps_exp", 1, 10)

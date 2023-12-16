@@ -204,7 +204,7 @@ def simple_optimize(trial: optuna.Trial, args: RunArgs, study_args: StudyArgs) -
     device = get_device(config, env)
     set_device_optimizations(device, **config.device_hyperparams)
     policy = make_policy(config, env, device, **config.policy_hyperparams)
-    algo = ALGOS[args.algo](policy, device, tb_writer, **config.algo_hyperparams)
+    algo = ALGOS[args.algo](policy, device, tb_writer, **config.algo_hyperparams())
 
     self_play_wrapper = find_wrapper(env, SelfPlayWrapper)
     eval_env = make_eval_env(
@@ -334,7 +334,9 @@ def stepwise_optimize(
             policy = make_policy(config, env, device, **config.policy_hyperparams)
             if i > 0:
                 policy.load(config.model_dir_path())
-            algo = ALGOS[arg.algo](policy, device, tb_writer, **config.algo_hyperparams)
+            algo = ALGOS[arg.algo](
+                policy, device, tb_writer, **config.algo_hyperparams()
+            )
 
             self_play_wrapper = find_wrapper(env, SelfPlayWrapper)
             eval_env = make_eval_env(

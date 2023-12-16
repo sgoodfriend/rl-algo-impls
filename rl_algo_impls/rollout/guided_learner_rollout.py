@@ -2,6 +2,7 @@ import logging
 from typing import Dict, List, Optional, Sequence, TypeVar
 
 import numpy as np
+import torch
 
 from rl_algo_impls.rollout.rollout import RolloutGenerator
 from rl_algo_impls.rollout.trajectory import TrajectoryBuilder
@@ -64,7 +65,9 @@ class GuidedLearnerRolloutGenerator(RolloutGenerator):
 
         self.episode_stats_writer = find_wrapper(vec_env, EpisodeStatsWriter)
 
-    def rollout(self, gamma: NumOrArray, gae_lambda: NumOrArray) -> TrajectoryRollout:
+    def rollout(
+        self, device: torch.device, gamma: NumOrArray, gae_lambda: NumOrArray
+    ) -> TrajectoryRollout:
         self.learning_policy.eval()
         self.learning_policy.reset_noise()
         self.guide_policy.reset_noise()
@@ -179,6 +182,7 @@ class GuidedLearnerRolloutGenerator(RolloutGenerator):
         # Release TrajectoryBuilders because they can be holding a lot of memory.
         traj_builders = None
         return TrajectoryRollout(
+            device,
             trajectories,
             scale_advantage_by_values_accuracy=self.scale_advantage_by_values_accuracy,
             subaction_mask=self.subaction_mask,

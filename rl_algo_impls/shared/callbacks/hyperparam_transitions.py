@@ -27,6 +27,7 @@ ALGO_SET_NAMES = {
     "clip_range_vf",
     "ent_coef",
     "gamma",
+    "teacher_kl_loss_coef",
 }
 ALGO_BOOL_NAMES = {"freeze_policy_head", "freeze_value_head", "freeze_backbone"}
 

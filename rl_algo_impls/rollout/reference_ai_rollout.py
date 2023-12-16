@@ -36,7 +36,9 @@ class ReferenceAIRolloutGenerator(SyncStepRolloutGenerator):
                     dtype=self.actions.dtype,
                 )
 
-    def rollout(self, gamma: NumOrArray, gae_lambda: NumOrArray) -> VecRollout:
+    def rollout(
+        self, device: torch.device, gamma: NumOrArray, gae_lambda: NumOrArray
+    ) -> VecRollout:
         self.policy.eval()
         self.policy.reset_noise()
 
@@ -78,6 +80,7 @@ class ReferenceAIRolloutGenerator(SyncStepRolloutGenerator):
         self.policy.train()
         assert isinstance(self.next_obs, np.ndarray)
         return VecRollout(
+            device,
             next_episode_starts=self.next_episode_starts,
             next_values=next_values,
             obs=self.obs,

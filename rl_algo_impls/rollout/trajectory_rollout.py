@@ -1,11 +1,12 @@
-from typing import Dict, Iterator, List, Optional, TypeVar
+from collections import defaultdict
+from typing import DefaultDict, Dict, Iterator, List, Optional, TypeVar
 
 import numpy as np
 import torch
 from gymnasium.spaces import MultiDiscrete
 from numpy.typing import NDArray
 
-from rl_algo_impls.rollout.rollout import Batch, Rollout
+from rl_algo_impls.rollout.rollout import Batch, BatchMapFn, Rollout
 from rl_algo_impls.rollout.rollout import num_actions as get_num_actions
 from rl_algo_impls.rollout.trajectory import Trajectory
 from rl_algo_impls.shared.actor.gridnet import ValueDependentMask
@@ -14,6 +15,7 @@ from rl_algo_impls.shared.actor.gridnet import ValueDependentMask
 class TrajectoryRollout(Rollout):
     def __init__(
         self,
+        device: torch.device,
         trajectories: List[Trajectory],
         scale_advantage_by_values_accuracy: bool = False,
         full_batch_off_accelerator: bool = True,  # Unused: Assumed True
@@ -21,6 +23,7 @@ class TrajectoryRollout(Rollout):
         action_plane_space: Optional[MultiDiscrete] = None,
     ) -> None:
         super().__init__()
+        self.device = device
         obs = np.concatenate([t.obs for t in trajectories])
         self.values: NDArray[np.float32] = np.concatenate(
             [t.values for t in trajectories]
@@ -76,11 +79,23 @@ class TrajectoryRollout(Rollout):
     def num_minibatches(self, batch_size: int) -> int:
         return self.total_steps // batch_size
 
-    def minibatches(self, batch_size: int, device: torch.device) -> Iterator[Batch]:
+    def add_to_batch(self, map_fn: BatchMapFn, batch_size: int) -> None:
+        to_add: DefaultDict[str, List[torch.Tensor]] = defaultdict(list)
+        for i in range(0, self.total_steps, batch_size):
+            mb_dict = map_fn(
+                self.batch[torch.arange(i, i + batch_size)].to(self.device)
+            )
+            for k, v in mb_dict.items():
+                to_add[k].append(v)
+        self.batch.additional.update(
+            {k: torch.cat(v).to(self.batch.device) for k, v in to_add.items()}
+        )
+
+    def minibatches(self, batch_size: int) -> Iterator[Batch]:
         b_idxs = torch.randperm(self.total_steps)
         for i in range(self.num_minibatches(batch_size)):
             mb_idxs = b_idxs[i * batch_size : (i + 1) * batch_size]
-            yield self.batch[mb_idxs].to(device)
+            yield self.batch[mb_idxs].to(self.device)
 
 
 ND = TypeVar("ND", NDArray, Dict[str, NDArray], None)

@@ -100,7 +100,9 @@ def train(args: TrainArgs):
     device = get_device(config, env)
     set_device_optimizations(device, **config.device_hyperparams)
     policy = make_policy(config, env, device, **config.policy_hyperparams)
-    algo = ALGOS[args.algo](policy, device, tb_writer, **config.algo_hyperparams)
+    algo = ALGOS[args.algo](
+        policy, device, tb_writer, **config.algo_hyperparams(checkpoints_manager)
+    )
 
     num_parameters = policy.num_parameters()
     num_trainable_parameters = policy.num_trainable_parameters()

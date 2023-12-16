@@ -106,7 +106,9 @@ class A2C(Algorithm):
                 chart_scalars["reward_weights"] = self.multi_reward_weights
             log_scalars(self.tb_writer, "charts", chart_scalars, timesteps_elapsed)
 
-            r = rollout_generator.rollout(gamma=self.gamma, gae_lambda=self.gae_lambda)
+            r = rollout_generator.rollout(
+                self.device, gamma=self.gamma, gae_lambda=self.gae_lambda
+            )
             timesteps_elapsed += r.total_steps
 
             vf_coef = torch.Tensor(np.array(self.vf_coef)).to(self.device)
@@ -117,7 +119,7 @@ class A2C(Algorithm):
                 if self.multi_reward_weights is not None
                 else None
             )
-            for mb in r.minibatches(r.total_steps // self.num_minibatches, self.device):
+            for mb in r.minibatches(r.total_steps // self.num_minibatches):
                 (
                     mb_obs,
                     _,
@@ -152,7 +154,9 @@ class A2C(Algorithm):
                     entropy_loss = -entropy.mean()
 
                     loss = (
-                        pi_loss + (vf_coef * value_loss).sum() + self.ent_coef * entropy_loss
+                        pi_loss
+                        + (vf_coef * value_loss).sum()
+                        + self.ent_coef * entropy_loss
                     )
 
                     if self.gradient_accumulation:
