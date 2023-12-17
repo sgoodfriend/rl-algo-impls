@@ -11,12 +11,12 @@ class TeacherKLLoss(_Loss):
     def __init__(
         self,
         ckpts_manager: PolicyCheckpointsManager,
-        reduce_variance: bool = False,
+        unbiased: bool = False,
         **kwargs,
     ) -> None:
         super().__init__(**kwargs)
         self.ckpts_manager = ckpts_manager
-        self.reduce_variance = reduce_variance
+        self.unbiased = unbiased
         assert (
             self.reduction == "mean"
         ), f"reduction must be 'mean', got {self.reduction}"
@@ -37,9 +37,9 @@ class TeacherKLLoss(_Loss):
     ) -> torch.Tensor:
         teacher_logprobs = mb_additional["teacher_logprobs"]
         logratio = logprobs - teacher_logprobs
-        if self.reduce_variance:
+        if self.unbiased:
             ratio = torch.exp(logratio)
             loss = (ratio - 1) - logratio
         else:
-            loss = -logratio
+            loss = 0.5 * (logratio - teacher_logprobs) ** 2
         return loss.mean()
