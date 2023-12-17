@@ -41,5 +41,5 @@ class TeacherKLLoss(_Loss):
             ratio = torch.exp(logratio)
             loss = (ratio - 1) - logratio
         else:
-            loss = 0.5 * (logratio - teacher_logprobs) ** 2
+            loss = 0.5 * logratio**2
         return loss.mean()
