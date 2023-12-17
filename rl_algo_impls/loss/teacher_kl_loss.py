@@ -8,9 +8,15 @@ from rl_algo_impls.rollout.rollout import Batch
 
 
 class TeacherKLLoss(_Loss):
-    def __init__(self, ckpts_manager: PolicyCheckpointsManager, **kwargs) -> None:
+    def __init__(
+        self,
+        ckpts_manager: PolicyCheckpointsManager,
+        reduce_variance: bool = False,
+        **kwargs,
+    ) -> None:
         super().__init__(**kwargs)
         self.ckpts_manager = ckpts_manager
+        self.reduce_variance = reduce_variance
         assert (
             self.reduction == "mean"
         ), f"reduction must be 'mean', got {self.reduction}"
@@ -31,5 +37,9 @@ class TeacherKLLoss(_Loss):
     ) -> torch.Tensor:
         teacher_logprobs = mb_additional["teacher_logprobs"]
         logratio = logprobs - teacher_logprobs
-        ratio = torch.exp(logratio)
-        return ((ratio - 1) - logratio).mean()
+        if self.reduce_variance:
+            ratio = torch.exp(logratio)
+            loss = (ratio - 1) - logratio
+        else:
+            loss = -logratio
+        return loss.mean()
