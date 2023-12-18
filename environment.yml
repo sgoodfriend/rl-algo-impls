@@ -1,4 +1,4 @@
-name: rl_algo_impls_38
+name: rl_algo_impls
 channels:
   - pytorch
   - conda-forge
@@ -11,3 +11,4 @@ dependencies:
   - torchvision
   - torchaudio
   - build
+  - vec-noise

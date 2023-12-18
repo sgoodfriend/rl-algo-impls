@@ -11,8 +11,12 @@ from gymnasium.spaces import MultiDiscrete, Space
 from rl_algo_impls.shared.actor import pi_forward
 from rl_algo_impls.shared.actor.gridnet import GridnetDistribution, ValueDependentMask
 from rl_algo_impls.shared.actor.gridnet_decoder import Transpose
-from rl_algo_impls.shared.module.channel_layer_norm import ChannelLayerNorm2d
 from rl_algo_impls.shared.module.channelwise_activation import ChannelwiseActivation
+from rl_algo_impls.shared.module.normalization import (
+    NormalizationMethod,
+    normalization1d,
+    normalization2d,
+)
 from rl_algo_impls.shared.module.stack import HStack
 from rl_algo_impls.shared.module.utils import layer_init
 from rl_algo_impls.shared.policy.actor_critic_network.network import (
@@ -43,8 +47,7 @@ class BackboneActorCritic(ActorCriticNetwork):
         critic_shares_backbone: bool = True,
         save_critic_separate: bool = False,
         shared_critic_head: bool = False,
-        batch_norm: bool = False,
-        layer_norm: bool = False,
+        normalization: Optional[str] = None,
     ):
         if num_additional_critics and not additional_critic_activation_functions:
             additional_critic_activation_functions = [
@@ -84,7 +87,9 @@ class BackboneActorCritic(ActorCriticNetwork):
             action_plane_space.nvec
         )
 
-        assert not (batch_norm and layer_norm), "Cannot use both batch and layer norm"
+        assert (
+            normalization is None or normalization.upper() in NormalizationMethod.__members__
+        ), f"Invalid normalization method {normalization}"
 
         self.actor_head = nn.Sequential(
             *[
@@ -122,10 +127,8 @@ class BackboneActorCritic(ActorCriticNetwork):
                         init_layers_orthogonal=cnn_layers_init_orthogonal,
                     )
                 ]
-                if batch_norm:
-                    layers.append(nn.BatchNorm2d(out_channels))
-                elif layer_norm:
-                    layers.append(ChannelLayerNorm2d(out_channels))
+                if normalization:
+                    layers.append(normalization2d(normalization, out_channels))
                 layers.append(nn.GELU())
                 return layers
 
@@ -154,10 +157,8 @@ class BackboneActorCritic(ActorCriticNetwork):
                     init_layers_orthogonal=init_layers_orthogonal,
                 ),
             ]
-            if batch_norm:
-                _layers.append(nn.BatchNorm1d(critic_channels))
-            elif layer_norm:
-                _layers.append(nn.LayerNorm(critic_channels))
+            if normalization:
+                _layers.append(normalization1d(normalization, critic_channels))
             _layers.append(nn.GELU())
             _layers.append(
                 layer_init(

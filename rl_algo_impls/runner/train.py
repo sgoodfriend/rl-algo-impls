@@ -4,6 +4,7 @@ import os
 import platform
 import sys
 
+from rl_algo_impls.checkpoints.checkpoints_manager import PolicyCheckpointsManager
 from rl_algo_impls.lux.jux_verify import jux_verify_enabled
 from rl_algo_impls.ppo.learning_rate_by_kl_divergence import LearningRateByKLDivergence
 from rl_algo_impls.ppo.ppo import PPO
@@ -84,13 +85,24 @@ def train(args: TrainArgs):
 
     set_seeds(args.seed)
 
+    checkpoints_manager = (
+        PolicyCheckpointsManager(**config.hyperparams.checkpoints_kwargs)
+        if config.hyperparams.checkpoints_kwargs
+        else None
+    )
+
     env = make_env(
-        config, EnvHyperparams(**config.env_hyperparams), tb_writer=tb_writer
+        config,
+        EnvHyperparams(**config.env_hyperparams),
+        tb_writer=tb_writer,
+        checkpoints_manager=checkpoints_manager,
     )
     device = get_device(config, env)
     set_device_optimizations(device, **config.device_hyperparams)
     policy = make_policy(config, env, device, **config.policy_hyperparams)
-    algo = ALGOS[args.algo](policy, device, tb_writer, **config.algo_hyperparams)
+    algo = ALGOS[args.algo](
+        policy, device, tb_writer, **config.algo_hyperparams(checkpoints_manager)
+    )
 
     num_parameters = policy.num_parameters()
     num_trainable_parameters = policy.num_trainable_parameters()
@@ -108,12 +120,14 @@ def train(args: TrainArgs):
         config,
         EnvHyperparams(**config.env_hyperparams),
         self_play_wrapper=self_play_wrapper,
+        checkpoints_manager=checkpoints_manager,
     )
     video_env = make_eval_env(
         config,
         EnvHyperparams(**config.env_hyperparams),
         override_hparams={"n_envs": 1},
         self_play_wrapper=self_play_wrapper,
+        checkpoints_manager=checkpoints_manager,
     )
     eval_callback = EvalCallback(
         policy,
@@ -126,6 +140,7 @@ def train(args: TrainArgs):
         additional_keys_to_log=config.additional_keys_to_log,
         wandb_enabled=wandb_enabled,
         latest_model_path=config.model_dir_path(best=False),
+        checkpoints_manager=checkpoints_manager,
     )
     callbacks: List[Callback] = [eval_callback]
     if config.hyperparams.reward_decay_callback:

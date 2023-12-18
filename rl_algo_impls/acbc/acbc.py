@@ -85,14 +85,14 @@ class ACBC(Algorithm):
             }
             log_scalars(self.tb_writer, "charts", chart_scalars, timesteps_elapsed)
 
-            r = rollout_generator.rollout(self.gamma, self.gae_lambda)
+            r = rollout_generator.rollout(self.device, self.gamma, self.gae_lambda)
             timesteps_elapsed += r.total_steps
 
             step_stats: List[Dict[str, Union[float, np.ndarray]]] = []
             vf_coef = torch.Tensor(np.array(self.vf_coef)).to(self.device)
             for e in range(self.n_epochs):
                 step_stats.clear()
-                for mb in r.minibatches(self.batch_size, self.device):
+                for mb in r.minibatches(self.batch_size):
                     self.policy.reset_noise(self.batch_size)
 
                     (

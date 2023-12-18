@@ -1,6 +1,7 @@
 from typing import Dict, Optional, TypeVar, Union
 
 import numpy as np
+import torch
 
 from rl_algo_impls.rollout.rollout import RolloutGenerator
 from rl_algo_impls.rollout.vec_rollout import VecRollout
@@ -117,7 +118,9 @@ class SyncStepRolloutGenerator(RolloutGenerator):
                 else None
             )
 
-    def rollout(self, gamma: NumOrArray, gae_lambda: NumOrArray) -> VecRollout:
+    def rollout(
+        self, device: torch.device, gamma: NumOrArray, gae_lambda: NumOrArray
+    ) -> VecRollout:
         self.policy.eval()
         self.policy.reset_noise()
         for s in range(self.n_steps):
@@ -211,6 +214,7 @@ class SyncStepRolloutGenerator(RolloutGenerator):
                 )
 
         return VecRollout(
+            device=device,
             next_episode_starts=self.next_episode_starts,
             next_values=next_values,
             obs=self.obs,

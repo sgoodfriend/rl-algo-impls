@@ -3,6 +3,7 @@ from typing import Optional
 
 from torch.utils.tensorboard.writer import SummaryWriter
 
+from rl_algo_impls.checkpoints.checkpoints_manager import PolicyCheckpointsManager
 from rl_algo_impls.lux.vec_env.vec_lux_env import VecLuxEnv
 from rl_algo_impls.lux.vec_env.vec_lux_replay_env import VecLuxReplayEnv
 from rl_algo_impls.runner.config import Config, EnvHyperparams
@@ -30,6 +31,7 @@ def make_lux_env(
     training: bool = True,
     render: bool = False,
     tb_writer: Optional[SummaryWriter] = None,
+    checkpoints_manager: Optional[PolicyCheckpointsManager] = None,
 ) -> VectorEnv:
     (
         _,  # env_type,
@@ -106,7 +108,12 @@ def make_lux_env(
     envs = VectorEnvRenderCompat(envs)
 
     if play_checkpoints_kwargs:
-        envs = PlayCheckpointsWrapper(envs, **play_checkpoints_kwargs)
+        assert (
+            checkpoints_manager
+        ), f"play_checkpoints_kwargs requires checkpoints_manager"
+        envs = PlayCheckpointsWrapper(
+            envs, checkpoints_manager, **play_checkpoints_kwargs
+        )
     if self_play_kwargs:
         if not training and self_play_kwargs.get("eval_use_training_cache", False):
             envs = SelfPlayEvalWrapper(envs)

@@ -8,16 +8,17 @@ Implementations of reinforcement learning algorithms.
     Technical details in
     [technical-description.md](https://github.com/sgoodfriend/rl-algo-impls/blob/main/rl_algo_impls/microrts/technical-description.md).
   - [Lux AI Season 2](https://www.kaggle.com/competitions/lux-ai-season-2/discussion/406791)
+  - [Lux AI Season 2 - NeurIPS Stage 2](https://www.kaggle.com/competitions/lux-ai-season-2-neurips-stage-2/discussion/459891)
 - [WandB benchmark reports](https://wandb.ai/sgoodfriend/rl-algo-impls-benchmarks/reportlist)
   - [Basic, MuJoCo, and Atari games
     (v0.0.9)](https://api.wandb.ai/links/sgoodfriend/fdp5mg6h)
     - [v0.0.8](https://api.wandb.ai/links/sgoodfriend/jh3cqbon)
     - [v0.0.4](https://api.wandb.ai/links/sgoodfriend/09frjfcs)
-  - [procgen
-    (starpilot, hard)](https://api.wandb.ai/links/sgoodfriend/v1p4976e) and [procgen (easy)](https://api.wandb.ai/links/sgoodfriend/f3w1hwyb)
-  - [Gridnet MicroRTS](https://api.wandb.ai/links/sgoodfriend/zdee7ovm)
+  - [procgen (starpilot, hard)](https://api.wandb.ai/links/sgoodfriend/v1p4976e) and [procgen (easy)](https://api.wandb.ai/links/sgoodfriend/f3w1hwyb): *procgen is no longer supported by this library given its dependence on gym 0.21*
+  - [GridNet MicroRTS](https://api.wandb.ai/links/sgoodfriend/zdee7ovm)
   - [MicroRTS Selfplay](https://api.wandb.ai/links/sgoodfriend/5qjlr8ob)
   - [Lux AI Season 2 Training](https://api.wandb.ai/links/sgoodfriend/0yrxywnd)
+  - [Lux AI Season 2 NeurIPS Stage 2 Training](https://api.wandb.ai/links/sgoodfriend/ssxupw6m) & [Follow-up](https://api.wandb.ai/links/sgoodfriend/8ozskssn)
 - [Huggingface models](https://huggingface.co/models?other=rl-algo-impls)
 
 ## Prerequisites: Weights & Biases (WandB)
@@ -40,12 +41,12 @@ Labs A10 instances to be a good balance of performance (14 hours to train PPO in
 environments [5 basic gymnasium, 4 MuJoCo, CarRacing-v2, and 4 Atari] across 3 seeds) vs
 cost ($0.60/hr).
 
-```
+```sh
 git clone https://github.com/sgoodfriend/rl-algo-impls.git
 cd rl-algo-impls
 # git checkout BRANCH_NAME if running on non-main branch
-bash ./scripts/setup.sh
-wandb login
+bash ./scripts/setup.sh # End of script will prompt for WandB API key
+poetry shell
 bash ./scripts/benchmark.sh [-a {"ppo"}] [-e ENVS] [-j {6}] [-p {rl-algo-impls-benchmarks}] [-s {"1 2 3"}]
 ```
 
@@ -59,12 +60,12 @@ hostname (i.e., `host_192-9-145-26`)
 Publishing benchmarks to Huggingface requires logging into Huggingface with a
 write-capable API token:
 
-```
+```sh
 git config --global credential.helper store
 huggingface-cli login
 # For example: python benchmark_publish.py --wandb-tags host_192-9-147-166 benchmark_1d4094f --wandb-report-url https://api.wandb.ai/links/sgoodfriend/099h4lvj
 # --virtual-display likely must be specified if running on a remote machine.
-python benchmark_publish.py --wandb-tags HOST_TAG COMMIT_TAG --wandb-report-url WANDB_REPORT_URL [--virtual-display]
+poetry run python benchmark_publish.py --wandb-tags HOST_TAG COMMIT_TAG --wandb-report-url WANDB_REPORT_URL [--virtual-display]
 ```
 
 #### Hyperparameter tuning with Optuna
@@ -73,8 +74,9 @@ Hyperparameter tuning can be done with the `tuning/tuning.sh` script, which runs
 multiple processes of optimize.py. Start by doing all the setup meant for training
 before running `tuning/tuning.sh`:
 
-```
+```sh
 # Setup similar to training above
+poetry shell
 wandb login
 bash scripts/tuning.sh -a ALGO -e ENV -j N_JOBS -s NUM_SEEDS
 ```
@@ -104,14 +106,15 @@ but these are the approximate setup and usage I've been using:
 
 1. Install libraries with homebrew
 
-```
+```sh
 brew install swig
 brew install --cask xquartz
+brew install pipx
 ```
 
 2. Download and install Miniconda for arm64
 
-```
+```sh
 curl -O https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-arm64.sh
 sh Miniconda3-latest-MacOSX-arm64.sh
 ```
@@ -119,15 +122,16 @@ sh Miniconda3-latest-MacOSX-arm64.sh
 3. Create a conda environment from this repo's
    [environment.yml](https://github.com/sgoodfriend/rl-algo-impls/blob/main/environment.yml)
 
-```
-conda env create -f environment.yml -n rl_algo_impls
-conda activate rl_algo_impls
+```sh
+conda env create -f environment.yml -n rai_py38_poetry
+conda activate rai_py38_poetry
 ```
 
 4. Install other dependencies with poetry
 
-```
-poetry install
+```sh
+pipx install poetry
+poetry install -E all
 ```
 
 #### Usage
@@ -135,8 +139,8 @@ poetry install
 Training, benchmarking, and watching the agents playing the environments can be done
 locally:
 
-```
-python train.py [-h] [--algo {ppo}] [--env ENV [ENV ...]] [--seed [SEED ...]] [--wandb-project-name WANDB_PROJECT_NAME] [--wandb-tags [WANDB_TAGS ...]] [--pool-size POOL_SIZE] [-virtual-display]
+```sh
+poetry run python train.py [-h] [--algo {ppo}] [--env ENV [ENV ...]] [--seed [SEED ...]] [--wandb-project-name WANDB_PROJECT_NAME] [--wandb-tags [WANDB_TAGS ...]] [--pool-size POOL_SIZE] [-virtual-display]
 ```
 
 train.py by default uploads to the rl-algo-impls WandB project. Training creates videos
@@ -145,10 +149,10 @@ display, so you shouldn't shutoff the display until the video of the initial mod
 created (1-5 minutes depending on environment). The --virtual-display flag should allow
 headless mode, but that hasn't been reliable on macOS.
 
-```
-python enjoy.py [-h] [--algo {ppo}] [--env ENV] [--seed SEED] [--render RENDER] [--best BEST] [--n_episodes N_EPISODES] [--deterministic-eval DETERMINISTIC_EVAL] [--no-print-returns]
+```sh
+poetry run python enjoy.py [-h] [--algo {ppo}] [--env ENV] [--seed SEED] [--render RENDER] [--best BEST] [--n_episodes N_EPISODES] [--deterministic-eval DETERMINISTIC_EVAL] [--no-print-returns]
 # OR
-python enjoy.py [--wandb-run-path WANDB_RUN_PATH]
+poetry run python enjoy.py [--wandb-run-path WANDB_RUN_PATH]
 ```
 
 The first enjoy.py where you specify algo, env, and seed loads a model you locally
@@ -162,31 +166,26 @@ example run path is `sgoodfriend/rl-algo-impls-benchmarks/09gea50g`
 These are specified in yaml files in the hyperparams directory by game (`atari` is a
 special case for all Atari games).
 
-## procgen Setup
-
-procgen envs use gym3, which don't expose a straightforward way to set seed to allow for
-repeatable runs.
-
-[openai/procgen](https://github.com/openai/procgen) doesn't support Apple Silicon, but [patch
-instructions exist](https://github.com/openai/procgen/issues/69). The changes to the
-repo are for now in a fork since the openai/procgen project is in maintenance mode:
-
-```
-brew install wget cmake glow qt5
-git clone https://github.com/sgoodfriend/procgen.git
-cd procgen
-pip install -e .
-python -c "from procgen import ProcgenGym3Env; ProcgenGym3Env(num=1, env_name='coinrun')"
-python -m procgen.interactive
-```
-
-amd64 Linux machines (e.g., Lambda Labs and Google Colab) should install procgen with
-`python -m pip install '.[procgen]'`
-
 ## gym-microrts Setup
 
-```
-python -m pip install -e '.[microrts]'
+Requires Java SDK to be installed first
+
+```sh
+poetry install -E microrts
 ```
 
-Requires Java SDK to also be installed.
+
+## Lux AI Season 2 Setup
+Lux training uses a [Jux fork](https://github.com/sgoodfriend/jux) that adds support for environments not being in lockstep, stats collection, and other improvements. The fork by default will install the CPU-only version of Jax, which isn't ideal for training, but useful for development.
+```sh
+poetry run pip install vec-noise # lux requires vec-noise, which isn't poetry installable
+poetry install -E lux
+```
+
+When doing actual training, you'll need an Nvidia GPU and follow these instructions to [install jax[cuda11_pip]==0.4.7](https://github.com/sgoodfriend/jux#install-jax) after installing the lux dependencies:
+```sh
+poetry run pip install vec-noise # lux requires vec-noise, which isn't poetry installable
+poetry install -E lux
+# If CUDA 12 installed, use `cuda12_pip` instead.
+poetry run pip install --upgrade "jax[cuda11_pip]==0.4.7" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
+```

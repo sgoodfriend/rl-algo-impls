@@ -2,7 +2,7 @@ import gc
 import logging
 from dataclasses import asdict, astuple, dataclass
 from time import perf_counter
-from typing import List, NamedTuple, Optional, Tuple, TypeVar, Union
+from typing import Dict, List, NamedTuple, Optional, Tuple, TypeVar, Union
 
 import numpy as np
 import torch
@@ -11,6 +11,7 @@ import torch.nn.functional as F
 from torch.optim import Adam
 from torch.utils.tensorboard.writer import SummaryWriter
 
+from rl_algo_impls.loss.teacher_kl_loss import TeacherKLLoss
 from rl_algo_impls.rollout.rollout import RolloutGenerator
 from rl_algo_impls.shared.algorithm import Algorithm
 from rl_algo_impls.shared.autocast import maybe_autocast
@@ -29,6 +30,7 @@ class TrainStepStats(NamedTuple):
     approx_kl: float
     clipped_frac: float
     val_clipped_frac: np.ndarray
+    additional_losses: Dict[str, float]
 
 
 @dataclass
@@ -40,6 +42,7 @@ class TrainStats:
     approx_kl: float
     clipped_frac: float
     val_clipped_frac: Union[float, np.ndarray]
+    additional_losses: Dict[str, float]
     explained_var: float
     grad_norm: float
 
@@ -58,6 +61,10 @@ class TrainStats:
         self.val_clipped_frac = np.mean(
             [s.val_clipped_frac for s in step_stats], axis=0
         )
+        self.additional_losses = {
+            k: np.mean([s.additional_losses[k] for s in step_stats]).item()
+            for k in step_stats[0].additional_losses
+        }
         self.explained_var = explained_var
         self.grad_norm = np.mean(grad_norms).item()
 
@@ -68,6 +75,9 @@ class TrainStats:
                     tb_writer.add_scalar(
                         f"losses/{name}_{idx}", v, global_step=global_step
                     )
+            elif isinstance(value, dict):
+                for k, v in value.items():
+                    tb_writer.add_scalar(f"losses/{k}", v, global_step=global_step)
             else:
                 tb_writer.add_scalar(f"losses/{name}", value, global_step=global_step)
 
@@ -126,6 +136,8 @@ class PPO(Algorithm):
         autocast_loss: bool = False,
         vf_loss_fn: str = "mse_loss",
         vf_weights: Optional[List[int]] = None,
+        teacher_kl_loss_coef: Optional[float] = None,
+        teacher_kl_loss_fn: Optional[TeacherKLLoss] = None,
     ) -> None:
         super().__init__(policy, device, tb_writer)
         self.policy = policy
@@ -169,6 +181,9 @@ class PPO(Algorithm):
         self.autocast_loss = autocast_loss
 
         self.vf_loss_fn = getattr(F, vf_loss_fn)
+
+        self.teacher_kl_loss_coef = teacher_kl_loss_coef
+        self.teacher_kl_loss_fn = teacher_kl_loss_fn
 
     def learn(
         self: PPOSelf,
@@ -232,9 +247,17 @@ class PPO(Algorithm):
             chart_scalars["guide_probability"] = self.guide_probability
         if self.vf_weights is not None:
             chart_scalars["vf_weights"] = self.vf_weights
+        if self.teacher_kl_loss_coef is not None:
+            chart_scalars["teacher_kl_loss_coef"] = self.teacher_kl_loss_coef
         log_scalars(self.tb_writer, "charts", chart_scalars, timesteps_elapsed)
 
-        r = rollout_generator.rollout(gamma=self.gamma, gae_lambda=self.gae_lambda)
+        r = rollout_generator.rollout(
+            self.device, gamma=self.gamma, gae_lambda=self.gae_lambda
+        )
+        if self.teacher_kl_loss_fn:
+            r.add_to_batch(
+                self.teacher_kl_loss_fn.add_to_batch, rollout_generator.vec_env.num_envs
+            )
         gc.collect()
         timesteps_elapsed += r.total_steps
 
@@ -262,7 +285,7 @@ class PPO(Algorithm):
             # Only record last epoch's stats
             step_stats.clear()
             grad_norms.clear()
-            for mb in r.minibatches(self.batch_size, self.device):
+            for mb in r.minibatches(self.batch_size):
                 self.policy.reset_noise(self.batch_size)
 
                 (
@@ -274,6 +297,7 @@ class PPO(Algorithm):
                     mb_values,
                     mb_adv,
                     mb_returns,
+                    mb_additional,
                 ) = astuple(mb)
 
                 if self.normalize_advantages_after_scaling:
@@ -289,6 +313,7 @@ class PPO(Algorithm):
                     if multi_reward_weights is not None:
                         mb_adv = mb_adv @ multi_reward_weights
 
+                additional_losses = {}
                 with maybe_autocast(self.autocast_loss, self.device):
                     new_logprobs, entropy, new_values = self.policy(
                         mb_obs, mb_actions, action_masks=mb_action_masks
@@ -331,6 +356,14 @@ class PPO(Algorithm):
                         + (vf_coef * v_loss).sum()
                     )
 
+                    if self.teacher_kl_loss_coef:
+                        assert self.teacher_kl_loss_fn
+                        teacher_kl_loss = self.teacher_kl_loss_fn(
+                            new_logprobs, mb_additional
+                        )
+                        additional_losses["teacher_kl_loss"] = teacher_kl_loss.item()
+                        loss += self.teacher_kl_loss_coef * teacher_kl_loss
+
                     if self.gradient_accumulation:
                         loss /= r.num_minibatches(self.batch_size)
                 loss.backward()
@@ -365,6 +398,7 @@ class PPO(Algorithm):
                         approx_kl,
                         clipped_frac,
                         val_clipped_frac,
+                        additional_losses,
                     )
                 )
             if self.gradient_accumulation:

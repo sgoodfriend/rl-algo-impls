@@ -3,6 +3,7 @@ import logging
 from typing import Dict, Optional
 
 import numpy as np
+import torch
 from numpy.typing import NDArray
 
 from rl_algo_impls.rollout.discrete_skips_trajectory_builder import (
@@ -88,7 +89,9 @@ class RandomGuidedLearnerRolloutGenerator(RolloutGenerator):
     def num_envs(self) -> int:
         return self.vec_env.num_envs
 
-    def rollout(self, gamma: NumOrArray, gae_lambda: NumOrArray) -> Rollout:
+    def rollout(
+        self, device: torch.device, gamma: NumOrArray, gae_lambda: NumOrArray
+    ) -> Rollout:
         self.learning_policy.eval()
         self.learning_policy.reset_noise()
         self.guide_policy.eval()
@@ -241,6 +244,7 @@ class RandomGuidedLearnerRolloutGenerator(RolloutGenerator):
 
         gc.collect()
         return TrajectoryRollout(
+            device,
             trajectories,
             scale_advantage_by_values_accuracy=self.scale_advantage_by_values_accuracy,
             subaction_mask=self.subaction_mask,

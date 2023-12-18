@@ -6,6 +6,10 @@ import torch.nn as nn
 from gymnasium.spaces import Box, Space
 
 from rl_algo_impls.shared.module.channel_layer_norm import ChannelLayerNorm2d
+from rl_algo_impls.shared.module.normalization import (
+    NormalizationMethod,
+    normalization2d,
+)
 from rl_algo_impls.shared.module.utils import layer_init
 from rl_algo_impls.shared.policy.actor_critic_network.backbone_actor_critic import (
     BackboneActorCritic,
@@ -24,14 +28,14 @@ class SqueezeUnetBackbone(nn.Module):
         deconv_strides_per_level: Optional[List[Union[int, List[int]]]] = None,
         init_layers_orthogonal: bool = False,
         increment_kernel_size_on_down_conv: bool = False,
-        batch_norm: bool = False,
-        layer_norm: bool = False,
+        normalization: Optional[str] = None,
     ) -> None:
         super().__init__()
 
-        assert not (
-            batch_norm and layer_norm
-        ), f"batch_norm and layer_norm are mutually exclusive"
+        assert (
+            normalization is None
+            or normalization.upper() in NormalizationMethod.__members__
+        ), f"normalization must be one of {NormalizationMethod.__members__}"
 
         def down_conv(
             in_channels: int, out_channels: int, stride: Union[int, List[int]]
@@ -61,10 +65,8 @@ class SqueezeUnetBackbone(nn.Module):
                         init_layers_orthogonal=init_layers_orthogonal,
                     )
                 )
-                if batch_norm:
-                    layers.append(nn.BatchNorm2d(out_channels))
-                elif layer_norm:
-                    layers.append(ChannelLayerNorm2d(out_channels))
+                if normalization:
+                    layers.append(normalization2d(normalization, out_channels))
                 layers.append(nn.GELU())
             return layers
 
@@ -74,18 +76,17 @@ class SqueezeUnetBackbone(nn.Module):
                 init_layers_orthogonal=init_layers_orthogonal,
             )
         ]
-        if batch_norm:
-            encoder_head_layers.append(nn.BatchNorm2d(channels_per_level[0]))
-        elif layer_norm:
-            encoder_head_layers.append(ChannelLayerNorm2d(channels_per_level[0]))
+        if normalization:
+            encoder_head_layers.append(
+                normalization2d(normalization, channels_per_level[0])
+            )
         encoder_head_layers.append(nn.GELU())
         encoder_head_layers.extend(
             [
                 SEResidualBlock(
                     channels_per_level[0],
                     init_layers_orthogonal=init_layers_orthogonal,
-                    batch_norm=batch_norm,
-                    layer_norm=layer_norm,
+                    normalization=normalization,
                 )
                 for _ in range(encoder_residual_blocks_per_level[0])
             ]
@@ -105,8 +106,7 @@ class SqueezeUnetBackbone(nn.Module):
                             SEResidualBlock(
                                 channels,
                                 init_layers_orthogonal=init_layers_orthogonal,
-                                batch_norm=batch_norm,
-                                layer_norm=layer_norm,
+                                normalization=normalization,
                             )
                             for _ in range(num_residual_blocks)
                         ]
@@ -131,10 +131,8 @@ class SqueezeUnetBackbone(nn.Module):
                         init_layers_orthogonal=init_layers_orthogonal,
                     )
                 )
-                if batch_norm:
-                    layers.append(nn.BatchNorm2d(out_channels))
-                elif layer_norm:
-                    layers.append(ChannelLayerNorm2d(out_channels))
+                if normalization:
+                    layers.append(normalization2d(normalization, out_channels))
                 layers.append(nn.GELU())
             return layers
 
@@ -163,8 +161,7 @@ class SqueezeUnetBackbone(nn.Module):
                             SEResidualBlock(
                                 channels,
                                 init_layers_orthogonal=init_layers_orthogonal,
-                                batch_norm=batch_norm,
-                                layer_norm=layer_norm,
+                                normalization=normalization,
                             )
                             for _ in range(num_residual_blocks)
                         ]
@@ -178,8 +175,7 @@ class SqueezeUnetBackbone(nn.Module):
                     SEResidualBlock(
                         channels_per_level[0],
                         init_layers_orthogonal=init_layers_orthogonal,
-                        batch_norm=batch_norm,
-                        layer_norm=layer_norm,
+                        normalization=normalization,
                     )
                     for _ in range(decoder_residual_blocks_per_level[0])
                 ]
@@ -221,8 +217,7 @@ class SqueezeUnetActorCriticNetwork(BackboneActorCritic):
         critic_shares_backbone: bool = True,
         save_critic_separate: bool = False,
         shared_critic_head: bool = False,
-        batch_norm: bool = False,
-        layer_norm: bool = False,
+        normalization: Optional[str] = None,
     ) -> None:
         if cnn_layers_init_orthogonal is None:
             cnn_layers_init_orthogonal = False
@@ -252,8 +247,7 @@ class SqueezeUnetActorCriticNetwork(BackboneActorCritic):
             deconv_strides_per_level=deconv_strides_per_level,
             init_layers_orthogonal=cnn_layers_init_orthogonal,
             increment_kernel_size_on_down_conv=increment_kernel_size_on_down_conv,
-            batch_norm=batch_norm,
-            layer_norm=layer_norm,
+            normalization=normalization,
         )
         super().__init__(
             observation_space,
@@ -272,6 +266,5 @@ class SqueezeUnetActorCriticNetwork(BackboneActorCritic):
             critic_shares_backbone=critic_shares_backbone,
             save_critic_separate=save_critic_separate,
             shared_critic_head=shared_critic_head,
-            batch_norm=batch_norm,
-            layer_norm=layer_norm,
+            normalization=normalization,
         )

@@ -1,6 +1,7 @@
+import dataclasses
 from abc import ABC, abstractmethod
 from dataclasses import astuple, dataclass
-from typing import Dict, Iterator, Optional, TypeVar
+from typing import Callable, Dict, Iterator, Optional, TypeVar
 
 import numpy as np
 import torch
@@ -32,6 +33,7 @@ class Batch:
 
     advantages: torch.Tensor
     returns: torch.Tensor
+    additional: Dict[str, torch.Tensor] = dataclasses.field(default_factory=dict)
 
     @property
     def device(self) -> torch.device:
@@ -63,10 +65,14 @@ class Batch:
             self.values[indices],
             self.advantages[indices],
             self.returns[indices],
+            {k: v[indices] for k, v in self.additional.items()},
         )
 
     def __len__(self) -> int:
         return self.obs.shape[0]
+
+
+BatchMapFn = Callable[[Batch], Dict[str, torch.Tensor]]
 
 
 class Rollout(ABC):
@@ -90,7 +96,10 @@ class Rollout(ABC):
         ...
 
     @abstractmethod
-    def minibatches(self, batch_size: int, device: torch.device) -> Iterator[Batch]:
+    def minibatches(self, batch_size: int) -> Iterator[Batch]:
+        ...
+
+    def add_to_batch(self, map_fn: BatchMapFn, batch_size: int) -> None:
         ...
 
 
@@ -101,7 +110,7 @@ class RolloutGenerator(ABC):
         self.vec_env = vec_env
 
     @abstractmethod
-    def rollout(self, **kwargs) -> Rollout:
+    def rollout(self, device: torch.device, **kwargs) -> Rollout:
         ...
 
 

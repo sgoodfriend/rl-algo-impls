@@ -5,6 +5,10 @@ import torch.nn as nn
 from gymnasium.spaces import Box, Space
 
 from rl_algo_impls.shared.module.channel_layer_norm import ChannelLayerNorm2d
+from rl_algo_impls.shared.module.normalization import (
+    NormalizationMethod,
+    normalization2d,
+)
 from rl_algo_impls.shared.module.utils import layer_init
 from rl_algo_impls.shared.policy.actor_critic_network.backbone_actor_critic import (
     BackboneActorCritic,
@@ -48,8 +52,7 @@ class SEResidualBlock(nn.Module):
         self,
         channels: int,
         init_layers_orthogonal: bool = False,
-        batch_norm: bool = False,
-        layer_norm: bool = False,
+        normalization: Optional[str] = None,
     ) -> None:
         super().__init__()
         layers = [
@@ -58,13 +61,12 @@ class SEResidualBlock(nn.Module):
                 init_layers_orthogonal=init_layers_orthogonal,
             )
         ]
-        assert not (
-            batch_norm and layer_norm
-        ), "Cannot use both batch norm and layer norm"
-        if batch_norm:
-            layers.append(nn.BatchNorm2d(channels))
-        elif layer_norm:
-            layers.append(ChannelLayerNorm2d(channels))
+        assert (
+            normalization is None
+            or normalization.upper() in NormalizationMethod.__members__
+        ), f"Normalization method {normalization} not supported"
+        if normalization:
+            layers.append(normalization2d(normalization, channels))
         layers.append(nn.GELU())
         layers.append(
             layer_init(
@@ -72,10 +74,8 @@ class SEResidualBlock(nn.Module):
                 init_layers_orthogonal=init_layers_orthogonal,
             )
         )
-        if batch_norm:
-            layers.append(nn.BatchNorm2d(channels))
-        elif layer_norm:
-            layers.append(ChannelLayerNorm2d(channels))
+        if normalization:
+            layers.append(normalization2d(normalization, channels))
         layers.append(
             SqueezeExcitation(channels, init_layers_orthogonal=init_layers_orthogonal)
         )

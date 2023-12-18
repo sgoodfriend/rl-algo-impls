@@ -5,6 +5,7 @@ from typing import Any, Callable, Generic, List, Optional, Sequence
 import numpy as np
 from gymnasium.experimental.vector.utils import batch_space
 
+from rl_algo_impls.checkpoints.checkpoints_manager import PolicyCheckpointsManager
 from rl_algo_impls.shared.policy.policy import Policy
 from rl_algo_impls.shared.tensor_utils import batch_dict_keys
 from rl_algo_impls.wrappers.vector_wrapper import (
@@ -20,14 +21,15 @@ from rl_algo_impls.wrappers.vector_wrapper import (
 
 class PlayCheckpointsWrapper(VectorWrapper, ABC, Generic[ObsType]):
     next_obs: ObsType
-    checkpoints_getter: Optional[Callable[[], Sequence[Policy]]] = None
 
     def __init__(
         self,
         env: VectorEnv,
+        checkpoints_manager: PolicyCheckpointsManager,
         n_envs_against_checkpoints: Optional[int],
     ) -> None:
         super().__init__(env)
+        self.checkpoints_manager = checkpoints_manager
         if n_envs_against_checkpoints is None:
             n_envs_against_checkpoints = env.num_envs // 2
         assert n_envs_against_checkpoints <= env.num_envs // 2, (
@@ -125,11 +127,18 @@ class PlayCheckpointsWrapper(VectorWrapper, ABC, Generic[ObsType]):
 
     def _policy_assignments(self) -> List[Optional[Policy]]:
         assignments: List[Optional[Policy]] = [None] * self.env.num_envs
-        policies = self.checkpoints_getter() if self.checkpoints_getter else [None]
-        for i in range(self.n_envs_against_checkpoints):
-            # Play each policy in a pair of player 1/2 matches.
-            policy = policies[(i // 2) % len(policies)]
-            assignments[2 * i + i % 2] = policy
+        if self.n_envs_against_checkpoints == 1:
+            # Special-case single env case to take latest checkpoint as second player
+            policy = self.checkpoints_manager.latest_checkpoint
+            assignments[1] = policy
+        else:
+            policies = self.checkpoints_manager.checkpoints
+            if policies:
+                for i in range(self.n_envs_against_checkpoints):
+                    # Play each policy in a pair of player 1/2 matches.
+                    policy = policies[(i // 2) % len(policies)]
+                    assignments[2 * i + i % 2] = policy
+
         return assignments
 
 
