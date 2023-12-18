@@ -46,7 +46,7 @@ git clone https://github.com/sgoodfriend/rl-algo-impls.git
 cd rl-algo-impls
 # git checkout BRANCH_NAME if running on non-main branch
 bash ./scripts/setup.sh # End of script will prompt for WandB API key
-poetry shell # Or prepend `poetry run` to all commands below
+poetry shell
 bash ./scripts/benchmark.sh [-a {"ppo"}] [-e ENVS] [-j {6}] [-p {rl-algo-impls-benchmarks}] [-s {"1 2 3"}]
 ```
 
@@ -176,8 +176,16 @@ poetry install -E microrts
 
 
 ## Lux AI Season 2 Setup
-Lux training uses a [Jux fork](https://github.com/sgoodfriend/jux) that adds support for environments not being in lockstep, stats collection, and other improvements. The fork by default will install the CPU-only version of Jax, which isn't ideal for training, but useful for development. When doing actual training, you'll need an Nvidia GPU and follow these instructions to [install jax[cuda11_cudnn82]==0.4.7](https://github.com/sgoodfriend/jux#install-jax) after installing the lux dependencies:
+Lux training uses a [Jux fork](https://github.com/sgoodfriend/jux) that adds support for environments not being in lockstep, stats collection, and other improvements. The fork by default will install the CPU-only version of Jax, which isn't ideal for training, but useful for development.
 ```sh
+poetry run pip install vec-noise # lux requires vec-noise, which isn't poetry installable
 poetry install -E lux
-poetry run pip install --upgrade "jax[cuda11_cudnn82]==0.4.7" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
+```
+
+When doing actual training, you'll need an Nvidia GPU and follow these instructions to [install jax[cuda11_pip]==0.4.7](https://github.com/sgoodfriend/jux#install-jax) after installing the lux dependencies:
+```sh
+poetry run pip install vec-noise # lux requires vec-noise, which isn't poetry installable
+poetry install -E lux
+# If CUDA 12 installed, use `cuda12_pip` instead.
+poetry run pip install --upgrade "jax[cuda11_pip]==0.4.7" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
 ```
