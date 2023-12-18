@@ -3,7 +3,6 @@ from enum import Enum
 
 import torch
 import torch.nn as nn
-from batchrenorm import BatchRenorm1d, BatchRenorm2d
 
 from rl_algo_impls.shared.module.channel_layer_norm import ChannelLayerNorm2d
 
@@ -15,16 +14,30 @@ class NormalizationMethod(Enum):
 
 
 def normalization1d(method_name: str, num_features: int) -> nn.Module:
-    return {
-        NormalizationMethod.BATCH: nn.BatchNorm1d,
-        NormalizationMethod.LAYER: nn.LayerNorm,
-        NormalizationMethod.BATCH_RENORM: BatchRenorm1d,
-    }[NormalizationMethod[method_name.upper()]](num_features)
+    method_name = method_name.upper()
+    if method_name == NormalizationMethod.BATCH:
+        norm_class = nn.BatchNorm1d
+    elif method_name == NormalizationMethod.LAYER:
+        norm_class = nn.LayerNorm
+    elif method_name == NormalizationMethod.BATCH_RENORM:
+        from batchrenorm import BatchRenorm1d
+
+        norm_class = BatchRenorm1d
+    else:
+        raise ValueError(f"Unknown normalization method {method_name}")
+    return norm_class(num_features)
 
 
 def normalization2d(method_name: str, num_features: int) -> nn.Module:
-    return {
-        NormalizationMethod.BATCH: nn.BatchNorm2d,
-        NormalizationMethod.LAYER: ChannelLayerNorm2d,
-        NormalizationMethod.BATCH_RENORM: BatchRenorm2d,
-    }[NormalizationMethod[method_name.upper()]](num_features)
+    method_name = method_name.upper()
+    if method_name == NormalizationMethod.BATCH:
+        norm_class = nn.BatchNorm2d
+    elif method_name == NormalizationMethod.LAYER:
+        norm_class = ChannelLayerNorm2d
+    elif method_name == NormalizationMethod.BATCH_RENORM:
+        from batchrenorm import BatchRenorm2d
+
+        norm_class = BatchRenorm2d
+    else:
+        raise ValueError(f"Unknown normalization method {method_name}")
+    return norm_class(num_features)
