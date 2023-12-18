@@ -14,12 +14,12 @@ class NormalizationMethod(Enum):
 
 
 def normalization1d(method_name: str, num_features: int) -> nn.Module:
-    method_name = method_name.upper()
-    if method_name == NormalizationMethod.BATCH:
+    norm_method = NormalizationMethod[method_name.upper()]
+    if norm_method == NormalizationMethod.BATCH:
         norm_class = nn.BatchNorm1d
-    elif method_name == NormalizationMethod.LAYER:
+    elif norm_method == NormalizationMethod.LAYER:
         norm_class = nn.LayerNorm
-    elif method_name == NormalizationMethod.BATCH_RENORM:
+    elif norm_method == NormalizationMethod.BATCH_RENORM:
         from batchrenorm import BatchRenorm1d
 
         norm_class = BatchRenorm1d
@@ -29,12 +29,12 @@ def normalization1d(method_name: str, num_features: int) -> nn.Module:
 
 
 def normalization2d(method_name: str, num_features: int) -> nn.Module:
-    method_name = method_name.upper()
-    if method_name == NormalizationMethod.BATCH:
+    norm_method = NormalizationMethod[method_name.upper()]
+    if norm_method == NormalizationMethod.BATCH:
         norm_class = nn.BatchNorm2d
-    elif method_name == NormalizationMethod.LAYER:
+    elif norm_method == NormalizationMethod.LAYER:
         norm_class = ChannelLayerNorm2d
-    elif method_name == NormalizationMethod.BATCH_RENORM:
+    elif norm_method == NormalizationMethod.BATCH_RENORM:
         from batchrenorm import BatchRenorm2d
 
         norm_class = BatchRenorm2d
