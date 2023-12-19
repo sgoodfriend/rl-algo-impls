@@ -5276,7 +5276,7 @@ LuxAI_S2-v0-j1024env16-80m-vfc006-ent1-lr100-ln-mgn2-2o3m4h-tkl10-ft:
     &lux-j1024env16-80m-vfc006-ent1-lr100-ln-mgn2-2o3m4h-tkl10-ft-hyperparam-transitions
     <<: *lux-j1024env32-80m-vfc006-ent1-lr100-ln-mgn4-2o3m4h-tkl10-ft-a100-hyperparam-transitions
 
-Lux_S2-v0-j1024env16-80m-vfc006-ent1-lr100-ln-mgn2-2o3m4h-tkl5c-ft:
+LuxAI_S2-v0-j1024env16-80m-vfc006-ent1-lr100-ln-mgn2-2o3m4h-tkl5c-ft:
   &lux-j1024env16-80m-vfc006-ent1-lr100-ln-mgn2-2o3m4h-tkl5c-ft
   <<: *lux-j1024env16-80m-vfc006-ent1-lr100-ln-mgn2-2o3m4h-tkl10-ft
   algo_hyperparams:
