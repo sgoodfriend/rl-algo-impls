@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, Optional
 
 import torch
 from torch.nn.modules.loss import _Loss
@@ -11,7 +11,7 @@ class TeacherKLLoss(_Loss):
     def __init__(
         self,
         ckpts_manager: PolicyCheckpointsManager,
-        unbiased: bool = False,
+        unbiased: bool = True,
         **kwargs,
     ) -> None:
         super().__init__(**kwargs)
@@ -33,13 +33,18 @@ class TeacherKLLoss(_Loss):
             }
 
     def forward(
-        self, logprobs: torch.Tensor, mb_additional: Dict[str, torch.Tensor]
+        self,
+        training_logprobs: torch.Tensor,
+        mb_additional: Dict[str, torch.Tensor],
+        weights: Optional[torch.Tensor],
     ) -> torch.Tensor:
         teacher_logprobs = mb_additional["teacher_logprobs"]
-        logratio = logprobs - teacher_logprobs
+        logratio = teacher_logprobs - training_logprobs
         if self.unbiased:
             ratio = torch.exp(logratio)
             loss = (ratio - 1) - logratio
         else:
             loss = 0.5 * logratio**2
+        if weights is not None:
+            loss *= weights
         return loss.mean()

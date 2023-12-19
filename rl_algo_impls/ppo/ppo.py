@@ -359,7 +359,7 @@ class PPO(Algorithm):
                     if self.teacher_kl_loss_coef:
                         assert self.teacher_kl_loss_fn
                         teacher_kl_loss = self.teacher_kl_loss_fn(
-                            new_logprobs, mb_additional
+                            new_logprobs, mb_additional, ratio
                         )
                         additional_losses["teacher_kl_loss"] = teacher_kl_loss.item()
                         loss += self.teacher_kl_loss_coef * teacher_kl_loss
