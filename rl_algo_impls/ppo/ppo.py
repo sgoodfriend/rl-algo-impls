@@ -138,6 +138,7 @@ class PPO(Algorithm):
         vf_weights: Optional[List[int]] = None,
         teacher_kl_loss_coef: Optional[float] = None,
         teacher_kl_loss_fn: Optional[TeacherKLLoss] = None,
+        teacher_loss_importance_sampling: bool = True,
     ) -> None:
         super().__init__(policy, device, tb_writer)
         self.policy = policy
@@ -184,6 +185,7 @@ class PPO(Algorithm):
 
         self.teacher_kl_loss_coef = teacher_kl_loss_coef
         self.teacher_kl_loss_fn = teacher_kl_loss_fn
+        self.teacher_loss_importance_sampling = teacher_loss_importance_sampling
 
     def learn(
         self: PPOSelf,
@@ -359,7 +361,9 @@ class PPO(Algorithm):
                     if self.teacher_kl_loss_coef:
                         assert self.teacher_kl_loss_fn
                         teacher_kl_loss = self.teacher_kl_loss_fn(
-                            new_logprobs, mb_additional, ratio
+                            new_logprobs,
+                            mb_additional,
+                            ratio if self.teacher_loss_importance_sampling else None,
                         )
                         additional_losses["teacher_kl_loss"] = teacher_kl_loss.item()
                         loss += self.teacher_kl_loss_coef * teacher_kl_loss
