@@ -110,7 +110,7 @@ class RolloutGenerator(ABC):
         self.vec_env = vec_env
 
     @abstractmethod
-    def rollout(self, device: torch.device, **kwargs) -> Rollout:
+    def rollout(self, **kwargs) -> Rollout:
         ...
 
 

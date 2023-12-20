@@ -35,7 +35,7 @@ class Policy(nn.Module, ABC, Generic[ObsType]):
         self.norm_observation_rms = norm_observation.rms if norm_observation else None
         norm_reward = find_wrapper(env, NormalizeReward)
         self.norm_reward_rms = norm_reward.rms if norm_reward else None
-        self.device = None
+        self._device = None
         self.load_path = None
 
     def to(
@@ -45,8 +45,13 @@ class Policy(nn.Module, ABC, Generic[ObsType]):
         non_blocking: bool = False,
     ) -> PolicySelf:
         super().to(device, dtype, non_blocking)
-        self.device = device
+        self._device = device
         return self
+
+    @property
+    def device(self) -> torch.device:
+        assert self._device, "Expect device to be set"
+        return self._device
 
     @abstractmethod
     def act(
@@ -65,7 +70,7 @@ class Policy(nn.Module, ABC, Generic[ObsType]):
 
     def load_weights(self, path: str) -> None:
         self.load_state_dict(
-            torch.load(os.path.join(path, MODEL_FILENAME), map_location=self.device)
+            torch.load(os.path.join(path, MODEL_FILENAME), map_location=self._device)
         )
 
     def save(self, path: str) -> None:
@@ -124,8 +129,8 @@ class Policy(nn.Module, ABC, Generic[ObsType]):
         pass
 
     def _as_tensor(self, a: NumpyOrDict) -> TensorOrDict:
-        assert self.device
-        return numpy_to_tensor(a, self.device)
+        assert self._device
+        return numpy_to_tensor(a, self._device)
 
     def num_trainable_parameters(self) -> int:
         return sum(p.numel() for p in self.parameters() if p.requires_grad)
