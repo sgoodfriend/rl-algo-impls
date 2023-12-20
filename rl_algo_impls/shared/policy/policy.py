@@ -36,6 +36,7 @@ class Policy(nn.Module, ABC, Generic[ObsType]):
         norm_reward = find_wrapper(env, NormalizeReward)
         self.norm_reward_rms = norm_reward.rms if norm_reward else None
         self.device = None
+        self.load_path = None
 
     def to(
         self: PolicySelf,
@@ -81,6 +82,7 @@ class Policy(nn.Module, ABC, Generic[ObsType]):
     def load(
         self, path: str, load_norm_rms_count_override: Optional[int] = None
     ) -> None:
+        self.load_path = path
         self.load_weights(path)
         if self.norm_observation_rms:
             self.norm_observation_rms.load(

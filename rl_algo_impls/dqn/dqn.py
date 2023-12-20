@@ -37,10 +37,14 @@ class DQN(Algorithm):
         exploration_final_eps: float = 0.05,
         max_grad_norm: float = 10.0,
     ) -> None:
-        super().__init__(policy, device, tb_writer)
+        super().__init__(
+            policy,
+            device,
+            tb_writer,
+            learning_rate,
+            Adam(policy.q_net.parameters(), lr=learning_rate),
+        )
         self.policy = policy
-
-        self.optimizer = Adam(self.policy.q_net.parameters(), lr=learning_rate)
 
         self.target_q_net = copy.deepcopy(self.policy.q_net).to(self.device)
         self.target_q_net.train(False)

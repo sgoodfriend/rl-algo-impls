@@ -12,6 +12,7 @@ from torch.utils.tensorboard.writer import SummaryWriter
 
 from rl_algo_impls.checkpoints.checkpoints_manager import PolicyCheckpointsManager
 from rl_algo_impls.lux.jux_verify import jux_verify_enabled
+from rl_algo_impls.shared.algorithm import Algorithm
 from rl_algo_impls.shared.callbacks import Callback
 from rl_algo_impls.shared.policy.policy import Policy
 from rl_algo_impls.shared.stats import Episode, EpisodeAccumulator, EpisodesStats
@@ -248,6 +249,7 @@ class EvalCallback(Callback):
     def __init__(
         self,
         policy: Policy,
+        algo: Algorithm,
         env: VectorEnv,
         tb_writer: SummaryWriter,
         best_model_path: Optional[str] = None,
@@ -272,6 +274,7 @@ class EvalCallback(Callback):
     ) -> None:
         super().__init__()
         self.policy = policy
+        self.algo = algo
         self.env = env
         self.tb_writer = tb_writer
         self.best_model_path = best_model_path
@@ -361,11 +364,13 @@ class EvalCallback(Callback):
 
         if self.latest_model_path:
             self.policy.save(self.latest_model_path)
+            self.algo.save(self.latest_model_path)
         if is_best:
             self.best = eval_stat
             if self.save_best:
                 assert self.best_model_path
                 self.policy.save(self.best_model_path)
+                self.algo.save(self.best_model_path)
                 print("Saved best model")
                 if self.wandb_enabled:
                     import wandb

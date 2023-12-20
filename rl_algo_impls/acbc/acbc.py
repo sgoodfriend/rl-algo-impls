@@ -6,7 +6,7 @@ from typing import Dict, List, Optional, TypeVar, Union
 import numpy as np
 import torch
 import torch.nn as nn
-from torch.optim import Adam, Optimizer
+from torch.optim import Adam
 from torch.utils.tensorboard.writer import SummaryWriter
 
 from rl_algo_impls.acbc.train_stats import TrainStats
@@ -15,7 +15,7 @@ from rl_algo_impls.rollout.rollout import RolloutGenerator
 from rl_algo_impls.shared.algorithm import Algorithm
 from rl_algo_impls.shared.callbacks.callback import Callback
 from rl_algo_impls.shared.policy.actor_critic import ActorCritic
-from rl_algo_impls.shared.schedule import schedule, update_learning_rate
+from rl_algo_impls.shared.schedule import update_learning_rate
 from rl_algo_impls.shared.stats import log_scalars
 from rl_algo_impls.shared.tensor_utils import num_or_array
 
@@ -42,10 +42,15 @@ class ACBC(Algorithm):
         gradient_accumulation: bool = False,
         scale_loss_by_num_actions: bool = False,
     ) -> None:
-        super().__init__(policy, device, tb_writer)
+        super().__init__(
+            policy,
+            device,
+            tb_writer,
+            learning_rate,
+            Adam(policy.parameters(), lr=learning_rate),
+        )
         self.policy = policy
 
-        self.learning_rate = learning_rate
         self.batch_size = batch_size
         self.n_epochs = n_epochs
         self.gamma = num_or_array(gamma)
@@ -68,19 +73,13 @@ class ACBC(Algorithm):
         assert start_timesteps + train_timesteps <= total_timesteps
         timesteps_elapsed = start_timesteps
 
-        optimizer = None
-
         while timesteps_elapsed < start_timesteps + train_timesteps:
             start_time = perf_counter()
 
-            progress = timesteps_elapsed / total_timesteps
-            if not optimizer:
-                optimizer = Adam(self.policy.parameters(), lr=self.learning_rate)
-            else:
-                update_learning_rate(optimizer, self.learning_rate)
+            update_learning_rate(self.optimizer, self.learning_rate)
 
             chart_scalars = {
-                "learning_rate": optimizer.param_groups[0]["lr"],
+                "learning_rate": self.optimizer.param_groups[0]["lr"],
                 "vf_coef": self.vf_coef,
             }
             log_scalars(self.tb_writer, "charts", chart_scalars, timesteps_elapsed)
@@ -122,7 +121,7 @@ class ACBC(Algorithm):
                         loss /= r.num_minibatches(self.batch_size)
                     loss.backward()
                     if not self.gradient_accumulation:
-                        self.optimizer_step(optimizer)
+                        self.optimizer_step()
 
                     step_stats.append(
                         {
@@ -133,7 +132,7 @@ class ACBC(Algorithm):
                     )
 
                 if self.gradient_accumulation:
-                    self.optimizer_step(optimizer)
+                    self.optimizer_step()
 
             var_y = np.var(r.y_true).item()
             explained_var = (
@@ -161,7 +160,7 @@ class ACBC(Algorithm):
                     break
         return self
 
-    def optimizer_step(self, optimizer: Optimizer) -> None:
+    def optimizer_step(self) -> None:
         nn.utils.clip_grad_norm_(self.policy.parameters(), self.max_grad_norm)
-        optimizer.step()
-        optimizer.zero_grad()
+        self.optimizer.step()
+        self.optimizer.zero_grad()

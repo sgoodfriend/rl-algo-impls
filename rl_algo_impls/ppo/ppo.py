@@ -140,13 +140,17 @@ class PPO(Algorithm):
         teacher_kl_loss_fn: Optional[TeacherKLLoss] = None,
         teacher_loss_importance_sampling: bool = True,
     ) -> None:
-        super().__init__(policy, device, tb_writer)
+        super().__init__(
+            policy,
+            device,
+            tb_writer,
+            learning_rate,
+            Adam(policy.parameters(), lr=learning_rate, eps=1e-7),
+        )
         self.policy = policy
 
         self.gamma = num_or_array(gamma)
         self.gae_lambda = num_or_array(gae_lambda)
-        self.optimizer = Adam(self.policy.parameters(), lr=learning_rate, eps=1e-7)
-        self.learning_rate = learning_rate
         self.max_grad_norm = max_grad_norm
         self.clip_range = clip_range
         self.clip_range_vf = clip_range_vf

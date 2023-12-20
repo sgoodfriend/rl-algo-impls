@@ -14,7 +14,7 @@ from rl_algo_impls.shared.algorithm import Algorithm
 from rl_algo_impls.shared.autocast import maybe_autocast
 from rl_algo_impls.shared.callbacks import Callback
 from rl_algo_impls.shared.policy.actor_critic import ActorCritic
-from rl_algo_impls.shared.schedule import schedule, update_learning_rate
+from rl_algo_impls.shared.schedule import update_learning_rate
 from rl_algo_impls.shared.stats import log_scalars
 from rl_algo_impls.shared.tensor_utils import NumOrList, num_or_array
 
@@ -42,18 +42,14 @@ class A2C(Algorithm):
         autocast_loss: bool = False,
         num_minibatches: Optional[int] = None,
     ) -> None:
-        super().__init__(policy, device, tb_writer)
-        self.policy = policy
-
-        self.learning_rate = learning_rate
         if use_rms_prop:
-            self.optimizer = torch.optim.RMSprop(
-                policy.parameters(), lr=self.learning_rate, eps=rms_prop_eps
+            optimizer = torch.optim.RMSprop(
+                policy.parameters(), lr=learning_rate, eps=rms_prop_eps
             )
         else:
-            self.optimizer = torch.optim.Adam(
-                policy.parameters(), lr=self.learning_rate
-            )
+            optimizer = torch.optim.Adam(policy.parameters(), lr=learning_rate)
+        super().__init__(policy, device, tb_writer, learning_rate, optimizer)
+        self.policy = policy
 
         self.gamma = num_or_array(gamma)
         self.gae_lambda = num_or_array(gae_lambda)

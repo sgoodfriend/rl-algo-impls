@@ -103,6 +103,8 @@ def train(args: TrainArgs):
     algo = ALGOS[args.algo](
         policy, device, tb_writer, **config.algo_hyperparams(checkpoints_manager)
     )
+    if policy.load_path:
+        algo.load(policy.load_path)
 
     num_parameters = policy.num_parameters()
     num_trainable_parameters = policy.num_trainable_parameters()
@@ -131,6 +133,7 @@ def train(args: TrainArgs):
     )
     eval_callback = EvalCallback(
         policy,
+        algo,
         eval_env,
         tb_writer,
         best_model_path=config.model_dir_path(best=True),
