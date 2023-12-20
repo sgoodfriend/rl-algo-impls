@@ -268,8 +268,8 @@ class MicroRTSSpaceTransform(VectorEnv, MicroRTSInterfaceListener):
         self._update_action_mask(microrts_mask)
         return self._from_microrts_obs(microrts_obs), {}
 
-    def render(self, mode="human"):
-        return self.interface.render(mode)
+    def render(self):
+        return self.interface.render()
 
     def close_extras(self, **kwargs):
         if not self.fixed_size:

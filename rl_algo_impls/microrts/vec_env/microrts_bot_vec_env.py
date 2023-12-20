@@ -56,6 +56,7 @@ class MicroRTSBotGridVecEnv(MicroRTSInterface):
         cycle_maps=[],
         video_frames_per_second: Optional[int] = None,
         non_deterministic: bool = False,
+        render_mode: Optional[str] = None,
     ):
         self._num_envs = len(reference_indexes)
         self._partial_obs = partial_obs
@@ -79,6 +80,7 @@ class MicroRTSBotGridVecEnv(MicroRTSInterface):
             if video_frames_per_second is not None
             else 150,
         }
+        self.render_mode = "rgb_array" if render_mode is None else render_mode
 
         self.microrts_path = os.path.join(Path(__file__).parent.parent, "java")
 
@@ -313,13 +315,13 @@ class MicroRTSBotGridVecEnv(MicroRTSInterface):
     def last_action(self) -> List[List[List[int]]]:
         return select(self._action, self.reference_indexes)
 
-    def render(self, mode="human"):
-        if mode == "human":
+    def render(self):
+        if self.render_mode == "human":
             self.render_client.render(False)
             # give warning on macos because the render is not available
             if sys.platform == "darwin":
                 warnings.warn(MICRORTS_MAC_OS_RENDER_MESSAGE)
-        elif mode == "rgb_array":
+        elif self.render_mode == "rgb_array":
             bytes_array = np.array(self.render_client.render(True))
             image = Image.frombytes("RGB", (640, 640), bytes_array)
             return np.array(image)[:, :, ::-1]
