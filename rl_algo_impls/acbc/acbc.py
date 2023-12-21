@@ -91,7 +91,9 @@ class ACBC(Algorithm):
             vf_coef = torch.Tensor(np.array(self.vf_coef)).to(self.device)
             for e in range(self.n_epochs):
                 step_stats.clear()
-                for mb in r.minibatches(self.batch_size):
+                for mb in r.minibatches(
+                    self.batch_size, shuffle=not self.gradient_accumulation
+                ):
                     self.policy.reset_noise(self.batch_size)
 
                     (

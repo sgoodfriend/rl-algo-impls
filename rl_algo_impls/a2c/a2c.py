@@ -113,7 +113,10 @@ class A2C(Algorithm):
                 if self.multi_reward_weights is not None
                 else None
             )
-            for mb in r.minibatches(r.total_steps // self.num_minibatches):
+            for mb in r.minibatches(
+                r.total_steps // self.num_minibatches,
+                shuffle=not self.gradient_accumulation,
+            ):
                 (
                     mb_obs,
                     _,

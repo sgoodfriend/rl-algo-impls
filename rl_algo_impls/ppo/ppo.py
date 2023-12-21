@@ -287,7 +287,9 @@ class PPO(Algorithm):
             # Only record last epoch's stats
             step_stats.clear()
             grad_norms.clear()
-            for mb in r.minibatches(self.batch_size):
+            for mb in r.minibatches(
+                self.batch_size, shuffle=not self.gradient_accumulation
+            ):
                 self.policy.reset_noise(self.batch_size)
 
                 (

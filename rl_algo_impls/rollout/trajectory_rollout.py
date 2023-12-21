@@ -91,8 +91,12 @@ class TrajectoryRollout(Rollout):
             {k: torch.cat(v).to(self.batch.device) for k, v in to_add.items()}
         )
 
-    def minibatches(self, batch_size: int) -> Iterator[Batch]:
-        b_idxs = torch.randperm(self.total_steps)
+    def minibatches(self, batch_size: int, shuffle: bool = True) -> Iterator[Batch]:
+        b_idxs = (
+            torch.randperm(self.total_steps)
+            if shuffle
+            else torch.arange(self.total_steps)
+        )
         for i in range(self.num_minibatches(batch_size)):
             mb_idxs = b_idxs[i * batch_size : (i + 1) * batch_size]
             yield self.batch[mb_idxs].to(self.device)

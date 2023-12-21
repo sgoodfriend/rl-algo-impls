@@ -96,7 +96,7 @@ class Rollout(ABC):
         ...
 
     @abstractmethod
-    def minibatches(self, batch_size: int) -> Iterator[Batch]:
+    def minibatches(self, batch_size: int, shuffle: bool = True) -> Iterator[Batch]:
         ...
 
     def add_to_batch(self, map_fn: BatchMapFn, batch_size: int) -> None:

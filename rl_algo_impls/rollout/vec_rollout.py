@@ -163,9 +163,13 @@ class VecRollout(Rollout):
             {k: torch.cat(v).to(batch.device) for k, v in to_add.items()}
         )
 
-    def minibatches(self, batch_size: int) -> Iterator[Batch]:
+    def minibatches(self, batch_size: int, shuffle: bool = True) -> Iterator[Batch]:
         batch = self.batch()
-        b_idxs = torch.randperm(self.total_steps)
+        b_idxs = (
+            torch.randperm(self.total_steps)
+            if shuffle
+            else torch.arange(self.total_steps)
+        )
         for i in range(0, self.total_steps, batch_size):
             mb_idxs = b_idxs[i : i + batch_size]
             yield batch[mb_idxs].to(self.device)
