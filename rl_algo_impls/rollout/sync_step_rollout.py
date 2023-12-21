@@ -2,7 +2,6 @@ import logging
 from typing import Dict, Optional, TypeVar, Union
 
 import numpy as np
-from tqdm import tqdm
 
 from rl_algo_impls.rollout.rollout import RolloutGenerator
 from rl_algo_impls.rollout.vec_rollout import VecRollout
@@ -134,6 +133,8 @@ class SyncStepRolloutGenerator(RolloutGenerator):
     def prepare(self) -> None:
         if not self.prepare_steps:
             return
+        from tqdm import tqdm
+
         logging.info(f"Preparing rollout generation for {self.prepare_steps} steps")
         episode_stats_writer = find_wrapper(self.vec_env, EpisodeStatsWriter)
         if episode_stats_writer:
