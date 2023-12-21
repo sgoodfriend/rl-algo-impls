@@ -123,6 +123,7 @@ class A2C(Algorithm):
                     _,
                     mb_advantages,
                     mb_returns,
+                    _,  # mb_additional,
                 ) = astuple(mb)
 
                 if self.normalize_advantage:

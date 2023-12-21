@@ -103,6 +103,7 @@ class ACBC(Algorithm):
                         _,
                         _,
                         mb_returns,
+                        _,  # mb_additional,
                     ) = astuple(mb)
 
                     new_logprobs, _, new_values = self.policy(
