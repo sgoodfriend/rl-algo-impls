@@ -56,7 +56,7 @@ class MicroRTSBotGridVecEnv(MicroRTSInterface):
         cycle_maps=[],
         video_frames_per_second: Optional[int] = None,
         non_deterministic: bool = False,
-        render_mode: Optional[str] = None,
+        render_mode: str = "rgb_array",
     ):
         self._num_envs = len(reference_indexes)
         self._partial_obs = partial_obs
@@ -80,7 +80,7 @@ class MicroRTSBotGridVecEnv(MicroRTSInterface):
             if video_frames_per_second is not None
             else 150,
         }
-        self.render_mode = "rgb_array" if render_mode is None else render_mode
+        self.render_mode = render_mode
 
         self.microrts_path = os.path.join(Path(__file__).parent.parent, "java")
 
