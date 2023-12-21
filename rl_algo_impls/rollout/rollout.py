@@ -109,6 +109,9 @@ class RolloutGenerator(ABC):
         self.policy = policy
         self.vec_env = vec_env
 
+    def prepare(self) -> None:
+        pass
+
     @abstractmethod
     def rollout(self, **kwargs) -> Rollout:
         ...

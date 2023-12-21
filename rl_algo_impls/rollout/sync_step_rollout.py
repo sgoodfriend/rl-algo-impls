@@ -1,7 +1,8 @@
+import logging
 from typing import Dict, Optional, TypeVar, Union
 
 import numpy as np
-import torch
+from tqdm import tqdm
 
 from rl_algo_impls.rollout.rollout import RolloutGenerator
 from rl_algo_impls.rollout.vec_rollout import VecRollout
@@ -24,6 +25,8 @@ class SyncStepRolloutGenerator(RolloutGenerator):
         num_envs_reset_every_rollout: int = 0,
         rolling_num_envs_reset_every_rollout: int = 0,
         random_num_envs_reset_every_rollout: int = 0,
+        prepare_steps: int = 0,
+        rolling_num_envs_reset_every_prepare_step: int = 0,
     ) -> None:
         super().__init__(policy, vec_env)
         self.policy = policy
@@ -60,10 +63,19 @@ class SyncStepRolloutGenerator(RolloutGenerator):
         if (
             rolling_num_envs_reset_every_rollout > 0
             or random_num_envs_reset_every_rollout > 0
+            or rolling_num_envs_reset_every_prepare_step > 0
         ):
             assert (
                 self.vec_env.num_envs % 2 == 0
-            ), f"num_envs must be even for rolling_num_envs_reset_every_rollout or random_num_envs_reset_every_rollout, got {self.vec_env.num_envs}"
+            ), f"num_envs must be even for rolling_num_envs_reset_every_rollout, random_num_envs_reset_every_rollout, or rolling_num_envs_reset_every_prepare_step, got {self.vec_env.num_envs}"
+
+        self.prepare_steps = prepare_steps
+        self.rolling_num_envs_reset_every_prepare_step = (
+            rolling_num_envs_reset_every_prepare_step
+        )
+        assert (
+            rolling_num_envs_reset_every_prepare_step % 2 == 0
+        ), f"rolling_num_envs_reset_every_prepare_step must be even, got {rolling_num_envs_reset_every_prepare_step}"
 
         self.get_action_mask = getattr(vec_env, "get_action_mask", None)
         if self.get_action_mask:
@@ -118,7 +130,48 @@ class SyncStepRolloutGenerator(RolloutGenerator):
                 else None
             )
 
+    def prepare(self) -> None:
+        if not self.prepare_steps:
+            return
+        logging.info(f"Preparing rollout generation for {self.prepare_steps} steps")
+        for _ in tqdm(range(0, self.prepare_steps, self.n_steps)):
+            self._rollout(output_next_values=False)
+            self._reset_envs(
+                0,
+                self.rolling_num_envs_reset_every_prepare_step,
+                0,
+            )
+
     def rollout(self, gamma: NumOrArray, gae_lambda: NumOrArray) -> VecRollout:
+        next_values = self._rollout(output_next_values=True)
+        assert next_values is not None
+
+        self._reset_envs(
+            self.num_envs_reset_every_rollout,
+            self.rolling_num_envs_reset_every_rollout,
+            self.random_num_envs_reset_every_rollout,
+        )
+
+        return VecRollout(
+            device=self.policy.device,
+            next_episode_starts=self.next_episode_starts,
+            next_values=next_values,
+            obs=self.obs,
+            actions=self.actions,
+            rewards=self.rewards,
+            episode_starts=self.episode_starts,
+            values=self.values,
+            logprobs=self.logprobs,
+            action_masks=self.action_masks,
+            gamma=gamma,
+            gae_lambda=gae_lambda,
+            scale_advantage_by_values_accuracy=self.scale_advantage_by_values_accuracy,
+            full_batch_off_accelerator=self.full_batch_off_accelerator,
+            subaction_mask=self.subaction_mask,
+            action_plane_space=getattr(self.vec_env, "action_plane_space", None),
+        )
+
+    def _rollout(self, output_next_values: bool) -> Optional[np.ndarray]:
         self.policy.eval()
         self.policy.reset_noise()
         for s in range(self.n_steps):
@@ -151,23 +204,29 @@ class SyncStepRolloutGenerator(RolloutGenerator):
                 self.get_action_mask() if self.get_action_mask else None
             )
 
-        next_values = self.policy.value(self.next_obs)
+        next_values = self.policy.value(self.next_obs) if output_next_values else None
         self.policy.train()
+        return next_values
 
-        assert isinstance(self.next_obs, np.ndarray)
+    def _reset_envs(
+        self,
+        num_envs_reset: int,
+        rolling_num_envs_reset: int,
+        random_num_envs_reset: int,
+    ) -> None:
         assert (
-            bool(self.num_envs_reset_every_rollout)
-            + bool(self.rolling_num_envs_reset_every_rollout)
-            + bool(self.random_num_envs_reset_every_rollout)
+            bool(num_envs_reset)
+            + bool(rolling_num_envs_reset)
+            + bool(random_num_envs_reset)
             <= 1
-        ), "Only one of num_envs_reset_every_rollout, rolling_num_envs_reset_every_rollout, random_num_envs_reset_every_rollout can be set"
+        ), "Only one of num_envs_reset, rolling_num_envs_reset, random_num_envs_reset can be set"
         masked_reset_mask = np.zeros(self.vec_env.num_envs, dtype=np.bool_)
-        if self.num_envs_reset_every_rollout > 0:
-            masked_reset_mask[-self.num_envs_reset_every_rollout :] = True
-        if self.rolling_num_envs_reset_every_rollout > 0:
-            end_idx = (
-                self.rolling_mask_idx + self.rolling_num_envs_reset_every_rollout // 2
-            ) % len(self.rolling_reset_indexes)
+        if num_envs_reset > 0:
+            masked_reset_mask[-num_envs_reset:] = True
+        if rolling_num_envs_reset > 0:
+            end_idx = (self.rolling_mask_idx + rolling_num_envs_reset // 2) % len(
+                self.rolling_reset_indexes
+            )
             if end_idx < self.rolling_mask_idx:
                 indexes = np.concatenate(
                     (
@@ -184,25 +243,25 @@ class SyncStepRolloutGenerator(RolloutGenerator):
             rolling_reset_mask[indexes] = True
             masked_reset_mask[rolling_reset_mask.repeat(2)] = True
             self.rolling_mask_idx = end_idx
-        if self.random_num_envs_reset_every_rollout > 0:
+        if random_num_envs_reset > 0:
             pairs_mask = np.zeros(self.vec_env.num_envs // 2, dtype=np.bool_)
             pairs_mask[
                 np.random.choice(
                     pairs_mask.shape[0],
-                    self.random_num_envs_reset_every_rollout // 2,
+                    random_num_envs_reset // 2,
                     replace=False,
                 )
             ] = True
             masked_reset_mask[pairs_mask.repeat(2)] = True
 
         assert masked_reset_mask.sum() == (
-            self.num_envs_reset_every_rollout
-            + self.rolling_num_envs_reset_every_rollout
-            + self.random_num_envs_reset_every_rollout
-        ), f"Expected {self.num_envs_reset_every_rollout + self.rolling_num_envs_reset_every_rollout + self.random_num_envs_reset_every_rollout} masked resets, got {masked_reset_mask.sum()}"
+            num_envs_reset + rolling_num_envs_reset + random_num_envs_reset
+        ), f"Expected {num_envs_reset + rolling_num_envs_reset + random_num_envs_reset} masked resets, got {masked_reset_mask.sum()}"
 
         if masked_reset_mask.any():
             next_obs, action_mask, _ = self.vec_env.masked_reset(masked_reset_mask)  # type: ignore
+
+            assert isinstance(self.next_obs, np.ndarray)
             self.next_obs[masked_reset_mask] = next_obs
             if self.next_action_masks is not None:
                 fold_in(
@@ -210,25 +269,6 @@ class SyncStepRolloutGenerator(RolloutGenerator):
                     batch_dict_keys(action_mask),
                     masked_reset_mask,
                 )
-
-        return VecRollout(
-            device=self.policy.device,
-            next_episode_starts=self.next_episode_starts,
-            next_values=next_values,
-            obs=self.obs,
-            actions=self.actions,
-            rewards=self.rewards,
-            episode_starts=self.episode_starts,
-            values=self.values,
-            logprobs=self.logprobs,
-            action_masks=self.action_masks,
-            gamma=gamma,
-            gae_lambda=gae_lambda,
-            scale_advantage_by_values_accuracy=self.scale_advantage_by_values_accuracy,
-            full_batch_off_accelerator=self.full_batch_off_accelerator,
-            subaction_mask=self.subaction_mask,
-            action_plane_space=getattr(self.vec_env, "action_plane_space", None),
-        )
 
 
 ND = TypeVar("ND", np.ndarray, Dict[str, np.ndarray])

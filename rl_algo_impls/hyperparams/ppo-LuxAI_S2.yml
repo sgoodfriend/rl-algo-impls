@@ -5363,10 +5363,16 @@ LuxAI_S2-v0-j1024env32-80m-ent1-lr50-ln-mgn4-baserew-tkl5c-ft:
     <<: *lux-j1024env16-80m-vfc024-lr50-ln-mgn2-2o2m2h-tkl5-ft-lr-by-kl-kwargs
     max_lr: !!float 5e-3
 
-LuxAI_S2-v0-j1024env32-80m-ent1-lr50-ln-mgn4-2omh-tkl5c-ft:
-  &lux-j1024env32-80m-ent1-lr50-ln-mgn4-2omh-tkl5c-ft
+LuxAI_S2-v0-j1024env32-80m-ent1-lr50-ln-mgn4-2omh-tkl5c-prep-ft:
+  &lux-j1024env32-80m-ent1-lr50-ln-mgn4-2omh-tkl5c-prep-ft
   <<: *lux-j1024env32-80m-ent1-lr50-ln-mgn4-baserew-tkl5c-ft
-  algo_hyperparams: &lux-j1024env32-80m-ent1-lr50-ln-mgn4-2omh-tkl5c-ft-algo
+  rollout_hyperparams:
+    &lux-j1024env32-80m-ent1-lr50-ln-mgn4-2omh-tkl5c-prep-ft-rollout
+    <<: *lux-j1024env32-80m-lr10-r32-rr4-rollout
+    prepare_steps: 1024
+    rolling_num_envs_reset_every_prepare_step: 32
+  algo_hyperparams:
+    &lux-j1024env32-80m-ent1-lr50-ln-mgn4-2omh-tkl5c-prep-ft-algo
     <<: *lux-j1024env32-80m-vfc024-ent1-lr10-ln-mgn4-baserew-tkl5c-ft-algo
     multi_reward_weights:
       - 1 # WinLoss
@@ -5383,10 +5389,23 @@ LuxAI_S2-v0-j1024env32-80m-ent1-lr50-ln-mgn4-2omh-tkl5c-ft:
       - 0 # game length
       - 0 # opponent resources lichen
       - 0 # opponent resources factory
+  hyperparam_transitions_kwargs:
+    &lux-j1024env32-80m-ent1-lr50-ln-mgn4-2omh-tkl5c-prep-ft-hyperparam-transitions
+    <<: *lux-j1024env32-80m-vfc006-ent1-lr10-ln-mgn4-2o3m4h-tkl5c-ft-hyperparam-transitions
+    phases:
+      - ent_coef: !!float 5e-3
+      - ent_coef: !!float 1e-3
+    durations:
+      - 0
+      - 1 # entropy coef 5e-3 -> 1e-3 , 80M steps
+      - 0
 
 LuxAI_S2-v0-j1024env64-80m-ent1-lr5-ln-mgn2-2o3m4h-tkl20d5-ft-a100:
   &lux-j1024env64-80m-ent1-lr5-ln-mgn2-2o3m4h-tkl20d5-ft-a100
   <<: *lux-j1024env64-80m-vfc006-ent1-lr10-ln-mgn2-2o3m4h-tkl10-ft-a100
+  rollout_hyperparams:
+    &lux-j1024env64-80m-ent1-lr5-ln-mgn2-2o3m4h-tkl20d5-ft-a100-rollout
+    <<: *lux-j1024env32-80m-ent1-lr50-ln-mgn4-2omh-tkl5c-prep-ft-rollout
   algo_hyperparams:
     &lux-j1024env64-80m-ent1-lr5-ln-mgn2-2o3m4h-tkl20d5-ft-a100-algo
     <<: *lux-j1024env64-80m-vfc006-lr10-ln-mgn2-2o3m4h-tkl5-ft-a100-algo
@@ -5399,23 +5418,13 @@ LuxAI_S2-v0-j1024env64-80m-ent1-lr5-ln-mgn2-2o3m4h-tkl20d5-ft-a100:
     &lux-j1024env64-80m-ent1-lr5-ln-mgn2-2o3m4h-tkl20d5-ft-a100-hyperparam-transitions
     <<: *lux-j1024env16-80m-vfc024-ent1-lr100-ln-mgn2-2o3m4h-tkl10-ft-hyperparam-transitions
     phases:
-      - rolling_num_envs_reset_every_rollout: 32
-        random_num_envs_reset_every_rollout: 0
-        ent_coef: !!float 5e-3
+      - ent_coef: !!float 5e-3
         teacher_kl_loss_coef: !!float 2e-2
-      - rolling_num_envs_reset_every_rollout: 0
-        random_num_envs_reset_every_rollout: 4
-        ent_coef: !!float 5e-3
-        teacher_kl_loss_coef: !!float 2e-2
-      - rolling_num_envs_reset_every_rollout: 0
-        random_num_envs_reset_every_rollout: 4
-        ent_coef: !!float 1e-3
+      - ent_coef: !!float 1e-3
         teacher_kl_loss_coef: !!float 5e-3
     durations:
-      - 0.0125 # reset 32 envs every rollout, 1M steps
       - 0
-      - 0
-      - 0.9875 # reset 4 envs every rollout, teacher_kl_loss 5e-4 -> 0, 79M steps
+      - 1
       - 0
 
 LuxAI_S2-v0-j1024env64-80m-ent1-lr10-ln-baserew-tkl20d5-ft-a100:
@@ -5462,7 +5471,7 @@ LuxAI_S2-v0-j1024env64-80m-ent1-lr100-ln-baserew-tkl5c-ft-a100:
     max_lr: !!float 1e-2
   hyperparam_transitions_kwargs:
     &lux-j1024env64-80m-ent1-lr100-ln-baserew-tkl5c-ft-a100-hyperparam-transitions
-    <<: *lux-j1024env32-80m-vfc006-ent1-lr10-ln-mgn4-2o3m4h-tkl5c-ft-hyperparam-transitions
+    <<: *lux-j1024env32-80m-ent1-lr50-ln-mgn4-2omh-tkl5c-prep-ft-hyperparam-transitions
 
 LuxAI_S2-agent: &lux-agent
   <<: *lux-j1024env64-80m-vfc006-ln-mgn4-2o3m4h-ft-a100
@@ -5480,36 +5489,36 @@ LuxAI_S2-agent: &lux-agent
       play_checkpoints_kwargs: null
 
 LuxAI_S2-v0-debug:
-  <<: *lux-j1024env64-80m-ent1-lr10-ln-baserew-tkl20d5-ft-a100
+  <<: *lux-j1024env32-80m-ent1-lr50-ln-mgn4-2omh-tkl5c-prep-ft
   n_timesteps: !!float 10e6
   device: mps
   env_hyperparams:
     # <<: *lux-j1024env16-clip-reward-1-env
-    # <<: *lux-j1024env32-opp-resources-env
-    <<: *lux-j1024env64-a100-env
+    <<: *lux-j1024env32-opp-resources-env
+    # <<: *lux-j1024env64-a100-env
     n_envs: 64
     play_checkpoints_kwargs:
       n_envs_against_checkpoints: 8
     make_kwargs:
       # <<: *lux-j1024env16-power-diggers-env-make-kwargs
-      # <<: *lux-j1024env32-opp-resources-env-make-kwargs
-      <<: *lux-j1024env64-a100-env-make-kwargs
+      <<: *lux-j1024env32-opp-resources-env-make-kwargs
+      # <<: *lux-j1024env64-a100-env-make-kwargs
       verbose: 3
       verify: true
     # vec_env_class: sync
   eval_hyperparams:
     # <<: *lux-j1024env16-eval
-    # <<: *lux-j1024env32-opp-resources-eval
-    <<: *lux-j1024env64-a100-eval
+    <<: *lux-j1024env32-opp-resources-eval
+    # <<: *lux-j1024env64-a100-eval
     env_overrides:
       # <<: *lux-j1024env16-power-diggers-eval-env-overrides
-      # <<: *lux-j1024env32-80m-a100-std-norm-retrain-env-overrides
-      <<: *lux-j1024env64-a100-eval-env-overrides
+      <<: *lux-j1024env32-80m-a100-std-norm-retrain-env-overrides
+      # <<: *lux-j1024env64-a100-eval-env-overrides
       n_envs: 8
       # vec_env_class: sync
       make_kwargs:
         # <<: *lux-j1024env16-power-diggers-eval-env-overrides-make-kwargs
-        # <<: *lux-j1024env32-80m-a100-std-norm-retrain-env-overrides-make-kwargs
-        <<: *lux-j1024env64-a100-eval-env-overrides-make-kwargs
+        <<: *lux-j1024env32-80m-a100-std-norm-retrain-env-overrides-make-kwargs
+        # <<: *lux-j1024env64-a100-eval-env-overrides-make-kwargs
         verbose: 3
         verify: true

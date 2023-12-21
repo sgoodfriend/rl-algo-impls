@@ -33,6 +33,7 @@ pyvirtualdisplay = "*"
 psutil = "*"
 PyYAML = "*"
 moviepy = "*"
+tqdm = "*"
 
 AutoROM = {extras = ["accept-rom-license"], version = "^0.6", optional = true}
 pyglet = {version = "==1.5.27", optional = true}

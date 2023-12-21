@@ -188,6 +188,7 @@ def train(args: TrainArgs):
         env,
         **rollout_hyperparams,
     )
+    rollout_generator.prepare()
     lr_by_kl_callback = None
     if config.hyperparams.lr_by_kl_kwargs:
         assert isinstance(
