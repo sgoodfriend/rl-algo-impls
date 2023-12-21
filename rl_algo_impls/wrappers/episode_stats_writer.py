@@ -45,7 +45,8 @@ class EpisodeStatsWriter(VectorWrapper):
 
     def reset(self, **kwargs) -> VecEnvResetReturn:
         obs, infos = self.env.reset(**kwargs)
-        return obs, self._record_stats(infos)
+        self._record_stats(infos)
+        return obs, infos
 
     @property
     def steps_per_step(self) -> int:
