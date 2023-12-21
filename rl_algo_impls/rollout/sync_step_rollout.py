@@ -8,7 +8,8 @@ from rl_algo_impls.rollout.rollout import RolloutGenerator
 from rl_algo_impls.rollout.vec_rollout import VecRollout
 from rl_algo_impls.shared.policy.actor_critic import ActorCritic
 from rl_algo_impls.shared.tensor_utils import NumOrArray, batch_dict_keys
-from rl_algo_impls.wrappers.vector_wrapper import VectorEnv
+from rl_algo_impls.wrappers.episode_stats_writer import EpisodeStatsWriter
+from rl_algo_impls.wrappers.vector_wrapper import VectorEnv, find_wrapper
 
 
 class SyncStepRolloutGenerator(RolloutGenerator):
@@ -134,6 +135,9 @@ class SyncStepRolloutGenerator(RolloutGenerator):
         if not self.prepare_steps:
             return
         logging.info(f"Preparing rollout generation for {self.prepare_steps} steps")
+        episode_stats_writer = find_wrapper(self.vec_env, EpisodeStatsWriter)
+        if episode_stats_writer:
+            episode_stats_writer.disable_record_stats()
         for _ in tqdm(range(0, self.prepare_steps, self.n_steps)):
             self._rollout(output_next_values=False)
             self._reset_envs(
@@ -141,6 +145,8 @@ class SyncStepRolloutGenerator(RolloutGenerator):
                 self.rolling_num_envs_reset_every_prepare_step,
                 0,
             )
+        if episode_stats_writer:
+            episode_stats_writer.enable_record_stats()
 
     def rollout(self, gamma: NumOrArray, gae_lambda: NumOrArray) -> VecRollout:
         next_values = self._rollout(output_next_values=True)

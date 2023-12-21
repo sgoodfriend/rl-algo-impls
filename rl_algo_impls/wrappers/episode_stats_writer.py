@@ -36,6 +36,7 @@ class EpisodeStatsWriter(VectorWrapper):
             additional_keys_to_log if additional_keys_to_log is not None else []
         )
         self._steps_per_step: Optional[int] = None
+        self._record_stats_enabled = True
 
     def step(self, actions) -> VecEnvStepReturn:
         obs, rewards, terminations, truncations, infos = self.env.step(actions)
@@ -56,7 +57,15 @@ class EpisodeStatsWriter(VectorWrapper):
     def steps_per_step(self, steps_per_step: int) -> None:
         self._steps_per_step = steps_per_step
 
+    def disable_record_stats(self) -> None:
+        self._record_stats_enabled = False
+
+    def enable_record_stats(self) -> None:
+        self._record_stats_enabled = True
+
     def _record_stats(self, infos: dict) -> None:
+        if not self._record_stats_enabled:
+            return
         self.total_steps += self.steps_per_step
         step_episodes = []
         if "episode" not in infos:
