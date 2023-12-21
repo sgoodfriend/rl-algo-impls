@@ -6,9 +6,9 @@ import numpy as np
 from gymnasium.experimental.wrappers.vector.record_episode_statistics import (
     RecordEpisodeStatisticsV0,
 )
-from torch.utils.tensorboard.writer import SummaryWriter
 
 from rl_algo_impls.runner.config import Config, EnvHyperparams
+from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
 from rl_algo_impls.wrappers.episode_stats_writer import EpisodeStatsWriter
 from rl_algo_impls.wrappers.hwc_to_chw_observation import HwcToChwVectorObservation
 from rl_algo_impls.wrappers.is_vector_env import IsVectorEnv
@@ -20,7 +20,7 @@ def make_procgen_env(
     hparams: EnvHyperparams,
     training: bool = True,
     render: bool = False,
-    tb_writer: Optional[SummaryWriter] = None,
+    tb_writer: Optional[SummaryWrapper] = None,
     **kwargs,
 ) -> VectorEnv:
     from gym3 import ExtractDictObWrapper, ViewerWrapper

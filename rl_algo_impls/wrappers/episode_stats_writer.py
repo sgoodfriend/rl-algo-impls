@@ -1,9 +1,7 @@
 from collections import deque
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 
-import numpy as np
-from torch.utils.tensorboard.writer import SummaryWriter
-
+from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
 from rl_algo_impls.shared.stats import Episode, EpisodesStats
 from rl_algo_impls.wrappers.vector_wrapper import (
     VecEnvResetReturn,
@@ -19,7 +17,7 @@ class EpisodeStatsWriter(VectorWrapper):
     def __init__(
         self,
         env: VectorEnv,
-        tb_writer: SummaryWriter,
+        tb_writer: SummaryWrapper,
         training: bool = True,
         rolling_length=100,
         additional_keys_to_log: Optional[List[str]] = None,
@@ -101,11 +99,9 @@ class EpisodeStatsWriter(VectorWrapper):
         if step_episodes:
             tag = "train" if self.training else "eval"
             step_stats = EpisodesStats(step_episodes, simple=True)
-            step_stats.write_to_tensorboard(self.tb_writer, tag, self.total_steps)
+            step_stats.write_to_tensorboard(self.tb_writer, tag)
             rolling_stats = EpisodesStats(self.episodes)
-            rolling_stats.write_to_tensorboard(
-                self.tb_writer, f"{tag}_rolling", self.total_steps
-            )
+            rolling_stats.write_to_tensorboard(self.tb_writer, f"{tag}_rolling")
             self.episode_cnt += len(step_episodes)
             if self.episode_cnt >= self.last_episode_cnt_print + self.rolling_length:
                 print(

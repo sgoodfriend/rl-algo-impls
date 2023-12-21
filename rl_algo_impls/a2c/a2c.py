@@ -6,13 +6,13 @@ from typing import List, Optional, TypeVar
 import numpy as np
 import torch
 import torch.nn as nn
-from torch.utils.tensorboard.writer import SummaryWriter
 
 from rl_algo_impls.a2c.train_stats import TrainStats, TrainStepStats
 from rl_algo_impls.rollout.rollout import RolloutGenerator
 from rl_algo_impls.shared.algorithm import Algorithm
 from rl_algo_impls.shared.autocast import maybe_autocast
 from rl_algo_impls.shared.callbacks import Callback
+from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
 from rl_algo_impls.shared.policy.actor_critic import ActorCritic
 from rl_algo_impls.shared.schedule import update_learning_rate
 from rl_algo_impls.shared.stats import log_scalars
@@ -26,7 +26,7 @@ class A2C(Algorithm):
         self,
         policy: ActorCritic,
         device: torch.device,
-        tb_writer: SummaryWriter,
+        tb_writer: SummaryWrapper,
         learning_rate: float = 7e-4,
         gamma: NumOrList = 0.99,
         gae_lambda: NumOrList = 1.0,
@@ -180,13 +180,11 @@ class A2C(Algorithm):
             self.tb_writer.add_scalar(
                 "train/steps_per_second",
                 rollout_steps / (end_time - start_time),
-                timesteps_elapsed,
             )
 
-            TrainStats(step_stats, explained_var).write_to_tensorboard(
-                self.tb_writer, timesteps_elapsed
-            )
+            TrainStats(step_stats, explained_var).write_to_tensorboard(self.tb_writer)
 
+            self.tb_writer.on_steps(rollout_steps)
             if callbacks:
                 if not all(
                     c.on_step(timesteps_elapsed=rollout_steps) for c in callbacks

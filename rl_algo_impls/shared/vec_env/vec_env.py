@@ -10,9 +10,9 @@ from gymnasium.wrappers.gray_scale_observation import GrayScaleObservation
 from gymnasium.wrappers.record_episode_statistics import RecordEpisodeStatistics
 from gymnasium.wrappers.resize_observation import ResizeObservation
 from stable_baselines3.common.atari_wrappers import MaxAndSkipEnv, NoopResetEnv
-from torch.utils.tensorboard.writer import SummaryWriter
 
 from rl_algo_impls.runner.config import Config, EnvHyperparams
+from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
 from rl_algo_impls.shared.vec_env.utils import (
     import_for_env_id,
     is_atari,
@@ -45,7 +45,7 @@ def make_vec_env(
     hparams: EnvHyperparams,
     training: bool = True,
     render: bool = False,
-    tb_writer: Optional[SummaryWriter] = None,
+    tb_writer: Optional[SummaryWrapper] = None,
     **kwargs,
 ) -> VectorEnv:
     (

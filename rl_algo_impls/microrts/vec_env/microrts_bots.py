@@ -5,7 +5,6 @@ import numpy as np
 from gymnasium.experimental.wrappers.vector.record_episode_statistics import (
     RecordEpisodeStatisticsV0,
 )
-from torch.utils.tensorboard.writer import SummaryWriter
 
 from rl_algo_impls.microrts.vec_env.microrts_space_transform import (
     MicroRTSSpaceTransform,
@@ -14,6 +13,7 @@ from rl_algo_impls.microrts.wrappers.microrts_stats_recorder import (
     MicrortsStatsRecorder,
 )
 from rl_algo_impls.runner.config import Config, EnvHyperparams
+from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
 from rl_algo_impls.wrappers.action_mask_stats_recorder import ActionMaskStatsRecorder
 from rl_algo_impls.wrappers.action_mask_wrapper import MicrortsMaskWrapper
 from rl_algo_impls.wrappers.additional_win_loss_reward import (
@@ -31,7 +31,7 @@ def make_microrts_bots_env(
     hparams: EnvHyperparams,
     training: bool = True,
     render: bool = False,
-    tb_writer: Optional[SummaryWriter] = None,
+    tb_writer: Optional[SummaryWrapper] = None,
     **kwargs,
 ) -> VectorEnv:
     (

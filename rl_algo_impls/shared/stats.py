@@ -14,8 +14,8 @@ from typing import (
 )
 
 import numpy as np
-from torch.utils.tensorboard.writer import SummaryWriter
 
+from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
 from rl_algo_impls.wrappers.vector_wrapper import extract_info
 
 
@@ -161,7 +161,9 @@ class EpisodesStats:
         }
 
     def write_to_tensorboard(
-        self, tb_writer: SummaryWriter, main_tag: str, global_step: Optional[int] = None
+        self,
+        tb_writer: SummaryWrapper,
+        main_tag: str,
     ) -> None:
         stats = {"mean": self.score.mean}
         if not self.simple:
@@ -177,7 +179,7 @@ class EpisodesStats:
             for k, addl_stats in self.additional_stats.items():
                 stats[k] = addl_stats.mean
         for name, value in stats.items():
-            tb_writer.add_scalar(f"{main_tag}/{name}", value, global_step=global_step)
+            tb_writer.add_scalar(f"{main_tag}/{name}", value)
 
 
 class EpisodeAccumulator:
@@ -209,7 +211,7 @@ class EpisodeAccumulator:
 
 
 def log_scalars(
-    tb_writer: SummaryWriter,
+    tb_writer: SummaryWrapper,
     main_tag: str,
     tag_scalar_dict: Dict[str, Union[int, float]],
     global_step: int,
@@ -217,6 +219,6 @@ def log_scalars(
     for tag, value in tag_scalar_dict.items():
         if isinstance(value, np.ndarray):
             for idx, v in enumerate(value.flatten()):
-                tb_writer.add_scalar(f"{main_tag}/{tag}_{idx}", v, global_step)
+                tb_writer.add_scalar(f"{main_tag}/{tag}_{idx}", v)
         else:
-            tb_writer.add_scalar(f"{main_tag}/{tag}", value, global_step)
+            tb_writer.add_scalar(f"{main_tag}/{tag}", value)

@@ -14,7 +14,6 @@ import torch
 import torch.backends.cudnn
 import yaml
 from gymnasium.spaces import Box, Discrete
-from torch.utils.tensorboard.writer import SummaryWriter
 
 from rl_algo_impls.a2c.a2c import A2C
 from rl_algo_impls.acbc.acbc import ACBC
@@ -30,6 +29,7 @@ from rl_algo_impls.runner.config import Config, Hyperparams
 from rl_algo_impls.runner.wandb_load import load_player
 from rl_algo_impls.shared.algorithm import Algorithm
 from rl_algo_impls.shared.callbacks.eval_callback import EvalCallback
+from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
 from rl_algo_impls.shared.policy.actor_critic import ActorCritic
 from rl_algo_impls.shared.policy.policy import Policy
 from rl_algo_impls.shared.vec_env.utils import import_for_env_id, is_microrts
@@ -210,7 +210,9 @@ def make_policy(
     return policy
 
 
-def plot_eval_callback(callback: EvalCallback, tb_writer: SummaryWriter, run_name: str):
+def plot_eval_callback(
+    callback: EvalCallback, tb_writer: SummaryWrapper, run_name: str
+):
     figure = plt.figure()
     cumulative_steps = [
         (idx + 1) * callback.step_freq for idx in range(len(callback.stats))

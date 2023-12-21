@@ -5,10 +5,10 @@ from typing import List, Optional, TypeVar
 
 import torch
 from torch.optim import Optimizer
-from torch.utils.tensorboard.writer import SummaryWriter
 
 from rl_algo_impls.rollout.rollout import RolloutGenerator
 from rl_algo_impls.shared.callbacks import Callback
+from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
 from rl_algo_impls.shared.policy.policy import Policy
 
 OPTIMIZER_FILENAME = "optimizer.pt"
@@ -22,7 +22,7 @@ class Algorithm(ABC):
         self,
         policy: Policy,
         device: torch.device,
-        tb_writer: SummaryWriter,
+        tb_writer: SummaryWrapper,
         learning_rate: float,
         optimizer: Optimizer,
         **kwargs,

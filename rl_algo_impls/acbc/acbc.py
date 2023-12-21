@@ -7,13 +7,13 @@ import numpy as np
 import torch
 import torch.nn as nn
 from torch.optim import Adam
-from torch.utils.tensorboard.writer import SummaryWriter
 
 from rl_algo_impls.acbc.train_stats import TrainStats
 from rl_algo_impls.ppo.ppo import NL
 from rl_algo_impls.rollout.rollout import RolloutGenerator
 from rl_algo_impls.shared.algorithm import Algorithm
 from rl_algo_impls.shared.callbacks.callback import Callback
+from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
 from rl_algo_impls.shared.policy.actor_critic import ActorCritic
 from rl_algo_impls.shared.schedule import update_learning_rate
 from rl_algo_impls.shared.stats import log_scalars
@@ -31,7 +31,7 @@ class ACBC(Algorithm):
         self,
         policy: ActorCritic,
         device: torch.device,
-        tb_writer: SummaryWriter,
+        tb_writer: SummaryWrapper,
         learning_rate: float = 3e-4,
         batch_size: int = 64,
         n_epochs: int = 10,
@@ -139,18 +139,16 @@ class ACBC(Algorithm):
             explained_var = (
                 np.nan if var_y == 0 else 1 - np.var(r.y_true - r.y_pred).item() / var_y
             )
-            TrainStats(step_stats, explained_var).write_to_tensorboard(
-                self.tb_writer, timesteps_elapsed
-            )
+            TrainStats(step_stats, explained_var).write_to_tensorboard(self.tb_writer)
 
             end_time = perf_counter()
             rollout_steps = r.total_steps
             self.tb_writer.add_scalar(
                 "train/steps_per_second",
                 rollout_steps / (end_time - start_time),
-                timesteps_elapsed,
             )
 
+            self.tb_writer.on_steps(rollout_steps)
             if callbacks:
                 if not all(
                     c.on_step(timesteps_elapsed=rollout_steps) for c in callbacks

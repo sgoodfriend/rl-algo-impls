@@ -1,12 +1,11 @@
 from dataclasses import astuple
 from typing import Optional
 
-from torch.utils.tensorboard.writer import SummaryWriter
-
 from rl_algo_impls.checkpoints.checkpoints_manager import PolicyCheckpointsManager
 from rl_algo_impls.lux.vec_env.vec_lux_env import VecLuxEnv
 from rl_algo_impls.lux.vec_env.vec_lux_replay_env import VecLuxReplayEnv
 from rl_algo_impls.runner.config import Config, EnvHyperparams
+from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
 from rl_algo_impls.wrappers.additional_win_loss_reward import (
     AdditionalWinLossRewardWrapper,
 )
@@ -30,7 +29,7 @@ def make_lux_env(
     hparams: EnvHyperparams,
     training: bool = True,
     render: bool = False,
-    tb_writer: Optional[SummaryWriter] = None,
+    tb_writer: Optional[SummaryWrapper] = None,
     checkpoints_manager: Optional[PolicyCheckpointsManager] = None,
 ) -> VectorEnv:
     (

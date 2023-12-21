@@ -1,10 +1,9 @@
 from dataclasses import asdict
 from typing import Any, Dict, Optional
 
-from torch.utils.tensorboard.writer import SummaryWriter
-
 from rl_algo_impls.checkpoints.checkpoints_manager import PolicyCheckpointsManager
 from rl_algo_impls.runner.config import Config, EnvHyperparams
+from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
 from rl_algo_impls.shared.vec_env.procgen import make_procgen_env
 from rl_algo_impls.shared.vec_env.vec_env import make_vec_env
 from rl_algo_impls.wrappers.self_play_eval_wrapper import SelfPlayEvalWrapper
@@ -17,7 +16,7 @@ def make_env(
     hparams: EnvHyperparams,
     training: bool = True,
     render: bool = False,
-    tb_writer: Optional[SummaryWriter] = None,
+    tb_writer: Optional[SummaryWrapper] = None,
     checkpoints_manager: Optional[PolicyCheckpointsManager] = None,
 ) -> VectorEnv:
     if hparams.env_type == "procgen":

@@ -9,13 +9,13 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.optim import Adam
-from torch.utils.tensorboard.writer import SummaryWriter
 
 from rl_algo_impls.loss.teacher_kl_loss import TeacherKLLoss
 from rl_algo_impls.rollout.rollout import RolloutGenerator
 from rl_algo_impls.shared.algorithm import Algorithm
 from rl_algo_impls.shared.autocast import maybe_autocast
 from rl_algo_impls.shared.callbacks import Callback
+from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
 from rl_algo_impls.shared.policy.actor_critic import ActorCritic
 from rl_algo_impls.shared.schedule import update_learning_rate
 from rl_algo_impls.shared.stats import log_scalars
@@ -68,18 +68,16 @@ class TrainStats:
         self.explained_var = explained_var
         self.grad_norm = np.mean(grad_norms).item()
 
-    def write_to_tensorboard(self, tb_writer: SummaryWriter, global_step: int) -> None:
+    def write_to_tensorboard(self, tb_writer: SummaryWrapper) -> None:
         for name, value in asdict(self).items():
             if isinstance(value, np.ndarray):
                 for idx, v in enumerate(value.flatten()):
-                    tb_writer.add_scalar(
-                        f"losses/{name}_{idx}", v, global_step=global_step
-                    )
+                    tb_writer.add_scalar(f"losses/{name}_{idx}", v)
             elif isinstance(value, dict):
                 for k, v in value.items():
-                    tb_writer.add_scalar(f"losses/{k}", v, global_step=global_step)
+                    tb_writer.add_scalar(f"losses/{k}", v)
             else:
-                tb_writer.add_scalar(f"losses/{name}", value, global_step=global_step)
+                tb_writer.add_scalar(f"losses/{name}", value)
 
     def __repr__(self) -> str:
         def round_list_or_float(v: Union[float, np.ndarray], ndigits: int) -> str:
@@ -110,7 +108,7 @@ class PPO(Algorithm):
         self,
         policy: ActorCritic,
         device: torch.device,
-        tb_writer: SummaryWriter,
+        tb_writer: SummaryWrapper,
         learning_rate: float = 3e-4,
         batch_size: int = 64,
         n_epochs: int = 10,
@@ -417,16 +415,16 @@ class PPO(Algorithm):
             np.nan if var_y == 0 else 1 - np.var(r.y_true - r.y_pred).item() / var_y
         )
         train_stats = TrainStats(step_stats, explained_var, grad_norms)
-        train_stats.write_to_tensorboard(self.tb_writer, timesteps_elapsed)
+        train_stats.write_to_tensorboard(self.tb_writer)
 
         end_time = perf_counter()
         rollout_steps = r.total_steps
         self.tb_writer.add_scalar(
             "train/steps_per_second",
             rollout_steps / (end_time - start_time),
-            timesteps_elapsed,
         )
 
+        self.tb_writer.on_steps(rollout_steps)
         if callbacks:
             if not all(
                 c.on_step(timesteps_elapsed=rollout_steps, train_stats=train_stats)

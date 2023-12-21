@@ -3,10 +3,10 @@ from typing import NamedTuple, Union
 
 import numpy as np
 import optuna
-from torch.utils.tensorboard.writer import SummaryWriter
 
 from rl_algo_impls.shared.callbacks import Callback
 from rl_algo_impls.shared.callbacks.eval_callback import evaluate
+from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
 from rl_algo_impls.shared.policy.policy import Policy
 from rl_algo_impls.shared.stats import EpisodesStats
 from rl_algo_impls.wrappers.episode_stats_writer import EpisodeStatsWriter
@@ -25,7 +25,7 @@ class OptimizeCallback(Callback):
         policy: Policy,
         env: VectorEnv,
         trial: optuna.Trial,
-        tb_writer: SummaryWriter,
+        tb_writer: SummaryWrapper,
         step_freq: Union[int, float] = 50_000,
         n_episodes: int = 10,
         deterministic: bool = True,
@@ -77,7 +77,7 @@ class OptimizeCallback(Callback):
 def evaluation(
     policy: Policy,
     env: VectorEnv,
-    tb_writer: SummaryWriter,
+    tb_writer: SummaryWrapper,
     n_episodes: int,
     deterministic: bool,
     timesteps_elapsed: int,
@@ -94,11 +94,10 @@ def evaluation(
     tb_writer.add_scalar(
         "eval/steps_per_second",
         eval_stat.length.sum() / (end_time - start_time),
-        timesteps_elapsed,
     )
     policy.train()
     print(f"Eval Timesteps: {timesteps_elapsed} | {eval_stat}")
-    eval_stat.write_to_tensorboard(tb_writer, "eval", timesteps_elapsed)
+    eval_stat.write_to_tensorboard(tb_writer, "eval")
 
     stats_writer = find_wrapper(policy.env, EpisodeStatsWriter)
     assert stats_writer
@@ -111,7 +110,6 @@ def evaluation(
     tb_writer.add_scalar(
         "eval/score",
         score,
-        timesteps_elapsed,
     )
 
     return Evaluation(eval_stat, train_stat, score)

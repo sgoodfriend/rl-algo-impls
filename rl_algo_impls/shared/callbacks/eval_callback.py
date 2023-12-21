@@ -2,24 +2,21 @@ import itertools
 import logging
 import os
 import shutil
-from collections import deque
-from copy import deepcopy
 from time import perf_counter
-from typing import Deque, Dict, List, Optional, Sequence, Union
+from typing import Deque, Dict, List, Optional, Union
 
 import numpy as np
-from torch.utils.tensorboard.writer import SummaryWriter
 
 from rl_algo_impls.checkpoints.checkpoints_manager import PolicyCheckpointsManager
 from rl_algo_impls.lux.jux_verify import jux_verify_enabled
 from rl_algo_impls.shared.algorithm import Algorithm
 from rl_algo_impls.shared.callbacks import Callback
+from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
 from rl_algo_impls.shared.policy.policy import Policy
 from rl_algo_impls.shared.stats import Episode, EpisodeAccumulator, EpisodesStats
 from rl_algo_impls.shared.tensor_utils import batch_dict_keys
-from rl_algo_impls.wrappers.play_checkpoints_wrapper import PlayCheckpointsWrapper
 from rl_algo_impls.wrappers.vec_episode_recorder import VecEpisodeRecorder
-from rl_algo_impls.wrappers.vector_wrapper import VectorEnv, find_wrapper
+from rl_algo_impls.wrappers.vector_wrapper import VectorEnv
 
 
 class EvaluateAccumulator(EpisodeAccumulator):
@@ -251,7 +248,7 @@ class EvalCallback(Callback):
         policy: Policy,
         algo: Algorithm,
         env: VectorEnv,
-        tb_writer: SummaryWriter,
+        tb_writer: SummaryWrapper,
         best_model_path: Optional[str] = None,
         step_freq: Union[int, float] = 50_000,
         n_episodes: int = 10,
@@ -348,7 +345,6 @@ class EvalCallback(Callback):
         self.tb_writer.add_scalar(
             "eval/steps_per_second",
             eval_stat.length.sum() / (end_time - start_time),
-            self.timesteps_elapsed,
         )
         self.policy.train(True)
         print(f"Eval Timesteps: {self.timesteps_elapsed} | {eval_stat}")
@@ -381,13 +377,11 @@ class EvalCallback(Callback):
                         "zip",
                         self.best_model_path,
                     )
-            self.best.write_to_tensorboard(
-                self.tb_writer, "best_eval", self.timesteps_elapsed
-            )
+            self.best.write_to_tensorboard(self.tb_writer, "best_eval")
         if self.video_env and (not self.only_record_video_on_best or strictly_better):
             self.generate_video()
 
-        eval_stat.write_to_tensorboard(self.tb_writer, "eval", self.timesteps_elapsed)
+        eval_stat.write_to_tensorboard(self.tb_writer, "eval")
         self.checkpoint_policy(is_best)
         return eval_stat
 

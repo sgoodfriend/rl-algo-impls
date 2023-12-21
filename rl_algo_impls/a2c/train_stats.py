@@ -2,7 +2,8 @@ from dataclasses import asdict, dataclass
 from typing import Dict, List, Union
 
 import numpy as np
-from torch.utils.tensorboard.writer import SummaryWriter
+
+from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
 
 
 @dataclass
@@ -24,12 +25,10 @@ class TrainStats:
             else:
                 self.data[k] = np.mean([getattr(s, k) for s in step_stats]).item()
 
-    def write_to_tensorboard(self, tb_writer: SummaryWriter, global_step: int) -> None:
+    def write_to_tensorboard(self, tb_writer: SummaryWrapper) -> None:
         for name, value in self.data.items():
             if isinstance(value, np.ndarray):
                 for idx, v in enumerate(value.flatten()):
-                    tb_writer.add_scalar(
-                        f"losses/{name}_{idx}", v, global_step=global_step
-                    )
+                    tb_writer.add_scalar(f"losses/{name}_{idx}", v)
             else:
-                tb_writer.add_scalar(f"losses/{name}", value, global_step=global_step)
+                tb_writer.add_scalar(f"losses/{name}", value)

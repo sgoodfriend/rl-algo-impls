@@ -15,6 +15,7 @@ from rl_algo_impls.rollout.random_guided_learner_rollout import (
 from rl_algo_impls.rollout.reference_ai_rollout import ReferenceAIRolloutGenerator
 from rl_algo_impls.rollout.sync_step_rollout import SyncStepRolloutGenerator
 from rl_algo_impls.shared.callbacks.self_play_callback import SelfPlayCallback
+from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
 
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
 
@@ -81,7 +82,7 @@ def train(args: TrainArgs):
         )
         wandb.config.update(args)
 
-    tb_writer = SummaryWriter(config.tensorboard_summary_path)
+    tb_writer = SummaryWrapper(SummaryWriter(config.tensorboard_summary_path))
 
     set_seeds(args.seed)
 
