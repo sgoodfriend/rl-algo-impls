@@ -4,7 +4,8 @@ import numpy as np
 import torch
 
 from rl_algo_impls.dqn.q_net import QNetwork
-from rl_algo_impls.shared.policy.policy import EnvSpaces, Policy
+from rl_algo_impls.shared.policy.policy import Policy
+from rl_algo_impls.shared.vec_env.env_spaces import EnvSpaces
 from rl_algo_impls.wrappers.vector_wrapper import ObsType
 
 DQNPolicySelf = TypeVar("DQNPolicySelf", bound="DQNPolicy")

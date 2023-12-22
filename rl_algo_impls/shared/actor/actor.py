@@ -26,11 +26,6 @@ class Actor(nn.Module, ABC):
     def sample_weights(self, batch_size: int = 1) -> None:
         pass
 
-    @property
-    @abstractmethod
-    def action_shape(self) -> Tuple[int, ...]:
-        ...
-
 
 def pi_forward(
     distribution: Distribution, actions: Optional[torch.Tensor] = None

@@ -34,8 +34,10 @@ from rl_algo_impls.shared.policy.actor_critic_network.sacus import (
 from rl_algo_impls.shared.policy.actor_critic_network.squeeze_unet import (
     SqueezeUnetActorCriticNetwork,
 )
-from rl_algo_impls.shared.policy.policy import EnvSpaces, Policy
+from rl_algo_impls.shared.policy.policy import Policy
 from rl_algo_impls.shared.tensor_utils import NumpyOrDict, tensor_to_numpy
+from rl_algo_impls.shared.vec_env.action_shape import ActionShape
+from rl_algo_impls.shared.vec_env.env_spaces import EnvSpaces
 from rl_algo_impls.wrappers.vector_wrapper import ObsType
 
 
@@ -98,7 +100,7 @@ class OnPolicy(Policy, Generic[ObsType]):
 
     @property
     @abstractmethod
-    def action_shape(self) -> Tuple[int, ...]:
+    def action_shape(self) -> ActionShape:
         ...
 
     @property
@@ -154,7 +156,9 @@ class ActorCritic(OnPolicy, Generic[ObsType]):
             single_observation_space,
             single_action_space,
             action_plane_space,
+            _,  # action_shape,
             _,  # num_envs,
+            _,  # reward_shape,
         ) = env_spaces
 
         self.squash_output = squash_output
@@ -372,12 +376,12 @@ class ActorCritic(OnPolicy, Generic[ObsType]):
         )
 
     @property
-    def action_shape(self) -> Tuple[int, ...]:
-        return self.network.action_shape
+    def action_shape(self) -> ActionShape:
+        return self.env_spaces.action_shape
 
     @property
     def value_shape(self) -> Tuple[int, ...]:
-        return self.network.value_shape
+        return self.env_spaces.reward_shape
 
     def freeze(
         self,

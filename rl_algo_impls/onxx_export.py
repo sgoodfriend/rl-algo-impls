@@ -15,7 +15,7 @@ from rl_algo_impls.runner.running_utils import (
     set_seeds,
 )
 from rl_algo_impls.runner.wandb_load import load_player
-from rl_algo_impls.shared.policy.policy import EnvSpaces
+from rl_algo_impls.shared.vec_env.env_spaces import EnvSpaces
 from rl_algo_impls.shared.tensor_utils import batch_dict_keys
 from rl_algo_impls.shared.vec_env.make_env import make_eval_env
 

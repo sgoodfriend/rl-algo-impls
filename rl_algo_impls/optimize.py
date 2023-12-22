@@ -37,7 +37,7 @@ from rl_algo_impls.shared.callbacks.optimize_callback import (
 from rl_algo_impls.shared.callbacks.reward_decay_callback import RewardDecayCallback
 from rl_algo_impls.shared.callbacks.self_play_callback import SelfPlayCallback
 from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
-from rl_algo_impls.shared.policy.policy import EnvSpaces
+from rl_algo_impls.shared.vec_env.env_spaces import EnvSpaces
 from rl_algo_impls.shared.stats import EpisodesStats
 from rl_algo_impls.shared.vec_env import make_env, make_eval_env
 from rl_algo_impls.wrappers.self_play_wrapper import SelfPlayWrapper

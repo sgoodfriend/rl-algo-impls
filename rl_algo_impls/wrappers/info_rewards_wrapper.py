@@ -1,5 +1,5 @@
 import collections.abc
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
 
@@ -55,6 +55,19 @@ class InfoRewardsWrapper(VectorWrapper):
             r = np.expand_dims(r, axis=-1)
         rewards = np.concatenate([r, r_to_add], axis=-1)
         return o, rewards, terminations, truncations, infos
+
+    @property
+    def reward_shape(self) -> Tuple[int, ...]:
+        if hasattr(self.env, "reward_shape"):
+            _reward_shape = getattr(self.env, "reward_shape")
+            assert isinstance(_reward_shape, tuple)
+        else:
+            _reward_shape: Tuple[int, ...] = ()
+        if len(_reward_shape):
+            _reward_shape = (_reward_shape[0] + len(self.info_paths),)
+        else:
+            _reward_shape = (1 + len(self.info_paths),)
+        return _reward_shape
 
 
 def get_by_path(

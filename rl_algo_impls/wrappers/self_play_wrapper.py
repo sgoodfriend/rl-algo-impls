@@ -6,8 +6,9 @@ import numpy as np
 from gymnasium.experimental.vector.utils import batch_space
 
 from rl_algo_impls.runner.config import Config
-from rl_algo_impls.shared.policy.policy import EnvSpaces, Policy
+from rl_algo_impls.shared.policy.policy import Policy
 from rl_algo_impls.shared.tensor_utils import batch_dict_keys
+from rl_algo_impls.shared.vec_env.env_spaces import EnvSpaces
 from rl_algo_impls.wrappers.vector_wrapper import (
     ObsType,
     VecEnvMaskedResetReturn,
