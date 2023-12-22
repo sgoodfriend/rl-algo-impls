@@ -1,15 +1,15 @@
 import os
 from abc import ABC, abstractmethod
-from copy import deepcopy
-from typing import Any, Dict, Generic, Optional, Type, TypeVar, Union
+from typing import Dict, Generic, NamedTuple, Optional, Type, TypeVar, Union
 
+import gymnasium
 import numpy as np
 import torch
 import torch.nn as nn
 
 from rl_algo_impls.shared.tensor_utils import NumpyOrDict, TensorOrDict, numpy_to_tensor
-from rl_algo_impls.wrappers.normalize import NormalizeObservation, NormalizeReward
-from rl_algo_impls.wrappers.vector_wrapper import ObsType, VectorEnv, find_wrapper
+from rl_algo_impls.shared.trackable import Trackable
+from rl_algo_impls.wrappers.vector_wrapper import ObsType, VectorEnv
 
 ACTIVATION: Dict[str, Type[nn.Module]] = {
     "tanh": nn.Tanh,
@@ -18,25 +18,41 @@ ACTIVATION: Dict[str, Type[nn.Module]] = {
     "sigmoid": nn.Sigmoid,
 }
 
-VEC_NORMALIZE_FILENAME = "vecnormalize.pkl"
 MODEL_FILENAME = "model.pth"
-NORMALIZE_OBSERVATION_FILENAME = "norm_obs.npz"
-NORMALIZE_REWARD_FILENAME = "norm_reward.npz"
+
+EnvSpacesSelf = TypeVar("EnvSpacesSelf", bound="EnvSpaces")
+
+
+class EnvSpaces(NamedTuple):
+    single_observation_space: gymnasium.Space
+    single_action_space: gymnasium.Space
+    action_plane_space: Optional[gymnasium.Space]
+    num_envs: int
+
+    @classmethod
+    def from_vec_env(cls: Type[EnvSpacesSelf], env: VectorEnv) -> EnvSpacesSelf:
+        return cls(
+            single_observation_space=env.single_observation_space,
+            single_action_space=env.single_action_space,
+            action_plane_space=getattr(env, "action_plane_space", None),
+            num_envs=env.num_envs,
+        )
+
 
 PolicySelf = TypeVar("PolicySelf", bound="Policy")
 
 
-class Policy(nn.Module, ABC, Generic[ObsType]):
+class Policy(nn.Module, Trackable, ABC, Generic[ObsType]):
     @abstractmethod
-    def __init__(self, env: VectorEnv, **kwargs) -> None:
+    def __init__(
+        self,
+        env_spaces: EnvSpaces,
+        **kwargs,
+    ) -> None:
         super().__init__()
-        self.env = env
-        norm_observation = find_wrapper(env, NormalizeObservation)
-        self.norm_observation_rms = norm_observation.rms if norm_observation else None
-        norm_reward = find_wrapper(env, NormalizeReward)
-        self.norm_reward_rms = norm_reward.rms if norm_reward else None
+        self.env_spaces = env_spaces
+
         self._device = None
-        self.load_path = None
 
     def to(
         self: PolicySelf,
@@ -75,55 +91,10 @@ class Policy(nn.Module, ABC, Generic[ObsType]):
 
     def save(self, path: str) -> None:
         os.makedirs(path, exist_ok=True)
-
-        if self.norm_observation_rms:
-            self.norm_observation_rms.save(
-                os.path.join(path, NORMALIZE_OBSERVATION_FILENAME)
-            )
-        if self.norm_reward_rms:
-            self.norm_reward_rms.save(os.path.join(path, NORMALIZE_REWARD_FILENAME))
         self.save_weights(path)
 
-    def load(
-        self, path: str, load_norm_rms_count_override: Optional[int] = None
-    ) -> None:
-        self.load_path = path
+    def load(self, path: str) -> None:
         self.load_weights(path)
-        if self.norm_observation_rms:
-            self.norm_observation_rms.load(
-                os.path.join(path, NORMALIZE_OBSERVATION_FILENAME),
-                count_override=load_norm_rms_count_override,
-            )
-        if self.norm_reward_rms:
-            self.norm_reward_rms.load(
-                os.path.join(path, NORMALIZE_REWARD_FILENAME),
-                count_override=load_norm_rms_count_override,
-            )
-
-    def load_from(self: PolicySelf, policy: PolicySelf) -> PolicySelf:
-        self.load_state_dict(policy.state_dict())
-        if self.norm_observation_rms:
-            assert policy.norm_observation_rms
-            self.norm_observation_rms.load_from(policy.norm_observation_rms)
-        if self.norm_reward_rms:
-            assert policy.norm_reward_rms
-            assert type(self.norm_reward_rms) == type(policy.norm_reward_rms)
-            self.norm_reward_rms.load_from(policy.norm_reward_rms)  # type: ignore
-        return self
-
-    def __deepcopy__(self: PolicySelf, memo: Dict[int, Any]) -> PolicySelf:
-        cls = self.__class__
-        cpy = cls.__new__(cls)
-
-        memo[id(self)] = cpy
-
-        for k, v in self.__dict__.items():
-            if k == "env":
-                setattr(cpy, k, v)  # Don't deepcopy Env
-            else:
-                setattr(cpy, k, deepcopy(v, memo))
-
-        return cpy
 
     def reset_noise(self) -> None:
         pass
@@ -137,16 +108,3 @@ class Policy(nn.Module, ABC, Generic[ObsType]):
 
     def num_parameters(self) -> int:
         return sum(p.numel() for p in self.parameters())
-
-    def sync_normalization(self, destination_env) -> None:
-        current = destination_env
-        while current != current.unwrapped:
-            if isinstance(current, NormalizeObservation):
-                assert self.norm_observation_rms
-                current.rms = deepcopy(self.norm_observation_rms)
-            elif isinstance(current, NormalizeReward):
-                assert self.norm_reward_rms
-                current.rms = deepcopy(self.norm_reward_rms)
-            current = getattr(current, "env", current)
-            if not current:
-                raise AttributeError(f"{type(current)} doesn't include env attribute")

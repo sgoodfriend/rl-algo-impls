@@ -27,11 +27,12 @@ from rl_algo_impls.rollout.rollout import RolloutGenerator
 from rl_algo_impls.rollout.sync_step_rollout import SyncStepRolloutGenerator
 from rl_algo_impls.runner.config import Config, Hyperparams
 from rl_algo_impls.runner.wandb_load import load_player
+from rl_algo_impls.shared.agent_state import AgentState
 from rl_algo_impls.shared.algorithm import Algorithm
 from rl_algo_impls.shared.callbacks.eval_callback import EvalCallback
 from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
 from rl_algo_impls.shared.policy.actor_critic import ActorCritic
-from rl_algo_impls.shared.policy.policy import Policy
+from rl_algo_impls.shared.policy.policy import EnvSpaces, Policy
 from rl_algo_impls.shared.vec_env.utils import import_for_env_id, is_microrts
 from rl_algo_impls.wrappers.vector_wrapper import VectorEnv
 
@@ -186,15 +187,19 @@ def set_seeds(seed: Optional[int]) -> None:
 
 def make_policy(
     config: Config,
-    env: VectorEnv,
+    env_spaces: EnvSpaces,
     device: torch.device,
+    agent_state: AgentState,
     load_path: Optional[str] = None,
     load_run_path: Optional[str] = None,
     load_run_path_best: bool = True,
-    load_norm_rms_count_override: Optional[int] = None,
     **kwargs,
 ) -> Policy:
-    policy = POLICIES[config.algo](env, **kwargs).to(device)
+    policy = POLICIES[config.algo](
+        env_spaces,
+        **kwargs,
+    ).to(device)
+    agent_state.policy = policy
     if not load_path and load_run_path:
         import wandb
 
@@ -204,9 +209,7 @@ def make_policy(
         )
         assert load_path
     if load_path:
-        policy.load(
-            load_path, load_norm_rms_count_override=load_norm_rms_count_override
-        )
+        agent_state.load(load_path)
     return policy
 
 

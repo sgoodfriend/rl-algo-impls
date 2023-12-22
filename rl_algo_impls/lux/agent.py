@@ -3,17 +3,12 @@ from pathlib import Path
 from typing import Any, Dict
 
 import numpy as np
-from gymnasium.spaces import Dict as DictSpace
-from gymnasium.spaces import MultiDiscrete
 from luxai_s2.state import ObservationStateDict
 
 from rl_algo_impls.lux.actions import (
-    ACTION_SIZES,
-    SIMPLE_ACTION_SIZES,
     enqueued_action_from_obs,
     to_lux_actions,
 )
-from rl_algo_impls.lux.agent_config import LuxAgentConfig
 from rl_algo_impls.lux.early import bid_action
 from rl_algo_impls.lux.kit.config import EnvConfig
 from rl_algo_impls.lux.kit.kit import obs_to_game_state
@@ -22,13 +17,11 @@ from rl_algo_impls.lux.stats import ActionStats
 from rl_algo_impls.lux.vec_env.lux_agent_env import LuxAgentEnv
 from rl_algo_impls.runner.config import Config, EnvHyperparams, RunArgs
 from rl_algo_impls.runner.running_utils import get_device, load_hyperparams, make_policy
+from rl_algo_impls.shared.policy.policy import EnvSpaces
 from rl_algo_impls.shared.tensor_utils import batch_dict_keys
 from rl_algo_impls.shared.vec_env.make_env import (
     get_eval_env_hyperparams,
-    make_eval_env,
 )
-from rl_algo_impls.wrappers.hwc_to_chw_observation import HwcToChwVectorObservation
-from rl_algo_impls.wrappers.vector_wrapper import find_wrapper
 
 
 class Agent:
@@ -62,7 +55,7 @@ class Agent:
         )
         self.policy = make_policy(
             config,
-            self.env,
+            EnvSpaces.from_vec_env(self.env),
             device,
             **config.policy_hyperparams,
         ).eval()

@@ -9,6 +9,7 @@ import numpy as np
 
 from rl_algo_impls.checkpoints.checkpoints_manager import PolicyCheckpointsManager
 from rl_algo_impls.lux.jux_verify import jux_verify_enabled
+from rl_algo_impls.shared.agent_state import AgentState
 from rl_algo_impls.shared.algorithm import Algorithm
 from rl_algo_impls.shared.callbacks import Callback
 from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
@@ -87,7 +88,6 @@ def evaluate(
     additional_keys_to_log: Optional[List[str]] = None,
     score_function: str = "mean-std",
 ) -> EpisodesStats:
-    policy.sync_normalization(env)
     policy.eval()
 
     episodes = EvaluateAccumulator(
@@ -245,8 +245,7 @@ class EvalCallback(Callback):
 
     def __init__(
         self,
-        policy: Policy,
-        algo: Algorithm,
+        agent_state: AgentState,
         env: VectorEnv,
         tb_writer: SummaryWrapper,
         best_model_path: Optional[str] = None,
@@ -270,8 +269,7 @@ class EvalCallback(Callback):
         checkpoints_manager: Optional[PolicyCheckpointsManager] = None,
     ) -> None:
         super().__init__()
-        self.policy = policy
-        self.algo = algo
+        self.agent_state = agent_state
         self.env = env
         self.tb_writer = tb_writer
         self.best_model_path = best_model_path
@@ -333,7 +331,7 @@ class EvalCallback(Callback):
         start_time = perf_counter()
         eval_stat = evaluate(
             self.env,
-            self.policy,
+            self.agent_state.policy,
             n_episodes or self.n_episodes,
             deterministic=self.deterministic,
             print_returns=print_returns or False,
@@ -346,7 +344,7 @@ class EvalCallback(Callback):
             "eval/steps_per_second",
             eval_stat.length.sum() / (end_time - start_time),
         )
-        self.policy.train(True)
+        self.agent_state.policy.train(True)
         print(f"Eval Timesteps: {self.timesteps_elapsed} | {eval_stat}")
 
         self.stats.append(eval_stat)
@@ -359,14 +357,12 @@ class EvalCallback(Callback):
             strictly_better = not self.best or eval_stat > self.best
 
         if self.latest_model_path:
-            self.policy.save(self.latest_model_path)
-            self.algo.save(self.latest_model_path)
+            self.agent_state.save(self.latest_model_path)
         if is_best:
             self.best = eval_stat
             if self.save_best:
                 assert self.best_model_path
-                self.policy.save(self.best_model_path)
-                self.algo.save(self.best_model_path)
+                self.agent_state.save(self.best_model_path)
                 print("Saved best model")
                 if self.wandb_enabled:
                     import wandb
@@ -395,7 +391,7 @@ class EvalCallback(Callback):
                 return
             else:
                 logging.info(f"Checkpointing best policy at {self.timesteps_elapsed}")
-        self.checkpoints_manager.create_checkpoint(self.policy)
+        self.checkpoints_manager.create_checkpoint(self.agent_state.policy)
 
     def generate_video(self) -> None:
         assert self.video_env and self.video_dir
@@ -403,7 +399,7 @@ class EvalCallback(Callback):
         self.video_env.base_path = best_video_base_path
         video_stats = evaluate(
             self.video_env,
-            self.policy,
+            self.agent_state.policy,
             1,
             deterministic=self.deterministic,
             print_returns=False,

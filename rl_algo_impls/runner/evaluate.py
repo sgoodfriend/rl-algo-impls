@@ -16,7 +16,7 @@ from rl_algo_impls.runner.running_utils import (
     set_seeds,
 )
 from rl_algo_impls.shared.callbacks.eval_callback import evaluate
-from rl_algo_impls.shared.policy.policy import Policy
+from rl_algo_impls.shared.policy.policy import EnvSpaces, Policy
 from rl_algo_impls.shared.stats import EpisodesStats
 from rl_algo_impls.shared.tensor_utils import batch_dict_keys
 from rl_algo_impls.shared.vec_env import make_eval_env
@@ -93,7 +93,7 @@ def evaluate_model(args: EvalArgs, root_dir: str) -> Evaluation:
     set_device_optimizations(device, **config.device_hyperparams)
     policy = make_policy(
         config,
-        env,
+        EnvSpaces.from_vec_env(env),
         device,
         load_path=model_path,
         **config.policy_hyperparams,
