@@ -242,35 +242,6 @@ Microrts-selfplay-unet-winloss: &microrts-selfplay-winloss-defaults
     <<: *microrts-unet-algo-defaults
     gamma: 0.999
 
-Microrts-selfplay-unet-decay: &microrts-selfplay-decay-defaults
-  <<: *microrts-selfplay-defaults
-  reward_decay_callback: true
-  algo_hyperparams:
-    <<: *microrts-unet-algo-defaults
-  hyperparam_transitions_kwargs:
-    durations: [0, 1, 0]
-    phases:
-      - gamma: 0.99
-      - gamma: 0.999
-
-Microrts-selfplay-unet-debug: &microrts-selfplay-debug-defaults
-  <<: *microrts-selfplay-decay-defaults
-  eval_hyperparams:
-    <<: *microrts-selfplay-eval-defaults
-    step_freq: !!float 1e5
-    env_overrides:
-      <<: *microrts-selfplay-eval-env-overrides
-      n_envs: 24
-      bots:
-        coacAI: 12
-        randomBiasedAI: 4
-        workerRushAI: 4
-        lightRushAI: 4
-
-Microrts-selfplay-unet-debug-mps:
-  <<: *microrts-selfplay-debug-defaults
-  device: mps
-
 _Microrts-squnet: &microrts-squnet
   <<: *microrts-selfplay-defaults
   env_hyperparams: &microrts-squnet-env-defaults

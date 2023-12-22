@@ -34,7 +34,6 @@ from rl_algo_impls.shared.callbacks.optimize_callback import (
     OptimizeCallback,
     evaluation,
 )
-from rl_algo_impls.shared.callbacks.reward_decay_callback import RewardDecayCallback
 from rl_algo_impls.shared.callbacks.self_play_callback import SelfPlayCallback
 from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
 from rl_algo_impls.shared.vec_env.env_spaces import EnvSpaces
@@ -227,14 +226,6 @@ def simple_optimize(trial: optuna.Trial, args: RunArgs, study_args: StudyArgs) -
         deterministic=config.eval_hyperparams.get("deterministic", True),
     )
     callbacks: List[Callback] = [optimize_callback]
-    if config.hyperparams.reward_decay_callback:
-        callbacks.append(
-            RewardDecayCallback(
-                config,
-                env,
-                **(config.hyperparams.reward_decay_callback_kwargs or {}),
-            )
-        )
     if config.hyperparams.hyperparam_transitions_kwargs:
         callbacks.append(
             HyperparamTransitions(
@@ -359,15 +350,6 @@ def stepwise_optimize(
             )
 
             callbacks: List[Callback] = []
-            if config.hyperparams.reward_decay_callback:
-                callbacks.append(
-                    RewardDecayCallback(
-                        config,
-                        env,
-                        start_timesteps=start_timesteps,
-                        **(config.hyperparams.reward_decay_callback_kwargs or {}),
-                    )
-                )
             if config.hyperparams.hyperparam_transitions_kwargs:
                 callbacks.append(
                     HyperparamTransitions(
