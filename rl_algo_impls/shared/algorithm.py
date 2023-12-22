@@ -7,6 +7,7 @@ import torch
 from torch.optim import Optimizer
 
 from rl_algo_impls.rollout.rollout import RolloutGenerator
+from rl_algo_impls.shared.trackable import Trackable
 from rl_algo_impls.shared.callbacks import Callback
 from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
 from rl_algo_impls.shared.policy.policy import Policy
@@ -16,7 +17,7 @@ OPTIMIZER_FILENAME = "optimizer.pt"
 AlgorithmSelf = TypeVar("AlgorithmSelf", bound="Algorithm")
 
 
-class Algorithm(ABC):
+class Algorithm(Trackable, ABC):
     @abstractmethod
     def __init__(
         self,

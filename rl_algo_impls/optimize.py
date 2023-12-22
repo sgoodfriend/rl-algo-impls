@@ -37,6 +37,7 @@ from rl_algo_impls.shared.callbacks.optimize_callback import (
 from rl_algo_impls.shared.callbacks.reward_decay_callback import RewardDecayCallback
 from rl_algo_impls.shared.callbacks.self_play_callback import SelfPlayCallback
 from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
+from rl_algo_impls.shared.policy.policy import EnvSpaces
 from rl_algo_impls.shared.stats import EpisodesStats
 from rl_algo_impls.shared.vec_env import make_env, make_eval_env
 from rl_algo_impls.wrappers.self_play_wrapper import SelfPlayWrapper
@@ -204,7 +205,9 @@ def simple_optimize(trial: optuna.Trial, args: RunArgs, study_args: StudyArgs) -
     )
     device = get_device(config, env)
     set_device_optimizations(device, **config.device_hyperparams)
-    policy = make_policy(config, env, device, **config.policy_hyperparams)
+    policy = make_policy(
+        config, EnvSpaces.from_vec_env(env), device, **config.policy_hyperparams
+    )
     algo = ALGOS[args.algo](policy, device, tb_writer, **config.algo_hyperparams())
 
     self_play_wrapper = find_wrapper(env, SelfPlayWrapper)
@@ -332,7 +335,9 @@ def stepwise_optimize(
             )
             device = get_device(config, env)
             set_device_optimizations(device, **config.device_hyperparams)
-            policy = make_policy(config, env, device, **config.policy_hyperparams)
+            policy = make_policy(
+                config, EnvSpaces.from_vec_env(env), device, **config.policy_hyperparams
+            )
             if i > 0:
                 policy.load(config.model_dir_path())
             algo = ALGOS[arg.algo](

@@ -14,8 +14,10 @@ from rl_algo_impls.rollout.random_guided_learner_rollout import (
 )
 from rl_algo_impls.rollout.reference_ai_rollout import ReferenceAIRolloutGenerator
 from rl_algo_impls.rollout.sync_step_rollout import SyncStepRolloutGenerator
+from rl_algo_impls.shared.agent_state import AgentState
 from rl_algo_impls.shared.callbacks.self_play_callback import SelfPlayCallback
 from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
+from rl_algo_impls.shared.policy.policy import EnvSpaces
 
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
 
@@ -92,20 +94,27 @@ def train(args: TrainArgs):
         else None
     )
 
+    agent_state = AgentState()
     env = make_env(
         config,
         EnvHyperparams(**config.env_hyperparams),
+        agent_state,
         tb_writer=tb_writer,
         checkpoints_manager=checkpoints_manager,
     )
     device = get_device(config, env)
     set_device_optimizations(device, **config.device_hyperparams)
-    policy = make_policy(config, env, device, **config.policy_hyperparams)
+    policy = make_policy(
+        config,
+        EnvSpaces.from_vec_env(env),
+        device,
+        agent_state,
+        **config.policy_hyperparams,
+    )
     algo = ALGOS[args.algo](
         policy, device, tb_writer, **config.algo_hyperparams(checkpoints_manager)
     )
-    if policy.load_path:
-        algo.load(policy.load_path)
+    agent_state.algo = algo
 
     num_parameters = policy.num_parameters()
     num_trainable_parameters = policy.num_trainable_parameters()
@@ -122,19 +131,20 @@ def train(args: TrainArgs):
     eval_env = make_eval_env(
         config,
         EnvHyperparams(**config.env_hyperparams),
+        agent_state,
         self_play_wrapper=self_play_wrapper,
         checkpoints_manager=checkpoints_manager,
     )
     video_env = make_eval_env(
         config,
         EnvHyperparams(**config.env_hyperparams),
+        agent_state,
         override_hparams={"n_envs": 1},
         self_play_wrapper=self_play_wrapper,
         checkpoints_manager=checkpoints_manager,
     )
     eval_callback = EvalCallback(
-        policy,
-        algo,
+        agent_state,
         eval_env,
         tb_writer,
         best_model_path=config.model_dir_path(best=True),
@@ -177,7 +187,7 @@ def train(args: TrainArgs):
                 **rollout_hyperparams.get("guide_policy", {}),
             }
             rollout_hyperparams["guide_policy"] = make_policy(
-                config, env, device, **guide_policy_hyperparams
+                config, EnvSpaces.from_vec_env(env), device, **guide_policy_hyperparams
             )
         else:
             raise ValueError(f"{config.rollout_type} not recognized rollout_type")

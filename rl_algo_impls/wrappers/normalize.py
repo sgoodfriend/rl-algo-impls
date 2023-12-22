@@ -1,8 +1,11 @@
+import os
 from typing import Optional, Tuple, TypeVar, Union
 
 import numpy as np
 from numpy.typing import NDArray
 
+from rl_algo_impls.shared.agent_state import AgentState
+from rl_algo_impls.shared.trackable import Trackable
 from rl_algo_impls.utils.running_mean_std import HybridMovingMeanVar, RunningMeanStd
 from rl_algo_impls.wrappers.vector_wrapper import (
     VecEnvMaskedResetReturn,
@@ -10,15 +13,19 @@ from rl_algo_impls.wrappers.vector_wrapper import (
     VectorWrapper,
 )
 
+NORMALIZE_OBSERVATION_FILENAME = "norm_obs.npz"
+NORMALIZE_REWARD_FILENAME = "norm_reward.npz"
+
 NormalizeObservationSelf = TypeVar(
     "NormalizeObservationSelf", bound="NormalizeObservation"
 )
 
 
-class NormalizeObservation(VectorWrapper):
+class NormalizeObservation(VectorWrapper, Trackable):
     def __init__(
         self,
         env: VectorEnv,
+        agent_state: AgentState,
         training: bool = True,
         epsilon: float = 1e-8,
         clip: float = 10.0,
@@ -28,6 +35,8 @@ class NormalizeObservation(VectorWrapper):
         self.training = training
         self.epsilon = epsilon
         self.clip = clip
+
+        agent_state.register(self)
 
     def step(self, action):
         obs, reward, terminations, truncations, info = self.env.step(action)
@@ -48,24 +57,23 @@ class NormalizeObservation(VectorWrapper):
         return normalized
 
     def save(self, path: str) -> None:
-        self.rms.save(path)
+        self.rms.save(os.path.join(path, NORMALIZE_OBSERVATION_FILENAME))
 
     def load(self, path: str) -> None:
-        self.rms.load(path)
+        self.rms.load(os.path.join(path, NORMALIZE_OBSERVATION_FILENAME))
 
-    def load_from(
-        self: NormalizeObservationSelf, existing: NormalizeObservationSelf
-    ) -> None:
-        self.rms.load_from(existing.rms)
+    def sync(self: NormalizeObservationSelf, other: NormalizeObservationSelf) -> None:
+        self.rms = other.rms
 
 
 NormalizeRewardSelf = TypeVar("NormalizeRewardSelf", bound="NormalizeReward")
 
 
-class NormalizeReward(VectorWrapper):
+class NormalizeReward(VectorWrapper, Trackable):
     def __init__(
         self,
         env: VectorEnv,
+        agent_state: AgentState,
         training: bool = True,
         gamma: float = 0.99,
         epsilon: float = 1e-8,
@@ -86,6 +94,8 @@ class NormalizeReward(VectorWrapper):
         self.clip = clip
 
         self.returns = np.zeros((self.num_envs,) + shape)
+
+        agent_state.register(self)
 
     def step(self, action):
         obs, reward, terminations, truncations, info = self.env.step(action)
@@ -113,10 +123,10 @@ class NormalizeReward(VectorWrapper):
         )
 
     def save(self, path: str) -> None:
-        self.rms.save(path)
+        self.rms.save(os.path.join(path, NORMALIZE_REWARD_FILENAME))
 
     def load(self, path: str) -> None:
-        self.rms.load(path)
+        self.rms.load(os.path.join(path, NORMALIZE_REWARD_FILENAME))
 
-    def load_from(self: NormalizeRewardSelf, existing: NormalizeRewardSelf) -> None:
-        self.rms.load_from(existing.rms)
+    def sync(self: NormalizeRewardSelf, other: NormalizeRewardSelf) -> None:
+        self.rms = other.rms

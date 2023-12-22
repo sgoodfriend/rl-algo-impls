@@ -3,6 +3,7 @@ from typing import Any, Dict, Optional
 
 from rl_algo_impls.checkpoints.checkpoints_manager import PolicyCheckpointsManager
 from rl_algo_impls.runner.config import Config, EnvHyperparams
+from rl_algo_impls.shared.agent_state import AgentState
 from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
 from rl_algo_impls.shared.vec_env.procgen import make_procgen_env
 from rl_algo_impls.shared.vec_env.vec_env import make_vec_env
@@ -14,6 +15,7 @@ from rl_algo_impls.wrappers.vector_wrapper import VectorEnv, find_wrapper
 def make_env(
     config: Config,
     hparams: EnvHyperparams,
+    agent_state: AgentState,
     training: bool = True,
     render: bool = False,
     tb_writer: Optional[SummaryWrapper] = None,
@@ -40,6 +42,7 @@ def make_env(
     return make_env_fn(
         config,
         hparams,
+        agent_state,
         training=training,
         render=render,
         tb_writer=tb_writer,
@@ -50,6 +53,7 @@ def make_env(
 def make_eval_env(
     config: Config,
     hparams: EnvHyperparams,
+    agent_state: AgentState,
     override_hparams: Optional[Dict[str, Any]] = None,
     self_play_wrapper: Optional[SelfPlayWrapper] = None,
     **kwargs,
@@ -57,7 +61,7 @@ def make_eval_env(
     kwargs = kwargs.copy()
     kwargs["training"] = False
     hparams = get_eval_env_hyperparams(config, hparams, override_hparams)
-    env = make_env(config, hparams, **kwargs)
+    env = make_env(config, hparams, agent_state, **kwargs)
 
     eval_self_play_wrapper = find_wrapper(env, SelfPlayEvalWrapper)
     if eval_self_play_wrapper:

@@ -15,6 +15,7 @@ from rl_algo_impls.runner.running_utils import (
     set_seeds,
 )
 from rl_algo_impls.runner.wandb_load import load_player
+from rl_algo_impls.shared.policy.policy import EnvSpaces
 from rl_algo_impls.shared.tensor_utils import batch_dict_keys
 from rl_algo_impls.shared.vec_env.make_env import make_eval_env
 
@@ -62,7 +63,7 @@ def onnx_export(args: ExportArgs, root_dir: str):
     set_device_optimizations(device, **config.device_hyperparams)
     policy = make_policy(
         config,
-        env,
+        EnvSpaces.from_vec_env(env),
         device,
         load_path=model_path,
         **config.policy_hyperparams,

@@ -24,7 +24,7 @@ import torch.nn as nn
 
 from rl_algo_impls.runner.config import Config, RunArgs
 from rl_algo_impls.runner.running_utils import load_hyperparams, make_policy
-from rl_algo_impls.shared.policy.policy import Policy
+from rl_algo_impls.shared.policy.policy import EnvSpaces, Policy
 from rl_algo_impls.shared.tensor_utils import NumpyOrDict
 from rl_algo_impls.wrappers.vector_wrapper import ObsType, VectorEnv
 
@@ -160,7 +160,7 @@ class MapSizePolicyPicker(Policy, Generic[ObsType]):
             self.logger.debug(f"Loading policy {args.env}")
             return make_policy(
                 args.config,
-                vec_env,
+                EnvSpaces.from_vec_env(vec_env),
                 device,
                 load_path=args.model_path,
                 **policy_hyperparams,

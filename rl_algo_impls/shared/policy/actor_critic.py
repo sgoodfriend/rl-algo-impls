@@ -34,9 +34,9 @@ from rl_algo_impls.shared.policy.actor_critic_network.sacus import (
 from rl_algo_impls.shared.policy.actor_critic_network.squeeze_unet import (
     SqueezeUnetActorCriticNetwork,
 )
-from rl_algo_impls.shared.policy.policy import Policy
+from rl_algo_impls.shared.policy.policy import EnvSpaces, Policy
 from rl_algo_impls.shared.tensor_utils import NumpyOrDict, tensor_to_numpy
-from rl_algo_impls.wrappers.vector_wrapper import ObsType, VectorEnv
+from rl_algo_impls.wrappers.vector_wrapper import ObsType
 
 
 class Step(NamedTuple):
@@ -109,7 +109,7 @@ class OnPolicy(Policy, Generic[ObsType]):
 class ActorCritic(OnPolicy, Generic[ObsType]):
     def __init__(
         self,
-        env: VectorEnv,
+        env_spaces: EnvSpaces,
         pi_hidden_sizes: Optional[Sequence[int]] = None,
         v_hidden_sizes: Optional[Sequence[int]] = None,
         init_layers_orthogonal: bool = True,
@@ -149,20 +149,21 @@ class ActorCritic(OnPolicy, Generic[ObsType]):
         normalization: Optional[str] = None,
         **kwargs,
     ) -> None:
-        super().__init__(env, **kwargs)
+        super().__init__(env_spaces, **kwargs)
+        (
+            single_observation_space,
+            single_action_space,
+            action_plane_space,
+            _,  # num_envs,
+        ) = env_spaces
 
-        observation_space = env.single_observation_space
-        action_space = env.single_action_space
-        action_plane_space = getattr(env, "action_plane_space", None)
-
-        self.action_space = action_space
         self.squash_output = squash_output
 
         if actor_head_style == "unet":
             assert action_plane_space is not None
             self.network = UNetActorCriticNetwork(
-                observation_space,
-                action_space,
+                single_observation_space,
+                single_action_space,
                 action_plane_space,
                 v_hidden_sizes=v_hidden_sizes,
                 init_layers_orthogonal=init_layers_orthogonal,
@@ -173,8 +174,8 @@ class ActorCritic(OnPolicy, Generic[ObsType]):
         elif actor_head_style == "double_cone":
             assert action_plane_space is not None
             self.network = DoubleConeActorCritic(
-                observation_space,
-                action_space,
+                single_observation_space,
+                single_action_space,
                 action_plane_space,
                 init_layers_orthogonal=init_layers_orthogonal,
                 cnn_layers_init_orthogonal=cnn_layers_init_orthogonal,
@@ -193,8 +194,8 @@ class ActorCritic(OnPolicy, Generic[ObsType]):
         elif actor_head_style == "squeeze_unet":
             assert action_plane_space is not None
             self.network = SqueezeUnetActorCriticNetwork(
-                observation_space,
-                action_space,
+                single_observation_space,
+                single_action_space,
                 action_plane_space,
                 init_layers_orthogonal=init_layers_orthogonal,
                 cnn_layers_init_orthogonal=cnn_layers_init_orthogonal,
@@ -223,8 +224,8 @@ class ActorCritic(OnPolicy, Generic[ObsType]):
         elif actor_head_style == "sacus":
             assert action_plane_space is not None
             self.network = SplitActorCriticUShapedNetwork(
-                observation_space,
-                action_space,
+                single_observation_space,
+                single_action_space,
                 action_plane_space,
                 init_layers_orthogonal=init_layers_orthogonal,
                 cnn_layers_init_orthogonal=cnn_layers_init_orthogonal,
@@ -246,8 +247,8 @@ class ActorCritic(OnPolicy, Generic[ObsType]):
             )
         elif share_features_extractor:
             self.network = ConnectedTrioActorCriticNetwork(
-                observation_space,
-                action_space,
+                single_observation_space,
+                single_action_space,
                 pi_hidden_sizes=pi_hidden_sizes,
                 v_hidden_sizes=v_hidden_sizes,
                 init_layers_orthogonal=init_layers_orthogonal,
@@ -265,8 +266,8 @@ class ActorCritic(OnPolicy, Generic[ObsType]):
             )
         else:
             self.network = SeparateActorCriticNetwork(
-                observation_space,
-                action_space,
+                single_observation_space,
+                single_action_space,
                 pi_hidden_sizes=pi_hidden_sizes,
                 v_hidden_sizes=v_hidden_sizes,
                 init_layers_orthogonal=init_layers_orthogonal,
@@ -314,7 +315,9 @@ class ActorCritic(OnPolicy, Generic[ObsType]):
             logp_a = pi.log_prob(a)
 
         a_np = tensor_to_numpy(a)
-        clamped_a_np = clamp_actions(a_np, self.action_space, self.squash_output)
+        clamped_a_np = clamp_actions(
+            a_np, self.env_spaces.single_action_space, self.squash_output
+        )
         return Step(a_np, v.cpu().numpy(), logp_a.cpu().numpy(), clamped_a_np)
 
     def act(
@@ -336,7 +339,9 @@ class ActorCritic(OnPolicy, Generic[ObsType]):
                 )
                 a = pi.mode
             return clamp_actions(
-                tensor_to_numpy(a), self.action_space, self.squash_output
+                tensor_to_numpy(a),
+                self.env_spaces.single_action_space,
+                self.squash_output,
             )
 
     def save_weights(self, path: str) -> None:
@@ -357,20 +362,13 @@ class ActorCritic(OnPolicy, Generic[ObsType]):
         else:
             super().load_weights(path)
 
-    def load(
-        self, path: str, load_norm_rms_count_override: Optional[int] = None
-    ) -> None:
-        super().load(path, load_norm_rms_count_override=load_norm_rms_count_override)
+    def load(self, path: str) -> None:
+        super().load(path)
         self.reset_noise()
-
-    def load_from(self: ActorCriticSelf, policy: ActorCriticSelf) -> ActorCriticSelf:
-        super().load_from(policy)
-        self.reset_noise()
-        return self
 
     def reset_noise(self, batch_size: Optional[int] = None) -> None:
         self.network.reset_noise(
-            batch_size=batch_size if batch_size else self.env.num_envs
+            batch_size=batch_size if batch_size else self.env_spaces.num_envs
         )
 
     @property

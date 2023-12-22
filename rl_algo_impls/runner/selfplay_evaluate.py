@@ -16,6 +16,7 @@ from rl_algo_impls.runner.running_utils import (
 )
 from rl_algo_impls.runner.wandb_load import load_player
 from rl_algo_impls.shared.callbacks.eval_callback import evaluate
+from rl_algo_impls.shared.policy.policy import EnvSpaces
 from rl_algo_impls.shared.vec_env import make_eval_env
 from rl_algo_impls.wrappers.vec_episode_recorder import VecEpisodeRecorder
 
@@ -86,7 +87,7 @@ def selfplay_evaluate(args: SelfplayEvalArgs, root_dir: str) -> Evaluation:
     set_device_optimizations(device, **config.device_hyperparams)
     policy = make_policy(
         config,
-        env,
+        EnvSpaces.from_vec_env(env),
         device,
         load_path=player_1_model_path,
         **config.policy_hyperparams,

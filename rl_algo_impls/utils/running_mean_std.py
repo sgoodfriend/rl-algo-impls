@@ -43,11 +43,6 @@ class RunningMeanStd:
         self.var = data["var"]
         self.count = data.get("count") if count_override is None else count_override
 
-    def load_from(self: RunningMeanStdSelf, existing: RunningMeanStdSelf) -> None:
-        self.mean = np.copy(existing.mean)
-        self.var = np.copy(existing.var)
-        self.count = np.copy(existing.count)
-
 
 ExponentialMovingMeanVarSelf = TypeVar(
     "ExponentialMovingMeanVarSelf", bound="ExponentialMovingMeanVar"
@@ -110,13 +105,6 @@ class ExponentialMovingMeanVar:
         self.squared_mean = self.var + self.mean**2
         self.initialized = data["initialized"].item()
 
-    def load_from(
-        self: ExponentialMovingMeanVarSelf, existing: ExponentialMovingMeanVarSelf
-    ) -> None:
-        self.mean = np.copy(existing.mean)
-        self.var = np.copy(existing.var)
-        self.initialized = np.copy(existing.initialized)
-
 
 HybridMovingMeanVarSelf = TypeVar(
     "HybridMovingMeanVarSelf", bound="HybridMovingMeanVar"
@@ -162,9 +150,3 @@ class HybridMovingMeanVar:
     def load(self, path: str, count_override: Optional[int] = None) -> None:
         self.rms.load(path + "-rms.npz", count_override=count_override)
         self.emmv.load(path + "-emmv.npz", count_override=count_override)
-
-    def load_from(
-        self: HybridMovingMeanVarSelf, existing: HybridMovingMeanVarSelf
-    ) -> None:
-        self.rms.load_from(existing.rms)
-        self.emmv.load_from(existing.emmv)

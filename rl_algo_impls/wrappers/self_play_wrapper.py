@@ -6,7 +6,7 @@ import numpy as np
 from gymnasium.experimental.vector.utils import batch_space
 
 from rl_algo_impls.runner.config import Config
-from rl_algo_impls.shared.policy.policy import Policy
+from rl_algo_impls.shared.policy.policy import EnvSpaces, Policy
 from rl_algo_impls.shared.tensor_utils import batch_dict_keys
 from rl_algo_impls.wrappers.vector_wrapper import (
     ObsType,
@@ -108,7 +108,7 @@ class SelfPlayWrapper(VectorWrapper, Generic[ObsType]):
         for model_path, n in self.selfplay_bots.items():
             policy = make_policy(
                 self.config,
-                env,
+                EnvSpaces.from_vec_env(env),
                 device,
                 load_path=model_path,
                 **self.config.policy_hyperparams,

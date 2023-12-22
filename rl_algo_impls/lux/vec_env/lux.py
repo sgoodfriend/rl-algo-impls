@@ -5,6 +5,7 @@ from rl_algo_impls.checkpoints.checkpoints_manager import PolicyCheckpointsManag
 from rl_algo_impls.lux.vec_env.vec_lux_env import VecLuxEnv
 from rl_algo_impls.lux.vec_env.vec_lux_replay_env import VecLuxReplayEnv
 from rl_algo_impls.runner.config import Config, EnvHyperparams
+from rl_algo_impls.shared.agent_state import AgentState
 from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
 from rl_algo_impls.wrappers.additional_win_loss_reward import (
     AdditionalWinLossRewardWrapper,
@@ -27,6 +28,7 @@ from rl_algo_impls.wrappers.vector_wrapper import VectorEnv
 def make_lux_env(
     config: Config,
     hparams: EnvHyperparams,
+    agent_state: AgentState,
     training: bool = True,
     render: bool = False,
     tb_writer: Optional[SummaryWrapper] = None,
@@ -150,7 +152,10 @@ def make_lux_env(
         if normalize_type == "gymlike":
             if normalize_kwargs.get("norm_obs", True):
                 envs = NormalizeObservation(
-                    envs, training=training, clip=normalize_kwargs.get("clip_obs", 10.0)
+                    envs,
+                    agent_state,
+                    training=training,
+                    clip=normalize_kwargs.get("clip_obs", 10.0),
                 )
             if training and normalize_kwargs.get("norm_reward", True):
                 rew_shape = (
@@ -163,6 +168,7 @@ def make_lux_env(
                     rew_shape = ()
                 envs = NormalizeReward(
                     envs,
+                    agent_state,
                     training=training,
                     gamma=normalize_kwargs.get("gamma_reward", 0.99),
                     clip=normalize_kwargs.get("clip_reward", 10.0),
