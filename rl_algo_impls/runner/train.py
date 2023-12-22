@@ -45,7 +45,6 @@ from rl_algo_impls.runner.running_utils import (
 from rl_algo_impls.shared.callbacks.callback import Callback
 from rl_algo_impls.shared.callbacks.eval_callback import EvalCallback
 from rl_algo_impls.shared.callbacks.hyperparam_transitions import HyperparamTransitions
-from rl_algo_impls.shared.callbacks.reward_decay_callback import RewardDecayCallback
 from rl_algo_impls.shared.stats import EpisodesStats
 from rl_algo_impls.shared.vec_env.make_env import make_env, make_eval_env
 from rl_algo_impls.wrappers.self_play_wrapper import SelfPlayWrapper
@@ -157,12 +156,6 @@ def train(args: TrainArgs):
         checkpoints_manager=checkpoints_manager,
     )
     callbacks: List[Callback] = [eval_callback]
-    if config.hyperparams.reward_decay_callback:
-        callbacks.append(
-            RewardDecayCallback(
-                config, env, **(config.hyperparams.reward_decay_callback_kwargs or {})
-            )
-        )
     if self_play_wrapper:
         callbacks.append(SelfPlayCallback(policy, self_play_wrapper))
 
