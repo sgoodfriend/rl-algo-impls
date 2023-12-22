@@ -1,15 +1,15 @@
 import os
 from abc import ABC, abstractmethod
-from typing import Dict, Generic, NamedTuple, Optional, Type, TypeVar, Union
+from typing import Dict, Generic, Optional, Type, TypeVar, Union
 
-import gymnasium
 import numpy as np
 import torch
 import torch.nn as nn
 
 from rl_algo_impls.shared.tensor_utils import NumpyOrDict, TensorOrDict, numpy_to_tensor
 from rl_algo_impls.shared.trackable import Trackable
-from rl_algo_impls.wrappers.vector_wrapper import ObsType, VectorEnv
+from rl_algo_impls.shared.vec_env.env_spaces import EnvSpaces
+from rl_algo_impls.wrappers.vector_wrapper import ObsType
 
 ACTIVATION: Dict[str, Type[nn.Module]] = {
     "tanh": nn.Tanh,
@@ -19,24 +19,6 @@ ACTIVATION: Dict[str, Type[nn.Module]] = {
 }
 
 MODEL_FILENAME = "model.pth"
-
-EnvSpacesSelf = TypeVar("EnvSpacesSelf", bound="EnvSpaces")
-
-
-class EnvSpaces(NamedTuple):
-    single_observation_space: gymnasium.Space
-    single_action_space: gymnasium.Space
-    action_plane_space: Optional[gymnasium.Space]
-    num_envs: int
-
-    @classmethod
-    def from_vec_env(cls: Type[EnvSpacesSelf], env: VectorEnv) -> EnvSpacesSelf:
-        return cls(
-            single_observation_space=env.single_observation_space,
-            single_action_space=env.single_action_space,
-            action_plane_space=getattr(env, "action_plane_space", None),
-            num_envs=env.num_envs,
-        )
 
 
 PolicySelf = TypeVar("PolicySelf", bound="Policy")

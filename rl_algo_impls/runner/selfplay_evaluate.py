@@ -16,7 +16,7 @@ from rl_algo_impls.runner.running_utils import (
 )
 from rl_algo_impls.runner.wandb_load import load_player
 from rl_algo_impls.shared.callbacks.eval_callback import evaluate
-from rl_algo_impls.shared.policy.policy import EnvSpaces
+from rl_algo_impls.shared.vec_env.env_spaces import EnvSpaces
 from rl_algo_impls.shared.vec_env import make_eval_env
 from rl_algo_impls.wrappers.vec_episode_recorder import VecEpisodeRecorder
 

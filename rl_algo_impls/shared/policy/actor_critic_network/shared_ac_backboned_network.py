@@ -66,12 +66,10 @@ class SplitActorCriticBackbonedNetwork(ActorCriticNetwork):
         self.action_vec = action_plane_space.nvec
 
         if isinstance(action_space, DictSpace):
-            action_space_per_position = action_space["per_position"]
             pick_position_space = action_space["pick_position"]
             assert isinstance(pick_position_space, MultiDiscrete)
             self.pick_vec = pick_position_space.nvec
         elif isinstance(action_space, MultiDiscrete):
-            action_space_per_position = action_space
             self.pick_vec = None
         else:
             raise ValueError(
@@ -80,11 +78,6 @@ class SplitActorCriticBackbonedNetwork(ActorCriticNetwork):
 
         self.subaction_mask = subaction_mask
         self.shared_critic_head = shared_critic_head
-
-        assert isinstance(action_space_per_position, MultiDiscrete)
-        self.map_size = len(action_space_per_position.nvec) // len(
-            action_plane_space.nvec
-        )
 
         self.actor_head = nn.Sequential(
             *[
@@ -190,22 +183,6 @@ class SplitActorCriticBackbonedNetwork(ActorCriticNetwork):
 
     def reset_noise(self, batch_size: Optional[int] = None) -> None:
         pass
-
-    @property
-    def action_shape(self) -> Union[Tuple[int, ...], Dict[str, Tuple[int, ...]]]:
-        per_position_action_shape = (self.map_size, len(self.action_vec))
-        if self.pick_vec:
-            return {
-                "per_position": per_position_action_shape,
-                "pick_position": (len(self.pick_vec),),
-            }
-        return per_position_action_shape
-
-    @property
-    def value_shape(self) -> Tuple[int, ...]:
-        if self._critic_features > 1:
-            return (self._critic_features,)
-        return ()
 
     def freeze(
         self,

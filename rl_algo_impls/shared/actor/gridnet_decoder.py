@@ -73,7 +73,3 @@ class GridnetDecoder(Actor):
         logits = self.deconv(obs)
         pi = GridnetDistribution(self.map_size, self.action_vec, logits, action_masks)
         return pi_forward(pi, actions)
-
-    @property
-    def action_shape(self) -> Tuple[int, ...]:
-        return (self.map_size, len(self.action_vec))

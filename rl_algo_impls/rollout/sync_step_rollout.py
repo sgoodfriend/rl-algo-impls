@@ -7,6 +7,7 @@ from rl_algo_impls.rollout.rollout import RolloutGenerator
 from rl_algo_impls.rollout.vec_rollout import VecRollout
 from rl_algo_impls.shared.policy.actor_critic import ActorCritic
 from rl_algo_impls.shared.tensor_utils import NumOrArray, batch_dict_keys
+from rl_algo_impls.shared.vec_env.env_spaces import EnvSpaces
 from rl_algo_impls.wrappers.episode_stats_writer import EpisodeStatsWriter
 from rl_algo_impls.wrappers.vector_wrapper import VectorEnv, find_wrapper
 
@@ -82,12 +83,17 @@ class SyncStepRolloutGenerator(RolloutGenerator):
             _get_action_mask = self.get_action_mask
             self.get_action_mask = lambda: batch_dict_keys(_get_action_mask())
 
-        epoch_dim = (self.n_steps, vec_env.num_envs)
-        step_dim = (vec_env.num_envs,)
-        obs_space = vec_env.single_observation_space
-        act_space = vec_env.single_action_space
-        act_shape = self.policy.action_shape
-        value_shape = self.policy.value_shape
+        (
+            obs_space,
+            act_space,
+            _,
+            act_shape,
+            num_envs,
+            value_shape,
+        ) = EnvSpaces.from_vec_env(vec_env)
+
+        epoch_dim = (self.n_steps, num_envs)
+        step_dim = (num_envs,)
 
         self.next_obs, _ = vec_env.reset()
         self.next_action_masks = (

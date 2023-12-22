@@ -44,7 +44,6 @@ class UNetActorCriticNetwork(ActorCriticNetwork):
         assert isinstance(action_space, MultiDiscrete)
         assert isinstance(action_plane_space, MultiDiscrete)
         self.range_size = np.max(observation_space.high) - np.min(observation_space.low)  # type: ignore
-        self.map_size = len(action_space.nvec) // len(action_plane_space.nvec)  # type: ignore
         self.action_vec = action_plane_space.nvec  # type: ignore
 
         activation = ACTIVATION[activation_fn]
@@ -206,17 +205,6 @@ class UNetActorCriticNetwork(ActorCriticNetwork):
 
     def reset_noise(self, batch_size: Optional[int] = None) -> None:
         pass
-
-    @property
-    def action_shape(self) -> Tuple[int, ...]:
-        return (self.map_size, len(self.action_vec))
-
-    @property
-    def value_shape(self) -> Tuple[int, ...]:
-        if len(self.critic_heads) > 1:
-            return (len(self.critic_heads),)
-        else:
-            return ()
 
     def freeze(
         self,

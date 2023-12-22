@@ -181,10 +181,6 @@ class StateDependentNoiseActorHead(Actor):
         self.exploration_mat = weights_dist.rsample()
         self.exploration_matrices = weights_dist.rsample(torch.Size((batch_size,)))
 
-    @property
-    def action_shape(self) -> Tuple[int, ...]:
-        return (self.act_dim,)
-
 
 def pi_forward(
     distribution: Distribution,

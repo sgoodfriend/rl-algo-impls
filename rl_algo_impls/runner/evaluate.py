@@ -16,10 +16,11 @@ from rl_algo_impls.runner.running_utils import (
     set_seeds,
 )
 from rl_algo_impls.shared.callbacks.eval_callback import evaluate
-from rl_algo_impls.shared.policy.policy import EnvSpaces, Policy
+from rl_algo_impls.shared.policy.policy import Policy
 from rl_algo_impls.shared.stats import EpisodesStats
 from rl_algo_impls.shared.tensor_utils import batch_dict_keys
 from rl_algo_impls.shared.vec_env import make_eval_env
+from rl_algo_impls.shared.vec_env.env_spaces import EnvSpaces
 from rl_algo_impls.wrappers.vec_episode_recorder import VecEpisodeRecorder
 
 
