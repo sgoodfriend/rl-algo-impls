@@ -3,6 +3,7 @@ from typing import Any, Dict, List, Optional
 import numpy as np
 
 from rl_algo_impls.ppo.learning_rate_by_kl_divergence import LearningRateByKLDivergence
+from rl_algo_impls.rollout.in_process_rollout import InProcessRolloutGenerator
 from rl_algo_impls.rollout.rollout import RolloutGenerator
 from rl_algo_impls.runner.config import Config
 from rl_algo_impls.shared.algorithm import Algorithm
@@ -114,6 +115,7 @@ class HyperparamTransitions(Callback):
                 assert hasattr(self.algo, k)
                 setattr(self.algo, k, v)
             elif k == LUX_REWARD_WEIGHTS_NAME:
+                assert isinstance(self.rollout_generator, InProcessRolloutGenerator)
                 assert hasattr(self.rollout_generator.vec_env, k)
                 setattr(
                     self.rollout_generator.vec_env.unwrapped, k, LuxRewardWeights(**v)
@@ -157,6 +159,7 @@ class HyperparamTransitions(Callback):
                 assert hasattr(self.algo, k)
                 setattr(self.algo, k, old_v)
             elif k == LUX_REWARD_WEIGHTS_NAME:
+                assert isinstance(self.rollout_generator, InProcessRolloutGenerator)
                 assert hasattr(self.rollout_generator.vec_env, k)
                 setattr(
                     self.rollout_generator.vec_env.unwrapped,

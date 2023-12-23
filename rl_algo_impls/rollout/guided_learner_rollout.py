@@ -4,7 +4,7 @@ from typing import Dict, List, Optional, Sequence, TypeVar
 import numpy as np
 
 from rl_algo_impls.checkpoints.checkpoints_manager import PolicyCheckpointsManager
-from rl_algo_impls.rollout.rollout import RolloutGenerator
+from rl_algo_impls.rollout.in_process_rollout import InProcessRolloutGenerator
 from rl_algo_impls.rollout.trajectory import TrajectoryBuilder
 from rl_algo_impls.rollout.trajectory_rollout import TrajectoryRollout
 from rl_algo_impls.runner.config import Config
@@ -16,7 +16,7 @@ from rl_algo_impls.wrappers.episode_stats_writer import EpisodeStatsWriter
 from rl_algo_impls.wrappers.vector_wrapper import find_wrapper
 
 
-class GuidedLearnerRolloutGenerator(RolloutGenerator):
+class GuidedLearnerRolloutGenerator(InProcessRolloutGenerator):
     def __init__(
         self,
         config: Config,

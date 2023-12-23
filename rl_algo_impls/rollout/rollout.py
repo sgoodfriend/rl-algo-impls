@@ -7,18 +7,14 @@ import numpy as np
 import torch
 from gymnasium.spaces import MultiDiscrete
 
-from rl_algo_impls.checkpoints.checkpoints_manager import PolicyCheckpointsManager
-from rl_algo_impls.runner.config import Config, EnvHyperparams
 from rl_algo_impls.shared.actor.gridnet import ValueDependentMask
 from rl_algo_impls.shared.agent_state import AgentState
-from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
 from rl_algo_impls.shared.tensor_utils import (
     NumpyOrDict,
     TensorOrDict,
     tensor_by_indicies,
 )
 from rl_algo_impls.shared.vec_env.env_spaces import EnvSpaces
-from rl_algo_impls.shared.vec_env.make_env import make_env
 
 BatchSelf = TypeVar("BatchSelf", bound="Batch")
 TDN = TypeVar("TDN", torch.Tensor, Dict[str, torch.Tensor], None)
@@ -108,24 +104,9 @@ class Rollout(ABC):
 
 
 class RolloutGenerator(ABC):
-    def __init__(
-        self,
-        config: Config,
-        agent_state: AgentState,
-        tb_writer: SummaryWrapper,
-        checkpoints_wrapper: Optional[PolicyCheckpointsManager],
-        **kwargs
-    ) -> None:
+    def __init__(self, agent_state: AgentState, **kwargs) -> None:
         super().__init__()
         self.agent_state = agent_state
-        self.vec_env = make_env(
-            config,
-            EnvHyperparams(**config.env_hyperparams),
-            agent_state,
-            tb_writer=tb_writer,
-            checkpoints_manager=checkpoints_wrapper,
-        )
-        self.env_spaces = EnvSpaces.from_vec_env(self.vec_env)
 
     @abstractmethod
     def prepare(self) -> None:
@@ -133,6 +114,11 @@ class RolloutGenerator(ABC):
 
     @abstractmethod
     def rollout(self, **kwargs) -> Rollout:
+        ...
+
+    @property
+    @abstractmethod
+    def env_spaces(self) -> EnvSpaces:
         ...
 
 
