@@ -5477,6 +5477,15 @@ LuxAI_S2-v0-j1024env16-80m-ent5-lr100-mgn2-2o3m4h-a100:
     batch_size: 4096
   hyperparam_transitions_kwargs: null
 
+LuxAI_S2-v0-j1024env16-80m-ent5-lr100-mgn2-2o3m4h-no-gradient-accumulation:
+  &lux-j1024env16-80m-ent5-lr100-mgn2-2o3m4h-no-gradient-accumulation
+  <<: *lux-j1024env16-80m-ent5-lr100-mgn2-2o3m4h-a100
+  algo_hyperparams:
+    &lux-j1024env16-80m-ent5-lr100-mgn2-2o3m4h-no-gradient-accumulation-algo
+    <<: *lux-j1024env16-80m-ent5-lr100-mgn2-2o3m4h-a100-algo
+    gradient_accumulation: false
+    batch_size: 2048
+
 LuxAI_S2-agent: &lux-agent
   <<: *lux-j1024env64-80m-vfc006-ln-mgn4-2o3m4h-ft-a100
   device: cpu
@@ -5493,7 +5502,7 @@ LuxAI_S2-agent: &lux-agent
       play_checkpoints_kwargs: null
 
 LuxAI_S2-v0-debug:
-  <<: *lux-j1024env16-80m-ent5-lr100-mgn2-2o3m4h-a100
+  <<: *lux-j1024env16-80m-ent5-lr100-mgn2-2o3m4h-no-gradient-accumulation
   n_timesteps: !!float 10e6
   device: mps
   env_hyperparams:
