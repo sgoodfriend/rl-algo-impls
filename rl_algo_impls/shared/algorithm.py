@@ -52,7 +52,6 @@ class Algorithm(ABC):
         optimizer_path = os.path.join(path, OPTIMIZER_FILENAME)
         if os.path.exists(optimizer_path):
             self.optimizer.load_state_dict(torch.load(optimizer_path))
-            self.learning_rate = self.optimizer.param_groups[0]["lr"]
         else:
             logging.info(
                 f"Optimizer state not found at {optimizer_path}. Not overwriting optimizer state."
