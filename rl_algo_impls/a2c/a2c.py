@@ -102,7 +102,9 @@ class A2C(Algorithm):
                 chart_scalars["reward_weights"] = self.multi_reward_weights
             log_scalars(self.tb_writer, "charts", chart_scalars, timesteps_elapsed)
 
-            r = rollout_generator.rollout(gamma=self.gamma, gae_lambda=self.gae_lambda)
+            r = rollout_generator.rollout(
+                self.policy, gamma=self.gamma, gae_lambda=self.gae_lambda
+            )
             timesteps_elapsed += r.total_steps
 
             vf_coef = torch.Tensor(np.array(self.vf_coef)).to(self.device)

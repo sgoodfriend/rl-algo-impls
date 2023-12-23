@@ -255,7 +255,9 @@ class PPO(Algorithm):
             chart_scalars["teacher_kl_loss_coef"] = self.teacher_kl_loss_coef
         log_scalars(self.tb_writer, "charts", chart_scalars, timesteps_elapsed)
 
-        r = rollout_generator.rollout(gamma=self.gamma, gae_lambda=self.gae_lambda)
+        r = rollout_generator.rollout(
+            self.policy, gamma=self.gamma, gae_lambda=self.gae_lambda
+        )
         if self.teacher_kl_loss_fn:
             r.add_to_batch(
                 self.teacher_kl_loss_fn.add_to_batch,
