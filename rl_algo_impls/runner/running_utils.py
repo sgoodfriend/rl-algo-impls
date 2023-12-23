@@ -135,7 +135,7 @@ def load_hyperparam_dict_by_env_id(algo: str, env_id: str) -> Optional[Dict[str,
     return None
 
 
-def get_device(config: Config, env: VectorEnv) -> torch.device:
+def get_device(config: Config, env_spaces: EnvSpaces) -> torch.device:
     device = config.device
     # cuda by default
     if device == "auto":
@@ -149,7 +149,7 @@ def get_device(config: Config, env: VectorEnv) -> torch.device:
         # Simple environments like Discreet and 1-D Boxes might also be better
         # served with the CPU.
         if device == "mps":
-            obs_space = env.single_observation_space
+            obs_space = env_spaces.single_observation_space
             if isinstance(obs_space, Discrete):
                 device = "cpu"
             elif isinstance(obs_space, Box) and len(obs_space.shape) == 1:

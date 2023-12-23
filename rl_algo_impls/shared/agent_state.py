@@ -1,7 +1,6 @@
 import os
 from typing import Dict, Type, TypeVar
 
-from rl_algo_impls.shared.algorithm import Algorithm
 from rl_algo_impls.shared.policy.policy import Policy
 from rl_algo_impls.shared.trackable import Trackable
 
@@ -20,14 +19,6 @@ class AgentState:
     @policy.setter
     def policy(self, policy: Policy) -> None:
         self._register(policy, Policy)
-
-    @property
-    def algo(self) -> Algorithm:
-        return self.get_registered(Algorithm)
-
-    @algo.setter
-    def algo(self, algo: Algorithm) -> None:
-        self._register(algo, Algorithm)
 
     def register(self, trackable: Trackable) -> None:
         self._register(trackable, type(trackable))

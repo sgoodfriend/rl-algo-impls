@@ -2,21 +2,27 @@ import logging
 from typing import Dict, Optional, TypeVar, Union
 
 import numpy as np
+from gymnasium.spaces import Dict as DictSpace
 
+from rl_algo_impls.checkpoints.checkpoints_manager import PolicyCheckpointsManager
 from rl_algo_impls.rollout.rollout import RolloutGenerator
 from rl_algo_impls.rollout.vec_rollout import VecRollout
-from rl_algo_impls.shared.policy.actor_critic import ActorCritic
+from rl_algo_impls.runner.config import Config
+from rl_algo_impls.shared.agent_state import AgentState
+from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
 from rl_algo_impls.shared.tensor_utils import NumOrArray, batch_dict_keys
 from rl_algo_impls.shared.vec_env.env_spaces import EnvSpaces
 from rl_algo_impls.wrappers.episode_stats_writer import EpisodeStatsWriter
-from rl_algo_impls.wrappers.vector_wrapper import VectorEnv, find_wrapper
+from rl_algo_impls.wrappers.vector_wrapper import find_wrapper
 
 
 class SyncStepRolloutGenerator(RolloutGenerator):
     def __init__(
         self,
-        policy: ActorCritic,
-        vec_env: VectorEnv,
+        config: Config,
+        agent_state: AgentState,
+        tb_writer: SummaryWrapper,
+        checkpoints_wrapper: Optional[PolicyCheckpointsManager],
         n_steps: int = 2048,
         sde_sample_freq: int = -1,
         scale_advantage_by_values_accuracy: bool = False,
@@ -29,9 +35,7 @@ class SyncStepRolloutGenerator(RolloutGenerator):
         prepare_steps: int = 0,
         rolling_num_envs_reset_every_prepare_step: int = 0,
     ) -> None:
-        super().__init__(policy, vec_env)
-        self.policy = policy
-        self.vec_env = vec_env
+        super().__init__(config, agent_state, tb_writer, checkpoints_wrapper)
         self.n_steps = n_steps
         self.sde_sample_freq = sde_sample_freq
         self.scale_advantage_by_values_accuracy = scale_advantage_by_values_accuracy
@@ -78,7 +82,7 @@ class SyncStepRolloutGenerator(RolloutGenerator):
             rolling_num_envs_reset_every_prepare_step % 2 == 0
         ), f"rolling_num_envs_reset_every_prepare_step must be even, got {rolling_num_envs_reset_every_prepare_step}"
 
-        self.get_action_mask = getattr(vec_env, "get_action_mask", None)
+        self.get_action_mask = getattr(self.vec_env, "get_action_mask", None)
         if self.get_action_mask:
             _get_action_mask = self.get_action_mask
             self.get_action_mask = lambda: batch_dict_keys(_get_action_mask())
@@ -90,15 +94,12 @@ class SyncStepRolloutGenerator(RolloutGenerator):
             act_shape,
             num_envs,
             value_shape,
-        ) = EnvSpaces.from_vec_env(vec_env)
+        ) = EnvSpaces.from_vec_env(self.vec_env)
 
         epoch_dim = (self.n_steps, num_envs)
         step_dim = (num_envs,)
 
-        self.next_obs, _ = vec_env.reset()
-        self.next_action_masks = (
-            self.get_action_mask() if self.get_action_mask else None
-        )
+        self.next_obs = np.zeros(step_dim + obs_space.shape, dtype=obs_space.dtype)
         self.next_episode_starts = np.full(step_dim, True, dtype=np.bool_)
 
         self.obs = np.zeros(epoch_dim + obs_space.shape, dtype=obs_space.dtype)  # type: ignore
@@ -110,33 +111,33 @@ class SyncStepRolloutGenerator(RolloutGenerator):
         )
 
         if isinstance(act_shape, dict):
+            assert isinstance(act_space, DictSpace)
             self.actions = {
                 k: np.zeros(epoch_dim + a_shape, dtype=act_space[k].dtype)
                 for k, a_shape in act_shape.items()
             }
-            self.action_masks = (
-                {
-                    k: np.zeros(
-                        (self.n_steps,) + v.shape,
-                        dtype=v.dtype,
-                    )
-                    for k, v in self.next_action_masks.items()
-                }
-                if self.next_action_masks is not None
-                else None
-            )
         else:
             self.actions = np.zeros(epoch_dim + act_shape, dtype=act_space.dtype)  # type: ignore
-            self.action_masks = (
-                np.zeros(
-                    (self.n_steps,) + self.next_action_masks.shape,
-                    dtype=self.next_action_masks.dtype,
-                )
-                if self.next_action_masks is not None
-                else None
-            )
 
     def prepare(self) -> None:
+        self.next_obs, _ = self.vec_env.reset()
+        self.next_action_masks = (
+            self.get_action_mask() if self.get_action_mask else None
+        )
+        if isinstance(self.next_action_masks, dict):
+            self.action_masks = {
+                k: np.zeros(
+                    (self.n_steps,) + v.shape,
+                    dtype=v.dtype,
+                )
+                for k, v in self.next_action_masks.items()
+            }
+        elif self.next_action_masks is not None:
+            self.action_masks = np.zeros(
+                (self.n_steps,) + self.next_action_masks.shape,
+                dtype=self.next_action_masks.dtype,
+            )
+
         if not self.prepare_steps:
             return
         from tqdm import tqdm
@@ -166,7 +167,7 @@ class SyncStepRolloutGenerator(RolloutGenerator):
         )
 
         return VecRollout(
-            device=self.policy.device,
+            device=self.agent_state.policy.device,
             next_episode_starts=self.next_episode_starts,
             next_values=next_values,
             obs=self.obs,
@@ -185,11 +186,12 @@ class SyncStepRolloutGenerator(RolloutGenerator):
         )
 
     def _rollout(self, output_next_values: bool) -> Optional[np.ndarray]:
-        self.policy.eval()
-        self.policy.reset_noise()
+        policy = self.agent_state.policy
+        policy.eval()
+        policy.reset_noise()
         for s in range(self.n_steps):
             if self.sde_sample_freq > 0 and s > 0 and s % self.sde_sample_freq == 0:
-                self.policy.reset_noise()
+                policy.reset_noise()
 
             self.obs[s] = self.next_obs
             self.episode_starts[s] = self.next_episode_starts
@@ -201,7 +203,7 @@ class SyncStepRolloutGenerator(RolloutGenerator):
                 self.values[s],
                 logprobs,
                 clamped_actions,
-            ) = self.policy.step(self.next_obs, action_masks=self.next_action_masks)
+            ) = policy.step(self.next_obs, action_masks=self.next_action_masks)
             if self.logprobs is not None:
                 self.logprobs[s] = logprobs
             fold_in(self.actions, actions, s)
@@ -217,8 +219,8 @@ class SyncStepRolloutGenerator(RolloutGenerator):
                 self.get_action_mask() if self.get_action_mask else None
             )
 
-        next_values = self.policy.value(self.next_obs) if output_next_values else None
-        self.policy.train()
+        next_values = policy.value(self.next_obs) if output_next_values else None
+        policy.train()
         return next_values
 
     def _reset_envs(

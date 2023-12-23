@@ -36,9 +36,9 @@ from rl_algo_impls.shared.callbacks.optimize_callback import (
 )
 from rl_algo_impls.shared.callbacks.self_play_callback import SelfPlayCallback
 from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
-from rl_algo_impls.shared.vec_env.env_spaces import EnvSpaces
 from rl_algo_impls.shared.stats import EpisodesStats
 from rl_algo_impls.shared.vec_env import make_env, make_eval_env
+from rl_algo_impls.shared.vec_env.env_spaces import EnvSpaces
 from rl_algo_impls.wrappers.self_play_wrapper import SelfPlayWrapper
 from rl_algo_impls.wrappers.vector_wrapper import find_wrapper
 
@@ -230,7 +230,6 @@ def simple_optimize(trial: optuna.Trial, args: RunArgs, study_args: StudyArgs) -
         callbacks.append(
             HyperparamTransitions(
                 config,
-                env,
                 algo,
                 **config.hyperparams.hyperparam_transitions_kwargs,
             )
@@ -354,7 +353,6 @@ def stepwise_optimize(
                 callbacks.append(
                     HyperparamTransitions(
                         config,
-                        env,
                         algo,
                         start_timesteps=start_timesteps,
                         **config.hyperparams.hyperparam_transitions_kwargs,

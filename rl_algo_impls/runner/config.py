@@ -7,7 +7,6 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional, Type, TypeVar, Union
 
 from rl_algo_impls.checkpoints.checkpoints_manager import PolicyCheckpointsManager
-from rl_algo_impls.loss.teacher_kl_loss import TeacherKLLoss
 
 RunArgsSelf = TypeVar("RunArgsSelf", bound="RunArgs")
 
@@ -138,6 +137,8 @@ class Config:
             assert (
                 checkpoints_manager
             ), "teacher_kl_loss_coef requires checkpoints_manager"
+            from rl_algo_impls.loss.teacher_kl_loss import TeacherKLLoss
+
             algo_hparams["teacher_kl_loss_fn"] = TeacherKLLoss(checkpoints_manager)
         return algo_hparams
 
