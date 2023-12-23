@@ -15,8 +15,9 @@ from rl_algo_impls.runner.running_utils import (
     set_seeds,
 )
 from rl_algo_impls.runner.wandb_load import load_player
-from rl_algo_impls.shared.vec_env.env_spaces import EnvSpaces
+from rl_algo_impls.shared.agent_state import AgentState
 from rl_algo_impls.shared.tensor_utils import batch_dict_keys
+from rl_algo_impls.shared.vec_env.env_spaces import EnvSpaces
 from rl_algo_impls.shared.vec_env.make_env import make_eval_env
 
 
@@ -50,21 +51,25 @@ def onnx_export(args: ExportArgs, root_dir: str):
 
     set_seeds(args.seed)
 
+    agent_state = AgentState()
+
     override_hparams = args.override_hparams or {}
     if args.n_envs:
         override_hparams["n_envs"] = args.n_envs
     env = make_eval_env(
         config,
         EnvHyperparams(**config.env_hyperparams),
+        agent_state,
         override_hparams=override_hparams,
         render=False,
     )
-    device = get_device(config, env)
+    device = get_device(config, EnvSpaces.from_vec_env(env))
     set_device_optimizations(device, **config.device_hyperparams)
     policy = make_policy(
         config,
         EnvSpaces.from_vec_env(env),
         device,
+        agent_state,
         load_path=model_path,
         **config.policy_hyperparams,
     ).eval()
