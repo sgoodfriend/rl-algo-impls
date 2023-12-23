@@ -47,7 +47,6 @@ class HyperparamTransitions(Callback):
     def __init__(
         self,
         config: Config,
-        env: VectorEnv,
         algo: Algorithm,
         rollout_generator: RolloutGenerator,
         phases: List[Dict[str, Any]],
@@ -57,7 +56,6 @@ class HyperparamTransitions(Callback):
         lr_by_kl_callback: Optional[LearningRateByKLDivergence] = None,
     ) -> None:
         super().__init__()
-        self.env = env
         self.algo = algo
         self.rollout_generator = rollout_generator
         self.lr_by_kl_callback = lr_by_kl_callback
@@ -116,8 +114,10 @@ class HyperparamTransitions(Callback):
                 assert hasattr(self.algo, k)
                 setattr(self.algo, k, v)
             elif k == LUX_REWARD_WEIGHTS_NAME:
-                assert hasattr(self.env, k)
-                setattr(self.env.unwrapped, k, LuxRewardWeights(**v))
+                assert hasattr(self.rollout_generator.vec_env, k)
+                setattr(
+                    self.rollout_generator.vec_env.unwrapped, k, LuxRewardWeights(**v)
+                )
             elif k in ROLLOUT_GENERATOR_NAMES:
                 assert hasattr(self.rollout_generator, k)
                 setattr(self.rollout_generator, k, v)
@@ -157,9 +157,9 @@ class HyperparamTransitions(Callback):
                 assert hasattr(self.algo, k)
                 setattr(self.algo, k, old_v)
             elif k == LUX_REWARD_WEIGHTS_NAME:
-                assert hasattr(self.env, k)
+                assert hasattr(self.rollout_generator.vec_env, k)
                 setattr(
-                    self.env.unwrapped,
+                    self.rollout_generator.vec_env.unwrapped,
                     k,
                     LuxRewardWeights.interpolate(
                         old_v, next_v, transition_progress, self.interpolate_method

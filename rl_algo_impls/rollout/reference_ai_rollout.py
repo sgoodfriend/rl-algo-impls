@@ -1,24 +1,32 @@
-from typing import Dict, Optional
+from typing import Optional
 
 import numpy as np
 import torch
 
+from rl_algo_impls.checkpoints.checkpoints_manager import PolicyCheckpointsManager
 from rl_algo_impls.rollout.sync_step_rollout import SyncStepRolloutGenerator, fold_in
 from rl_algo_impls.rollout.vec_rollout import VecRollout
-from rl_algo_impls.shared.policy.actor_critic import ActorCritic
+from rl_algo_impls.runner.config import Config
+from rl_algo_impls.shared.agent_state import AgentState
+from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
 from rl_algo_impls.shared.tensor_utils import (
     NumOrArray,
     NumpyOrDict,
     TensorOrDict,
     batch_dict_keys,
-    tensor_to_numpy,
 )
-from rl_algo_impls.wrappers.vector_wrapper import VectorEnv
 
 
 class ReferenceAIRolloutGenerator(SyncStepRolloutGenerator):
-    def __init__(self, policy: ActorCritic, vec_env: VectorEnv, **kwargs) -> None:
-        super().__init__(policy, vec_env, **kwargs)
+    def __init__(
+        self,
+        config: Config,
+        agent_state: AgentState,
+        tb_writer: SummaryWrapper,
+        checkpoints_wrapper: Optional[PolicyCheckpointsManager],
+        **kwargs
+    ) -> None:
+        super().__init__(config, agent_state, tb_writer, checkpoints_wrapper, **kwargs)
         if not self.include_logp:
             if isinstance(self.actions, dict):
                 self.zero_action = np.array(
@@ -27,22 +35,23 @@ class ReferenceAIRolloutGenerator(SyncStepRolloutGenerator):
                             k: np.zeros(v.shape[2:], dtype=v.dtype)
                             for k, v in self.actions.items()
                         }
-                        for _ in range(vec_env.num_envs)
+                        for _ in range(self.vec_env.num_envs)
                     ]
                 )
             else:
                 self.zero_action = np.zeros(
-                    (vec_env.num_envs,) + self.actions.shape[2:],
+                    (self.vec_env.num_envs,) + self.actions.shape[2:],
                     dtype=self.actions.dtype,
                 )
 
     def rollout(self, gamma: NumOrArray, gae_lambda: NumOrArray) -> VecRollout:
-        self.policy.eval()
-        self.policy.reset_noise()
+        policy = self.agent_state.policy
+        policy.eval()
+        policy.reset_noise()
 
         for s in range(self.n_steps):
             if self.sde_sample_freq > 0 and s > 0 and s % self.sde_sample_freq == 0:
-                self.policy.reset_noise()
+                policy.reset_noise()
 
             self.obs[s] = self.next_obs
             self.episode_starts[s] = self.next_episode_starts
@@ -55,9 +64,9 @@ class ReferenceAIRolloutGenerator(SyncStepRolloutGenerator):
                     self.values[s],
                     self.logprobs,
                     step_actions,
-                ) = self.policy.step(self.next_obs, action_masks=self.next_action_masks)
+                ) = policy.step(self.next_obs, action_masks=self.next_action_masks)
             else:
-                self.values[s] = self.policy.value(self.next_obs)
+                self.values[s] = policy.value(self.next_obs)
                 step_actions = self.zero_action
 
             (
@@ -73,12 +82,12 @@ class ReferenceAIRolloutGenerator(SyncStepRolloutGenerator):
                 self.get_action_mask() if self.get_action_mask else None
             )
 
-        next_values = self.policy.value(self.next_obs)
+        next_values = policy.value(self.next_obs)
 
-        self.policy.train()
+        policy.train()
         assert isinstance(self.next_obs, np.ndarray)
         return VecRollout(
-            self.policy.device,
+            policy.device,
             next_episode_starts=self.next_episode_starts,
             next_values=next_values,
             obs=self.obs,
@@ -97,6 +106,7 @@ class ReferenceAIRolloutGenerator(SyncStepRolloutGenerator):
         )
 
     def actions_to_tensor(self, a: NumpyOrDict) -> TensorOrDict:
+        device = self.agent_state.policy.device
         if isinstance(a, dict):
-            return {k: torch.as_tensor(v).to(self.policy.device) for k, v in a.items()}
-        return torch.as_tensor(a).to(self.policy.device)
+            return {k: torch.as_tensor(v).to(device) for k, v in a.items()}
+        return torch.as_tensor(a).to(device)

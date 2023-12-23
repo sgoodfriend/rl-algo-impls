@@ -3,7 +3,6 @@ import logging
 from typing import Dict, Optional
 
 import numpy as np
-import torch
 from numpy.typing import NDArray
 
 from rl_algo_impls.rollout.discrete_skips_trajectory_builder import (
@@ -57,9 +56,10 @@ class RandomGuidedLearnerRolloutGenerator(RolloutGenerator):
 
         self.get_action_mask = getattr(vec_env, "get_action_mask", None)
 
-        self.next_obs, _ = vec_env.reset()
-        self.next_action_masks = (
-            self.get_action_mask() if self.get_action_mask else None
+        self.next_obs = np.zeros(
+            (self.env_spaces.num_envs,)
+            + self.env_spaces.single_observation_space.shape,
+            dtype=self.env_spaces.single_observation_space.dtype,
         )
 
         self.episode_stats_writer = find_wrapper(vec_env, EpisodeStatsWriter)
@@ -88,6 +88,12 @@ class RandomGuidedLearnerRolloutGenerator(RolloutGenerator):
     @property
     def num_envs(self) -> int:
         return self.vec_env.num_envs
+
+    def prepare(self) -> None:
+        self.next_obs, _ = self.vec_env.reset()
+        self.next_action_masks = (
+            self.get_action_mask() if self.get_action_mask else None
+        )
 
     def rollout(self, gamma: NumOrArray, gae_lambda: NumOrArray) -> Rollout:
         self.learning_policy.eval()

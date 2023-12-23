@@ -94,18 +94,36 @@ def train(args: TrainArgs):
     )
 
     agent_state = AgentState()
-    env = make_env(
+
+    rollout_hyperparams = {**config.rollout_hyperparams}
+    subaction_mask = config.policy_hyperparams.get("subaction_mask", None)
+    if subaction_mask is not None:
+        rollout_hyperparams["subaction_mask"] = subaction_mask
+    if config.rollout_type:
+        if config.rollout_type == "sync":
+            rollout_generator_cls = SyncStepRolloutGenerator
+        elif config.rollout_type == "reference":
+            rollout_generator_cls = ReferenceAIRolloutGenerator
+        elif config.rollout_type in {"guided", "guided_random"}:
+            raise ValueError(f"{config.rollout_type} is not currently supported")
+        else:
+            raise ValueError(f"{config.rollout_type} not recognized rollout_type")
+    else:
+        rollout_generator_cls = DEFAULT_ROLLOUT_GENERATORS[args.algo]
+
+    rollout_generator = rollout_generator_cls(
         config,
-        EnvHyperparams(**config.env_hyperparams),
         agent_state,
-        tb_writer=tb_writer,
-        checkpoints_manager=checkpoints_manager,
+        tb_writer,
+        checkpoints_manager,
+        **rollout_hyperparams,
     )
-    device = get_device(config, env)
+
+    device = get_device(config, rollout_generator.env_spaces)
     set_device_optimizations(device, **config.device_hyperparams)
     policy = make_policy(
         config,
-        EnvSpaces.from_vec_env(env),
+        rollout_generator.env_spaces,
         device,
         agent_state,
         **config.policy_hyperparams,
@@ -113,7 +131,7 @@ def train(args: TrainArgs):
     algo = ALGOS[args.algo](
         policy, device, tb_writer, **config.algo_hyperparams(checkpoints_manager)
     )
-    agent_state.algo = algo
+    agent_state.register(algo)
 
     num_parameters = policy.num_parameters()
     num_trainable_parameters = policy.num_trainable_parameters()
@@ -126,7 +144,7 @@ def train(args: TrainArgs):
             f"num_trainable_parameters = {num_trainable_parameters}"
         )
 
-    self_play_wrapper = find_wrapper(env, SelfPlayWrapper)
+    self_play_wrapper = find_wrapper(rollout_generator.vec_env, SelfPlayWrapper)
     eval_env = make_eval_env(
         config,
         EnvHyperparams(**config.env_hyperparams),
@@ -159,40 +177,6 @@ def train(args: TrainArgs):
     if self_play_wrapper:
         callbacks.append(SelfPlayCallback(policy, self_play_wrapper))
 
-    rollout_hyperparams = {**config.rollout_hyperparams}
-    subaction_mask = config.policy_hyperparams.get("subaction_mask", None)
-    if subaction_mask is not None:
-        rollout_hyperparams["subaction_mask"] = subaction_mask
-    if config.rollout_type:
-        if config.rollout_type == "sync":
-            rollout_generator_cls = SyncStepRolloutGenerator
-        elif config.rollout_type == "reference":
-            rollout_generator_cls = ReferenceAIRolloutGenerator
-        elif config.rollout_type in {"guided", "guided_random"}:
-            if config.rollout_type == "guided_random":
-                rollout_generator_cls = RandomGuidedLearnerRolloutGenerator
-            elif config.rollout_type == "guided":
-                rollout_generator_cls = GuidedLearnerRolloutGenerator
-            else:
-                raise ValueError(f"{config.rollout_type} not recognized rollout_type")
-            guide_policy_hyperparams = {
-                **config.policy_hyperparams,
-                **rollout_hyperparams.get("guide_policy", {}),
-            }
-            rollout_hyperparams["guide_policy"] = make_policy(
-                config, EnvSpaces.from_vec_env(env), device, **guide_policy_hyperparams
-            )
-        else:
-            raise ValueError(f"{config.rollout_type} not recognized rollout_type")
-    else:
-        rollout_generator_cls = DEFAULT_ROLLOUT_GENERATORS[args.algo]
-
-    rollout_generator = rollout_generator_cls(
-        policy,  # type: ignore
-        env,
-        **rollout_hyperparams,
-    )
-    rollout_generator.prepare()
     lr_by_kl_callback = None
     if config.hyperparams.lr_by_kl_kwargs:
         assert isinstance(
@@ -207,7 +191,6 @@ def train(args: TrainArgs):
         callbacks.append(
             HyperparamTransitions(
                 config,
-                env,
                 algo,
                 rollout_generator,
                 **config.hyperparams.hyperparam_transitions_kwargs,
@@ -215,6 +198,7 @@ def train(args: TrainArgs):
             )
         )
 
+    rollout_generator.prepare()
     if jux_verify_enabled(eval_env):
         eval_callback.generate_video()
     algo.learn(config.n_timesteps, rollout_generator, callbacks=callbacks)

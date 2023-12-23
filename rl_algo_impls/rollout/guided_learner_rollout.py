@@ -2,22 +2,27 @@ import logging
 from typing import Dict, List, Optional, Sequence, TypeVar
 
 import numpy as np
-import torch
 
+from rl_algo_impls.checkpoints.checkpoints_manager import PolicyCheckpointsManager
 from rl_algo_impls.rollout.rollout import RolloutGenerator
 from rl_algo_impls.rollout.trajectory import TrajectoryBuilder
 from rl_algo_impls.rollout.trajectory_rollout import TrajectoryRollout
+from rl_algo_impls.runner.config import Config
+from rl_algo_impls.shared.agent_state import AgentState
+from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
 from rl_algo_impls.shared.policy.actor_critic import ActorCritic
 from rl_algo_impls.shared.tensor_utils import NumOrArray, batch_dict_keys
 from rl_algo_impls.wrappers.episode_stats_writer import EpisodeStatsWriter
-from rl_algo_impls.wrappers.vector_wrapper import VectorEnv, find_wrapper
+from rl_algo_impls.wrappers.vector_wrapper import find_wrapper
 
 
 class GuidedLearnerRolloutGenerator(RolloutGenerator):
     def __init__(
         self,
-        learning_policy: ActorCritic,
-        vec_env: VectorEnv,
+        config: Config,
+        agent_state: AgentState,
+        tb_writer: SummaryWrapper,
+        checkpoints_wrapper: Optional[PolicyCheckpointsManager],
         guide_policy: ActorCritic,
         switch_range: int,
         n_steps: int = 2048,
@@ -27,12 +32,10 @@ class GuidedLearnerRolloutGenerator(RolloutGenerator):
         include_logp: bool = True,
         subaction_mask: Optional[Dict[int, Dict[int, int]]] = None,
     ) -> None:
-        super().__init__(learning_policy, vec_env)
-        self.learning_policy = learning_policy
+        super().__init__(config, agent_state, tb_writer, checkpoints_wrapper)
         self.guide_policy = guide_policy
         self.guide_policy.eval()
 
-        self.vec_env = vec_env
         self.switch_range = switch_range
         self.n_steps = n_steps
         self.sde_sample_freq = sde_sample_freq
@@ -47,27 +50,35 @@ class GuidedLearnerRolloutGenerator(RolloutGenerator):
             )
         self.subaction_mask = subaction_mask
 
-        self.get_action_mask = getattr(vec_env, "get_action_mask", None)
+        self.get_action_mask = getattr(self.vec_env, "get_action_mask", None)
 
-        self.traj_step_by_index = np.zeros(self.vec_env.num_envs, dtype=np.int32)
+        self.traj_step_by_index = np.zeros(self.self.vec_env.num_envs, dtype=np.int32)
         self.switch_step_by_index = np.random.randint(
-            0, self.switch_range, self.vec_env.num_envs, dtype=np.int32
+            0, self.switch_range, self.self.vec_env.num_envs, dtype=np.int32
         )
         self.policies_by_index = [
             self.guide_policy if switch_step > 0 else self.learning_policy
             for switch_step in self.switch_step_by_index
         ]
 
-        self.next_obs, _ = vec_env.reset()
+        self.next_obs = np.zeros(
+            (self.env_spaces.num_envs,)
+            + self.env_spaces.single_observation_space.shape,
+            dtype=self.env_spaces.single_observation_space.dtype,
+        )
+
+        self.episode_stats_writer = find_wrapper(self.vec_env, EpisodeStatsWriter)
+
+    def prepare(self) -> None:
+        self.next_obs, _ = self.vec_env.reset()
         self.next_action_masks = (
             self.get_action_mask() if self.get_action_mask else None
         )
 
-        self.episode_stats_writer = find_wrapper(vec_env, EpisodeStatsWriter)
-
     def rollout(self, gamma: NumOrArray, gae_lambda: NumOrArray) -> TrajectoryRollout:
-        self.learning_policy.eval()
-        self.learning_policy.reset_noise()
+        learning_policy = self.agent_state.policy
+        learning_policy.eval()
+        learning_policy.reset_noise()
         self.guide_policy.reset_noise()
 
         traj_builders = [TrajectoryBuilder() for _ in range(self.vec_env.num_envs)]
@@ -80,7 +91,7 @@ class GuidedLearnerRolloutGenerator(RolloutGenerator):
             # FIXME: sde_sample_freq implementation isn't correct because it assumes the
             # transition from guide to learning policy uses the same noise.
             if self.sde_sample_freq > 0 and s > 0 and s % self.sde_sample_freq == 0:
-                self.learning_policy.reset_noise()
+                learning_policy.reset_noise()
                 self.guide_policy.reset_noise()
             s += 1
 
@@ -119,7 +130,7 @@ class GuidedLearnerRolloutGenerator(RolloutGenerator):
 
             if self.episode_stats_writer:
                 self.episode_stats_writer.steps_per_step = self.policies_by_index.count(
-                    self.learning_policy
+                    learning_policy
                 )
             self.next_obs, rewards, terminations, truncations, _ = self.vec_env.step(
                 np.array(clamped_actions)
@@ -145,7 +156,7 @@ class GuidedLearnerRolloutGenerator(RolloutGenerator):
                             self.switch_range
                         )
                     elif traj_step == switch_step:
-                        self.policies_by_index[idx] = self.learning_policy
+                        self.policies_by_index[idx] = learning_policy
                     continue
                 traj_builder.add(
                     obs=obs[idx],
@@ -162,15 +173,15 @@ class GuidedLearnerRolloutGenerator(RolloutGenerator):
                     switch_step = np.random.randint(self.switch_range)
                     self.switch_step_by_index[idx] = switch_step
                     self.policies_by_index[idx] = (
-                        self.guide_policy if switch_step > 0 else self.learning_policy
+                        self.guide_policy if switch_step > 0 else learning_policy
                     )
                     completed_trajectories.append(
                         traj_builder.trajectory(gamma, gae_lambda)
                     )
                     traj_builder.reset()
 
-        next_values = self.learning_policy.value(self.next_obs)
-        self.learning_policy.train()
+        next_values = learning_policy.value(self.next_obs)
+        learning_policy.train()
 
         trajectories = completed_trajectories + [
             traj_builder.trajectory(gamma, gae_lambda, next_values=next_value)
@@ -180,7 +191,7 @@ class GuidedLearnerRolloutGenerator(RolloutGenerator):
         # Release TrajectoryBuilders because they can be holding a lot of memory.
         traj_builders = None
         return TrajectoryRollout(
-            self.learning_policy.device,
+            learning_policy.device,
             trajectories,
             scale_advantage_by_values_accuracy=self.scale_advantage_by_values_accuracy,
             subaction_mask=self.subaction_mask,

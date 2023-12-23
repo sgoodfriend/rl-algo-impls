@@ -1,13 +1,15 @@
 import random
 from collections import deque
-from typing import NamedTuple
+from typing import NamedTuple, Optional
 
 import numpy as np
 import torch
 
+from rl_algo_impls.checkpoints.checkpoints_manager import PolicyCheckpointsManager
 from rl_algo_impls.rollout.rollout import RolloutGenerator
-from rl_algo_impls.shared.policy.policy import Policy
-from rl_algo_impls.wrappers.vector_wrapper import VectorEnv
+from rl_algo_impls.runner.config import Config
+from rl_algo_impls.shared.agent_state import AgentState
+from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
 
 
 class Batch(NamedTuple):
@@ -29,16 +31,20 @@ class Transition(NamedTuple):
 class ReplayBufferRolloutGenerator(RolloutGenerator):
     def __init__(
         self,
-        policy: Policy,
-        vec_env: VectorEnv,
+        config: Config,
+        agent_state: AgentState,
+        tb_writer: SummaryWrapper,
+        checkpoints_wrapper: Optional[PolicyCheckpointsManager],
         buffer_size: int = 1_000_000,
         learning_starts: int = 50_000,
         train_freq: int = 4,
     ) -> None:
-        super().__init__(policy, vec_env)
-        self.policy = policy
-        self.vec_env = vec_env
-        self.next_obs, _ = vec_env.reset()
+        super().__init__(config, agent_state, tb_writer, checkpoints_wrapper)
+        self.next_obs = np.zeros(
+            (self.env_spaces.num_envs,)
+            + self.env_spaces.single_observation_space.shape,
+            dtype=self.env_spaces.single_observation_space.dtype,
+        )
 
         self.learning_starts = learning_starts
         self.train_freq = train_freq
@@ -49,13 +55,17 @@ class ReplayBufferRolloutGenerator(RolloutGenerator):
                 int(np.ceil(self.learning_starts / self.vec_env.num_envs)), eps=1
             )
 
+    def prepare(self) -> None:
+        self.next_obs, _ = self.vec_env.reset()
+
     def rollout(self, **kwargs) -> int:
         return self._collect_transitions(self.train_freq, **kwargs)
 
     def _collect_transitions(self, n_steps: int, **kwargs) -> int:
-        self.policy.train(False)
+        policy = self.agent_state.policy
+        policy.train(False)
         for _ in range(n_steps):
-            actions = self.policy.act(self.next_obs, deterministic=False, **kwargs)
+            actions = policy.act(self.next_obs, deterministic=False, **kwargs)
             next_obs, rewards, terminations, truncations, _ = self.vec_env.step(actions)
             dones = terminations | truncations
             assert isinstance(self.next_obs, np.ndarray)
