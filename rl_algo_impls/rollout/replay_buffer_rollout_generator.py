@@ -6,7 +6,7 @@ import numpy as np
 import torch
 
 from rl_algo_impls.checkpoints.checkpoints_manager import PolicyCheckpointsManager
-from rl_algo_impls.rollout.rollout import RolloutGenerator
+from rl_algo_impls.rollout.in_process_rollout import InProcessRolloutGenerator
 from rl_algo_impls.runner.config import Config
 from rl_algo_impls.shared.agent_state import AgentState
 from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
@@ -28,7 +28,7 @@ class Transition(NamedTuple):
     next_obs: np.ndarray
 
 
-class ReplayBufferRolloutGenerator(RolloutGenerator):
+class ReplayBufferRolloutGenerator(InProcessRolloutGenerator):
     def __init__(
         self,
         config: Config,

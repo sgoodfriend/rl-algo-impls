@@ -258,7 +258,8 @@ class PPO(Algorithm):
         r = rollout_generator.rollout(gamma=self.gamma, gae_lambda=self.gae_lambda)
         if self.teacher_kl_loss_fn:
             r.add_to_batch(
-                self.teacher_kl_loss_fn.add_to_batch, rollout_generator.vec_env.num_envs
+                self.teacher_kl_loss_fn.add_to_batch,
+                rollout_generator.env_spaces.num_envs,
             )
         gc.collect()
         timesteps_elapsed += r.total_steps

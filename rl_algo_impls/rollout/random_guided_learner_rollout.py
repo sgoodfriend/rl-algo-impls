@@ -9,7 +9,8 @@ from rl_algo_impls.rollout.discrete_skips_trajectory_builder import (
     DiscreteSkipsTrajectoryBuilder,
 )
 from rl_algo_impls.rollout.guided_learner_rollout import split_actions_by_env
-from rl_algo_impls.rollout.rollout import Rollout, RolloutGenerator
+from rl_algo_impls.rollout.in_process_rollout import InProcessRolloutGenerator
+from rl_algo_impls.rollout.rollout import Rollout
 from rl_algo_impls.rollout.trajectory_rollout import TrajectoryRollout
 from rl_algo_impls.shared.policy.actor_critic import ActorCritic
 from rl_algo_impls.shared.tensor_utils import NumOrArray, batch_dict_keys
@@ -17,7 +18,7 @@ from rl_algo_impls.wrappers.episode_stats_writer import EpisodeStatsWriter
 from rl_algo_impls.wrappers.vector_wrapper import VectorEnv, find_wrapper
 
 
-class RandomGuidedLearnerRolloutGenerator(RolloutGenerator):
+class RandomGuidedLearnerRolloutGenerator(InProcessRolloutGenerator):
     def __init__(
         self,
         learning_policy: ActorCritic,

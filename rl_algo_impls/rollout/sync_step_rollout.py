@@ -5,7 +5,7 @@ import numpy as np
 from gymnasium.spaces import Dict as DictSpace
 
 from rl_algo_impls.checkpoints.checkpoints_manager import PolicyCheckpointsManager
-from rl_algo_impls.rollout.rollout import RolloutGenerator
+from rl_algo_impls.rollout.in_process_rollout import InProcessRolloutGenerator
 from rl_algo_impls.rollout.vec_rollout import VecRollout
 from rl_algo_impls.runner.config import Config
 from rl_algo_impls.shared.agent_state import AgentState
@@ -16,7 +16,7 @@ from rl_algo_impls.wrappers.episode_stats_writer import EpisodeStatsWriter
 from rl_algo_impls.wrappers.vector_wrapper import find_wrapper
 
 
-class SyncStepRolloutGenerator(RolloutGenerator):
+class SyncStepRolloutGenerator(InProcessRolloutGenerator):
     def __init__(
         self,
         config: Config,

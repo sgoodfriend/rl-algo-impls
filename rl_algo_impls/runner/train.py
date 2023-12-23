@@ -9,6 +9,7 @@ from rl_algo_impls.lux.jux_verify import jux_verify_enabled
 from rl_algo_impls.ppo.learning_rate_by_kl_divergence import LearningRateByKLDivergence
 from rl_algo_impls.ppo.ppo import PPO
 from rl_algo_impls.rollout.guided_learner_rollout import GuidedLearnerRolloutGenerator
+from rl_algo_impls.rollout.in_process_rollout import InProcessRolloutGenerator
 from rl_algo_impls.rollout.random_guided_learner_rollout import (
     RandomGuidedLearnerRolloutGenerator,
 )
@@ -144,7 +145,11 @@ def train(args: TrainArgs):
             f"num_trainable_parameters = {num_trainable_parameters}"
         )
 
-    self_play_wrapper = find_wrapper(rollout_generator.vec_env, SelfPlayWrapper)
+    self_play_wrapper = (
+        find_wrapper(rollout_generator.vec_env, SelfPlayWrapper)
+        if isinstance(rollout_generator, InProcessRolloutGenerator)
+        else None
+    )
     eval_env = make_eval_env(
         config,
         EnvHyperparams(**config.env_hyperparams),
