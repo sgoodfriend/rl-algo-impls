@@ -4854,10 +4854,9 @@ all = []
 extra = ["AutoROM", "glfw", "huggingface-hub", "matplotlib", "pyglet", "scikit-learn"]
 lux = ["batchrenorm", "juxai-s2", "luxai_s2", "ray", "typing_extensions"]
 microrts = ["JPype1", "PettingZoo", "peewee"]
-optuna = []
 test = []
 
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8,<3.12"
-content-hash = "2b00e3df6becaca29c998345aa2acba2eb174c3e2e85ba699ced45e4635749a6"
+content-hash = "13eef9af93951bf4968a093a977e8db003010dbf8562e04e0a22c0e077afb159"
