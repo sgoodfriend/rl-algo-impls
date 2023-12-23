@@ -68,19 +68,6 @@ huggingface-cli login
 poetry run python benchmark_publish.py --wandb-tags HOST_TAG COMMIT_TAG --wandb-report-url WANDB_REPORT_URL [--virtual-display]
 ```
 
-#### Hyperparameter tuning with Optuna
-
-Hyperparameter tuning can be done with the `tuning/tuning.sh` script, which runs
-multiple processes of optimize.py. Start by doing all the setup meant for training
-before running `tuning/tuning.sh`:
-
-```sh
-# Setup similar to training above
-poetry shell
-wandb login
-bash scripts/tuning.sh -a ALGO -e ENV -j N_JOBS -s NUM_SEEDS
-```
-
 ### Google Colab Pro+
 
 3 notebooks in the colab directory are setup to be used with Google Colab:
