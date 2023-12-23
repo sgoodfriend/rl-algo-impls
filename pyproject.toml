@@ -63,9 +63,8 @@ isort = "*"
 [tool.poetry.extras]
 test = ["pytest", "black", "mypy", "flake8", "flake8-bugbear", "isort"]
 extra = ["cmake", "swig", "AutoROM", "pyglet", "scikit-learn", "matplotlib", "huggingface-hub", "pandas", "torchviz", "thop", "onnx", "glfw", "mujoco"]
-optuna = ["optuna", "dash", "kaleido"]
 microrts = ["JPype1", "peewee", "PettingZoo"]
-all = ["test", "extra", "optuna", "microrts"]
+all = ["test", "extra", "microrts"]
 
 lux = ["luxai_s2", "ray", "kaggle", "polars", "typing_extensions", "juxai-s2", "batchrenorm"]
 
