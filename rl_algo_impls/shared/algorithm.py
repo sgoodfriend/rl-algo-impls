@@ -51,7 +51,9 @@ class Algorithm(ABC):
     def load(self, path: str) -> None:
         optimizer_path = os.path.join(path, OPTIMIZER_FILENAME)
         if os.path.exists(optimizer_path):
-            self.optimizer.load_state_dict(torch.load(optimizer_path))
+            self.optimizer.load_state_dict(
+                torch.load(optimizer_path, map_location=self.device)
+            )
         else:
             logging.info(
                 f"Optimizer state not found at {optimizer_path}. Not overwriting optimizer state."
