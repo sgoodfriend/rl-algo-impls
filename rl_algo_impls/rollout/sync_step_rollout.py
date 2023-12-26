@@ -10,7 +10,6 @@ from rl_algo_impls.rollout.vec_rollout import VecRollout
 from rl_algo_impls.runner.config import Config
 from rl_algo_impls.shared.agent_state import AgentState
 from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
-from rl_algo_impls.shared.policy.policy import Policy
 from rl_algo_impls.shared.tensor_utils import NumOrArray, batch_dict_keys
 from rl_algo_impls.shared.vec_env.env_spaces import EnvSpaces
 from rl_algo_impls.wrappers.episode_stats_writer import EpisodeStatsWriter
@@ -120,7 +119,7 @@ class SyncStepRolloutGenerator(InProcessRolloutGenerator):
         else:
             self.actions = np.zeros(epoch_dim + act_shape, dtype=act_space.dtype)  # type: ignore
 
-    def prepare(self, policy: Policy) -> None:
+    def prepare(self) -> None:
         self.next_obs, _ = self.vec_env.reset()
         self.next_action_masks = (
             self.get_action_mask() if self.get_action_mask else None
@@ -148,7 +147,7 @@ class SyncStepRolloutGenerator(InProcessRolloutGenerator):
         if episode_stats_writer:
             episode_stats_writer.disable_record_stats()
         for _ in tqdm(range(0, self.prepare_steps, self.n_steps)):
-            self._rollout(policy, output_next_values=False)
+            self._rollout(output_next_values=False)
             self._reset_envs(
                 0,
                 self.rolling_num_envs_reset_every_prepare_step,
@@ -157,10 +156,8 @@ class SyncStepRolloutGenerator(InProcessRolloutGenerator):
         if episode_stats_writer:
             episode_stats_writer.enable_record_stats()
 
-    def rollout(
-        self, policy: Policy, gamma: NumOrArray, gae_lambda: NumOrArray
-    ) -> VecRollout:
-        next_values = self._rollout(policy, output_next_values=True)
+    def rollout(self, gamma: NumOrArray, gae_lambda: NumOrArray) -> VecRollout:
+        next_values = self._rollout(output_next_values=True)
         assert next_values is not None
 
         self._reset_envs(
@@ -170,7 +167,7 @@ class SyncStepRolloutGenerator(InProcessRolloutGenerator):
         )
 
         return VecRollout(
-            device=policy.device,
+            device=self.agent_state.policy.device,
             next_episode_starts=self.next_episode_starts,
             next_values=next_values,
             obs=self.obs,
@@ -188,9 +185,8 @@ class SyncStepRolloutGenerator(InProcessRolloutGenerator):
             action_plane_space=getattr(self.vec_env, "action_plane_space", None),
         )
 
-    def _rollout(
-        self, policy: Policy, output_next_values: bool
-    ) -> Optional[np.ndarray]:
+    def _rollout(self, output_next_values: bool) -> Optional[np.ndarray]:
+        policy = self.agent_state.policy
         policy.eval()
         policy.reset_noise()
         for s in range(self.n_steps):

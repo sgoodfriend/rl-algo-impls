@@ -84,7 +84,7 @@ class ACBC(Algorithm):
             }
             log_scalars(self.tb_writer, "charts", chart_scalars, timesteps_elapsed)
 
-            r = rollout_generator.rollout(self.policy, self.gamma, self.gae_lambda)
+            r = rollout_generator.rollout(self.gamma, self.gae_lambda)
             timesteps_elapsed += r.total_steps
 
             step_stats: List[Dict[str, Union[float, np.ndarray]]] = []

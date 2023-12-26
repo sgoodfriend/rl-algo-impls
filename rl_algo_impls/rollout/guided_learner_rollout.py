@@ -11,7 +11,6 @@ from rl_algo_impls.runner.config import Config
 from rl_algo_impls.shared.agent_state import AgentState
 from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
 from rl_algo_impls.shared.policy.actor_critic import ActorCritic
-from rl_algo_impls.shared.policy.policy import Policy
 from rl_algo_impls.shared.tensor_utils import NumOrArray, batch_dict_keys
 from rl_algo_impls.wrappers.episode_stats_writer import EpisodeStatsWriter
 from rl_algo_impls.wrappers.vector_wrapper import find_wrapper
@@ -70,15 +69,14 @@ class GuidedLearnerRolloutGenerator(InProcessRolloutGenerator):
 
         self.episode_stats_writer = find_wrapper(self.vec_env, EpisodeStatsWriter)
 
-    def prepare(self, policy: Policy) -> None:
+    def prepare(self) -> None:
         self.next_obs, _ = self.vec_env.reset()
         self.next_action_masks = (
             self.get_action_mask() if self.get_action_mask else None
         )
 
-    def rollout(
-        self, learning_policy: Policy, gamma: NumOrArray, gae_lambda: NumOrArray
-    ) -> TrajectoryRollout:
+    def rollout(self, gamma: NumOrArray, gae_lambda: NumOrArray) -> TrajectoryRollout:
+        learning_policy = self.agent_state.policy
         learning_policy.eval()
         learning_policy.reset_noise()
         self.guide_policy.reset_noise()
