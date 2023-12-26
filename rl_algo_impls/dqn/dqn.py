@@ -82,7 +82,7 @@ class DQN(Algorithm):
             progress = timesteps_elapsed / total_timesteps
             eps = self.exploration_eps_schedule(progress)
 
-            rollout_steps = rollout_generator.rollout(self.policy, eps=eps)
+            rollout_steps = rollout_generator.rollout(eps=eps)
             timesteps_elapsed += rollout_steps
 
             if len(rollout_generator.buffer) > self.batch_size:

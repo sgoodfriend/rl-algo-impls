@@ -203,7 +203,7 @@ def train(args: TrainArgs):
             )
         )
 
-    rollout_generator.prepare(policy)
+    rollout_generator.prepare()
     if jux_verify_enabled(eval_env):
         eval_callback.generate_video()
     algo.learn(config.n_timesteps, rollout_generator, callbacks=callbacks)

@@ -5,7 +5,6 @@ from typing import Dict, Optional
 import numpy as np
 from numpy.typing import NDArray
 
-from rl_algo_impls.checkpoints.checkpoints_manager import PolicyCheckpointsManager
 from rl_algo_impls.rollout.discrete_skips_trajectory_builder import (
     DiscreteSkipsTrajectoryBuilder,
 )
@@ -13,11 +12,7 @@ from rl_algo_impls.rollout.guided_learner_rollout import split_actions_by_env
 from rl_algo_impls.rollout.in_process_rollout import InProcessRolloutGenerator
 from rl_algo_impls.rollout.rollout import Rollout
 from rl_algo_impls.rollout.trajectory_rollout import TrajectoryRollout
-from rl_algo_impls.runner.config import Config
-from rl_algo_impls.shared.agent_state import AgentState
-from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
 from rl_algo_impls.shared.policy.actor_critic import ActorCritic
-from rl_algo_impls.shared.policy.policy import Policy
 from rl_algo_impls.shared.tensor_utils import NumOrArray, batch_dict_keys
 from rl_algo_impls.wrappers.episode_stats_writer import EpisodeStatsWriter
 from rl_algo_impls.wrappers.vector_wrapper import VectorEnv, find_wrapper
@@ -26,10 +21,8 @@ from rl_algo_impls.wrappers.vector_wrapper import VectorEnv, find_wrapper
 class RandomGuidedLearnerRolloutGenerator(InProcessRolloutGenerator):
     def __init__(
         self,
-        config: Config,
-        agent_state: AgentState,
-        tb_writer: SummaryWrapper,
-        checkpoints_wrapper: Optional[PolicyCheckpointsManager],
+        learning_policy: ActorCritic,
+        vec_env: VectorEnv,
         guide_policy: ActorCritic,
         guide_probability: float,
         n_steps: int = 2048,
@@ -41,9 +34,11 @@ class RandomGuidedLearnerRolloutGenerator(InProcessRolloutGenerator):
         skip_no_action_steps: bool = False,
         num_envs_reset_every_rollout: int = 0,
     ) -> None:
-        super().__init__(config, agent_state, tb_writer, checkpoints_wrapper)
+        super().__init__(learning_policy, vec_env)
+        self.learning_policy = learning_policy
         self.guide_policy = guide_policy
 
+        self.vec_env = vec_env
         self.guide_probability = guide_probability
         self.n_steps = n_steps
         self.sde_sample_freq = sde_sample_freq
@@ -60,7 +55,7 @@ class RandomGuidedLearnerRolloutGenerator(InProcessRolloutGenerator):
         self.skip_no_action_steps = skip_no_action_steps
         self.num_envs_reset_every_rollout = num_envs_reset_every_rollout
 
-        self.get_action_mask = getattr(self.vec_env, "get_action_mask", None)
+        self.get_action_mask = getattr(vec_env, "get_action_mask", None)
 
         self.next_obs = np.zeros(
             (self.env_spaces.num_envs,)
@@ -68,14 +63,14 @@ class RandomGuidedLearnerRolloutGenerator(InProcessRolloutGenerator):
             dtype=self.env_spaces.single_observation_space.dtype,
         )
 
-        self.episode_stats_writer = find_wrapper(self.vec_env, EpisodeStatsWriter)
+        self.episode_stats_writer = find_wrapper(vec_env, EpisodeStatsWriter)
 
         if skip_no_action_steps:
             assert (
                 self.get_action_mask is not None
-            ), f"skip_no_action_steps requires get_action_mask to be implemented on {self.vec_env}"
-            act_space = self.vec_env.single_action_space
-            act_shape = self.env_spaces.action_shape
+            ), f"skip_no_action_steps requires get_action_mask to be implemented on {vec_env}"
+            act_space = vec_env.single_action_space
+            act_shape = self.learning_policy.action_shape
             if isinstance(act_shape, dict):
                 self.zero_action = np.array(
                     [
@@ -95,17 +90,15 @@ class RandomGuidedLearnerRolloutGenerator(InProcessRolloutGenerator):
     def num_envs(self) -> int:
         return self.vec_env.num_envs
 
-    def prepare(self, policy: Policy) -> None:
+    def prepare(self) -> None:
         self.next_obs, _ = self.vec_env.reset()
         self.next_action_masks = (
             self.get_action_mask() if self.get_action_mask else None
         )
 
-    def rollout(
-        self, learning_policy: Policy, gamma: NumOrArray, gae_lambda: NumOrArray
-    ) -> Rollout:
-        learning_policy.eval()
-        learning_policy.reset_noise()
+    def rollout(self, gamma: NumOrArray, gae_lambda: NumOrArray) -> Rollout:
+        self.learning_policy.eval()
+        self.learning_policy.reset_noise()
         self.guide_policy.eval()
         self.guide_policy.reset_noise()
 
@@ -113,7 +106,7 @@ class RandomGuidedLearnerRolloutGenerator(InProcessRolloutGenerator):
         traj_builders = [DiscreteSkipsTrajectoryBuilder() for _ in range(num_envs)]
         completed_trajectories = []
 
-        act_shape = learning_policy.action_shape
+        act_shape = self.learning_policy.action_shape
         act_space = self.vec_env.single_action_space
         if isinstance(act_shape, dict):
             step_clamped_actions = np.zeros((num_envs,), dtype=np.object_)
@@ -132,7 +125,7 @@ class RandomGuidedLearnerRolloutGenerator(InProcessRolloutGenerator):
             # FIXME: sde_sample_freq implementation isn't correct because it assumes the
             # transition from guide to learning policy uses the same noise.
             if self.sde_sample_freq > 0 and s > 0 and s % self.sde_sample_freq == 0:
-                learning_policy.reset_noise()
+                self.learning_policy.reset_noise()
                 self.guide_policy.reset_noise()
             s += 1
 
@@ -189,7 +182,7 @@ class RandomGuidedLearnerRolloutGenerator(InProcessRolloutGenerator):
                     step_values,
                     step_logprobs,
                     step_clamped_actions[use_learning_policy],
-                ) = learning_policy.step(
+                ) = self.learning_policy.step(
                     step_obs,
                     action_masks=batch_dict_keys(step_action_masks)
                     if step_action_masks is not None
@@ -233,8 +226,8 @@ class RandomGuidedLearnerRolloutGenerator(InProcessRolloutGenerator):
                         )
                     traj_builder.reset()
 
-        next_values = learning_policy.value(self.next_obs)
-        learning_policy.train()
+        next_values = self.learning_policy.value(self.next_obs)
+        self.learning_policy.train()
         self.guide_policy.train()
 
         trajectories = completed_trajectories + [
@@ -256,7 +249,7 @@ class RandomGuidedLearnerRolloutGenerator(InProcessRolloutGenerator):
 
         gc.collect()
         return TrajectoryRollout(
-            learning_policy.device,
+            self.policy.device,
             trajectories,
             scale_advantage_by_values_accuracy=self.scale_advantage_by_values_accuracy,
             subaction_mask=self.subaction_mask,

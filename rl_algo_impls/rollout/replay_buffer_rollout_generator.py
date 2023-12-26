@@ -10,7 +10,6 @@ from rl_algo_impls.rollout.in_process_rollout import InProcessRolloutGenerator
 from rl_algo_impls.runner.config import Config
 from rl_algo_impls.shared.agent_state import AgentState
 from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
-from rl_algo_impls.shared.policy.policy import Policy
 
 
 class Batch(NamedTuple):
@@ -56,13 +55,14 @@ class ReplayBufferRolloutGenerator(InProcessRolloutGenerator):
                 int(np.ceil(self.learning_starts / self.vec_env.num_envs)), eps=1
             )
 
-    def prepare(self, policy: Policy) -> None:
+    def prepare(self) -> None:
         self.next_obs, _ = self.vec_env.reset()
 
-    def rollout(self, policy: Policy, **kwargs) -> int:
-        return self._collect_transitions(policy, self.train_freq, **kwargs)
+    def rollout(self, **kwargs) -> int:
+        return self._collect_transitions(self.train_freq, **kwargs)
 
-    def _collect_transitions(self, policy: Policy, n_steps: int, **kwargs) -> int:
+    def _collect_transitions(self, n_steps: int, **kwargs) -> int:
+        policy = self.agent_state.policy
         policy.train(False)
         for _ in range(n_steps):
             actions = policy.act(self.next_obs, deterministic=False, **kwargs)

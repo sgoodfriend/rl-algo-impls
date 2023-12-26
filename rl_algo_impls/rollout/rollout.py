@@ -9,7 +9,6 @@ from gymnasium.spaces import MultiDiscrete
 
 from rl_algo_impls.shared.actor.gridnet import ValueDependentMask
 from rl_algo_impls.shared.agent_state import AgentState
-from rl_algo_impls.shared.policy.policy import Policy
 from rl_algo_impls.shared.tensor_utils import (
     NumpyOrDict,
     TensorOrDict,
@@ -110,11 +109,11 @@ class RolloutGenerator(ABC):
         self.agent_state = agent_state
 
     @abstractmethod
-    def prepare(self, policy: Policy) -> None:
+    def prepare(self) -> None:
         ...
 
     @abstractmethod
-    def rollout(self, policy: Policy, **kwargs) -> Rollout:
+    def rollout(self, **kwargs) -> Rollout:
         ...
 
     @property
