@@ -5510,6 +5510,7 @@ LuxAI_S2-v0-j1024env64-80m-ent1-lr10-mgn2-base1lc-tkl5c-ft-a100:
     &lux-j1024env64-80m-ent1-lr10-mgn2-base1lc-tkl5c-ft-a100-algo
     <<: *lux-j1024env64-80m-ent1-lr100-ln-baserew-tkl5c-ft-a100-algo
     ent_coef: !!float 1e-3
+    learning_rate: !!float 5e-5
     multi_reward_weights:
       - 1 # WinLoss
       - 0.1 # ice
