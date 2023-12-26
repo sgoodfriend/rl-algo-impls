@@ -16,6 +16,8 @@ python3 -m pip install --upgrade pipx
 python3 -m pipx ensurepath --force
 pipx install poetry
 
+poetry run pip install --upgrade pip
+
 poetry install -E all
 
 poetry run wandb login
