@@ -5598,6 +5598,13 @@ LuxAI_S2-v0-j1024env64-80m-ent1-lr01-mgn2-base1lc-tkl5c-ft-no-grad-accum-a100:
     <<: *lux-j1024env64-80m-ent1-lr10-mgn2-base1lc-tkl5c-ft-a100-lr-by-kl-kwargs
     min_lr: !!float 5e-6
 
+LuxAI_S2-v0-j1024env64-80m-ent1-lr10-mgn2-base1lc-tkl5c-ft-grad-accum-a100:
+  &lux-j1024env64-80m-ent1-lr10-mgn2-base1lc-tkl5c-ft-grad-accum-a100
+  <<: *lux-j1024env64-80m-ent1-lr10-mgn2-base1lc-tkl5c-ft-a100
+  policy_hyperparams:
+    &lux-j1024env64-80m-ent1-lr10-mgn2-base1lc-tkl5c-ft-grad-accum-a100-policy
+    <<: *lux-j1024env64-80m-ent1-lr01-mgn2-base1lc-tkl5c-ft-no-grad-accum-a100-policy
+
 LuxAI_S2-agent: &lux-agent
   <<: *lux-j1024env64-80m-vfc006-ln-mgn4-2o3m4h-ft-a100
   device: cpu
@@ -5614,7 +5621,7 @@ LuxAI_S2-agent: &lux-agent
       play_checkpoints_kwargs: null
 
 LuxAI_S2-v0-debug:
-  <<: *lux-j1024env64-80m-ent1-lr01-mgn2-base1lc-tkl5c-ft-no-grad-accum-a100
+  <<: *lux-j1024env64-80m-ent1-lr10-mgn2-base1lc-tkl5c-ft-grad-accum-a100
   n_timesteps: !!float 10e6
   device: mps
   env_hyperparams:
