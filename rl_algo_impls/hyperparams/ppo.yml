@@ -386,6 +386,7 @@ Walker2d-v4: &walker2d
   rollout_hyperparams: &walker2d-rollout
     <<: *mujoco-rollout-defaults
     gamma: 0.99
+    gae_lambda: 0.95
   algo_hyperparams: &walker2d-algo
     <<: *mujoco-algo-defaults
     batch_size: 32
@@ -393,7 +394,6 @@ Walker2d-v4: &walker2d
     ent_coef: 0.000585045
     clip_range: 0.1
     n_epochs: 20
-    gae_lambda: 0.95
     max_grad_norm: 1
     vf_coef: 0.871923
 
@@ -408,6 +408,7 @@ Hopper-v4: &hopper
   rollout_hyperparams: &hopper-rollout
     <<: *mujoco-rollout-defaults
     gamma: 0.999
+    gae_lambda: 0.99
   algo_hyperparams: &hopper-algo
     <<: *mujoco-algo-defaults
     batch_size: 32
@@ -415,7 +416,6 @@ Hopper-v4: &hopper
     ent_coef: 0.00229519
     clip_range: 0.2
     n_epochs: 5
-    gae_lambda: 0.99
     max_grad_norm: 0.7
     vf_coef: 0.835671
 
