@@ -4,13 +4,19 @@ from typing import Dict, Optional, TypeVar, Union
 import numpy as np
 from gymnasium.spaces import Dict as DictSpace
 
-from rl_algo_impls.checkpoints.checkpoints_manager import PolicyCheckpointsManager
 from rl_algo_impls.rollout.in_process_rollout import InProcessRolloutGenerator
 from rl_algo_impls.rollout.vec_rollout import VecRollout
 from rl_algo_impls.runner.config import Config
-from rl_algo_impls.shared.agent_state import AgentState
 from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
-from rl_algo_impls.shared.tensor_utils import NumOrArray, batch_dict_keys
+from rl_algo_impls.shared.data_store.data_store_accessor import (
+    AbstractDataStoreAccessor,
+)
+from rl_algo_impls.shared.data_store.synchronous_data_store_accessor import (
+    SynchronousDataStoreAccessor,
+)
+from rl_algo_impls.shared.policy.policy import Policy
+from rl_algo_impls.shared.stats import log_scalars
+from rl_algo_impls.shared.tensor_utils import NumOrList, batch_dict_keys, num_or_array
 from rl_algo_impls.shared.vec_env.env_spaces import EnvSpaces
 from rl_algo_impls.wrappers.episode_stats_writer import EpisodeStatsWriter
 from rl_algo_impls.wrappers.vector_wrapper import find_wrapper
@@ -20,9 +26,10 @@ class SyncStepRolloutGenerator(InProcessRolloutGenerator):
     def __init__(
         self,
         config: Config,
-        agent_state: AgentState,
+        data_store_accessor: AbstractDataStoreAccessor,
         tb_writer: SummaryWrapper,
-        checkpoints_wrapper: Optional[PolicyCheckpointsManager],
+        gamma: NumOrList = 0.99,
+        gae_lambda: NumOrList = 0.95,
         n_steps: int = 2048,
         sde_sample_freq: int = -1,
         scale_advantage_by_values_accuracy: bool = False,
@@ -35,7 +42,10 @@ class SyncStepRolloutGenerator(InProcessRolloutGenerator):
         prepare_steps: int = 0,
         rolling_num_envs_reset_every_prepare_step: int = 0,
     ) -> None:
-        super().__init__(config, agent_state, tb_writer, checkpoints_wrapper)
+        assert isinstance(data_store_accessor, SynchronousDataStoreAccessor)
+        super().__init__(config, data_store_accessor, tb_writer)
+        self.gamma = num_or_array(gamma)
+        self.gae_lambda = num_or_array(gae_lambda)
         self.n_steps = n_steps
         self.sde_sample_freq = sde_sample_freq
         self.scale_advantage_by_values_accuracy = scale_advantage_by_values_accuracy
@@ -120,6 +130,13 @@ class SyncStepRolloutGenerator(InProcessRolloutGenerator):
             self.actions = np.zeros(epoch_dim + act_shape, dtype=act_space.dtype)  # type: ignore
 
     def prepare(self) -> None:
+        (
+            policy,
+            rollout_params,
+            self.tb_writer.timesteps_elapsed,
+        ) = self._data_store_view.update_for_rollout_start()
+        self.update_rollout_params(rollout_params)
+
         self.next_obs, _ = self.vec_env.reset()
         self.next_action_masks = (
             self.get_action_mask() if self.get_action_mask else None
@@ -137,6 +154,8 @@ class SyncStepRolloutGenerator(InProcessRolloutGenerator):
                 (self.n_steps,) + self.next_action_masks.shape,
                 dtype=self.next_action_masks.dtype,
             )
+        else:
+            self.action_masks = None
 
         if not self.prepare_steps:
             return
@@ -146,8 +165,9 @@ class SyncStepRolloutGenerator(InProcessRolloutGenerator):
         episode_stats_writer = find_wrapper(self.vec_env, EpisodeStatsWriter)
         if episode_stats_writer:
             episode_stats_writer.disable_record_stats()
+
         for _ in tqdm(range(0, self.prepare_steps, self.n_steps)):
-            self._rollout(output_next_values=False)
+            self._rollout(policy, output_next_values=False)
             self._reset_envs(
                 0,
                 self.rolling_num_envs_reset_every_prepare_step,
@@ -156,8 +176,16 @@ class SyncStepRolloutGenerator(InProcessRolloutGenerator):
         if episode_stats_writer:
             episode_stats_writer.enable_record_stats()
 
-    def rollout(self, gamma: NumOrArray, gae_lambda: NumOrArray) -> VecRollout:
-        next_values = self._rollout(output_next_values=True)
+    def rollout(self) -> VecRollout:
+        (
+            policy,
+            rollout_params,
+            self.tb_writer.timesteps_elapsed,
+        ) = self._data_store_view.update_for_rollout_start()
+        self.update_rollout_params(rollout_params)
+        log_scalars(self.tb_writer, "charts", rollout_params)
+
+        next_values = self._rollout(policy, output_next_values=True)
         assert next_values is not None
 
         self._reset_envs(
@@ -167,7 +195,7 @@ class SyncStepRolloutGenerator(InProcessRolloutGenerator):
         )
 
         return VecRollout(
-            device=self.agent_state.policy.device,
+            device=policy.device,
             next_episode_starts=self.next_episode_starts,
             next_values=next_values,
             obs=self.obs,
@@ -177,16 +205,17 @@ class SyncStepRolloutGenerator(InProcessRolloutGenerator):
             values=self.values,
             logprobs=self.logprobs,
             action_masks=self.action_masks,
-            gamma=gamma,
-            gae_lambda=gae_lambda,
+            gamma=self.gamma,
+            gae_lambda=self.gae_lambda,
             scale_advantage_by_values_accuracy=self.scale_advantage_by_values_accuracy,
             full_batch_off_accelerator=self.full_batch_off_accelerator,
             subaction_mask=self.subaction_mask,
             action_plane_space=getattr(self.vec_env, "action_plane_space", None),
         )
 
-    def _rollout(self, output_next_values: bool) -> Optional[np.ndarray]:
-        policy = self.agent_state.policy
+    def _rollout(
+        self, policy: Policy, output_next_values: bool
+    ) -> Optional[np.ndarray]:
         policy.eval()
         policy.reset_noise()
         for s in range(self.n_steps):

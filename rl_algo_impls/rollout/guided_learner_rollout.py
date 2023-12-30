@@ -3,15 +3,25 @@ from typing import Dict, List, Optional, Sequence, TypeVar
 
 import numpy as np
 
-from rl_algo_impls.checkpoints.checkpoints_manager import PolicyCheckpointsManager
 from rl_algo_impls.rollout.in_process_rollout import InProcessRolloutGenerator
 from rl_algo_impls.rollout.trajectory import TrajectoryBuilder
 from rl_algo_impls.rollout.trajectory_rollout import TrajectoryRollout
 from rl_algo_impls.runner.config import Config
-from rl_algo_impls.shared.agent_state import AgentState
 from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
+from rl_algo_impls.shared.data_store.data_store_accessor import (
+    AbstractDataStoreAccessor,
+)
+from rl_algo_impls.shared.data_store.synchronous_data_store_accessor import (
+    SynchronousDataStoreAccessor,
+)
 from rl_algo_impls.shared.policy.actor_critic import ActorCritic
-from rl_algo_impls.shared.tensor_utils import NumOrArray, batch_dict_keys
+from rl_algo_impls.shared.stats import log_scalars
+from rl_algo_impls.shared.tensor_utils import (
+    NumOrArray,
+    NumOrList,
+    batch_dict_keys,
+    num_or_array,
+)
 from rl_algo_impls.wrappers.episode_stats_writer import EpisodeStatsWriter
 from rl_algo_impls.wrappers.vector_wrapper import find_wrapper
 
@@ -20,11 +30,12 @@ class GuidedLearnerRolloutGenerator(InProcessRolloutGenerator):
     def __init__(
         self,
         config: Config,
-        agent_state: AgentState,
+        data_store_accessor: AbstractDataStoreAccessor,
         tb_writer: SummaryWrapper,
-        checkpoints_wrapper: Optional[PolicyCheckpointsManager],
         guide_policy: ActorCritic,
         switch_range: int,
+        gamma: NumOrList = 0.99,
+        gae_lambda: NumOrList = 0.95,
         n_steps: int = 2048,
         sde_sample_freq: int = -1,
         scale_advantage_by_values_accuracy: bool = False,
@@ -32,7 +43,10 @@ class GuidedLearnerRolloutGenerator(InProcessRolloutGenerator):
         include_logp: bool = True,
         subaction_mask: Optional[Dict[int, Dict[int, int]]] = None,
     ) -> None:
-        super().__init__(config, agent_state, tb_writer, checkpoints_wrapper)
+        assert isinstance(data_store_accessor, SynchronousDataStoreAccessor)
+        super().__init__(config, data_store_accessor, tb_writer)
+        self.gamma = num_or_array(gamma)
+        self.gae_lambda = num_or_array(gae_lambda)
         self.guide_policy = guide_policy
         self.guide_policy.eval()
 
@@ -52,9 +66,9 @@ class GuidedLearnerRolloutGenerator(InProcessRolloutGenerator):
 
         self.get_action_mask = getattr(self.vec_env, "get_action_mask", None)
 
-        self.traj_step_by_index = np.zeros(self.self.vec_env.num_envs, dtype=np.int32)
+        self.traj_step_by_index = np.zeros(self.vec_env.num_envs, dtype=np.int32)
         self.switch_step_by_index = np.random.randint(
-            0, self.switch_range, self.self.vec_env.num_envs, dtype=np.int32
+            0, self.switch_range, self.vec_env.num_envs, dtype=np.int32
         )
         self.policies_by_index = [
             self.guide_policy if switch_step > 0 else self.learning_policy
@@ -75,8 +89,15 @@ class GuidedLearnerRolloutGenerator(InProcessRolloutGenerator):
             self.get_action_mask() if self.get_action_mask else None
         )
 
-    def rollout(self, gamma: NumOrArray, gae_lambda: NumOrArray) -> TrajectoryRollout:
-        learning_policy = self.agent_state.policy
+    def rollout(self) -> TrajectoryRollout:
+        (
+            learning_policy,
+            rollout_params,
+            self.tb_writer.timesteps_elapsed,
+        ) = self._data_store_view.update_for_rollout_start()
+        self.update_rollout_params(rollout_params)
+        log_scalars(self.tb_writer, "charts", rollout_params)
+
         learning_policy.eval()
         learning_policy.reset_noise()
         self.guide_policy.reset_noise()
@@ -176,7 +197,7 @@ class GuidedLearnerRolloutGenerator(InProcessRolloutGenerator):
                         self.guide_policy if switch_step > 0 else learning_policy
                     )
                     completed_trajectories.append(
-                        traj_builder.trajectory(gamma, gae_lambda)
+                        traj_builder.trajectory(self.gamma, self.gae_lambda)
                     )
                     traj_builder.reset()
 
@@ -184,7 +205,7 @@ class GuidedLearnerRolloutGenerator(InProcessRolloutGenerator):
         learning_policy.train()
 
         trajectories = completed_trajectories + [
-            traj_builder.trajectory(gamma, gae_lambda, next_values=next_value)
+            traj_builder.trajectory(self.gamma, self.gae_lambda, next_values=next_value)
             for traj_builder, next_value in zip(traj_builders, next_values)
             if len(traj_builder) > 0
         ]

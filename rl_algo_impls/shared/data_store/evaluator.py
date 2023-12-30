@@ -7,15 +7,21 @@ from typing import Deque, Dict, List, Optional, Union
 
 import numpy as np
 
-from rl_algo_impls.checkpoints.checkpoints_manager import PolicyCheckpointsManager
 from rl_algo_impls.lux.jux_verify import jux_verify_enabled
-from rl_algo_impls.shared.agent_state import AgentState
-from rl_algo_impls.shared.algorithm import Algorithm
-from rl_algo_impls.shared.callbacks import Callback
+from rl_algo_impls.runner.config import Config, EnvHyperparams
 from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
+from rl_algo_impls.shared.data_store.data_store_accessor import (
+    AbstractDataStoreAccessor,
+)
+from rl_algo_impls.shared.data_store.data_store_view import EvalDataStoreView
+from rl_algo_impls.shared.data_store.synchronous_data_store_accessor import (
+    SynchronousDataStoreAccessor,
+)
 from rl_algo_impls.shared.policy.policy import Policy
 from rl_algo_impls.shared.stats import Episode, EpisodeAccumulator, EpisodesStats
 from rl_algo_impls.shared.tensor_utils import batch_dict_keys
+from rl_algo_impls.shared.vec_env.make_env import make_eval_env
+from rl_algo_impls.wrappers.self_play_wrapper import SelfPlayWrapper
 from rl_algo_impls.wrappers.vec_episode_recorder import VecEpisodeRecorder
 from rl_algo_impls.wrappers.vector_wrapper import VectorEnv
 
@@ -240,21 +246,21 @@ def evaluate(
     return stats
 
 
-class EvalCallback(Callback):
+class Evaluator:
     prior_policies: Optional[Deque[Policy]]
 
     def __init__(
         self,
-        agent_state: AgentState,
-        env: VectorEnv,
+        config: Config,
+        data_store_accessor: AbstractDataStoreAccessor,
         tb_writer: SummaryWrapper,
+        self_play_wrapper: Optional[SelfPlayWrapper] = None,
         best_model_path: Optional[str] = None,
         step_freq: Union[int, float] = 50_000,
         n_episodes: int = 10,
         save_best: bool = True,
         deterministic: bool = True,
         only_record_video_on_best: bool = True,
-        video_env: Optional[VectorEnv] = None,
         video_dir: Optional[str] = None,
         max_video_length: int = 9000,
         ignore_first_episode: bool = False,
@@ -263,14 +269,19 @@ class EvalCallback(Callback):
         wandb_enabled: bool = False,
         score_threshold: Optional[float] = None,
         skip_evaluate_at_start: bool = False,
-        only_checkpoint_initial_policy: bool = False,
         only_checkpoint_best_policies: bool = False,
         latest_model_path: Optional[str] = None,
-        checkpoints_manager: Optional[PolicyCheckpointsManager] = None,
     ) -> None:
         super().__init__()
-        self.agent_state = agent_state
-        self.env = env
+        if isinstance(data_store_accessor, SynchronousDataStoreAccessor):
+            data_store_accessor.evaluator = self
+        self.data_store_view = EvalDataStoreView(data_store_accessor)
+        self.env = make_eval_env(
+            config,
+            EnvHyperparams(**config.env_hyperparams),
+            self.data_store_view,
+            self_play_wrapper=self_play_wrapper,
+        )
         self.tb_writer = tb_writer
         self.best_model_path = best_model_path
         self.step_freq = int(step_freq)
@@ -282,14 +293,17 @@ class EvalCallback(Callback):
 
         self.only_record_video_on_best = only_record_video_on_best
         self.max_video_length = max_video_length
-        assert (video_env is not None) == (
-            video_dir is not None
-        ), f"video_env ({video_env}) and video_dir ({video_dir}) must be set or unset together"
         self.video_dir = video_dir
         if video_dir:
             os.makedirs(video_dir, exist_ok=True)
             self.video_env = VecEpisodeRecorder(
-                video_env,
+                make_eval_env(
+                    config,
+                    EnvHyperparams(**config.env_hyperparams),
+                    self.data_store_view,
+                    override_hparams={"n_envs": 1},
+                    self_play_wrapper=self_play_wrapper,
+                ),
                 video_dir,  # This is updated when a video is actually created
                 max_video_length=self.max_video_length,
             )
@@ -304,20 +318,13 @@ class EvalCallback(Callback):
         self.skip_evaluate_at_start = skip_evaluate_at_start
         self.latest_model_path = latest_model_path
 
-        self.checkpoints_manager = checkpoints_manager
-        if checkpoints_manager:
-            if only_checkpoint_initial_policy:
-                assert (
-                    checkpoints_manager.history_size == 1
-                ), f"checkpoints_manager's history_size must be 1 if only_checkpoint_initial_policy is True"
-            self.only_checkpoint_initial_policy = only_checkpoint_initial_policy
-            self.only_checkpoint_best_policies = only_checkpoint_best_policies
-            self.checkpoint_policy(True)
-        else:
-            self.prior_policies = None
+        self.only_checkpoint_best_policies = only_checkpoint_best_policies
+        policy, self.timesteps_elapsed = self.data_store_view.update_for_eval_start()
+        self.tb_writer.timesteps_elapsed = self.timesteps_elapsed
+        self.checkpoint_policy(policy, True)
 
-    def on_step(self, timesteps_elapsed: int = 1, **kwargs) -> bool:
-        super().on_step(timesteps_elapsed)
+    def on_timesteps_elapsed(self, timesteps_elapsed: int) -> bool:
+        self.timesteps_elapsed = timesteps_elapsed
         desired_num_stats = self.timesteps_elapsed // self.step_freq
         if not self.skip_evaluate_at_start:
             desired_num_stats += 1
@@ -329,9 +336,11 @@ class EvalCallback(Callback):
         self, n_episodes: Optional[int] = None, print_returns: Optional[bool] = None
     ) -> EpisodesStats:
         start_time = perf_counter()
+        policy, self.timesteps_elapsed = self.data_store_view.update_for_eval_start()
+        self.tb_writer.timesteps_elapsed = self.timesteps_elapsed
         eval_stat = evaluate(
             self.env,
-            self.agent_state.policy,
+            policy,
             n_episodes or self.n_episodes,
             deterministic=self.deterministic,
             print_returns=print_returns or False,
@@ -344,7 +353,7 @@ class EvalCallback(Callback):
             "eval/steps_per_second",
             eval_stat.length.sum() / (end_time - start_time),
         )
-        self.agent_state.policy.train(True)
+        policy.train(True)
         print(f"Eval Timesteps: {self.timesteps_elapsed} | {eval_stat}")
 
         self.stats.append(eval_stat)
@@ -357,12 +366,12 @@ class EvalCallback(Callback):
             strictly_better = not self.best or eval_stat > self.best
 
         if self.latest_model_path:
-            self.agent_state.save(self.latest_model_path)
+            self.save(policy, self.latest_model_path)
         if is_best:
             self.best = eval_stat
             if self.save_best:
                 assert self.best_model_path
-                self.agent_state.save(self.best_model_path)
+                self.save(policy, self.best_model_path)
                 print("Saved best model")
                 if self.wandb_enabled:
                     import wandb
@@ -375,34 +384,33 @@ class EvalCallback(Callback):
                     )
             self.best.write_to_tensorboard(self.tb_writer, "best_eval")
         if self.video_env and (not self.only_record_video_on_best or strictly_better):
-            self.generate_video()
+            self.generate_video(policy)
 
         eval_stat.write_to_tensorboard(self.tb_writer, "eval")
-        self.checkpoint_policy(is_best)
+        self.checkpoint_policy(policy, is_best)
         return eval_stat
 
-    def checkpoint_policy(self, is_best: bool):
-        if self.checkpoints_manager is None:
-            return
-        if len(self.checkpoints_manager.checkpoints) > 0:
-            if self.only_checkpoint_initial_policy:
-                return
-            if self.only_checkpoint_best_policies and not is_best:
+    def checkpoint_policy(self, policy: Policy, is_best: bool):
+        if self.only_checkpoint_best_policies:
+            if not is_best:
                 return
             else:
                 logging.info(f"Checkpointing best policy at {self.timesteps_elapsed}")
-        self.checkpoints_manager.create_checkpoint(self.agent_state.policy)
+        self.data_store_view.submit_checkpoint(policy)
 
-    def generate_video(self) -> None:
+    def generate_video(self, policy: Policy) -> None:
         assert self.video_env and self.video_dir
         best_video_base_path = os.path.join(self.video_dir, str(self.timesteps_elapsed))
         self.video_env.base_path = best_video_base_path
         video_stats = evaluate(
             self.video_env,
-            self.agent_state.policy,
+            policy,
             1,
             deterministic=self.deterministic,
             print_returns=False,
             score_function=self.score_function,
         )
         print(f"Saved video: {video_stats}")
+
+    def save(self, policy: Policy, model_path: str) -> None:
+        self.data_store_view.save(policy, model_path)

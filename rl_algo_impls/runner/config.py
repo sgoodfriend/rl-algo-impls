@@ -6,7 +6,6 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Type, TypeVar, Union
 
-from rl_algo_impls.checkpoints.checkpoints_manager import PolicyCheckpointsManager
 
 RunArgsSelf = TypeVar("RunArgsSelf", bound="RunArgs")
 
@@ -129,18 +128,9 @@ class Config:
     def policy_hyperparams(self) -> Dict[str, Any]:
         return self.hyperparams.policy_hyperparams
 
-    def algo_hyperparams(
-        self, checkpoints_manager: Optional[PolicyCheckpointsManager] = None
-    ) -> Dict[str, Any]:
-        algo_hparams = self.hyperparams.algo_hyperparams.copy()
-        if "teacher_kl_loss_coef" in algo_hparams:
-            assert (
-                checkpoints_manager
-            ), "teacher_kl_loss_coef requires checkpoints_manager"
-            from rl_algo_impls.loss.teacher_kl_loss import TeacherKLLoss
-
-            algo_hparams["teacher_kl_loss_fn"] = TeacherKLLoss(checkpoints_manager)
-        return algo_hparams
+    @property
+    def algo_hyperparams(self) -> Dict[str, Any]:
+        return self.hyperparams.algo_hyperparams
 
     @property
     def eval_hyperparams(self) -> Dict[str, Any]:

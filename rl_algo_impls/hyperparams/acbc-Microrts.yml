@@ -9,8 +9,6 @@ Microrts-squnet-d16-128-iMayari: &microrts-squnet-d16-128-imayari
     learning_rate: 1.6e-04
     batch_size: 3072
     n_epochs: 2
-    gamma: 0.999
-    gae_lambda: 0.99
     vf_coef: 0.5
     max_grad_norm: 0.5
     gradient_accumulation: false
@@ -137,6 +135,8 @@ Microrts-squnet-d16-128-iMayari: &microrts-squnet-d16-128-imayari
   rollout_hyperparams: &microrts-squnet-d16-128-imayari-rollout
     n_steps: 512
     include_logp: false
+    gamma: 0.999
+    gae_lambda: 0.99
   rollout_type: reference
 
 Microrts-squnet-d16-128-iMayari-nondeterministic:
@@ -175,9 +175,11 @@ Microrts-squnet-d16-128-iMayari-map32: &microrts-squnet-d16-128-imayari-map32
       lightRushAI: 6
       coacAI: 6
     valid_sizes: [32]
-  rollout_hyperparams:
+  rollout_hyperparams: &microrts-squnet-d16-128-imayari-map32-rollout
     <<: *microrts-squnet-d16-128-imayari-rollout
     full_batch_off_accelerator: true
+    gamma: 0.9996
+    gae_lambda: 0.99
   eval_hyperparams: &microrts-squnet-d16-128-imayari-map32-eval
     <<: *microrts-squnet-d16-128-imayari-eval
     step_freq: !!float 5e6
@@ -190,8 +192,6 @@ Microrts-squnet-d16-128-iMayari-map32: &microrts-squnet-d16-128-imayari-map32
   algo_hyperparams: &microrts-squnet-d16-128-imayari-map32-algo
     <<: *microrts-squnet-d16-128-imayari-algo
     batch_size: 768
-    gamma: 0.9996
-    gae_lambda: 0.99
   hyperparam_transitions_kwargs:
     interpolate_method: cosine
     phases:
@@ -230,12 +230,14 @@ Microrts-squnet-d16-128-iMayari-map64: &microrts-squnet-d16-128-imayari-map64
         <<: *microrts-squnet-d16-128-imayari-map32-eval-env-make-kwargs
         max_steps: 8000
         map_paths: [maps/BroodWar/(4)BloodBath.scmB.xml]
+  rollout_hyperparams:
+    <<: *microrts-squnet-d16-128-imayari-map32-rollout
+    gamma: 0.9999
+    gae_lambda: 0.99
   algo_hyperparams:
     <<: *microrts-squnet-d16-128-imayari-map32-algo
     batch_size: 192
     gradient_accumulation: true
-    gamma: 0.9999
-    gae_lambda: 0.99
 
 Microrts-squnet-d16-128-iMayari-map64-from32:
   &microrts-squnet-d16-128-imayari-map64-from32

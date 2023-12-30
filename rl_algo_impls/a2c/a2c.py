@@ -8,11 +8,12 @@ import torch
 import torch.nn as nn
 
 from rl_algo_impls.a2c.train_stats import TrainStats, TrainStepStats
-from rl_algo_impls.rollout.rollout import RolloutGenerator
 from rl_algo_impls.shared.algorithm import Algorithm
 from rl_algo_impls.shared.autocast import maybe_autocast
 from rl_algo_impls.shared.callbacks import Callback
 from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
+from rl_algo_impls.shared.data_store.data_store_data import LearnerDataStoreViewUpdate
+from rl_algo_impls.shared.data_store.data_store_view import LearnerDataStoreView
 from rl_algo_impls.shared.policy.actor_critic import ActorCritic
 from rl_algo_impls.shared.schedule import update_learning_rate
 from rl_algo_impls.shared.stats import log_scalars
@@ -28,8 +29,6 @@ class A2C(Algorithm):
         device: torch.device,
         tb_writer: SummaryWrapper,
         learning_rate: float = 7e-4,
-        gamma: NumOrList = 0.99,
-        gae_lambda: NumOrList = 1.0,
         ent_coef: float = 0.0,
         vf_coef: NumOrList = 0.5,
         max_grad_norm: float = 0.5,
@@ -50,9 +49,6 @@ class A2C(Algorithm):
             optimizer = torch.optim.Adam(policy.parameters(), lr=learning_rate)
         super().__init__(policy, device, tb_writer, learning_rate, optimizer)
         self.policy = policy
-
-        self.gamma = num_or_array(gamma)
-        self.gae_lambda = num_or_array(gae_lambda)
 
         self.vf_coef = num_or_array(vf_coef)
         self.ent_coef = ent_coef
@@ -75,34 +71,34 @@ class A2C(Algorithm):
 
     def learn(
         self: A2CSelf,
+        learner_data_store_view: LearnerDataStoreView,
         train_timesteps: int,
-        rollout_generator: RolloutGenerator,
         callbacks: Optional[List[Callback]] = None,
-        total_timesteps: Optional[int] = None,
-        start_timesteps: int = 0,
     ) -> A2CSelf:
-        if total_timesteps is None:
-            total_timesteps = train_timesteps
-        assert start_timesteps + train_timesteps <= total_timesteps
-
-        timesteps_elapsed = start_timesteps
-        while timesteps_elapsed < start_timesteps + train_timesteps:
+        timesteps_elapsed = 0
+        while timesteps_elapsed < train_timesteps:
             start_time = perf_counter()
 
             update_learning_rate(self.optimizer, self.learning_rate)
             chart_scalars = {
                 "ent_coef": self.ent_coef,
                 "learning_rate": self.learning_rate,
-                "gamma": self.gamma,
-                "gae_lambda": self.gae_lambda,
                 "vf_coef": self.vf_coef,
             }
 
             if self.multi_reward_weights is not None:
                 chart_scalars["reward_weights"] = self.multi_reward_weights
-            log_scalars(self.tb_writer, "charts", chart_scalars, timesteps_elapsed)
+            log_scalars(self.tb_writer, "charts", chart_scalars)
 
-            r = rollout_generator.rollout(gamma=self.gamma, gae_lambda=self.gae_lambda)
+            rollouts, teacher_policy = learner_data_store_view.get_learner_view()
+            if len(rollouts) > 1:
+                logging.warning(
+                    f"A2C does not support multiple rollouts ({len(rollouts)}) per epoch. "
+                    "Only the last rollout will be used"
+                )
+            r = rollouts[-1]
+            if teacher_policy is not None:
+                logging.warning("A2c doesn't support teacher policies")
             timesteps_elapsed += r.total_steps
 
             vf_coef = torch.Tensor(np.array(self.vf_coef)).to(self.device)
@@ -195,7 +191,14 @@ class A2C(Algorithm):
                     logging.info(
                         f"Callback terminated training at {timesteps_elapsed} timesteps"
                     )
+                    learner_data_store_view.submit_learner_update(
+                        LearnerDataStoreViewUpdate(self.policy, self, timesteps_elapsed)
+                    )
                     break
+
+            learner_data_store_view.submit_learner_update(
+                LearnerDataStoreViewUpdate(self.policy, self, timesteps_elapsed)
+            )
 
         return self
 

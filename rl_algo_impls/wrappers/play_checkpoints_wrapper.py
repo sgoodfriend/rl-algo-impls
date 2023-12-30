@@ -1,11 +1,12 @@
 import collections.abc
-from abc import ABC
-from typing import Any, Callable, Generic, List, Optional, Sequence
+from typing import Any, Generic, List, Optional, Tuple
 
 import numpy as np
 from gymnasium.experimental.vector.utils import batch_space
 
-from rl_algo_impls.checkpoints.checkpoints_manager import PolicyCheckpointsManager
+from rl_algo_impls.shared.data_store.checkpoint_policies_delegate import (
+    CheckpointPoliciesDelegate,
+)
 from rl_algo_impls.shared.policy.policy import Policy
 from rl_algo_impls.shared.tensor_utils import batch_dict_keys
 from rl_algo_impls.wrappers.vector_wrapper import (
@@ -19,17 +20,17 @@ from rl_algo_impls.wrappers.vector_wrapper import (
 )
 
 
-class PlayCheckpointsWrapper(VectorWrapper, ABC, Generic[ObsType]):
+class PlayCheckpointsWrapper(
+    VectorWrapper, CheckpointPoliciesDelegate, Generic[ObsType]
+):
     next_obs: ObsType
 
     def __init__(
         self,
         env: VectorEnv,
-        checkpoints_manager: PolicyCheckpointsManager,
         n_envs_against_checkpoints: Optional[int],
     ) -> None:
         super().__init__(env)
-        self.checkpoints_manager = checkpoints_manager
         if n_envs_against_checkpoints is None:
             n_envs_against_checkpoints = env.num_envs // 2
         assert n_envs_against_checkpoints <= env.num_envs // 2, (
@@ -42,6 +43,9 @@ class PlayCheckpointsWrapper(VectorWrapper, ABC, Generic[ObsType]):
             env.single_observation_space, n=self.num_envs
         )
         self.action_space = batch_space(env.single_action_space, n=self.num_envs)
+
+        self.checkpoint_policies: Tuple[Policy, ...] = tuple()
+        self.latest_checkpoint_idx: int = -1
 
     @property
     def num_envs(self) -> int:
@@ -127,12 +131,14 @@ class PlayCheckpointsWrapper(VectorWrapper, ABC, Generic[ObsType]):
 
     def _policy_assignments(self) -> List[Optional[Policy]]:
         assignments: List[Optional[Policy]] = [None] * self.env.num_envs
-        if self.n_envs_against_checkpoints == 1:
+        if not self.checkpoint_policies:
+            pass
+        elif self.n_envs_against_checkpoints == 1:
             # Special-case single env case to take latest checkpoint as second player
-            policy = self.checkpoints_manager.latest_checkpoint
+            policy = self.checkpoint_policies[self.latest_checkpoint_idx]
             assignments[1] = policy
         else:
-            policies = self.checkpoints_manager.checkpoints
+            policies = self.checkpoint_policies
             if policies:
                 for i in range(self.n_envs_against_checkpoints):
                     # Play each policy in a pair of player 1/2 matches.
@@ -140,6 +146,12 @@ class PlayCheckpointsWrapper(VectorWrapper, ABC, Generic[ObsType]):
                     assignments[2 * i + i % 2] = policy
 
         return assignments
+
+    def update_checkpoint_policies(
+        self, checkpoint_policies: Tuple[Policy, ...], latest_checkpoint_idx: int
+    ) -> None:
+        self.checkpoint_policies = checkpoint_policies
+        self.latest_checkpoint_idx = latest_checkpoint_idx
 
 
 def _learning_mask(policy_assignments: List[Optional[Policy]]) -> List[bool]:

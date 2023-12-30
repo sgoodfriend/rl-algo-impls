@@ -1,5 +1,3 @@
-from typing import Dict, Optional
-
 import numpy as np
 from gymnasium.spaces import Box
 from gymnasium.spaces import Dict as DictSpace

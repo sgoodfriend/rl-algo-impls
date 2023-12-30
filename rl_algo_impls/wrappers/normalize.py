@@ -4,8 +4,7 @@ from typing import Optional, Tuple, TypeVar, Union
 import numpy as np
 from numpy.typing import NDArray
 
-from rl_algo_impls.shared.agent_state import AgentState
-from rl_algo_impls.shared.trackable import Trackable
+from rl_algo_impls.shared.data_store.data_store_view import VectorEnvDataStoreView
 from rl_algo_impls.utils.running_mean_std import HybridMovingMeanVar, RunningMeanStd
 from rl_algo_impls.wrappers.vector_wrapper import (
     VecEnvMaskedResetReturn,
@@ -21,22 +20,24 @@ NormalizeObservationSelf = TypeVar(
 )
 
 
-class NormalizeObservation(VectorWrapper, Trackable):
+class NormalizeObservation(VectorWrapper):
     def __init__(
         self,
         env: VectorEnv,
-        agent_state: AgentState,
+        data_store_view: VectorEnvDataStoreView,
         training: bool = True,
         epsilon: float = 1e-8,
         clip: float = 10.0,
     ) -> None:
         super().__init__(env)
-        self.rms = RunningMeanStd(shape=env.single_observation_space.shape)
+        self.rms = RunningMeanStd(
+            NORMALIZE_OBSERVATION_FILENAME, shape=env.single_observation_space.shape
+        )
         self.training = training
         self.epsilon = epsilon
         self.clip = clip
 
-        agent_state.register(self)
+        data_store_view.add_trackable(self.rms)
 
     def step(self, action):
         obs, reward, terminations, truncations, info = self.env.step(action)
@@ -69,11 +70,11 @@ class NormalizeObservation(VectorWrapper, Trackable):
 NormalizeRewardSelf = TypeVar("NormalizeRewardSelf", bound="NormalizeReward")
 
 
-class NormalizeReward(VectorWrapper, Trackable):
+class NormalizeReward(VectorWrapper):
     def __init__(
         self,
         env: VectorEnv,
-        agent_state: AgentState,
+        data_store_view: VectorEnvDataStoreView,
         training: bool = True,
         gamma: float = 0.99,
         epsilon: float = 1e-8,
@@ -84,9 +85,11 @@ class NormalizeReward(VectorWrapper, Trackable):
     ) -> None:
         super().__init__(env)
         self.rms = (
-            HybridMovingMeanVar(window_size=emv_window_size, shape=shape)
+            HybridMovingMeanVar(
+                NORMALIZE_REWARD_FILENAME, window_size=emv_window_size, shape=shape
+            )
             if exponential_moving_mean_var
-            else RunningMeanStd(shape=shape)
+            else RunningMeanStd(NORMALIZE_REWARD_FILENAME, shape=shape)
         )
         self.training = training
         self.gamma = gamma
@@ -95,7 +98,7 @@ class NormalizeReward(VectorWrapper, Trackable):
 
         self.returns = np.zeros((self.num_envs,) + shape)
 
-        agent_state.register(self)
+        data_store_view.add_trackable(self.rms)
 
     def step(self, action):
         obs, reward, terminations, truncations, info = self.env.step(action)

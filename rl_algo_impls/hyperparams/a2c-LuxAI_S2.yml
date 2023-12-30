@@ -7,14 +7,6 @@ LuxAI_S2-v0-sSqunet-78env-deimos-lr2-no-guide:
     autocast_loss: true
     num_minibatches: 6
     ent_coef: 0.01
-    gae_lambda:
-      - 0.95
-      - 0.95
-      - 0.95
-    gamma:
-      - 1
-      - 1
-      - 1
     gradient_accumulation: true
     learning_rate: !!float 1e-4
     max_grad_norm: 0.5
@@ -53,7 +45,7 @@ LuxAI_S2-v0-sSqunet-78env-deimos-lr2-no-guide:
     vec_env_class: ray
   env_id: LuxAI_S2-v0
   checkpoints_kwargs:
-    history_size: 1
+    history_size: 4
   eval_hyperparams: &lux-ssqunet-78envs-deimos-lr2-no-guide-eval
     deterministic: false
     env_overrides: &lux-ssqunet-78envs-deimos-lr2-no-guide-eval-env-overrides
@@ -68,7 +60,6 @@ LuxAI_S2-v0-sSqunet-78env-deimos-lr2-no-guide:
       self_play_kwargs: null
       play_checkpoints_kwargs:
         n_envs_against_checkpoints: null
-    only_checkpoint_initial_policy: true
     only_record_video_on_best: true
     score_function: mean
     score_threshold: null
@@ -128,6 +119,14 @@ LuxAI_S2-v0-sSqunet-78env-deimos-lr2-no-guide:
     full_batch_off_accelerator: true
     n_steps: 64
     num_envs_reset_every_rollout: 12
+    gae_lambda:
+      - 0.95
+      - 0.95
+      - 0.95
+    gamma:
+      - 1
+      - 1
+      - 1
   rollout_type: sync
 
 LuxAI_S2-v0-sSqunet-78env-deimos-lr2-high_vf:

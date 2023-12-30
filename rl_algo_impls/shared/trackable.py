@@ -1,10 +1,15 @@
 from abc import ABC, abstractmethod
-from typing import TypeVar
+from typing import Any, TypeVar
 
 T = TypeVar("T", bound="Trackable")
 
 
 class Trackable(ABC):
+    @property
+    @abstractmethod
+    def name(self) -> str:
+        ...
+
     @abstractmethod
     def save(self, path: str) -> None:
         ...
@@ -13,5 +18,10 @@ class Trackable(ABC):
     def load(self, path: str) -> None:
         ...
 
-    def sync(self: T, other: T) -> None:
-        pass
+    @abstractmethod
+    def get_state(self) -> Any:
+        ...
+
+    @abstractmethod
+    def set_state(self, state: Any) -> None:
+        ...

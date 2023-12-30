@@ -10,12 +10,15 @@ from rl_algo_impls.runner.config import Config, EnvHyperparams, RunArgs
 from rl_algo_impls.runner.running_utils import (
     get_device,
     load_hyperparams,
-    make_policy,
+    make_eval_policy,
     set_device_optimizations,
     set_seeds,
 )
 from rl_algo_impls.runner.wandb_load import load_player
-from rl_algo_impls.shared.agent_state import AgentState
+from rl_algo_impls.shared.data_store.data_store_view import EvalDataStoreView
+from rl_algo_impls.shared.data_store.synchronous_data_store_accessor import (
+    SynchronousDataStoreAccessor,
+)
 from rl_algo_impls.shared.tensor_utils import batch_dict_keys
 from rl_algo_impls.shared.vec_env.env_spaces import EnvSpaces
 from rl_algo_impls.shared.vec_env.make_env import make_eval_env
@@ -51,7 +54,9 @@ def onnx_export(args: ExportArgs, root_dir: str):
 
     set_seeds(args.seed)
 
-    agent_state = AgentState()
+    data_store_accessor = SynchronousDataStoreAccessor(
+        **(config.hyperparams.checkpoints_kwargs or {})
+    )
 
     override_hparams = args.override_hparams or {}
     if args.n_envs:
@@ -59,17 +64,17 @@ def onnx_export(args: ExportArgs, root_dir: str):
     env = make_eval_env(
         config,
         EnvHyperparams(**config.env_hyperparams),
-        agent_state,
+        EvalDataStoreView(data_store_accessor, is_eval_job=True),
         override_hparams=override_hparams,
         render=False,
     )
     device = get_device(config, EnvSpaces.from_vec_env(env))
     set_device_optimizations(device, **config.device_hyperparams)
-    policy = make_policy(
+    policy = make_eval_policy(
         config,
         EnvSpaces.from_vec_env(env),
         device,
-        agent_state,
+        data_store_accessor,
         load_path=model_path,
         **config.policy_hyperparams,
     ).eval()

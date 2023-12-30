@@ -28,7 +28,9 @@ class LearningRateByKLDivergence(Callback):
         self.max_increase_fraction = max_increase_fraction
         self.min_decrease_fraction = min_decrease_fraction
 
-        self.rms_kl = ExponentialMovingMeanVar(window_size=moving_window_size)
+        self.rms_kl = ExponentialMovingMeanVar(
+            "lr_by_kl.npz", window_size=moving_window_size
+        )
         self.num_updates = 0
 
         self.v_loss_threshold = v_loss_threshold

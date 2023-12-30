@@ -238,8 +238,8 @@ Microrts-selfplay-unet-winloss: &microrts-selfplay-winloss-defaults
     make_kwargs:
       <<: *microrts-selfplay-env-make-kwargs-defaults
       reward_weight: [1.0, 0, 0, 0, 0, 0, 0, 0, 0]
-  algo_hyperparams: &microrts-selfplay-winloss-algo-defaults
-    <<: *microrts-unet-algo-defaults
+  rollout_hyperparams: &microrts-selfplay-winloss-rollout-defaults
+    <<: *microrts-ai-rollout-defaults
     gamma: 0.999
 
 _Microrts-squnet: &microrts-squnet
@@ -261,11 +261,13 @@ _Microrts-squnet: &microrts-squnet
     <<: *microrts-ai-policy-defaults
     actor_head_style: squeeze_unet
     additional_critic_activation_functions: [tanh, identity]
+  rollout_hyperparams: &microrts-squnet-rollout-defaults
+    <<: *microrts-ai-rollout-defaults
+    gamma: [0.99, 0.999, 0.999]
+    gae_lambda: [0.95, 0.99, 0.99]
   algo_hyperparams: &microrts-squnet-algo-defaults
     <<: *microrts-ai-algo-defaults
     n_epochs: 2
-    gamma: [0.99, 0.999, 0.999]
-    gae_lambda: [0.95, 0.99, 0.99]
     clip_range_vf: null
 
 _Microrts-squnet-map8: &microrts-squnet-map8
@@ -722,11 +724,13 @@ Microrts-selfplay-dc-phases: &microrts-sp-dc-phases-defaults
     pooled_channels: 128
     additional_critic_activation_functions: [tanh, identity]
     gelu_pool_conv: false # Bug with prior model, but was trained with this
+  rollout_hyperparams: &microrts-sp-dc-phases-rollout-defaults
+    <<: *microrts-ai-rollout-defaults
+    gamma: [0.99, 0.999, 0.999]
+    gae_lambda: [0.95, 0.99, 0.99]
   algo_hyperparams: &microrts-sp-dc-phases-algo-defaults
     <<: *microrts-ai-algo-defaults
     n_epochs: 2
-    gamma: [0.99, 0.999, 0.999]
-    gae_lambda: [0.95, 0.99, 0.99]
   hyperparam_transitions_kwargs: &microrts-sp-dc-phases-transitions-defaults
     phases:
       - multi_reward_weights: [0.8, 0.01, 0.19] # Initial shaped rewards (mostly)
@@ -771,8 +775,8 @@ _Microrts-tweaks-base: &microrts-tweaks-base
     load_run_path: sgoodfriend/rl-algo-impls-benchmarks/1ilo9yae
     load_run_path_best: true
     gelu_pool_conv: true
-  algo_hyperparams: &microrts-tweaks-base-algo-defaults
-    <<: *microrts-sp-dc-phases-a6000-algo-defaults
+  rollout_hyperparams: &microrts-tweaks-base-rollout-defaults
+    <<: *microrts-sp-dc-phases-rollout-defaults
     gamma: [0.99, 0.999, 0.999]
     gae_lambda: [0.95, 0.99, 0.99]
 
@@ -950,7 +954,7 @@ Microrts-finetuned-DoubleGame24x24: &microrts-finetuned-doublegame
         <<: *microrts-a6000-finetuned-coac-mayari-eval-env-make-kwargs-overrides
         map_paths: [maps/DoubleGame24x24.xml]
   algo_hyperparams:
-    <<: *microrts-tweaks-base-algo-defaults
+    <<: *microrts-sp-dc-phases-a6000-algo-defaults
     batch_size: 2048
 
 Microrts-finetuned-DoubleGame-shaped: &microrts-finetuned-doublegame-shaped
@@ -1033,7 +1037,7 @@ Microrts-finetuned-DistantResources: &microrts-finetuned-distantresources
         <<: *microrts-a6000-finetuned-coac-mayari-eval-env-make-kwargs-overrides
         map_paths: [maps/BWDistantResources32x32.xml]
   algo_hyperparams:
-    <<: *microrts-tweaks-base-algo-defaults
+    <<: *microrts-sp-dc-phases-a6000-algo-defaults
     batch_size: 1024
 
 Microrts-finetuned-DistantResources-shaped:
@@ -1080,7 +1084,7 @@ Microrts-finetuned-BloodBath: &microrts-finetuned-bloodbath
     <<: *microrts-ai-rollout-defaults
     n_steps: 256
   algo_hyperparams:
-    <<: *microrts-tweaks-base-algo-defaults
+    <<: *microrts-sp-dc-phases-a6000-algo-defaults
     batch_size: 192
 
 Microrts-finetuned-BloodBath-shaped: &microrts-finetuned-bloodbath-shaped
@@ -1300,6 +1304,8 @@ Microrts-squnet-d16-128-iMayari: &microrts-squnet-d16-128-imayari
   rollout_hyperparams:
     <<: *microrts-ai-rollout-defaults
     scale_advantage_by_values_accuracy: true
+    gamma: 0.999
+    gae_lambda: 0.99
   policy_hyperparams: &microrts-squnet-d16-128-imayari-policy
     <<: *microrts-squnet-deep16-128-policy-defaults
     additional_critic_activation_functions: []
@@ -1309,8 +1315,6 @@ Microrts-squnet-d16-128-iMayari: &microrts-squnet-d16-128-imayari
     batch_size: 3072
     n_epochs: 1
     gradient_accumulation: true
-    gamma: 0.999
-    gae_lambda: 0.99
     learning_rate: !!float 1e-5
     vf_coef: 0.5
     ent_coef: 0.0001
@@ -1344,11 +1348,11 @@ Microrts-squnet-d16-128-BC-finetune: &microrts-squnet-d16-128-bc-finetune
     score_reward_kwargs: null
   rollout_hyperparams: &microrts-squnet-d16-128-bc-finetune-rollout
     <<: *microrts-ai-rollout-defaults
+    gamma: 0.999
+    gae_lambda: 0.99
   algo_hyperparams: &microrts-squnet-d16-128-bc-finetune-algo
     <<: *microrts-squnet-deep16-128-algo-defaults
     batch_size: 3072
-    gamma: 0.999
-    gae_lambda: 0.99
     vf_coef: 0.5
     ent_coef: 0.0001
   hyperparam_transitions_kwargs:
@@ -1388,6 +1392,8 @@ Microrts-squnet-d16-128-map32-BC-finetune:
   rollout_hyperparams: &microrts-squnet-d16-128-map32-bc-finetune-rollout
     <<: *microrts-squnet-d16-128-bc-finetune-rollout
     full_batch_off_accelerator: true
+    gamma: 0.9996
+    gae_lambda: 0.99
   policy_hyperparams: &microrts-squnet-d16-128-map32-bc-finetune-policy
     <<: *microrts-squnet-d16-128-imayari-policy
     load_path: downloaded_models/acbc-Microrts-squnet-d16-128-iMayari-map32-S1-best
@@ -1396,8 +1402,6 @@ Microrts-squnet-d16-128-map32-BC-finetune:
   algo_hyperparams: &microrts-squnet-d16-128-map32-bc-finetune-algo
     <<: *microrts-squnet-d16-128-bc-finetune-algo
     batch_size: 1536
-    gamma: 0.9996
-    gae_lambda: 0.99
 
 Microrts-squnet-d16-128-map32-BC-finetune-A10:
   &microrts-squnet-d16-128-map32-bc-finetune-a10
@@ -1434,12 +1438,14 @@ Microrts-squnet-d16-128-map64-BC-finetune:
     load_run_path: sgoodfriend/rl-algo-impls-microrts-2023/uksp6znl
   eval_hyperparams: &microrts-squnet-d16-128-map64-bc-finetune-eval
     <<: *microrts-squnet-map64-eval-defaults
+  rollout_hyperparams: &microrts-squnet-d16-128-map64-bc-finetune-rollout
+    <<: *microrts-squnet-d16-128-map32-bc-finetune-rollout
+    gamma: 0.9999
+    gae_lambda: 0.99
   algo_hyperparams: &microrts-squnet-d16-128-map64-bc-finetune-algo
     <<: *microrts-squnet-d16-128-map32-bc-finetune-algo
     batch_size: 384
     gradient_accumulation: true
-    gamma: 0.9999
-    gae_lambda: 0.99
     vf_coef: 0.2
   hyperparam_transitions_kwargs:
     interpolate_method: cosine

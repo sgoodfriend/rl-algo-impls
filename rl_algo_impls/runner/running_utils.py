@@ -5,7 +5,7 @@ import os
 import random
 from dataclasses import asdict
 from pathlib import Path
-from typing import Any, Dict, Optional, Type, Union
+from typing import Any, Dict, Optional, Tuple, Type, Union
 
 import gymnasium
 import matplotlib.pyplot as plt
@@ -15,42 +15,44 @@ import torch.backends.cudnn
 import yaml
 from gymnasium.spaces import Box, Discrete
 
+import wandb
 from rl_algo_impls.a2c.a2c import A2C
 from rl_algo_impls.acbc.acbc import ACBC
-from rl_algo_impls.dqn.dqn import DQN
-from rl_algo_impls.dqn.policy import DQNPolicy
 from rl_algo_impls.ppo.ppo import PPO
-from rl_algo_impls.rollout.replay_buffer_rollout_generator import (
-    ReplayBufferRolloutGenerator,
-)
-from rl_algo_impls.rollout.rollout import RolloutGenerator
+from rl_algo_impls.rollout.rollout_generator import RolloutGenerator
 from rl_algo_impls.rollout.sync_step_rollout import SyncStepRolloutGenerator
 from rl_algo_impls.runner.config import Config, Hyperparams
 from rl_algo_impls.runner.wandb_load import load_player
-from rl_algo_impls.shared.agent_state import AgentState
 from rl_algo_impls.shared.algorithm import Algorithm
-from rl_algo_impls.shared.callbacks.eval_callback import EvalCallback
 from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
+from rl_algo_impls.shared.data_store.data_store_accessor import (
+    AbstractDataStoreAccessor,
+)
+from rl_algo_impls.shared.data_store.data_store_data import LearnerInitializeData
+from rl_algo_impls.shared.data_store.data_store_view import LearnerDataStoreView
+from rl_algo_impls.shared.data_store.evaluator import Evaluator
+from rl_algo_impls.shared.data_store.synchronous_data_store_accessor import (
+    SynchronousDataStoreAccessor,
+)
 from rl_algo_impls.shared.policy.actor_critic import ActorCritic
 from rl_algo_impls.shared.policy.policy import Policy
 from rl_algo_impls.shared.vec_env.env_spaces import EnvSpaces
 from rl_algo_impls.shared.vec_env.utils import import_for_env_id, is_microrts
-from rl_algo_impls.wrappers.vector_wrapper import VectorEnv
 
 ALGOS: Dict[str, Type[Algorithm]] = {
-    "dqn": DQN,
+    # "dqn": DQN,
     "ppo": PPO,
     "a2c": A2C,
     "acbc": ACBC,
 }
 POLICIES: Dict[str, Type[Policy]] = {
-    "dqn": DQNPolicy,
+    # "dqn": DQNPolicy,
     "ppo": ActorCritic,
     "a2c": ActorCritic,
     "acbc": ActorCritic,
 }
 DEFAULT_ROLLOUT_GENERATORS: Dict[str, Type[RolloutGenerator]] = {
-    "dqn": ReplayBufferRolloutGenerator,
+    # "dqn": ReplayBufferRolloutGenerator,
     "ppo": SyncStepRolloutGenerator,
     "a2c": SyncStepRolloutGenerator,
     "acbc": SyncStepRolloutGenerator,
@@ -186,11 +188,11 @@ def set_seeds(seed: Optional[int]) -> None:
     os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
 
 
-def make_policy(
+def make_eval_policy(
     config: Config,
     env_spaces: EnvSpaces,
     device: torch.device,
-    agent_state: AgentState,
+    data_store_accessor: SynchronousDataStoreAccessor,
     load_path: Optional[str] = None,
     load_run_path: Optional[str] = None,
     load_run_path_best: bool = True,
@@ -200,23 +202,66 @@ def make_policy(
         env_spaces,
         **kwargs,
     ).to(device)
-    agent_state.policy = policy
+    data_store_accessor._data_store.policy = policy
     if not load_path and load_run_path:
-        import wandb
-
         api = wandb.Api()
         _, _, load_path = load_player(
             api, load_run_path, config.args, config.root_dir, load_run_path_best
         )
         assert load_path
     if load_path:
-        agent_state.load(load_path)
+        data_store_accessor.load(load_path)
     return policy
 
 
-def plot_eval_callback(
-    callback: EvalCallback, tb_writer: SummaryWrapper, run_name: str
-):
+def initialize_policy_algo_data_store_view(
+    config: Config,
+    env_spaces: EnvSpaces,
+    device: torch.device,
+    data_store_accessor: AbstractDataStoreAccessor,
+    tb_writer: SummaryWrapper,
+    wandb_enabled: bool,
+) -> Tuple[Policy, Algorithm, LearnerDataStoreView]:
+    policy_kwargs = dict(config.policy_hyperparams)
+
+    load_path = policy_kwargs.pop("load_path", None)
+    load_run_path = policy_kwargs.pop("load_run_path", None)
+    load_run_path_best = policy_kwargs.pop("load_run_path_best", True)
+    if not load_path and load_run_path:
+        api = wandb.Api()
+        _, _, load_path = load_player(
+            api, load_run_path, config.args, config.root_dir, load_run_path_best
+        )
+        assert load_path
+    if load_path:
+        data_store_accessor.load(load_path)
+
+    policy = POLICIES[config.algo](env_spaces, **policy_kwargs).to(device)
+
+    num_parameters = policy.num_parameters()
+    num_trainable_parameters = policy.num_trainable_parameters()
+    if wandb_enabled:
+        wandb.run.summary["num_parameters"] = num_parameters  # type: ignore
+        wandb.run.summary["num_trainable_parameters"] = num_trainable_parameters  # type: ignore
+    else:
+        print(
+            f"num_parameters = {num_parameters} ; "
+            f"num_trainable_parameters = {num_trainable_parameters}"
+        )
+
+    algo = ALGOS[config.algo](
+        policy,
+        device,
+        tb_writer,
+        **config.algo_hyperparams,
+    )
+    data_store_accessor.initialize_learner(
+        LearnerInitializeData(policy=policy, algo=algo)
+    )
+    return policy, algo, LearnerDataStoreView(data_store_accessor)
+
+
+def plot_eval_callback(callback: Evaluator, tb_writer: SummaryWrapper, run_name: str):
     figure = plt.figure()
     cumulative_steps = [
         (idx + 1) * callback.step_freq for idx in range(len(callback.stats))

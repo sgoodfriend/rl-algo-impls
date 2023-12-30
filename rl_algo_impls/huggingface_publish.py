@@ -1,5 +1,7 @@
 import os
 
+from rl_algo_impls.shared.data_store.data_store_view import EvalDataStoreView
+
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
 
 import argparse
@@ -18,8 +20,8 @@ import wandb
 from rl_algo_impls.publish.markdown_format import EvalTableData, model_card_text
 from rl_algo_impls.runner.config import EnvHyperparams
 from rl_algo_impls.runner.evaluate import EvalArgs, evaluate_model
-from rl_algo_impls.shared.callbacks.eval_callback import evaluate
-from rl_algo_impls.shared.vec_env import make_eval_env
+from rl_algo_impls.shared.data_store.evaluator import evaluate
+from rl_algo_impls.shared.vec_env.make_env import make_eval_env
 from rl_algo_impls.wrappers.vec_episode_recorder import VecEpisodeRecorder
 
 
@@ -62,7 +64,7 @@ def publish(
     )[0]
 
     with tempfile.TemporaryDirectory() as tmpdirname:
-        _, (policy, stats, config) = best_eval
+        _, (policy, stats, config, data_store_accessor) = best_eval
 
         repo_name = config.model_name(include_seed=False)
         repo_dir_path = os.path.join(tmpdirname, repo_name)
@@ -133,6 +135,7 @@ def publish(
             make_eval_env(
                 config,
                 EnvHyperparams(**config.env_hyperparams),
+                EvalDataStoreView(data_store_accessor),
                 override_hparams={"n_envs": 1},
             ),
             os.path.join(repo_dir_path, "replay"),

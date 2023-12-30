@@ -10,10 +10,11 @@ from torch.optim import Adam
 
 from rl_algo_impls.acbc.train_stats import TrainStats
 from rl_algo_impls.ppo.ppo import NL
-from rl_algo_impls.rollout.rollout import RolloutGenerator
 from rl_algo_impls.shared.algorithm import Algorithm
 from rl_algo_impls.shared.callbacks.callback import Callback
 from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
+from rl_algo_impls.shared.data_store.data_store_data import LearnerDataStoreViewUpdate
+from rl_algo_impls.shared.data_store.data_store_view import LearnerDataStoreView
 from rl_algo_impls.shared.policy.actor_critic import ActorCritic
 from rl_algo_impls.shared.schedule import update_learning_rate
 from rl_algo_impls.shared.stats import log_scalars
@@ -35,8 +36,6 @@ class ACBC(Algorithm):
         learning_rate: float = 3e-4,
         batch_size: int = 64,
         n_epochs: int = 10,
-        gamma: NL = 0.99,
-        gae_lambda: NL = 0.95,
         vf_coef: NL = 0.25,
         max_grad_norm: float = 0.5,
         gradient_accumulation: bool = False,
@@ -53,8 +52,6 @@ class ACBC(Algorithm):
 
         self.batch_size = batch_size
         self.n_epochs = n_epochs
-        self.gamma = num_or_array(gamma)
-        self.gae_lambda = num_or_array(gae_lambda)
         self.vf_coef = num_or_array(vf_coef)
         self.max_grad_norm = max_grad_norm
         self.gradient_accumulation = gradient_accumulation
@@ -62,18 +59,12 @@ class ACBC(Algorithm):
 
     def learn(
         self: ACBCSelf,
+        learner_data_store_view: LearnerDataStoreView,
         train_timesteps: int,
-        rollout_generator: RolloutGenerator,
         callbacks: Optional[List[Callback]] = None,
-        total_timesteps: Optional[int] = None,
-        start_timesteps: int = 0,
     ) -> ACBCSelf:
-        if total_timesteps is None:
-            total_timesteps = train_timesteps
-        assert start_timesteps + train_timesteps <= total_timesteps
-        timesteps_elapsed = start_timesteps
-
-        while timesteps_elapsed < start_timesteps + train_timesteps:
+        timesteps_elapsed = 0
+        while timesteps_elapsed < train_timesteps:
             start_time = perf_counter()
 
             update_learning_rate(self.optimizer, self.learning_rate)
@@ -82,9 +73,17 @@ class ACBC(Algorithm):
                 "learning_rate": self.optimizer.param_groups[0]["lr"],
                 "vf_coef": self.vf_coef,
             }
-            log_scalars(self.tb_writer, "charts", chart_scalars, timesteps_elapsed)
+            log_scalars(self.tb_writer, "charts", chart_scalars)
 
-            r = rollout_generator.rollout(self.gamma, self.gae_lambda)
+            rollouts, teacher_policy = learner_data_store_view.get_learner_view()
+            if len(rollouts) > 1:
+                logging.warning(
+                    f"A2C does not support multiple rollouts ({len(rollouts)}) per epoch. "
+                    "Only the last rollout will be used"
+                )
+            r = rollouts[-1]
+            if teacher_policy is not None:
+                logging.warning("A2c doesn't support teacher policies")
             timesteps_elapsed += r.total_steps
 
             step_stats: List[Dict[str, Union[float, np.ndarray]]] = []
@@ -158,7 +157,14 @@ class ACBC(Algorithm):
                     logging.info(
                         f"Callback terminated training at {timesteps_elapsed} timesteps"
                     )
+                    learner_data_store_view.submit_learner_update(
+                        LearnerDataStoreViewUpdate(self.policy, self, timesteps_elapsed)
+                    )
                     break
+
+            learner_data_store_view.submit_learner_update(
+                LearnerDataStoreViewUpdate(self.policy, self, timesteps_elapsed)
+            )
         return self
 
     def optimizer_step(self) -> None:
