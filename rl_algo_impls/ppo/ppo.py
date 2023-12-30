@@ -123,7 +123,7 @@ class PPO(Algorithm):
         ppo2_vf_coef_halving: bool = False,
         max_grad_norm: float = 0.5,
         multi_reward_weights: Optional[List[int]] = None,
-        gradient_accumulation: bool = False,
+        gradient_accumulation: Union[bool, int] = False,
         kl_cutoff: Optional[float] = None,
         freeze_policy_head: bool = False,
         freeze_value_head: bool = False,
@@ -273,13 +273,22 @@ class PPO(Algorithm):
                 self.freeze_value_head,
                 self.freeze_backbone,
             )
+        shuffle_minibatches = True
+        if self.gradient_accumulation:
+            if self.gradient_accumulation is True:
+                minibatches_per_step = r.num_minibatches(self.batch_size)
+                shuffle_minibatches = False
+            else:
+                minibatches_per_step = self.gradient_accumulation
+        else:
+            minibatches_per_step = 1
         for _ in range(self.n_epochs):
             # Only record last epoch's stats
             step_stats.clear()
             grad_norms.clear()
-            for mb in r.minibatches(
-                self.batch_size, shuffle=not self.gradient_accumulation
-            ):
+            mb_idx = 0
+            for mb in r.minibatches(self.batch_size, shuffle=shuffle_minibatches):
+                mb_idx += 1
                 self.policy.reset_noise(self.batch_size)
 
                 (
@@ -360,10 +369,9 @@ class PPO(Algorithm):
                         additional_losses["teacher_kl_loss"] = teacher_kl_loss.item()
                         loss += self.teacher_kl_loss_coef * teacher_kl_loss
 
-                    if self.gradient_accumulation:
-                        loss /= r.num_minibatches(self.batch_size)
+                    loss /= minibatches_per_step
                 loss.backward()
-                if not self.gradient_accumulation:
+                if mb_idx % minibatches_per_step == 0:
                     grad_norms.append(self.optimizer_step())
 
                 with torch.no_grad():
@@ -397,7 +405,7 @@ class PPO(Algorithm):
                         additional_losses,
                     )
                 )
-            if self.gradient_accumulation:
+            if mb_idx % minibatches_per_step != 0:
                 grad_norms.append(self.optimizer_step())
         if self.freeze_policy_head or self.freeze_value_head or self.freeze_backbone:
             self.policy.unfreeze()
