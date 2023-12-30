@@ -11,11 +11,13 @@ import torch.nn.functional as F
 from torch.optim import Adam
 
 from rl_algo_impls.loss.teacher_kl_loss import TeacherKLLoss
-from rl_algo_impls.rollout.rollout import RolloutGenerator
+from rl_algo_impls.rollout.rollout_generator import RolloutGenerator
 from rl_algo_impls.shared.algorithm import Algorithm
 from rl_algo_impls.shared.autocast import maybe_autocast
 from rl_algo_impls.shared.callbacks import Callback
 from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
+from rl_algo_impls.shared.data_store.data_store_data import LearnerDataStoreViewUpdate
+from rl_algo_impls.shared.data_store.data_store_view import LearnerDataStoreView
 from rl_algo_impls.shared.policy.actor_critic import ActorCritic
 from rl_algo_impls.shared.schedule import update_learning_rate
 from rl_algo_impls.shared.stats import log_scalars
@@ -112,8 +114,6 @@ class PPO(Algorithm):
         learning_rate: float = 3e-4,
         batch_size: int = 64,
         n_epochs: int = 10,
-        gamma: NL = 0.99,
-        gae_lambda: NumOrList = 0.95,
         clip_range: float = 0.2,
         clip_range_vf: Optional[float] = None,
         normalize_advantage: bool = True,
@@ -128,14 +128,11 @@ class PPO(Algorithm):
         freeze_policy_head: bool = False,
         freeze_value_head: bool = False,
         freeze_backbone: bool = False,
-        switch_range: Optional[int] = None,
-        guide_probability: Optional[float] = None,
         normalize_advantages_after_scaling: bool = False,
         autocast_loss: bool = False,
         vf_loss_fn: str = "mse_loss",
         vf_weights: Optional[List[int]] = None,
         teacher_kl_loss_coef: Optional[float] = None,
-        teacher_kl_loss_fn: Optional[TeacherKLLoss] = None,
         teacher_loss_importance_sampling: bool = True,
     ) -> None:
         super().__init__(
@@ -147,8 +144,6 @@ class PPO(Algorithm):
         )
         self.policy = policy
 
-        self.gamma = num_or_array(gamma)
-        self.gae_lambda = num_or_array(gae_lambda)
         self.max_grad_norm = max_grad_norm
         self.clip_range = clip_range
         self.clip_range_vf = clip_range_vf
@@ -177,8 +172,6 @@ class PPO(Algorithm):
         self.freeze_value_head = freeze_value_head
         self.freeze_backbone = freeze_backbone
 
-        self.switch_range = switch_range
-        self.guide_probability = guide_probability
         self.normalize_advantages_after_scaling = normalize_advantages_after_scaling
 
         self.autocast_loss = autocast_loss
@@ -186,25 +179,22 @@ class PPO(Algorithm):
         self.vf_loss_fn = getattr(F, vf_loss_fn)
 
         self.teacher_kl_loss_coef = teacher_kl_loss_coef
-        self.teacher_kl_loss_fn = teacher_kl_loss_fn
+        self.teacher_kl_loss_fn = TeacherKLLoss() if teacher_kl_loss_coef else None
         self.teacher_loss_importance_sampling = teacher_loss_importance_sampling
 
     def learn(
         self: PPOSelf,
+        learner_data_store_view: LearnerDataStoreView,
         train_timesteps: int,
-        rollout_generator: RolloutGenerator,
         callbacks: Optional[List[Callback]] = None,
-        total_timesteps: Optional[int] = None,
-        start_timesteps: int = 0,
     ) -> PPOSelf:
-        if total_timesteps is None:
-            total_timesteps = train_timesteps
-        assert start_timesteps + train_timesteps <= total_timesteps
-
-        timesteps_elapsed = start_timesteps
-        while timesteps_elapsed < start_timesteps + train_timesteps:
+        timesteps_elapsed = 0
+        while timesteps_elapsed < train_timesteps:
             timesteps_elapsed, should_continue = self.learn_epoch(
-                timesteps_elapsed, total_timesteps, rollout_generator, callbacks
+                learner_data_store_view, timesteps_elapsed, callbacks
+            )
+            learner_data_store_view.submit_learner_update(
+                LearnerDataStoreViewUpdate(self.policy, self, timesteps_elapsed)
             )
             gc.collect()
             if not should_continue:
@@ -213,9 +203,8 @@ class PPO(Algorithm):
 
     def learn_epoch(
         self,
+        learner_data_store_view: LearnerDataStoreView,
         timesteps_elapsed: int,
-        total_timesteps: int,
-        rollout_generator: RolloutGenerator,
         callbacks: Optional[List[Callback]] = None,
     ) -> Tuple[int, bool]:
         start_time = perf_counter()
@@ -226,8 +215,6 @@ class PPO(Algorithm):
             "learning_rate": self.optimizer.param_groups[0]["lr"],
             "ent_coef": self.ent_coef,
             "pi_clip": pi_clip,
-            "gamma": self.gamma,
-            "gae_lambda": self.gae_lambda,
             "vf_coef": self.vf_coef,
         }
         if self.clip_range_vf is not None:
@@ -237,30 +224,32 @@ class PPO(Algorithm):
             v_clip = None
         if self.multi_reward_weights is not None:
             chart_scalars["reward_weights"] = self.multi_reward_weights
-        if self.switch_range is not None:
-            assert hasattr(
-                rollout_generator, "switch_range"
-            ), f"rollout_generator assumed to have switch_range attribute"
-            setattr(rollout_generator, "switch_range", self.switch_range)
-            chart_scalars["switch_range"] = self.switch_range
-        if self.guide_probability is not None:
-            assert hasattr(
-                rollout_generator, "guide_probability"
-            ), f"rollout_generator assumed to have guide_probability attribute"
-            setattr(rollout_generator, "guide_probability", self.guide_probability)
-            chart_scalars["guide_probability"] = self.guide_probability
         if self.vf_weights is not None:
             chart_scalars["vf_weights"] = self.vf_weights
         if self.teacher_kl_loss_coef is not None:
             chart_scalars["teacher_kl_loss_coef"] = self.teacher_kl_loss_coef
-        log_scalars(self.tb_writer, "charts", chart_scalars, timesteps_elapsed)
+        log_scalars(self.tb_writer, "charts", chart_scalars)
 
-        r = rollout_generator.rollout(gamma=self.gamma, gae_lambda=self.gae_lambda)
-        if self.teacher_kl_loss_fn:
-            r.add_to_batch(
-                self.teacher_kl_loss_fn.add_to_batch,
-                rollout_generator.env_spaces.num_envs,
+        rollouts, teacher_policy = learner_data_store_view.get_learner_view()
+        if len(rollouts) > 1:
+            logging.warning(
+                f"PPO does not support multiple rollouts ({len(rollouts)}) per epoch. "
+                "Only the last rollout will be used"
             )
+        r = rollouts[-1]
+
+        if self.teacher_kl_loss_fn:
+            teacher_kl_loss_fn = self.teacher_kl_loss_fn
+            assert teacher_policy is not None
+            r.add_to_batch(
+                lambda batch: teacher_kl_loss_fn.add_to_batch(teacher_policy, batch),
+                self.batch_size,
+            )
+        elif teacher_policy is not None:
+            logging.warning(
+                "Getting teacher_policy without teacher_kl_loss_fn could be inefficient"
+            )
+
         gc.collect()
         timesteps_elapsed += r.total_steps
 

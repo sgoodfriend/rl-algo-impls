@@ -12,8 +12,8 @@ from gymnasium.wrappers.resize_observation import ResizeObservation
 from stable_baselines3.common.atari_wrappers import MaxAndSkipEnv, NoopResetEnv
 
 from rl_algo_impls.runner.config import Config, EnvHyperparams
-from rl_algo_impls.shared.agent_state import AgentState
 from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
+from rl_algo_impls.shared.data_store.data_store_view import VectorEnvDataStoreView
 from rl_algo_impls.shared.vec_env.utils import (
     import_for_env_id,
     is_atari,
@@ -44,7 +44,7 @@ from rl_algo_impls.wrappers.video_compat_wrapper import VideoCompatWrapper
 def make_vec_env(
     config: Config,
     hparams: EnvHyperparams,
-    agent_state: AgentState,
+    data_store_view: VectorEnvDataStoreView,
     training: bool = True,
     render: bool = False,
     tb_writer: Optional[SummaryWrapper] = None,
@@ -171,14 +171,14 @@ def make_vec_env(
             if normalize_kwargs.get("norm_obs", True):
                 envs = NormalizeObservation(
                     envs,
-                    agent_state,
+                    data_store_view,
                     training=training,
                     clip=normalize_kwargs.get("clip_obs", 10.0),
                 )
             if training and normalize_kwargs.get("norm_reward", True):
                 envs = NormalizeReward(
                     envs,
-                    agent_state,
+                    data_store_view,
                     training=training,
                     gamma=normalize_kwargs.get("gamma_reward", 0.99),
                     clip=normalize_kwargs.get("clip_reward", 10.0),

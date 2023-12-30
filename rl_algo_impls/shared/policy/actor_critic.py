@@ -1,5 +1,6 @@
 from abc import abstractmethod
 from typing import (
+    Any,
     Dict,
     Generic,
     List,
@@ -348,26 +349,41 @@ class ActorCritic(OnPolicy, Generic[ObsType]):
                 self.squash_output,
             )
 
-    def save_weights(self, path: str) -> None:
+    def get_state(self) -> Any:
+        if (
+            isinstance(self.network, BackboneActorCritic)
+            and self.network.save_critic_separate
+        ):
+            return self.network.get_state()
+        else:
+            return super().get_state()
+
+    def load_state(self, state: Any) -> None:
+        if (
+            isinstance(self.network, BackboneActorCritic)
+            and self.network.save_critic_separate
+        ):
+            self.network.set_state(state)
+        else:
+            super().load_state(state)
+
+    def save(self, path: str) -> None:
         if (
             isinstance(self.network, BackboneActorCritic)
             and self.network.save_critic_separate
         ):
             self.network.save(path)
         else:
-            super().save_weights(path)
+            super().save(path)
 
-    def load_weights(self, path: str) -> None:
+    def load(self, path: str) -> None:
         if (
             isinstance(self.network, BackboneActorCritic)
             and self.network.save_critic_separate
         ):
             self.network.load(path, self.device)
         else:
-            super().load_weights(path)
-
-    def load(self, path: str) -> None:
-        super().load(path)
+            super().load(path)
         self.reset_noise()
 
     def reset_noise(self, batch_size: Optional[int] = None) -> None:

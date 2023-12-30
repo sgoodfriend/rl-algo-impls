@@ -3,28 +3,23 @@ from typing import Dict, Optional
 import torch
 from torch.nn.modules.loss import _Loss
 
-from rl_algo_impls.checkpoints.checkpoints_manager import PolicyCheckpointsManager
 from rl_algo_impls.rollout.rollout import Batch
+from rl_algo_impls.shared.policy.policy import Policy
 
 
 class TeacherKLLoss(_Loss):
     def __init__(
         self,
-        ckpts_manager: PolicyCheckpointsManager,
         unbiased: bool = True,
         **kwargs,
     ) -> None:
         super().__init__(**kwargs)
-        self.ckpts_manager = ckpts_manager
         self.unbiased = unbiased
         assert (
             self.reduction == "mean"
         ), f"reduction must be 'mean', got {self.reduction}"
 
-    def add_to_batch(self, batch: Batch) -> Dict[str, torch.Tensor]:
-        teacher = self.ckpts_manager.latest_checkpoint
-        assert teacher is not None, "No checkpoints available"
-
+    def add_to_batch(self, teacher: Policy, batch: Batch) -> Dict[str, torch.Tensor]:
         with torch.no_grad():
             return {
                 "teacher_logprobs": teacher(

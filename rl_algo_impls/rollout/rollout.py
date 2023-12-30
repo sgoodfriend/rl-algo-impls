@@ -8,13 +8,11 @@ import torch
 from gymnasium.spaces import MultiDiscrete
 
 from rl_algo_impls.shared.actor.gridnet import ValueDependentMask
-from rl_algo_impls.shared.agent_state import AgentState
 from rl_algo_impls.shared.tensor_utils import (
     NumpyOrDict,
     TensorOrDict,
     tensor_by_indicies,
 )
-from rl_algo_impls.shared.vec_env.env_spaces import EnvSpaces
 
 BatchSelf = TypeVar("BatchSelf", bound="Batch")
 TDN = TypeVar("TDN", torch.Tensor, Dict[str, torch.Tensor], None)
@@ -100,25 +98,6 @@ class Rollout(ABC):
         ...
 
     def add_to_batch(self, map_fn: BatchMapFn, batch_size: int) -> None:
-        ...
-
-
-class RolloutGenerator(ABC):
-    def __init__(self, agent_state: AgentState, **kwargs) -> None:
-        super().__init__()
-        self.agent_state = agent_state
-
-    @abstractmethod
-    def prepare(self) -> None:
-        ...
-
-    @abstractmethod
-    def rollout(self, **kwargs) -> Rollout:
-        ...
-
-    @property
-    @abstractmethod
-    def env_spaces(self) -> EnvSpaces:
         ...
 
 

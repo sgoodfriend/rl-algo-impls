@@ -14,7 +14,7 @@ do
     shift
 done
 
-algos="${algos:-ppo a2c dqn}"
+algos="${algos:-ppo a2c}"
 n_jobs="${n_jobs:-6}"
 project_name="${project_name:-rl-algo-impls-benchmarks}"
 seeds="${seeds:-1 2 3}"

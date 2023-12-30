@@ -1,32 +1,25 @@
-from typing import Optional
-
 import numpy as np
-import torch
 
-from rl_algo_impls.checkpoints.checkpoints_manager import PolicyCheckpointsManager
 from rl_algo_impls.rollout.sync_step_rollout import SyncStepRolloutGenerator, fold_in
 from rl_algo_impls.rollout.vec_rollout import VecRollout
 from rl_algo_impls.runner.config import Config
-from rl_algo_impls.shared.agent_state import AgentState
 from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
-from rl_algo_impls.shared.tensor_utils import (
-    NumOrArray,
-    NumpyOrDict,
-    TensorOrDict,
-    batch_dict_keys,
+from rl_algo_impls.shared.data_store.data_store_accessor import (
+    AbstractDataStoreAccessor,
 )
+from rl_algo_impls.shared.stats import log_scalars
+from rl_algo_impls.shared.tensor_utils import batch_dict_keys
 
 
 class ReferenceAIRolloutGenerator(SyncStepRolloutGenerator):
     def __init__(
         self,
         config: Config,
-        agent_state: AgentState,
+        data_store_accessor: AbstractDataStoreAccessor,
         tb_writer: SummaryWrapper,
-        checkpoints_wrapper: Optional[PolicyCheckpointsManager],
         **kwargs
     ) -> None:
-        super().__init__(config, agent_state, tb_writer, checkpoints_wrapper, **kwargs)
+        super().__init__(config, data_store_accessor, tb_writer, **kwargs)
         if not self.include_logp:
             if isinstance(self.actions, dict):
                 self.zero_action = np.array(
@@ -44,8 +37,15 @@ class ReferenceAIRolloutGenerator(SyncStepRolloutGenerator):
                     dtype=self.actions.dtype,
                 )
 
-    def rollout(self, gamma: NumOrArray, gae_lambda: NumOrArray) -> VecRollout:
-        policy = self.agent_state.policy
+    def rollout(self) -> VecRollout:
+        (
+            policy,
+            rollout_params,
+            self.tb_writer.timesteps_elapsed,
+        ) = self._data_store_view.update_for_rollout_start()
+        self.update_rollout_params(rollout_params)
+        log_scalars(self.tb_writer, rollout_params, self.tb_writer.timesteps_elapsed)
+
         policy.eval()
         policy.reset_noise()
 
@@ -97,16 +97,10 @@ class ReferenceAIRolloutGenerator(SyncStepRolloutGenerator):
             values=self.values,
             logprobs=self.logprobs,
             action_masks=self.action_masks,
-            gamma=gamma,
-            gae_lambda=gae_lambda,
+            gamma=self.gamma,
+            gae_lambda=self.gae_lambda,
             scale_advantage_by_values_accuracy=self.scale_advantage_by_values_accuracy,
             full_batch_off_accelerator=self.full_batch_off_accelerator,
             subaction_mask=self.subaction_mask,
             action_plane_space=getattr(self.vec_env, "action_plane_space", None),
         )
-
-    def actions_to_tensor(self, a: NumpyOrDict) -> TensorOrDict:
-        device = self.agent_state.policy.device
-        if isinstance(a, dict):
-            return {k: torch.as_tensor(v).to(device) for k, v in a.items()}
-        return torch.as_tensor(a).to(device)

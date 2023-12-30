@@ -214,7 +214,6 @@ def log_scalars(
     tb_writer: SummaryWrapper,
     main_tag: str,
     tag_scalar_dict: Dict[str, Union[int, float]],
-    global_step: int,
 ) -> None:
     for tag, value in tag_scalar_dict.items():
         if isinstance(value, np.ndarray):

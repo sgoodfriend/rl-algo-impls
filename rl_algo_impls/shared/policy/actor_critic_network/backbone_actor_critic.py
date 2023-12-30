@@ -1,5 +1,5 @@
 import os
-from typing import Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import torch
@@ -245,24 +245,40 @@ class BackboneActorCritic(ActorCriticNetwork):
         assert (
             not self.critic_shares_backbone
         ), "Should not be called if sharing backbone"
+        state = self.get_state()
         torch.save(
-            {
-                "actor_head": self.actor_head.state_dict(),
-                "backbone": self.backbone.state_dict(),
-            },
+            {k: v for k, v in state.items() if k in {"actor_head", "backbone"}},
             os.path.join(path, MODEL_FILENAME),
         )
-        torch.save(self.critic_heads.state_dict(), os.path.join(path, CRITIC_FILENAME))
+        torch.save(state["critic_heads"], os.path.join(path, CRITIC_FILENAME))
 
     def load(self, path: str, device: Optional[torch.device]) -> None:
         assert (
             not self.critic_shares_backbone
         ), "Should not be called if sharing backbone"
-        policy_weights = torch.load(
-            os.path.join(path, MODEL_FILENAME), map_location=device
+        self.set_state(
+            {
+                **torch.load(os.path.join(path, MODEL_FILENAME), map_location=device),
+                "critic_heads": torch.load(
+                    os.path.join(path, CRITIC_FILENAME), map_location=device
+                ),
+            }
         )
-        self.backbone.load_state_dict(policy_weights["backbone"])
-        self.actor_head.load_state_dict(policy_weights["actor_head"])
-        self.critic_heads.load_state_dict(
-            torch.load(os.path.join(path, CRITIC_FILENAME), map_location=device)
-        )
+
+    def get_state(self) -> Dict[str, Any]:
+        assert (
+            not self.critic_shares_backbone
+        ), "Should not be called if sharing backbone"
+        return {
+            "actor_head": self.actor_head.state_dict(),
+            "backbone": self.backbone.state_dict(),
+            "critic_heads": self.critic_heads.state_dict(),
+        }
+
+    def set_state(self, state: Dict[str, Any]) -> None:
+        assert (
+            not self.critic_shares_backbone
+        ), "Should not be called if sharing backbone"
+        self.actor_head.load_state_dict(state["actor_head"])
+        self.backbone.load_state_dict(state["backbone"])
+        self.critic_heads.load_state_dict(state["critic_heads"])

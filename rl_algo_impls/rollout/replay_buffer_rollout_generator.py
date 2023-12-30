@@ -1,15 +1,18 @@
 import random
 from collections import deque
-from typing import NamedTuple, Optional
+from typing import NamedTuple
 
 import numpy as np
 import torch
 
-from rl_algo_impls.checkpoints.checkpoints_manager import PolicyCheckpointsManager
 from rl_algo_impls.rollout.in_process_rollout import InProcessRolloutGenerator
 from rl_algo_impls.runner.config import Config
-from rl_algo_impls.shared.agent_state import AgentState
 from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
+from rl_algo_impls.shared.data_store.synchronous_data_store_accessor import SynchronousDataStoreAccessor
+from rl_algo_impls.shared.data_store.data_store_accessor import (
+    AbstractDataStoreAccessor,
+)
+from rl_algo_impls.shared.stats import log_scalars
 
 
 class Batch(NamedTuple):
@@ -32,14 +35,18 @@ class ReplayBufferRolloutGenerator(InProcessRolloutGenerator):
     def __init__(
         self,
         config: Config,
-        agent_state: AgentState,
+        data_store_accessor: AbstractDataStoreAccessor,
         tb_writer: SummaryWrapper,
-        checkpoints_wrapper: Optional[PolicyCheckpointsManager],
         buffer_size: int = 1_000_000,
         learning_starts: int = 50_000,
         train_freq: int = 4,
     ) -> None:
-        super().__init__(config, agent_state, tb_writer, checkpoints_wrapper)
+        assert isinstance(data_store_accessor, SynchronousDataStoreAccessor)
+        super().__init__(
+            config,
+            data_store_accessor,
+            tb_writer,
+        )
         self.next_obs = np.zeros(
             (self.env_spaces.num_envs,)
             + self.env_spaces.single_observation_space.shape,
@@ -62,7 +69,14 @@ class ReplayBufferRolloutGenerator(InProcessRolloutGenerator):
         return self._collect_transitions(self.train_freq, **kwargs)
 
     def _collect_transitions(self, n_steps: int, **kwargs) -> int:
-        policy = self.agent_state.policy
+        (
+            policy,
+            rollout_params,
+            self.tb_writer.timesteps_elapsed,
+        ) = self._data_store_view.update_for_rollout_start()
+        self.update_rollout_params(rollout_params)
+        log_scalars(self.tb_writer, "charts", rollout_params)
+
         policy.train(False)
         for _ in range(n_steps):
             actions = policy.act(self.next_obs, deterministic=False, **kwargs)

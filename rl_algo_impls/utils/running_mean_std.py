@@ -1,14 +1,20 @@
 import logging
-from typing import Optional, Tuple, TypeVar, Union
+import os
+from typing import Any, Dict, Optional, Tuple, TypeVar, Union
 
 import numpy as np
 from numpy.typing import NDArray
 
+from rl_algo_impls.shared.trackable import Trackable
+
 RunningMeanStdSelf = TypeVar("RunningMeanStdSelf", bound="RunningMeanStd")
 
 
-class RunningMeanStd:
-    def __init__(self, epsilon: float = 1e-4, shape: Tuple[int, ...] = ()) -> None:
+class RunningMeanStd(Trackable):
+    def __init__(
+        self, filename: str, epsilon: float = 1e-4, shape: Tuple[int, ...] = ()
+    ) -> None:
+        self.filename = filename
         self.mean = np.zeros(shape, np.float64)
         self.var = np.ones(shape, np.float64)
         self.count = epsilon
@@ -29,19 +35,31 @@ class RunningMeanStd:
         self.var = M2 / total_count
         self.count = total_count
 
+    @property
+    def name(self) -> str:
+        return self.filename
+
     def save(self, path: str) -> None:
         np.savez_compressed(
-            path,
-            mean=self.mean,
-            var=self.var,
-            count=self.count,
+            os.path.join(path, self.filename),
+            **self.get_state(),
         )
 
-    def load(self, path: str, count_override: Optional[int] = None) -> None:
-        data = np.load(path)
-        self.mean = data["mean"]
-        self.var = data["var"]
-        self.count = data.get("count") if count_override is None else count_override
+    def load(self, path: str) -> None:
+        data = np.load(os.path.join(path, self.filename))
+        self.set_state(data)
+
+    def get_state(self) -> Dict[str, Any]:
+        return {
+            "mean": self.mean,
+            "var": self.var,
+            "count": self.count,
+        }
+
+    def set_state(self, state: Any) -> None:
+        self.mean = state["mean"]
+        self.var = state["var"]
+        self.count = state.get("count")
 
 
 ExponentialMovingMeanVarSelf = TypeVar(
@@ -49,13 +67,15 @@ ExponentialMovingMeanVarSelf = TypeVar(
 )
 
 
-class ExponentialMovingMeanVar:
+class ExponentialMovingMeanVar(Trackable):
     def __init__(
         self,
+        filename: str,
         alpha: Optional[float] = None,
         window_size: Optional[Union[int, float]] = None,
         shape: Tuple[int, ...] = (),
     ) -> None:
+        self.filename = filename
         assert (
             alpha is None or window_size is None
         ), f"Only one of alpha ({alpha}) or window_size ({window_size}) can be specified"
@@ -70,6 +90,10 @@ class ExponentialMovingMeanVar:
         self.squared_mean = np.zeros(shape, np.float64)
         self.var = np.ones(shape, np.float64)
         self.initialized = False
+
+    @property
+    def name(self) -> str:
+        return self.filename
 
     def update(self, x: NDArray) -> None:
         if not self.initialized:
@@ -92,18 +116,26 @@ class ExponentialMovingMeanVar:
 
     def save(self, path: str) -> None:
         np.savez_compressed(
-            path,
-            mean=self.mean,
-            var=self.var,
-            initialized=self.initialized,
+            os.path.join(path, self.filename),
+            **self.get_state(),
         )
 
-    def load(self, path: str, count_override: Optional[int] = None) -> None:
-        data = np.load(path)
-        self.mean = data["mean"]
-        self.var = data["var"]
+    def load(self, path: str) -> None:
+        data = np.load(os.path.join(path, self.filename))
+        self.set_state(data)
+
+    def get_state(self) -> Dict[str, Any]:
+        return {
+            "mean": self.mean,
+            "var": self.var,
+            "initialized": np.array(self.initialized),
+        }
+
+    def set_state(self, state: Any) -> None:
+        self.mean = state["mean"]
+        self.var = state["var"]
         self.squared_mean = self.var + self.mean**2
-        self.initialized = data["initialized"].item()
+        self.initialized = state["initialized"].item()
 
 
 HybridMovingMeanVarSelf = TypeVar(
@@ -111,17 +143,26 @@ HybridMovingMeanVarSelf = TypeVar(
 )
 
 
-class HybridMovingMeanVar:
+class HybridMovingMeanVar(Trackable):
     def __init__(
         self,
+        filename: str,
         alpha: Optional[float] = None,
         window_size: Optional[Union[int, float]] = None,
         shape: Tuple[int, ...] = (),
     ) -> None:
-        self.rms = RunningMeanStd(shape=shape)
+        self.filename = filename
+        self.rms = RunningMeanStd(self.filename + "-rms.npz", shape=shape)
         self.emmv = ExponentialMovingMeanVar(
-            alpha=alpha, window_size=window_size, shape=shape
+            self.filename + "-emmv.npz",
+            alpha=alpha,
+            window_size=window_size,
+            shape=shape,
         )
+
+    @property
+    def name(self) -> str:
+        return self.filename
 
     @property
     def mean(self) -> NDArray:
@@ -144,9 +185,19 @@ class HybridMovingMeanVar:
         self.emmv.update(x)
 
     def save(self, path: str) -> None:
-        self.rms.save(path + "-rms.npz")
-        self.emmv.save(path + "-emmv.npz")
+        self.rms.save(path)
+        self.emmv.save(path)
 
-    def load(self, path: str, count_override: Optional[int] = None) -> None:
-        self.rms.load(path + "-rms.npz", count_override=count_override)
-        self.emmv.load(path + "-emmv.npz", count_override=count_override)
+    def load(self, path: str) -> None:
+        self.rms.load(path)
+        self.emmv.load(path)
+
+    def get_state(self) -> Dict[str, Any]:
+        return {
+            "rms": self.rms.get_state(),
+            "emmv": self.emmv.get_state(),
+        }
+
+    def set_state(self, state: Any) -> None:
+        self.rms.set_state(state["rms"])
+        self.emmv.set_state(state["emmv"])

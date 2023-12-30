@@ -6,10 +6,9 @@ from typing import List, Optional, TypeVar
 import torch
 from torch.optim import Optimizer
 
-from rl_algo_impls.rollout.rollout import RolloutGenerator
-from rl_algo_impls.shared.trackable import Trackable
 from rl_algo_impls.shared.callbacks import Callback
 from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
+from rl_algo_impls.shared.data_store.data_store_view import LearnerDataStoreView
 from rl_algo_impls.shared.policy.policy import Policy
 
 OPTIMIZER_FILENAME = "optimizer.pt"
@@ -17,7 +16,7 @@ OPTIMIZER_FILENAME = "optimizer.pt"
 AlgorithmSelf = TypeVar("AlgorithmSelf", bound="Algorithm")
 
 
-class Algorithm(Trackable, ABC):
+class Algorithm(ABC):
     @abstractmethod
     def __init__(
         self,
@@ -38,11 +37,9 @@ class Algorithm(Trackable, ABC):
     @abstractmethod
     def learn(
         self: AlgorithmSelf,
+        learner_data_store_view: LearnerDataStoreView,
         train_timesteps: int,
-        rollout_generator: RolloutGenerator,
         callbacks: Optional[List[Callback]] = None,
-        total_timesteps: Optional[int] = None,
-        start_timesteps: int = 0,
     ) -> AlgorithmSelf:
         ...
 

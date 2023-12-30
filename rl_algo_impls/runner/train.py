@@ -1,29 +1,11 @@
 # Support for PyTorch mps mode (https://pytorch.org/docs/stable/notes/mps.html)
-import logging
 import os
-import platform
-import sys
-
-from rl_algo_impls.checkpoints.checkpoints_manager import PolicyCheckpointsManager
-from rl_algo_impls.lux.jux_verify import jux_verify_enabled
-from rl_algo_impls.ppo.learning_rate_by_kl_divergence import LearningRateByKLDivergence
-from rl_algo_impls.ppo.ppo import PPO
-from rl_algo_impls.rollout.guided_learner_rollout import GuidedLearnerRolloutGenerator
-from rl_algo_impls.rollout.in_process_rollout import InProcessRolloutGenerator
-from rl_algo_impls.rollout.random_guided_learner_rollout import (
-    RandomGuidedLearnerRolloutGenerator,
-)
-from rl_algo_impls.rollout.reference_ai_rollout import ReferenceAIRolloutGenerator
-from rl_algo_impls.rollout.sync_step_rollout import SyncStepRolloutGenerator
-from rl_algo_impls.shared.agent_state import AgentState
-from rl_algo_impls.shared.callbacks.self_play_callback import SelfPlayCallback
-from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
-from rl_algo_impls.shared.vec_env.env_spaces import EnvSpaces
 
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
-
 import dataclasses
+import logging
 import shutil
+import sys
 from dataclasses import asdict, dataclass
 from typing import Any, Dict, List, Optional, Sequence
 
@@ -31,23 +13,31 @@ import yaml
 from torch.utils.tensorboard.writer import SummaryWriter
 
 import wandb
-from rl_algo_impls.runner.config import Config, EnvHyperparams, RunArgs
+from rl_algo_impls.ppo.learning_rate_by_kl_divergence import LearningRateByKLDivergence
+from rl_algo_impls.ppo.ppo import PPO
+from rl_algo_impls.rollout.in_process_rollout import InProcessRolloutGenerator
+from rl_algo_impls.rollout.reference_ai_rollout import ReferenceAIRolloutGenerator
+from rl_algo_impls.rollout.sync_step_rollout import SyncStepRolloutGenerator
+from rl_algo_impls.runner.config import Config, RunArgs
 from rl_algo_impls.runner.running_utils import (
-    ALGOS,
     DEFAULT_ROLLOUT_GENERATORS,
     get_device,
     hparam_dict,
+    initialize_policy_algo_data_store_view,
     load_hyperparams,
-    make_policy,
     plot_eval_callback,
     set_device_optimizations,
     set_seeds,
 )
 from rl_algo_impls.shared.callbacks.callback import Callback
-from rl_algo_impls.shared.callbacks.eval_callback import EvalCallback
 from rl_algo_impls.shared.callbacks.hyperparam_transitions import HyperparamTransitions
+from rl_algo_impls.shared.callbacks.self_play_callback import SelfPlayCallback
+from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
+from rl_algo_impls.shared.data_store.evaluator import Evaluator
+from rl_algo_impls.shared.data_store.synchronous_data_store_accessor import (
+    SynchronousDataStoreAccessor,
+)
 from rl_algo_impls.shared.stats import EpisodesStats
-from rl_algo_impls.shared.vec_env.make_env import make_env, make_eval_env
 from rl_algo_impls.wrappers.self_play_wrapper import SelfPlayWrapper
 from rl_algo_impls.wrappers.vector_wrapper import find_wrapper
 
@@ -88,13 +78,9 @@ def train(args: TrainArgs):
 
     set_seeds(args.seed)
 
-    checkpoints_manager = (
-        PolicyCheckpointsManager(**config.hyperparams.checkpoints_kwargs)
-        if config.hyperparams.checkpoints_kwargs
-        else None
+    data_store_accessor = SynchronousDataStoreAccessor(
+        **(config.hyperparams.checkpoints_kwargs or {})
     )
-
-    agent_state = AgentState()
 
     rollout_hyperparams = {**config.rollout_hyperparams}
     subaction_mask = config.policy_hyperparams.get("subaction_mask", None)
@@ -114,71 +100,40 @@ def train(args: TrainArgs):
 
     rollout_generator = rollout_generator_cls(
         config,
-        agent_state,
+        data_store_accessor,
         tb_writer,
-        checkpoints_manager,
         **rollout_hyperparams,
     )
 
     device = get_device(config, rollout_generator.env_spaces)
     set_device_optimizations(device, **config.device_hyperparams)
-    policy = make_policy(
+    policy, algo, learner_data_store_view = initialize_policy_algo_data_store_view(
         config,
         rollout_generator.env_spaces,
         device,
-        agent_state,
-        **config.policy_hyperparams,
+        data_store_accessor,
+        tb_writer,
+        wandb_enabled,
     )
-    algo = ALGOS[args.algo](
-        policy, device, tb_writer, **config.algo_hyperparams(checkpoints_manager)
-    )
-    agent_state.register(algo)
-
-    num_parameters = policy.num_parameters()
-    num_trainable_parameters = policy.num_trainable_parameters()
-    if wandb_enabled:
-        wandb.run.summary["num_parameters"] = num_parameters  # type: ignore
-        wandb.run.summary["num_trainable_parameters"] = num_trainable_parameters  # type: ignore
-    else:
-        print(
-            f"num_parameters = {num_parameters} ; "
-            f"num_trainable_parameters = {num_trainable_parameters}"
-        )
 
     self_play_wrapper = (
         find_wrapper(rollout_generator.vec_env, SelfPlayWrapper)
         if isinstance(rollout_generator, InProcessRolloutGenerator)
         else None
     )
-    eval_env = make_eval_env(
+    evaluator = Evaluator(
         config,
-        EnvHyperparams(**config.env_hyperparams),
-        agent_state,
-        self_play_wrapper=self_play_wrapper,
-        checkpoints_manager=checkpoints_manager,
-    )
-    video_env = make_eval_env(
-        config,
-        EnvHyperparams(**config.env_hyperparams),
-        agent_state,
-        override_hparams={"n_envs": 1},
-        self_play_wrapper=self_play_wrapper,
-        checkpoints_manager=checkpoints_manager,
-    )
-    eval_callback = EvalCallback(
-        agent_state,
-        eval_env,
+        data_store_accessor,
         tb_writer,
+        self_play_wrapper=self_play_wrapper,
         best_model_path=config.model_dir_path(best=True),
         **config.eval_callback_params(),
-        video_env=video_env,
         video_dir=config.videos_path,
         additional_keys_to_log=config.additional_keys_to_log,
         wandb_enabled=wandb_enabled,
         latest_model_path=config.model_dir_path(best=False),
-        checkpoints_manager=checkpoints_manager,
     )
-    callbacks: List[Callback] = [eval_callback]
+    callbacks: List[Callback] = []
     if self_play_wrapper:
         callbacks.append(SelfPlayCallback(policy, self_play_wrapper))
 
@@ -197,22 +152,24 @@ def train(args: TrainArgs):
             HyperparamTransitions(
                 config,
                 algo,
-                rollout_generator,
+                learner_data_store_view,
                 **config.hyperparams.hyperparam_transitions_kwargs,
                 lr_by_kl_callback=lr_by_kl_callback,
             )
         )
 
     rollout_generator.prepare()
-    if jux_verify_enabled(eval_env):
-        eval_callback.generate_video()
-    algo.learn(config.n_timesteps, rollout_generator, callbacks=callbacks)
+    algo.learn(
+        learner_data_store_view,
+        config.n_timesteps,
+        callbacks=callbacks,
+    )
 
-    policy.save(config.model_dir_path(best=False))
+    evaluator.save(algo.policy, config.model_dir_path(best=False))
 
-    eval_stats = eval_callback.evaluate(n_episodes=10, print_returns=True)
+    eval_stats = evaluator.evaluate(n_episodes=10, print_returns=True)
 
-    plot_eval_callback(eval_callback, tb_writer, config.run_name())
+    plot_eval_callback(evaluator, tb_writer, config.run_name())
 
     log_dict: Dict[str, Any] = {
         "eval": eval_stats._asdict(),
@@ -221,8 +178,8 @@ def train(args: TrainArgs):
         "hparam/last_mean": eval_stats.score.mean,
         "hparam/last_result": eval_stats.score.mean - eval_stats.score.std,
     }
-    if eval_callback.best:
-        best_eval_stats: EpisodesStats = eval_callback.best
+    if evaluator.best:
+        best_eval_stats: EpisodesStats = evaluator.best
         log_dict["best_eval"] = best_eval_stats._asdict()
         hparam_metric_dict.update(
             {

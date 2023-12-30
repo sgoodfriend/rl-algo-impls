@@ -6,8 +6,8 @@ from gymnasium.experimental.wrappers.vector.record_episode_statistics import (
 )
 
 from rl_algo_impls.runner.config import Config, EnvHyperparams
-from rl_algo_impls.shared.agent_state import AgentState
 from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
+from rl_algo_impls.shared.data_store.data_store_view import VectorEnvDataStoreView
 from rl_algo_impls.wrappers.episode_stats_writer import EpisodeStatsWriter
 from rl_algo_impls.wrappers.hwc_to_chw_observation import HwcToChwVectorObservation
 from rl_algo_impls.wrappers.is_vector_env import IsVectorEnv
@@ -18,7 +18,7 @@ from rl_algo_impls.wrappers.vector_wrapper import VectorEnv
 def make_procgen_env(
     config: Config,
     hparams: EnvHyperparams,
-    agent_state: AgentState,
+    data_store_view: VectorEnvDataStoreView,
     training: bool = True,
     render: bool = False,
     tb_writer: Optional[SummaryWrapper] = None,
@@ -93,7 +93,7 @@ def make_procgen_env(
     if normalize and training:
         envs = NormalizeReward(
             envs,
-            agent_state,
+            data_store_view,
             training=training,
             clip=normalize_kwargs.get("clip_reward", 10.0),
         )

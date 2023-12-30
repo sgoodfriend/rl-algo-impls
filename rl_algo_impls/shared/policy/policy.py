@@ -1,6 +1,6 @@
 import os
 from abc import ABC, abstractmethod
-from typing import Dict, Generic, Optional, Type, TypeVar, Union
+from typing import Any, Dict, Generic, Optional, Type, TypeVar, Union
 
 import numpy as np
 import torch
@@ -36,6 +36,10 @@ class Policy(nn.Module, Trackable, ABC, Generic[ObsType]):
 
         self._device = None
 
+    @property
+    def name(self) -> str:
+        return MODEL_FILENAME
+
     def to(
         self: PolicySelf,
         device: Optional[torch.device] = None,
@@ -60,23 +64,20 @@ class Policy(nn.Module, Trackable, ABC, Generic[ObsType]):
     ) -> np.ndarray:
         ...
 
-    def save_weights(self, path: str) -> None:
-        torch.save(
-            self.state_dict(),
-            os.path.join(path, MODEL_FILENAME),
-        )
+    def save(self, path: str) -> None:
+        os.makedirs(path, exist_ok=True)
+        torch.save(self.get_state(), os.path.join(path, MODEL_FILENAME))
 
-    def load_weights(self, path: str) -> None:
-        self.load_state_dict(
+    def load(self, path: str) -> None:
+        self.set_state(
             torch.load(os.path.join(path, MODEL_FILENAME), map_location=self._device)
         )
 
-    def save(self, path: str) -> None:
-        os.makedirs(path, exist_ok=True)
-        self.save_weights(path)
+    def get_state(self) -> Any:
+        return self.state_dict()
 
-    def load(self, path: str) -> None:
-        self.load_weights(path)
+    def set_state(self, state: Any) -> None:
+        self.load_state_dict(state)
 
     def reset_noise(self) -> None:
         pass
