@@ -8,7 +8,6 @@ from pathlib import Path
 from typing import Any, Dict, Optional, Tuple, Type, Union
 
 import gymnasium
-import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import torch.backends.cudnn
@@ -261,39 +260,6 @@ def initialize_policy_algo_data_store_view(
         LearnerInitializeData(policy=policy, algo=algo)
     )
     return policy, algo, LearnerDataStoreView(data_store_accessor)
-
-
-def plot_eval_callback(
-    callback: Evaluator, tb_writer: AbstractSummaryWrapper, run_name: str
-):
-    figure = plt.figure()
-    cumulative_steps = [
-        (idx + 1) * callback.step_freq for idx in range(len(callback.stats))
-    ]
-    plt.plot(
-        cumulative_steps,
-        [s.score.mean for s in callback.stats],
-        "b-",
-        label="mean",
-    )
-    plt.plot(
-        cumulative_steps,
-        [s.score.mean - s.score.std for s in callback.stats],
-        "g--",
-        label="mean-std",
-    )
-    plt.fill_between(
-        cumulative_steps,
-        [s.score.min for s in callback.stats],  # type: ignore
-        [s.score.max for s in callback.stats],  # type: ignore
-        facecolor="cyan",
-        label="range",
-    )
-    plt.xlabel("Steps")
-    plt.ylabel("Score")
-    plt.legend()
-    plt.title(f"Eval {run_name}")
-    tb_writer.add_figure("eval", figure)
 
 
 Scalar = Union[bool, str, float, int, None]

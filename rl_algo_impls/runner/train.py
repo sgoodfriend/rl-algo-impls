@@ -28,7 +28,6 @@ from rl_algo_impls.runner.running_utils import (
     hparam_dict,
     initialize_policy_algo_data_store_view,
     load_hyperparams,
-    plot_eval_callback,
     set_device_optimizations,
     set_seeds,
 )
@@ -180,8 +179,6 @@ def train(args: TrainArgs):
     evaluator.save(algo.policy, config.model_dir_path(best=False))
 
     eval_stats = evaluator.evaluate(n_episodes=10, print_returns=True)
-
-    plot_eval_callback(evaluator, tb_writer, config.run_name())
 
     log_dict: Dict[str, Any] = {
         "eval": eval_stats._asdict(),
