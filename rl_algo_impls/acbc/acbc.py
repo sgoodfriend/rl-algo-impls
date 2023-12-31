@@ -12,12 +12,14 @@ from rl_algo_impls.acbc.train_stats import TrainStats
 from rl_algo_impls.ppo.ppo import NL
 from rl_algo_impls.shared.algorithm import Algorithm
 from rl_algo_impls.shared.callbacks.callback import Callback
-from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
 from rl_algo_impls.shared.data_store.data_store_data import LearnerDataStoreViewUpdate
 from rl_algo_impls.shared.data_store.data_store_view import LearnerDataStoreView
 from rl_algo_impls.shared.policy.actor_critic import ActorCritic
 from rl_algo_impls.shared.schedule import update_learning_rate
 from rl_algo_impls.shared.stats import log_scalars
+from rl_algo_impls.shared.summary_wrapper.abstract_summary_wrapper import (
+    AbstractSummaryWrapper,
+)
 from rl_algo_impls.shared.tensor_utils import num_or_array
 
 """
@@ -32,7 +34,7 @@ class ACBC(Algorithm):
         self,
         policy: ActorCritic,
         device: torch.device,
-        tb_writer: SummaryWrapper,
+        tb_writer: AbstractSummaryWrapper,
         learning_rate: float = 3e-4,
         batch_size: int = 64,
         n_epochs: int = 10,
@@ -136,6 +138,8 @@ class ACBC(Algorithm):
                 if self.gradient_accumulation:
                     self.optimizer_step()
 
+            self.tb_writer.on_timesteps_elapsed(timesteps_elapsed)
+
             var_y = np.var(r.y_true).item()
             explained_var = (
                 np.nan if var_y == 0 else 1 - np.var(r.y_true - r.y_pred).item() / var_y
@@ -149,7 +153,6 @@ class ACBC(Algorithm):
                 rollout_steps / (end_time - start_time),
             )
 
-            self.tb_writer.on_steps(rollout_steps)
             if callbacks:
                 if not all(
                     c.on_step(timesteps_elapsed=rollout_steps) for c in callbacks

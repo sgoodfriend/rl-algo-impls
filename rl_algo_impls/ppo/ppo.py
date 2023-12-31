@@ -15,12 +15,14 @@ from rl_algo_impls.rollout.rollout_generator import RolloutGenerator
 from rl_algo_impls.shared.algorithm import Algorithm
 from rl_algo_impls.shared.autocast import maybe_autocast
 from rl_algo_impls.shared.callbacks import Callback
-from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
 from rl_algo_impls.shared.data_store.data_store_data import LearnerDataStoreViewUpdate
 from rl_algo_impls.shared.data_store.data_store_view import LearnerDataStoreView
 from rl_algo_impls.shared.policy.actor_critic import ActorCritic
 from rl_algo_impls.shared.schedule import update_learning_rate
 from rl_algo_impls.shared.stats import log_scalars
+from rl_algo_impls.shared.summary_wrapper.abstract_summary_wrapper import (
+    AbstractSummaryWrapper,
+)
 from rl_algo_impls.shared.tensor_utils import NumOrList, num_or_array
 
 
@@ -70,7 +72,7 @@ class TrainStats:
         self.explained_var = explained_var
         self.grad_norm = np.mean(grad_norms).item()
 
-    def write_to_tensorboard(self, tb_writer: SummaryWrapper) -> None:
+    def write_to_tensorboard(self, tb_writer: AbstractSummaryWrapper) -> None:
         for name, value in asdict(self).items():
             if isinstance(value, np.ndarray):
                 for idx, v in enumerate(value.flatten()):
@@ -110,7 +112,7 @@ class PPO(Algorithm):
         self,
         policy: ActorCritic,
         device: torch.device,
-        tb_writer: SummaryWrapper,
+        tb_writer: AbstractSummaryWrapper,
         learning_rate: float = 3e-4,
         batch_size: int = 64,
         n_epochs: int = 10,
@@ -410,6 +412,8 @@ class PPO(Algorithm):
         if self.freeze_policy_head or self.freeze_value_head or self.freeze_backbone:
             self.policy.unfreeze()
 
+        self.tb_writer.on_timesteps_elapsed(timesteps_elapsed)
+
         var_y = np.var(r.y_true).item()
         explained_var = (
             np.nan if var_y == 0 else 1 - np.var(r.y_true - r.y_pred).item() / var_y
@@ -424,7 +428,6 @@ class PPO(Algorithm):
             rollout_steps / (end_time - start_time),
         )
 
-        self.tb_writer.on_steps(rollout_steps)
         if callbacks:
             if not all(
                 c.on_step(timesteps_elapsed=rollout_steps, train_stats=train_stats)

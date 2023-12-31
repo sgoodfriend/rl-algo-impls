@@ -14,8 +14,10 @@ from rl_algo_impls.rollout.replay_buffer_rollout_generator import (
 )
 from rl_algo_impls.shared.algorithm import Algorithm
 from rl_algo_impls.shared.callbacks import Callback
-from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
 from rl_algo_impls.shared.schedule import linear_schedule
+from rl_algo_impls.shared.summary_wrapper.abstract_summary_wrapper import (
+    AbstractSummaryWrapper,
+)
 
 DQNSelf = TypeVar("DQNSelf", bound="DQN")
 
@@ -25,7 +27,7 @@ class DQN(Algorithm):
         self,
         policy: DQNPolicy,
         device: torch.device,
-        tb_writer: SummaryWrapper,
+        tb_writer: AbstractSummaryWrapper,
         learning_rate: float = 1e-4,
         batch_size: int = 32,
         tau: float = 1.0,
@@ -96,7 +98,7 @@ class DQN(Algorithm):
                 if steps_since_target_update >= self.target_update_interval:
                     self._update_target()
                     steps_since_target_update = 0
-            self.tb_writer.on_steps(rollout_steps)
+            self.tb_writer.on_timesteps_elapsed(timesteps_elapsed)
             if callbacks:
                 if not all(
                     c.on_step(timesteps_elapsed=rollout_steps) for c in callbacks

@@ -2,8 +2,10 @@ from dataclasses import asdict
 from typing import Any, Dict, Optional
 
 from rl_algo_impls.runner.config import Config, EnvHyperparams
-from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
 from rl_algo_impls.shared.data_store.data_store_view import VectorEnvDataStoreView
+from rl_algo_impls.shared.summary_wrapper.abstract_summary_wrapper import (
+    AbstractSummaryWrapper,
+)
 from rl_algo_impls.shared.vec_env.procgen import make_procgen_env
 from rl_algo_impls.shared.vec_env.vec_env import make_vec_env
 from rl_algo_impls.wrappers.self_play_eval_wrapper import SelfPlayEvalWrapper
@@ -17,7 +19,7 @@ def make_env(
     data_store_view: VectorEnvDataStoreView,
     training: bool = True,
     render: bool = False,
-    tb_writer: Optional[SummaryWrapper] = None,
+    tb_writer: Optional[AbstractSummaryWrapper] = None,
 ) -> VectorEnv:
     if hparams.env_type == "procgen":
         make_env_fn = make_procgen_env

@@ -1,6 +1,10 @@
 # Support for PyTorch mps mode (https://pytorch.org/docs/stable/notes/mps.html)
 import os
 
+from rl_algo_impls.shared.summary_wrapper.remote_summary_wrapper import (
+    RemoteSummaryWrapper,
+)
+
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
 import dataclasses
 import logging
@@ -10,7 +14,6 @@ from dataclasses import asdict, dataclass
 from typing import Any, Dict, List, Optional, Sequence
 
 import yaml
-from torch.utils.tensorboard.writer import SummaryWriter
 
 import wandb
 from rl_algo_impls.ppo.learning_rate_by_kl_divergence import LearningRateByKLDivergence
@@ -32,12 +35,14 @@ from rl_algo_impls.runner.running_utils import (
 from rl_algo_impls.shared.callbacks.callback import Callback
 from rl_algo_impls.shared.callbacks.hyperparam_transitions import HyperparamTransitions
 from rl_algo_impls.shared.callbacks.self_play_callback import SelfPlayCallback
-from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
 from rl_algo_impls.shared.data_store.evaluator import Evaluator
 from rl_algo_impls.shared.data_store.synchronous_data_store_accessor import (
     SynchronousDataStoreAccessor,
 )
 from rl_algo_impls.shared.stats import EpisodesStats
+from rl_algo_impls.shared.summary_wrapper.in_process_summary_wrapper import (
+    InProcessSummaryWrapper,
+)
 from rl_algo_impls.wrappers.self_play_wrapper import SelfPlayWrapper
 from rl_algo_impls.wrappers.vector_wrapper import find_wrapper
 
@@ -59,9 +64,7 @@ def train(args: TrainArgs):
 
     wandb_enabled = bool(args.wandb_project_name)
     if wandb_enabled:
-        wandb.tensorboard.patch(
-            root_logdir=config.tensorboard_summary_path, pytorch=True
-        )
+        os.makedirs(config.tensorboard_summary_path, exist_ok=True)
         wandb.init(
             project=args.wandb_project_name,
             entity=args.wandb_entity,
@@ -71,10 +74,19 @@ def train(args: TrainArgs):
             save_code=True,
             tags=args.wandb_tags,
             group=args.wandb_group,
+            sync_tensorboard=True,
+            dir=config.tensorboard_summary_path,
         )
         wandb.config.update(args)
 
-    tb_writer = SummaryWrapper(SummaryWriter(config.tensorboard_summary_path))
+    if config.process_mode == "sync":
+        tb_writer = InProcessSummaryWrapper(config.tensorboard_summary_path)
+    elif config.process_mode == "async":
+        tb_writer = RemoteSummaryWrapper(config.tensorboard_summary_path)
+    else:
+        raise ValueError(
+            f"process_mode {config.process_mode} not recognized (Expect: sync or async)"
+        )
 
     set_seeds(args.seed)
 

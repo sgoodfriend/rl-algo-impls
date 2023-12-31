@@ -24,7 +24,6 @@ from rl_algo_impls.rollout.sync_step_rollout import SyncStepRolloutGenerator
 from rl_algo_impls.runner.config import Config, Hyperparams
 from rl_algo_impls.runner.wandb_load import load_player
 from rl_algo_impls.shared.algorithm import Algorithm
-from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
 from rl_algo_impls.shared.data_store.data_store_accessor import (
     AbstractDataStoreAccessor,
 )
@@ -36,6 +35,9 @@ from rl_algo_impls.shared.data_store.synchronous_data_store_accessor import (
 )
 from rl_algo_impls.shared.policy.actor_critic import ActorCritic
 from rl_algo_impls.shared.policy.policy import Policy
+from rl_algo_impls.shared.summary_wrapper.abstract_summary_wrapper import (
+    AbstractSummaryWrapper,
+)
 from rl_algo_impls.shared.vec_env.env_spaces import EnvSpaces
 from rl_algo_impls.shared.vec_env.utils import import_for_env_id, is_microrts
 
@@ -219,7 +221,7 @@ def initialize_policy_algo_data_store_view(
     env_spaces: EnvSpaces,
     device: torch.device,
     data_store_accessor: AbstractDataStoreAccessor,
-    tb_writer: SummaryWrapper,
+    tb_writer: AbstractSummaryWrapper,
     wandb_enabled: bool,
 ) -> Tuple[Policy, Algorithm, LearnerDataStoreView]:
     policy_kwargs = dict(config.policy_hyperparams)
@@ -261,7 +263,9 @@ def initialize_policy_algo_data_store_view(
     return policy, algo, LearnerDataStoreView(data_store_accessor)
 
 
-def plot_eval_callback(callback: Evaluator, tb_writer: SummaryWrapper, run_name: str):
+def plot_eval_callback(
+    callback: Evaluator, tb_writer: AbstractSummaryWrapper, run_name: str
+):
     figure = plt.figure()
     cumulative_steps = [
         (idx + 1) * callback.step_freq for idx in range(len(callback.stats))

@@ -7,7 +7,6 @@ from rl_algo_impls.rollout.in_process_rollout import InProcessRolloutGenerator
 from rl_algo_impls.rollout.trajectory import TrajectoryBuilder
 from rl_algo_impls.rollout.trajectory_rollout import TrajectoryRollout
 from rl_algo_impls.runner.config import Config
-from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
 from rl_algo_impls.shared.data_store.data_store_accessor import (
     AbstractDataStoreAccessor,
 )
@@ -16,6 +15,9 @@ from rl_algo_impls.shared.data_store.synchronous_data_store_accessor import (
 )
 from rl_algo_impls.shared.policy.actor_critic import ActorCritic
 from rl_algo_impls.shared.stats import log_scalars
+from rl_algo_impls.shared.summary_wrapper.abstract_summary_wrapper import (
+    AbstractSummaryWrapper,
+)
 from rl_algo_impls.shared.tensor_utils import (
     NumOrArray,
     NumOrList,
@@ -31,7 +33,7 @@ class GuidedLearnerRolloutGenerator(InProcessRolloutGenerator):
         self,
         config: Config,
         data_store_accessor: AbstractDataStoreAccessor,
-        tb_writer: SummaryWrapper,
+        tb_writer: AbstractSummaryWrapper,
         guide_policy: ActorCritic,
         switch_range: int,
         gamma: NumOrList = 0.99,

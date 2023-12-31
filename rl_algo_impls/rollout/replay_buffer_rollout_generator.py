@@ -7,12 +7,16 @@ import torch
 
 from rl_algo_impls.rollout.in_process_rollout import InProcessRolloutGenerator
 from rl_algo_impls.runner.config import Config
-from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
-from rl_algo_impls.shared.data_store.synchronous_data_store_accessor import SynchronousDataStoreAccessor
 from rl_algo_impls.shared.data_store.data_store_accessor import (
     AbstractDataStoreAccessor,
 )
+from rl_algo_impls.shared.data_store.synchronous_data_store_accessor import (
+    SynchronousDataStoreAccessor,
+)
 from rl_algo_impls.shared.stats import log_scalars
+from rl_algo_impls.shared.summary_wrapper.abstract_summary_wrapper import (
+    AbstractSummaryWrapper,
+)
 
 
 class Batch(NamedTuple):
@@ -36,7 +40,7 @@ class ReplayBufferRolloutGenerator(InProcessRolloutGenerator):
         self,
         config: Config,
         data_store_accessor: AbstractDataStoreAccessor,
-        tb_writer: SummaryWrapper,
+        tb_writer: AbstractSummaryWrapper,
         buffer_size: int = 1_000_000,
         learning_starts: int = 50_000,
         train_freq: int = 4,

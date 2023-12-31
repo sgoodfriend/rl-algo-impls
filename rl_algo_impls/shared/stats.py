@@ -15,7 +15,9 @@ from typing import (
 
 import numpy as np
 
-from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
+from rl_algo_impls.shared.summary_wrapper.abstract_summary_wrapper import (
+    AbstractSummaryWrapper,
+)
 from rl_algo_impls.wrappers.vector_wrapper import extract_info
 
 
@@ -162,7 +164,7 @@ class EpisodesStats:
 
     def write_to_tensorboard(
         self,
-        tb_writer: SummaryWrapper,
+        tb_writer: AbstractSummaryWrapper,
         main_tag: str,
     ) -> None:
         stats = {"mean": self.score.mean}
@@ -211,7 +213,7 @@ class EpisodeAccumulator:
 
 
 def log_scalars(
-    tb_writer: SummaryWrapper,
+    tb_writer: AbstractSummaryWrapper,
     main_tag: str,
     tag_scalar_dict: Dict[str, Union[int, float]],
 ) -> None:

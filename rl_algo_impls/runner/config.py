@@ -6,7 +6,6 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Type, TypeVar, Union
 
-
 RunArgsSelf = TypeVar("RunArgsSelf", bound="RunArgs")
 
 
@@ -73,6 +72,7 @@ HyperparamsSelf = TypeVar("HyperparamsSelf", bound="Hyperparams")
 
 @dataclass
 class Hyperparams:
+    process_mode: str = "async"
     device: str = "auto"
     n_timesteps: Union[int, float] = 100_000
     env_hyperparams: Dict[str, Any] = dataclasses.field(default_factory=dict)
@@ -111,6 +111,10 @@ class Config:
         if training or seed is None:
             return seed
         return seed + self.env_hyperparams.get("n_envs", 1)
+
+    @property
+    def process_mode(self) -> str:
+        return self.hyperparams.process_mode
 
     @property
     def device(self) -> str:

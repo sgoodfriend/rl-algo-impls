@@ -12,8 +12,10 @@ from gymnasium.wrappers.resize_observation import ResizeObservation
 from stable_baselines3.common.atari_wrappers import MaxAndSkipEnv, NoopResetEnv
 
 from rl_algo_impls.runner.config import Config, EnvHyperparams
-from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
 from rl_algo_impls.shared.data_store.data_store_view import VectorEnvDataStoreView
+from rl_algo_impls.shared.summary_wrapper.abstract_summary_wrapper import (
+    AbstractSummaryWrapper,
+)
 from rl_algo_impls.shared.vec_env.utils import (
     import_for_env_id,
     is_atari,
@@ -47,7 +49,7 @@ def make_vec_env(
     data_store_view: VectorEnvDataStoreView,
     training: bool = True,
     render: bool = False,
-    tb_writer: Optional[SummaryWrapper] = None,
+    tb_writer: Optional[AbstractSummaryWrapper] = None,
     **kwargs,
 ) -> VectorEnv:
     (

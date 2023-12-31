@@ -1,8 +1,10 @@
 from collections import deque
 from typing import List, Optional
 
-from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
 from rl_algo_impls.shared.stats import Episode, EpisodesStats
+from rl_algo_impls.shared.summary_wrapper.abstract_summary_wrapper import (
+    AbstractSummaryWrapper,
+)
 from rl_algo_impls.wrappers.vector_wrapper import (
     VecEnvResetReturn,
     VecEnvStepReturn,
@@ -17,7 +19,7 @@ class EpisodeStatsWriter(VectorWrapper):
     def __init__(
         self,
         env: VectorEnv,
-        tb_writer: SummaryWrapper,
+        tb_writer: AbstractSummaryWrapper,
         training: bool = True,
         rolling_length=100,
         additional_keys_to_log: Optional[List[str]] = None,
