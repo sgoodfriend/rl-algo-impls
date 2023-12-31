@@ -2,16 +2,21 @@ import inspect
 
 from torch.utils.tensorboard.writer import SummaryWriter
 
-from rl_algo_impls.shared.callbacks.callback import Callback
+from rl_algo_impls.shared.summary_wrapper.abstract_summary_wrapper import (
+    AbstractSummaryWrapper,
+)
 
 
-class SummaryWrapper:
-    def __init__(self, tb_writer: SummaryWriter):
-        self.tb_writer = tb_writer
+class InProcessSummaryWrapper(AbstractSummaryWrapper):
+    def __init__(self, tensorboard_summary_path: str):
+        self.tb_writer = SummaryWriter(tensorboard_summary_path)
         self.timesteps_elapsed = 0
 
-    def on_steps(self, timesteps_elapsed: int) -> None:
-        self.timesteps_elapsed += timesteps_elapsed
+    def on_timesteps_elapsed(self, timesteps_elapsed: int) -> None:
+        self.timesteps_elapsed = timesteps_elapsed
+
+    def close(self) -> None:
+        self.tb_writer.close()
 
     def __getattr__(self, name: str):
         attr = getattr(self.tb_writer, name)

@@ -11,12 +11,14 @@ from rl_algo_impls.a2c.train_stats import TrainStats, TrainStepStats
 from rl_algo_impls.shared.algorithm import Algorithm
 from rl_algo_impls.shared.autocast import maybe_autocast
 from rl_algo_impls.shared.callbacks import Callback
-from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
 from rl_algo_impls.shared.data_store.data_store_data import LearnerDataStoreViewUpdate
 from rl_algo_impls.shared.data_store.data_store_view import LearnerDataStoreView
 from rl_algo_impls.shared.policy.actor_critic import ActorCritic
 from rl_algo_impls.shared.schedule import update_learning_rate
 from rl_algo_impls.shared.stats import log_scalars
+from rl_algo_impls.shared.summary_wrapper.abstract_summary_wrapper import (
+    AbstractSummaryWrapper,
+)
 from rl_algo_impls.shared.tensor_utils import NumOrList, num_or_array
 
 A2CSelf = TypeVar("A2CSelf", bound="A2C")
@@ -27,7 +29,7 @@ class A2C(Algorithm):
         self,
         policy: ActorCritic,
         device: torch.device,
-        tb_writer: SummaryWrapper,
+        tb_writer: AbstractSummaryWrapper,
         learning_rate: float = 7e-4,
         ent_coef: float = 0.0,
         vf_coef: NumOrList = 0.5,
@@ -169,6 +171,8 @@ class A2C(Algorithm):
             if self.gradient_accumulation:
                 self.optimizer_step()
 
+            self.tb_writer.on_timesteps_elapsed(timesteps_elapsed)
+
             var_y = np.var(r.y_true).item()
             explained_var = (
                 np.nan if var_y == 0 else 1 - np.var(r.y_true - r.y_pred).item() / var_y
@@ -183,7 +187,6 @@ class A2C(Algorithm):
 
             TrainStats(step_stats, explained_var).write_to_tensorboard(self.tb_writer)
 
-            self.tb_writer.on_steps(rollout_steps)
             if callbacks:
                 if not all(
                     c.on_step(timesteps_elapsed=rollout_steps) for c in callbacks

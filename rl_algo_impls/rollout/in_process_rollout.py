@@ -2,11 +2,13 @@ from typing import Optional
 
 from rl_algo_impls.rollout.rollout_generator import RolloutGenerator
 from rl_algo_impls.runner.config import Config, EnvHyperparams
-from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
+from rl_algo_impls.shared.data_store.data_store_view import RolloutDataStoreView
 from rl_algo_impls.shared.data_store.synchronous_data_store_accessor import (
     SynchronousDataStoreAccessor,
 )
-from rl_algo_impls.shared.data_store.data_store_view import RolloutDataStoreView
+from rl_algo_impls.shared.summary_wrapper.abstract_summary_wrapper import (
+    AbstractSummaryWrapper,
+)
 from rl_algo_impls.shared.vec_env.env_spaces import EnvSpaces
 from rl_algo_impls.shared.vec_env.make_env import make_env
 
@@ -16,7 +18,7 @@ class InProcessRolloutGenerator(RolloutGenerator):
         self,
         config: Config,
         data_store_accessor: SynchronousDataStoreAccessor,
-        tb_writer: SummaryWrapper,
+        tb_writer: AbstractSummaryWrapper,
         **kwargs
     ) -> None:
         super().__init__(**kwargs)

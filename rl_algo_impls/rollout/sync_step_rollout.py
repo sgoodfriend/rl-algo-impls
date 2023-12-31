@@ -7,7 +7,6 @@ from gymnasium.spaces import Dict as DictSpace
 from rl_algo_impls.rollout.in_process_rollout import InProcessRolloutGenerator
 from rl_algo_impls.rollout.vec_rollout import VecRollout
 from rl_algo_impls.runner.config import Config
-from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
 from rl_algo_impls.shared.data_store.data_store_accessor import (
     AbstractDataStoreAccessor,
 )
@@ -16,6 +15,9 @@ from rl_algo_impls.shared.data_store.synchronous_data_store_accessor import (
 )
 from rl_algo_impls.shared.policy.policy import Policy
 from rl_algo_impls.shared.stats import log_scalars
+from rl_algo_impls.shared.summary_wrapper.abstract_summary_wrapper import (
+    AbstractSummaryWrapper,
+)
 from rl_algo_impls.shared.tensor_utils import NumOrList, batch_dict_keys, num_or_array
 from rl_algo_impls.shared.vec_env.env_spaces import EnvSpaces
 from rl_algo_impls.wrappers.episode_stats_writer import EpisodeStatsWriter
@@ -27,7 +29,7 @@ class SyncStepRolloutGenerator(InProcessRolloutGenerator):
         self,
         config: Config,
         data_store_accessor: AbstractDataStoreAccessor,
-        tb_writer: SummaryWrapper,
+        tb_writer: AbstractSummaryWrapper,
         gamma: NumOrList = 0.99,
         gae_lambda: NumOrList = 0.95,
         n_steps: int = 2048,

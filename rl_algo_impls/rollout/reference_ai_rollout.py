@@ -3,11 +3,13 @@ import numpy as np
 from rl_algo_impls.rollout.sync_step_rollout import SyncStepRolloutGenerator, fold_in
 from rl_algo_impls.rollout.vec_rollout import VecRollout
 from rl_algo_impls.runner.config import Config
-from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
 from rl_algo_impls.shared.data_store.data_store_accessor import (
     AbstractDataStoreAccessor,
 )
 from rl_algo_impls.shared.stats import log_scalars
+from rl_algo_impls.shared.summary_wrapper.abstract_summary_wrapper import (
+    AbstractSummaryWrapper,
+)
 from rl_algo_impls.shared.tensor_utils import batch_dict_keys
 
 
@@ -16,7 +18,7 @@ class ReferenceAIRolloutGenerator(SyncStepRolloutGenerator):
         self,
         config: Config,
         data_store_accessor: AbstractDataStoreAccessor,
-        tb_writer: SummaryWrapper,
+        tb_writer: AbstractSummaryWrapper,
         **kwargs
     ) -> None:
         super().__init__(config, data_store_accessor, tb_writer, **kwargs)

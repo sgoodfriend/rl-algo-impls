@@ -9,7 +9,6 @@ import numpy as np
 
 from rl_algo_impls.lux.jux_verify import jux_verify_enabled
 from rl_algo_impls.runner.config import Config, EnvHyperparams
-from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
 from rl_algo_impls.shared.data_store.data_store_accessor import (
     AbstractDataStoreAccessor,
 )
@@ -19,6 +18,9 @@ from rl_algo_impls.shared.data_store.synchronous_data_store_accessor import (
 )
 from rl_algo_impls.shared.policy.policy import Policy
 from rl_algo_impls.shared.stats import Episode, EpisodeAccumulator, EpisodesStats
+from rl_algo_impls.shared.summary_wrapper.abstract_summary_wrapper import (
+    AbstractSummaryWrapper,
+)
 from rl_algo_impls.shared.tensor_utils import batch_dict_keys
 from rl_algo_impls.shared.vec_env.make_env import make_eval_env
 from rl_algo_impls.wrappers.self_play_wrapper import SelfPlayWrapper
@@ -253,7 +255,7 @@ class Evaluator:
         self,
         config: Config,
         data_store_accessor: AbstractDataStoreAccessor,
-        tb_writer: SummaryWrapper,
+        tb_writer: AbstractSummaryWrapper,
         self_play_wrapper: Optional[SelfPlayWrapper] = None,
         best_model_path: Optional[str] = None,
         step_freq: Union[int, float] = 50_000,
