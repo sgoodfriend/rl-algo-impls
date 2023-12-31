@@ -22,13 +22,13 @@ packages = [
 
 [tool.poetry.dependencies]
 python = ">=3.8,<3.12"
-numpy = "^1.23.5"
+numpy = "*"
 torch = "*"
 torchvision = "*"
 tensorboard = "*"
 stable-baselines3 = {extras = ["extra"], version = "^2.1.0"}
 gymnasium = {extras = ["box2d", "mujoco"], version = "^0.29.1"}
-wandb = "^0.15.12"
+wandb = "*"
 pyvirtualdisplay = "*"
 psutil = "*"
 PyYAML = "*"
