@@ -25,7 +25,7 @@ python = ">=3.8,<3.12"
 numpy = "^1.23.5"
 torch = "*"
 torchvision = "*"
-tensorboard = "^2.11.2"
+tensorboard = "*"
 stable-baselines3 = {extras = ["extra"], version = "^2.1.0"}
 gymnasium = {extras = ["box2d", "mujoco"], version = "^0.29.1"}
 wandb = "^0.15.12"
