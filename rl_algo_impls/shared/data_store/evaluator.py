@@ -306,6 +306,7 @@ class Evaluator:
                     override_hparams={"n_envs": 1},
                     self_play_wrapper=self_play_wrapper,
                 ),
+                tb_writer,
                 video_dir,  # This is updated when a video is actually created
                 max_video_length=self.max_video_length,
             )
@@ -375,15 +376,8 @@ class Evaluator:
                 assert self.best_model_path
                 self.save(policy, self.best_model_path)
                 print("Saved best model")
-                if self.wandb_enabled:
-                    import wandb
+                self.tb_writer.make_wandb_archive(self.best_model_path)
 
-                    best_model_name = os.path.split(self.best_model_path)[-1]
-                    shutil.make_archive(
-                        os.path.join(wandb.run.dir, best_model_name),  # type: ignore
-                        "zip",
-                        self.best_model_path,
-                    )
             self.best.write_to_tensorboard(self.tb_writer, "best_eval")
         if self.video_env and (not self.only_record_video_on_best or strictly_better):
             self.generate_video(policy)

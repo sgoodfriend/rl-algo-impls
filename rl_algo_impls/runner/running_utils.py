@@ -221,7 +221,6 @@ def initialize_policy_algo_data_store_view(
     device: torch.device,
     data_store_accessor: AbstractDataStoreAccessor,
     tb_writer: AbstractSummaryWrapper,
-    wandb_enabled: bool,
 ) -> Tuple[Policy, Algorithm, LearnerDataStoreView]:
     policy_kwargs = dict(config.policy_hyperparams)
 
@@ -241,14 +240,12 @@ def initialize_policy_algo_data_store_view(
 
     num_parameters = policy.num_parameters()
     num_trainable_parameters = policy.num_trainable_parameters()
-    if wandb_enabled:
-        wandb.run.summary["num_parameters"] = num_parameters  # type: ignore
-        wandb.run.summary["num_trainable_parameters"] = num_trainable_parameters  # type: ignore
-    else:
-        print(
-            f"num_parameters = {num_parameters} ; "
-            f"num_trainable_parameters = {num_trainable_parameters}"
-        )
+    tb_writer.update_summary(
+        {
+            "num_parameters": num_parameters,
+            "num_trainable_parameters": num_trainable_parameters,
+        }
+    )
 
     algo = ALGOS[config.algo](
         policy,

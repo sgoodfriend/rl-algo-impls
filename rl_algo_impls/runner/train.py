@@ -1,27 +1,20 @@
 # Support for PyTorch mps mode (https://pytorch.org/docs/stable/notes/mps.html)
 import os
 
-from rl_algo_impls.shared.summary_wrapper.remote_summary_wrapper import (
-    RemoteSummaryWrapper,
-)
-
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
-import dataclasses
 import logging
-import shutil
 import sys
-from dataclasses import asdict, dataclass
-from typing import Any, Dict, List, Optional, Sequence
+from dataclasses import asdict
+from typing import Any, Dict, List
 
 import yaml
 
-import wandb
 from rl_algo_impls.ppo.learning_rate_by_kl_divergence import LearningRateByKLDivergence
 from rl_algo_impls.ppo.ppo import PPO
 from rl_algo_impls.rollout.in_process_rollout import InProcessRolloutGenerator
 from rl_algo_impls.rollout.reference_ai_rollout import ReferenceAIRolloutGenerator
 from rl_algo_impls.rollout.sync_step_rollout import SyncStepRolloutGenerator
-from rl_algo_impls.runner.config import Config, RunArgs
+from rl_algo_impls.runner.config import Config, TrainArgs
 from rl_algo_impls.runner.running_utils import (
     DEFAULT_ROLLOUT_GENERATORS,
     get_device,
@@ -42,16 +35,11 @@ from rl_algo_impls.shared.stats import EpisodesStats
 from rl_algo_impls.shared.summary_wrapper.in_process_summary_wrapper import (
     InProcessSummaryWrapper,
 )
+from rl_algo_impls.shared.summary_wrapper.remote_summary_wrapper import (
+    RemoteSummaryWrapper,
+)
 from rl_algo_impls.wrappers.self_play_wrapper import SelfPlayWrapper
 from rl_algo_impls.wrappers.vector_wrapper import find_wrapper
-
-
-@dataclass
-class TrainArgs(RunArgs):
-    wandb_project_name: Optional[str] = None
-    wandb_entity: Optional[str] = None
-    wandb_tags: Sequence[str] = dataclasses.field(default_factory=list)
-    wandb_group: Optional[str] = None
 
 
 def train(args: TrainArgs):
@@ -61,27 +49,10 @@ def train(args: TrainArgs):
     logging.info(hyperparams)
     config = Config(args, hyperparams, os.getcwd())
 
-    wandb_enabled = bool(args.wandb_project_name)
-    if wandb_enabled:
-        os.makedirs(config.tensorboard_summary_path, exist_ok=True)
-        wandb.init(
-            project=args.wandb_project_name,
-            entity=args.wandb_entity,
-            config=asdict(hyperparams),
-            name=config.run_name(),
-            monitor_gym=True,
-            save_code=True,
-            tags=args.wandb_tags,
-            group=args.wandb_group,
-            sync_tensorboard=True,
-            dir=config.tensorboard_summary_path,
-        )
-        wandb.config.update(args)
-
     if config.process_mode == "sync":
-        tb_writer = InProcessSummaryWrapper(config.tensorboard_summary_path)
+        tb_writer = InProcessSummaryWrapper(config, args)
     elif config.process_mode == "async":
-        tb_writer = RemoteSummaryWrapper(config.tensorboard_summary_path)
+        tb_writer = RemoteSummaryWrapper(config, args)
     else:
         raise ValueError(
             f"process_mode {config.process_mode} not recognized (Expect: sync or async)"
@@ -124,7 +95,6 @@ def train(args: TrainArgs):
         device,
         data_store_accessor,
         tb_writer,
-        wandb_enabled,
     )
 
     self_play_wrapper = (
@@ -141,7 +111,6 @@ def train(args: TrainArgs):
         **config.eval_callback_params(),
         video_dir=config.videos_path,
         additional_keys_to_log=config.additional_keys_to_log,
-        wandb_enabled=wandb_enabled,
         latest_model_path=config.model_dir_path(best=False),
     )
     callbacks: List[Callback] = []
@@ -210,11 +179,3 @@ def train(args: TrainArgs):
     )
 
     tb_writer.close()
-
-    if wandb_enabled:
-        shutil.make_archive(
-            os.path.join(wandb.run.dir, config.model_dir_name()),  # type: ignore
-            "zip",
-            config.model_dir_path(),
-        )
-        wandb.finish()

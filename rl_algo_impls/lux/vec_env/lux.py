@@ -90,7 +90,7 @@ def make_lux_env(
     if vec_env_class == "sync":
         envs = VecLuxEnv(num_envs, **make_kwargs)
     elif vec_env_class == "replay":
-        envs = VecLuxReplayEnv(num_envs, **make_kwargs)
+        envs = VecLuxReplayEnv(num_envs, tb_writer, **make_kwargs)
         envs = HwcToChwVectorObservation(envs)
     elif vec_env_class == "ray":
         from rl_algo_impls.lux.vec_env.lux_ray_vector_env import LuxRayVectorEnv

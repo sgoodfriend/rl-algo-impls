@@ -4,7 +4,7 @@ import itertools
 import os
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Type, TypeVar, Union
+from typing import Any, Dict, List, Optional, Sequence, Type, TypeVar, Union
 
 RunArgsSelf = TypeVar("RunArgsSelf", bound="RunArgs")
 
@@ -29,6 +29,14 @@ class RunArgs:
             _d.update({"algo": algo, "env": env, "seed": seed})
             args.append(cls(**_d))
         return args
+
+
+@dataclass
+class TrainArgs(RunArgs):
+    wandb_project_name: Optional[str] = None
+    wandb_entity: Optional[str] = None
+    wandb_tags: Sequence[str] = dataclasses.field(default_factory=list)
+    wandb_group: Optional[str] = None
 
 
 @dataclass
