@@ -1,6 +1,9 @@
 import numpy as np
 from gymnasium.wrappers.monitoring.video_recorder import VideoRecorder
 
+from rl_algo_impls.shared.summary_wrapper.abstract_summary_wrapper import (
+    AbstractSummaryWrapper,
+)
 from rl_algo_impls.wrappers.vector_wrapper import (
     VecEnvStepReturn,
     VectorWrapper,
@@ -10,9 +13,15 @@ from rl_algo_impls.wrappers.vector_wrapper import (
 
 class VecEpisodeRecorder(VectorWrapper):
     def __init__(
-        self, env, base_path: str, max_video_length: int = 3600, num_episodes: int = 1
+        self,
+        env,
+        tb_writer: AbstractSummaryWrapper,
+        base_path: str,
+        max_video_length: int = 3600,
+        num_episodes: int = 1,
     ):
         super().__init__(env)
+        self.tb_writer = tb_writer
         self.base_path = base_path
         self.max_video_length = max_video_length
         self.num_episodes = num_episodes
@@ -65,6 +74,9 @@ class VecEpisodeRecorder(VectorWrapper):
     def _close_video_recorder(self) -> None:
         if self.video_recorder:
             self.video_recorder.close()
+            self.tb_writer.log_video(
+                self.video_recorder.path, self.video_recorder.frames_per_sec
+            )
         self.video_recorder = None
         self.recorded_frames = 0
         self.num_completed = 0
