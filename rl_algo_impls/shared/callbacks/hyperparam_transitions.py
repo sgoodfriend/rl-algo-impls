@@ -1,3 +1,4 @@
+import logging
 from typing import Any, Dict, List, Optional
 
 import numpy as np
@@ -97,7 +98,7 @@ class HyperparamTransitions(Callback):
         self.current_phase_idx = phase_idx
 
         phase = self.phases[phase_idx]
-        print(f"{self.timesteps_elapsed}: Entering phase {phase_idx}: {phase}")
+        logging.info(f"{self.timesteps_elapsed}: Entering phase {phase_idx}: {phase}")
         for k, v in phase.items():
             if k in ALGO_SET_NAMES:
                 assert hasattr(self.algo, k)
@@ -118,7 +119,9 @@ class HyperparamTransitions(Callback):
         self, prior_phase_idx: int, transition_progress: float
     ) -> None:
         if self.current_phase_idx is not None:
-            print(f"{self.timesteps_elapsed}: Exiting phase {self.current_phase_idx}")
+            logging.info(
+                f"{self.timesteps_elapsed}: Exiting phase {self.current_phase_idx}"
+            )
         self.current_phase_idx = None
         prior_phase = self.phases[prior_phase_idx]
         next_phase = self.phases[prior_phase_idx + 1]

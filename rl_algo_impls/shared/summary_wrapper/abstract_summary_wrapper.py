@@ -26,3 +26,7 @@ class AbstractSummaryWrapper(ABC):
     @abstractmethod
     def log_video(self, video_path: str, fps: int) -> None:
         ...
+
+    @abstractmethod
+    def maybe_add_logging_handler(self) -> None:
+        ...

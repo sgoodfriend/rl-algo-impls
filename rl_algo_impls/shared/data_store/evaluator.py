@@ -65,7 +65,7 @@ class EvaluateAccumulator(EpisodeAccumulator):
             return
         self.completed_episodes_by_env_idx[ep_idx].append(episode)
         if self.print_returns:
-            print(
+            logging.info(
                 f"Episode {len(self)} | "
                 f"Score {episode.score} | "
                 f"Length {episode.length}"
@@ -244,7 +244,7 @@ def evaluate(
         score_function=score_function,
     )
     if print_returns:
-        print(stats)
+        logging.info(stats)
     return stats
 
 
@@ -357,7 +357,7 @@ class Evaluator:
             eval_stat.length.sum() / (end_time - start_time),
         )
         policy.train(True)
-        print(f"Eval Timesteps: {self.timesteps_elapsed} | {eval_stat}")
+        logging.info(f"Eval Timesteps: {self.timesteps_elapsed} | {eval_stat}")
 
         self.stats.append(eval_stat)
 
@@ -375,7 +375,7 @@ class Evaluator:
             if self.save_best:
                 assert self.best_model_path
                 self.save(policy, self.best_model_path)
-                print("Saved best model")
+                logging.info("Saved best model")
                 self.tb_writer.make_wandb_archive(self.best_model_path)
 
             self.best.write_to_tensorboard(self.tb_writer, "best_eval")
@@ -406,7 +406,7 @@ class Evaluator:
             print_returns=False,
             score_function=self.score_function,
         )
-        print(f"Saved video: {video_stats}")
+        logging.info(f"Saved video: {video_stats}")
 
     def save(self, policy: Policy, model_path: str) -> None:
         self.data_store_view.save(policy, model_path)
