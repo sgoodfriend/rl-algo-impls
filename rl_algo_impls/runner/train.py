@@ -27,7 +27,7 @@ from rl_algo_impls.runner.running_utils import (
 from rl_algo_impls.shared.callbacks.callback import Callback
 from rl_algo_impls.shared.callbacks.hyperparam_transitions import HyperparamTransitions
 from rl_algo_impls.shared.callbacks.self_play_callback import SelfPlayCallback
-from rl_algo_impls.shared.data_store.evaluator import Evaluator
+from rl_algo_impls.shared.evaluator.evaluator import Evaluator
 from rl_algo_impls.shared.data_store.synchronous_data_store_accessor import (
     SynchronousDataStoreAccessor,
 )
