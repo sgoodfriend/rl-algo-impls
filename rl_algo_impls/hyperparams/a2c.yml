@@ -72,16 +72,16 @@ BipedalWalker-v3:
     use_sde: true
     log_std_init: -2
     init_layers_orthogonal: false
-  algo_hyperparams:
-    ent_coef: 0
-    max_grad_norm: 0.5
-    gae_lambda: 0.9
-    vf_coef: 0.4
-    gamma: 0.99
-    learning_rate: !!float 9.6e-4
   rollout_hyperparams:
     <<: *default-rollout
     n_steps: 8
+    gamma: 0.99
+    gae_lambda: 0.9
+  algo_hyperparams:
+    ent_coef: 0
+    max_grad_norm: 0.5
+    vf_coef: 0.4
+    learning_rate: !!float 9.6e-4
   hyperparam_transitions_kwargs:
     durations: [0, 1, 0]
     phases:
