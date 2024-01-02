@@ -17,7 +17,7 @@ from rl_algo_impls.shared.trackable import Trackable
 
 if TYPE_CHECKING:
     from rl_algo_impls.rollout.in_process_rollout import InProcessRolloutGenerator
-    from rl_algo_impls.shared.data_store.evaluator import Evaluator
+    from rl_algo_impls.shared.evaluator.evaluator import Evaluator
 
 
 class SynchronousDataStoreAccessor(AbstractDataStoreAccessor):

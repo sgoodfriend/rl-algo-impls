@@ -16,7 +16,7 @@ from rl_algo_impls.runner.running_utils import (
     set_seeds,
 )
 from rl_algo_impls.shared.data_store.data_store_view import EvalDataStoreView
-from rl_algo_impls.shared.data_store.evaluator import evaluate
+from rl_algo_impls.shared.evaluator.evaluator import evaluate
 from rl_algo_impls.shared.data_store.synchronous_data_store_accessor import (
     SynchronousDataStoreAccessor,
 )

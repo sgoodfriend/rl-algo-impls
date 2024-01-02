@@ -28,7 +28,7 @@ from rl_algo_impls.shared.data_store.data_store_accessor import (
 )
 from rl_algo_impls.shared.data_store.data_store_data import LearnerInitializeData
 from rl_algo_impls.shared.data_store.data_store_view import LearnerDataStoreView
-from rl_algo_impls.shared.data_store.evaluator import Evaluator
+from rl_algo_impls.shared.evaluator.evaluator import Evaluator
 from rl_algo_impls.shared.data_store.synchronous_data_store_accessor import (
     SynchronousDataStoreAccessor,
 )
