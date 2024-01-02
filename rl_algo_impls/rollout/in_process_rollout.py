@@ -3,8 +3,8 @@ from typing import Optional
 from rl_algo_impls.rollout.rollout_generator import RolloutGenerator
 from rl_algo_impls.runner.config import Config, EnvHyperparams
 from rl_algo_impls.shared.data_store.data_store_view import RolloutDataStoreView
-from rl_algo_impls.shared.data_store.synchronous_data_store_accessor import (
-    SynchronousDataStoreAccessor,
+from rl_algo_impls.shared.data_store.in_process_data_store_accessor import (
+    InProcessDataStoreAccessor,
 )
 from rl_algo_impls.shared.summary_wrapper.abstract_summary_wrapper import (
     AbstractSummaryWrapper,
@@ -17,7 +17,7 @@ class InProcessRolloutGenerator(RolloutGenerator):
     def __init__(
         self,
         config: Config,
-        data_store_accessor: SynchronousDataStoreAccessor,
+        data_store_accessor: InProcessDataStoreAccessor,
         tb_writer: AbstractSummaryWrapper,
         **kwargs
     ) -> None:

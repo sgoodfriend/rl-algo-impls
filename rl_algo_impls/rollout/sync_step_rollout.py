@@ -7,11 +7,11 @@ from gymnasium.spaces import Dict as DictSpace
 from rl_algo_impls.rollout.in_process_rollout import InProcessRolloutGenerator
 from rl_algo_impls.rollout.vec_rollout import VecRollout
 from rl_algo_impls.runner.config import Config
-from rl_algo_impls.shared.data_store.data_store_accessor import (
+from rl_algo_impls.shared.data_store.abstract_data_store_accessor import (
     AbstractDataStoreAccessor,
 )
-from rl_algo_impls.shared.data_store.synchronous_data_store_accessor import (
-    SynchronousDataStoreAccessor,
+from rl_algo_impls.shared.data_store.in_process_data_store_accessor import (
+    InProcessDataStoreAccessor,
 )
 from rl_algo_impls.shared.policy.policy import Policy
 from rl_algo_impls.shared.stats import log_scalars
@@ -44,7 +44,7 @@ class SyncStepRolloutGenerator(InProcessRolloutGenerator):
         prepare_steps: int = 0,
         rolling_num_envs_reset_every_prepare_step: int = 0,
     ) -> None:
-        assert isinstance(data_store_accessor, SynchronousDataStoreAccessor)
+        assert isinstance(data_store_accessor, InProcessDataStoreAccessor)
         super().__init__(config, data_store_accessor, tb_writer)
         self.gamma = num_or_array(gamma)
         self.gae_lambda = num_or_array(gae_lambda)

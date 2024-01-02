@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from typing import Optional
 
 from rl_algo_impls.shared.data_store.data_store_data import (
     CheckpointState,
@@ -40,7 +41,7 @@ class AbstractDataStoreAccessor(ABC):
         ...
 
     @abstractmethod
-    def update_for_eval_start(self) -> EvalView:
+    def update_for_eval_start(self) -> Optional[EvalView]:
         ...
 
     @abstractmethod

@@ -27,8 +27,8 @@ from rl_algo_impls.runner.running_utils import (
 from rl_algo_impls.shared.callbacks.callback import Callback
 from rl_algo_impls.shared.callbacks.hyperparam_transitions import HyperparamTransitions
 from rl_algo_impls.shared.callbacks.self_play_callback import SelfPlayCallback
-from rl_algo_impls.shared.data_store.synchronous_data_store_accessor import (
-    SynchronousDataStoreAccessor,
+from rl_algo_impls.shared.data_store.in_process_data_store_accessor import (
+    InProcessDataStoreAccessor,
 )
 from rl_algo_impls.shared.evaluator.in_process_evaluator import InProcessEvaluator
 from rl_algo_impls.shared.stats import EpisodesStats
@@ -60,7 +60,7 @@ def train(args: TrainArgs):
 
     set_seeds(args.seed)
 
-    data_store_accessor = SynchronousDataStoreAccessor(
+    data_store_accessor = InProcessDataStoreAccessor(
         **(config.hyperparams.checkpoints_kwargs or {})
     )
 

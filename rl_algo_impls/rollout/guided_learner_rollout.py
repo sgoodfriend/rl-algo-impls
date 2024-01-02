@@ -7,23 +7,18 @@ from rl_algo_impls.rollout.in_process_rollout import InProcessRolloutGenerator
 from rl_algo_impls.rollout.trajectory import TrajectoryBuilder
 from rl_algo_impls.rollout.trajectory_rollout import TrajectoryRollout
 from rl_algo_impls.runner.config import Config
-from rl_algo_impls.shared.data_store.data_store_accessor import (
+from rl_algo_impls.shared.data_store.abstract_data_store_accessor import (
     AbstractDataStoreAccessor,
 )
-from rl_algo_impls.shared.data_store.synchronous_data_store_accessor import (
-    SynchronousDataStoreAccessor,
+from rl_algo_impls.shared.data_store.in_process_data_store_accessor import (
+    InProcessDataStoreAccessor,
 )
 from rl_algo_impls.shared.policy.actor_critic import ActorCritic
 from rl_algo_impls.shared.stats import log_scalars
 from rl_algo_impls.shared.summary_wrapper.abstract_summary_wrapper import (
     AbstractSummaryWrapper,
 )
-from rl_algo_impls.shared.tensor_utils import (
-    NumOrArray,
-    NumOrList,
-    batch_dict_keys,
-    num_or_array,
-)
+from rl_algo_impls.shared.tensor_utils import NumOrList, batch_dict_keys, num_or_array
 from rl_algo_impls.wrappers.episode_stats_writer import EpisodeStatsWriter
 from rl_algo_impls.wrappers.vector_wrapper import find_wrapper
 
@@ -45,7 +40,7 @@ class GuidedLearnerRolloutGenerator(InProcessRolloutGenerator):
         include_logp: bool = True,
         subaction_mask: Optional[Dict[int, Dict[int, int]]] = None,
     ) -> None:
-        assert isinstance(data_store_accessor, SynchronousDataStoreAccessor)
+        assert isinstance(data_store_accessor, InProcessDataStoreAccessor)
         super().__init__(config, data_store_accessor, tb_writer)
         self.gamma = num_or_array(gamma)
         self.gae_lambda = num_or_array(gae_lambda)

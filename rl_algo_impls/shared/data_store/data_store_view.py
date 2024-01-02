@@ -6,7 +6,7 @@ from rl_algo_impls.rollout.rollout import Rollout
 from rl_algo_impls.shared.data_store.checkpoint_policies_delegate import (
     CheckpointPoliciesDelegate,
 )
-from rl_algo_impls.shared.data_store.data_store_accessor import (
+from rl_algo_impls.shared.data_store.abstract_data_store_accessor import (
     AbstractDataStoreAccessor,
 )
 from rl_algo_impls.shared.data_store.data_store_data import (
@@ -18,8 +18,8 @@ from rl_algo_impls.shared.data_store.data_store_data import (
     RolloutDataStoreViewView,
     RolloutUpdate,
 )
-from rl_algo_impls.shared.data_store.synchronous_data_store_accessor import (
-    SynchronousDataStoreAccessor,
+from rl_algo_impls.shared.data_store.in_process_data_store_accessor import (
+    InProcessDataStoreAccessor,
 )
 from rl_algo_impls.shared.policy.policy import Policy
 from rl_algo_impls.shared.trackable import Trackable
@@ -143,7 +143,7 @@ class EvalDataStoreView(VectorEnvDataStoreView):
         super().add_trackable(trackable)
         if self.is_eval_job:
             self.data_store_accessor.register_env_tracker(trackable)
-        elif isinstance(self.data_store_accessor, SynchronousDataStoreAccessor):
+        elif isinstance(self.data_store_accessor, InProcessDataStoreAccessor):
             trackable.set_state(
                 self.data_store_accessor._data_store.env_trackers[
                     trackable.name

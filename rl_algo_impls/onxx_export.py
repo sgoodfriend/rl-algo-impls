@@ -16,8 +16,8 @@ from rl_algo_impls.runner.running_utils import (
 )
 from rl_algo_impls.runner.wandb_load import load_player
 from rl_algo_impls.shared.data_store.data_store_view import EvalDataStoreView
-from rl_algo_impls.shared.data_store.synchronous_data_store_accessor import (
-    SynchronousDataStoreAccessor,
+from rl_algo_impls.shared.data_store.in_process_data_store_accessor import (
+    InProcessDataStoreAccessor,
 )
 from rl_algo_impls.shared.tensor_utils import batch_dict_keys
 from rl_algo_impls.shared.vec_env.env_spaces import EnvSpaces
@@ -54,7 +54,7 @@ def onnx_export(args: ExportArgs, root_dir: str):
 
     set_seeds(args.seed)
 
-    data_store_accessor = SynchronousDataStoreAccessor(
+    data_store_accessor = InProcessDataStoreAccessor(
         **(config.hyperparams.checkpoints_kwargs or {})
     )
 
