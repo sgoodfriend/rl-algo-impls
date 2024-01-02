@@ -82,3 +82,6 @@ class InProcessSummaryWrapper(AbstractSummaryWrapper):
                 },
                 step=self.timesteps_elapsed,
             )
+
+    def maybe_add_logging_handler(self) -> None:
+        pass

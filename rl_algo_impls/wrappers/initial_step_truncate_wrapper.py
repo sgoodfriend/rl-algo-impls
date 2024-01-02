@@ -21,7 +21,7 @@ class InitialStepTruncateWrapper(gymnasium.Wrapper):
         if not self.initialized:
             self.steps += 1
             if self.steps >= self.initial_steps_to_truncate:
-                print(f"Truncation at {self.steps} steps")
+                logging.info(f"Truncation at {self.steps} steps")
                 truncated = True
                 self.initialized = True
         return obs, rew, terminated, truncated, info

@@ -1,3 +1,4 @@
+import logging
 from collections import deque
 from typing import List, Optional
 
@@ -106,7 +107,7 @@ class EpisodeStatsWriter(VectorWrapper):
             rolling_stats.write_to_tensorboard(self.tb_writer, f"{tag}_rolling")
             self.episode_cnt += len(step_episodes)
             if self.episode_cnt >= self.last_episode_cnt_print + self.rolling_length:
-                print(
+                logging.info(
                     f"Episode: {self.episode_cnt} | "
                     f"Steps: {self.total_steps} | "
                     f"{rolling_stats}"

@@ -72,3 +72,6 @@ class SummaryWriterActor:
                 },
                 step=global_step,
             )
+
+    def log_text(self, levelno: int, msg: str, global_step: int) -> None:
+        print(f"[{logging.getLevelName(levelno)}] {global_step}: {msg}")

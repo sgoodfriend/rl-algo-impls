@@ -1,3 +1,4 @@
+import logging
 from typing import Any, Dict
 
 import ray
@@ -13,6 +14,8 @@ class RemoteSummaryWrapper(AbstractSummaryWrapper):
     def __init__(self, config: Config, args: TrainArgs):
         self.tb_writer_actor = SummaryWriterActor.remote(config, args)
         self.timesteps_elapsed = 0
+
+        self.maybe_add_logging_handler(logging.getLogger())
 
     def on_timesteps_elapsed(self, timesteps_elapsed: int) -> None:
         self.timesteps_elapsed = timesteps_elapsed
@@ -36,3 +39,17 @@ class RemoteSummaryWrapper(AbstractSummaryWrapper):
 
     def log_video(self, video_path: str, fps: int) -> None:
         self.tb_writer_actor.log_video.remote(video_path, fps, self.timesteps_elapsed)
+
+    def maybe_add_logging_handler(self, logger: logging.Logger) -> None:
+        logger.addHandler(RemoteSummaryWrapperLoggingHandler(self))
+
+
+class RemoteSummaryWrapperLoggingHandler(logging.Handler):
+    def __init__(self, tb_writer: RemoteSummaryWrapper):
+        super().__init__()
+        self.tb_writer = tb_writer
+
+    def emit(self, record: logging.LogRecord) -> None:
+        self.tb_writer.tb_writer_actor.log_text.remote(
+            record.levelno, self.format(record), self.tb_writer.timesteps_elapsed
+        )
