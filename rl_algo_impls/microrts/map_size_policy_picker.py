@@ -24,8 +24,8 @@ import torch.nn as nn
 
 from rl_algo_impls.runner.config import Config, RunArgs
 from rl_algo_impls.runner.running_utils import load_hyperparams, make_eval_policy
-from rl_algo_impls.shared.data_store.synchronous_data_store_accessor import (
-    SynchronousDataStoreAccessor,
+from rl_algo_impls.shared.data_store.in_process_data_store_accessor import (
+    InProcessDataStoreAccessor,
 )
 from rl_algo_impls.shared.policy.policy import Policy
 from rl_algo_impls.shared.tensor_utils import NumpyOrDict
@@ -166,7 +166,7 @@ class MapSizePolicyPicker(Policy, Generic[ObsType]):
                 args.config,
                 EnvSpaces.from_vec_env(vec_env),
                 device,
-                SynchronousDataStoreAccessor(),
+                InProcessDataStoreAccessor(),
                 load_path=args.model_path,
                 **policy_hyperparams,
             )

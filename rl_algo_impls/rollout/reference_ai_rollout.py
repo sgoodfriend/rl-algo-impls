@@ -3,7 +3,7 @@ import numpy as np
 from rl_algo_impls.rollout.sync_step_rollout import SyncStepRolloutGenerator, fold_in
 from rl_algo_impls.rollout.vec_rollout import VecRollout
 from rl_algo_impls.runner.config import Config
-from rl_algo_impls.shared.data_store.data_store_accessor import (
+from rl_algo_impls.shared.data_store.abstract_data_store_accessor import (
     AbstractDataStoreAccessor,
 )
 from rl_algo_impls.shared.stats import log_scalars

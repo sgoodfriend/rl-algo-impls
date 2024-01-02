@@ -1,11 +1,11 @@
 from typing import List, Optional, Union
 
 from rl_algo_impls.runner.config import Config
-from rl_algo_impls.shared.data_store.data_store_accessor import (
+from rl_algo_impls.shared.data_store.abstract_data_store_accessor import (
     AbstractDataStoreAccessor,
 )
-from rl_algo_impls.shared.data_store.synchronous_data_store_accessor import (
-    SynchronousDataStoreAccessor,
+from rl_algo_impls.shared.data_store.in_process_data_store_accessor import (
+    InProcessDataStoreAccessor,
 )
 from rl_algo_impls.shared.evaluator.abstract_evaluator import AbstractEvaluator
 from rl_algo_impls.shared.evaluator.evaluator import Evaluator
@@ -43,7 +43,7 @@ class InProcessEvaluator(AbstractEvaluator):
     ) -> None:
         super().__init__()
         assert isinstance(
-            data_store_accessor, SynchronousDataStoreAccessor
+            data_store_accessor, InProcessDataStoreAccessor
         ), f"Only SynchronousDataStoreAccessor supported, not {data_store_accessor.__class__.__name__}"
         data_store_accessor.evaluator = self
         self.evaluator = Evaluator(

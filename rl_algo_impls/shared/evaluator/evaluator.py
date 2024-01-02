@@ -9,12 +9,12 @@ import numpy as np
 
 from rl_algo_impls.lux.jux_verify import jux_verify_enabled
 from rl_algo_impls.runner.config import Config, EnvHyperparams
-from rl_algo_impls.shared.data_store.data_store_accessor import (
+from rl_algo_impls.shared.data_store.abstract_data_store_accessor import (
     AbstractDataStoreAccessor,
 )
 from rl_algo_impls.shared.data_store.data_store_view import EvalDataStoreView
-from rl_algo_impls.shared.data_store.synchronous_data_store_accessor import (
-    SynchronousDataStoreAccessor,
+from rl_algo_impls.shared.data_store.in_process_data_store_accessor import (
+    InProcessDataStoreAccessor,
 )
 from rl_algo_impls.shared.policy.policy import Policy
 from rl_algo_impls.shared.stats import Episode, EpisodeAccumulator, EpisodesStats

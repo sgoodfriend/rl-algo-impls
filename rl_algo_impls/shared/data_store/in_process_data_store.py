@@ -8,7 +8,7 @@ if TYPE_CHECKING:
     from rl_algo_impls.shared.policy.policy import Policy
 
 
-class SynchronousDataStore:
+class InProcessDataStore:
     def __init__(self, checkpoint_history_size: int):
         self._policy: Optional["Policy"] = None
         self._algo: Optional["Algorithm"] = None

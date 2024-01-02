@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, Optional
 
-from rl_algo_impls.shared.data_store.data_store_accessor import (
+from rl_algo_impls.shared.data_store.abstract_data_store_accessor import (
     AbstractDataStoreAccessor,
 )
 from rl_algo_impls.shared.data_store.data_store_data import (
@@ -12,7 +12,7 @@ from rl_algo_impls.shared.data_store.data_store_data import (
     RolloutUpdate,
     RolloutView,
 )
-from rl_algo_impls.shared.data_store.synchronous_data_store import SynchronousDataStore
+from rl_algo_impls.shared.data_store.in_process_data_store import InProcessDataStore
 from rl_algo_impls.shared.trackable import Trackable
 
 if TYPE_CHECKING:
@@ -20,9 +20,9 @@ if TYPE_CHECKING:
     from rl_algo_impls.shared.evaluator.in_process_evaluator import InProcessEvaluator
 
 
-class SynchronousDataStoreAccessor(AbstractDataStoreAccessor):
+class InProcessDataStoreAccessor(AbstractDataStoreAccessor):
     def __init__(self, history_size: int = 0):
-        self._data_store = SynchronousDataStore(history_size)
+        self._data_store = InProcessDataStore(history_size)
         self.rollout_generator: Optional["InProcessRolloutGenerator"] = None
         self.evaluator: Optional["InProcessEvaluator"] = None
 

@@ -18,8 +18,8 @@ from rl_algo_impls.runner.running_utils import (
     load_hyperparams,
     make_eval_policy,
 )
-from rl_algo_impls.shared.data_store.synchronous_data_store_accessor import (
-    SynchronousDataStoreAccessor,
+from rl_algo_impls.shared.data_store.in_process_data_store_accessor import (
+    InProcessDataStoreAccessor,
 )
 from rl_algo_impls.shared.tensor_utils import batch_dict_keys
 from rl_algo_impls.shared.vec_env.env_spaces import EnvSpaces
@@ -59,7 +59,7 @@ class Agent:
             config,
             EnvSpaces.from_vec_env(self.env),
             device,
-            SynchronousDataStoreAccessor(),
+            InProcessDataStoreAccessor(),
             **config.policy_hyperparams,
         ).eval()
 

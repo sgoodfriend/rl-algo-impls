@@ -23,13 +23,13 @@ from rl_algo_impls.rollout.sync_step_rollout import SyncStepRolloutGenerator
 from rl_algo_impls.runner.config import Config, Hyperparams
 from rl_algo_impls.runner.wandb_load import load_player
 from rl_algo_impls.shared.algorithm import Algorithm
-from rl_algo_impls.shared.data_store.data_store_accessor import (
+from rl_algo_impls.shared.data_store.abstract_data_store_accessor import (
     AbstractDataStoreAccessor,
 )
 from rl_algo_impls.shared.data_store.data_store_data import LearnerInitializeData
 from rl_algo_impls.shared.data_store.data_store_view import LearnerDataStoreView
-from rl_algo_impls.shared.data_store.synchronous_data_store_accessor import (
-    SynchronousDataStoreAccessor,
+from rl_algo_impls.shared.data_store.in_process_data_store_accessor import (
+    InProcessDataStoreAccessor,
 )
 from rl_algo_impls.shared.evaluator.abstract_evaluator import AbstractEvaluator
 from rl_algo_impls.shared.policy.actor_critic import ActorCritic
@@ -193,7 +193,7 @@ def make_eval_policy(
     config: Config,
     env_spaces: EnvSpaces,
     device: torch.device,
-    data_store_accessor: SynchronousDataStoreAccessor,
+    data_store_accessor: InProcessDataStoreAccessor,
     load_path: Optional[str] = None,
     load_run_path: Optional[str] = None,
     load_run_path_best: bool = True,
