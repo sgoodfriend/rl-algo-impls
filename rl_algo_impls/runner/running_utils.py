@@ -28,10 +28,10 @@ from rl_algo_impls.shared.data_store.data_store_accessor import (
 )
 from rl_algo_impls.shared.data_store.data_store_data import LearnerInitializeData
 from rl_algo_impls.shared.data_store.data_store_view import LearnerDataStoreView
-from rl_algo_impls.shared.evaluator.evaluator import Evaluator
 from rl_algo_impls.shared.data_store.synchronous_data_store_accessor import (
     SynchronousDataStoreAccessor,
 )
+from rl_algo_impls.shared.evaluator.abstract_evaluator import AbstractEvaluator
 from rl_algo_impls.shared.policy.actor_critic import ActorCritic
 from rl_algo_impls.shared.policy.policy import Policy
 from rl_algo_impls.shared.summary_wrapper.abstract_summary_wrapper import (
