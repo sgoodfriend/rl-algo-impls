@@ -1,10 +1,8 @@
 import argparse
-import os
-from pathlib import Path
 
 import yaml
 
-from rl_algo_impls.runner.running_utils import HYPERPARAMS_PATH, load_hyperparam_dict
+from rl_algo_impls.runner.running_utils import load_hyperparam_dict
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
