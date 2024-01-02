@@ -1,6 +1,5 @@
 from typing import TYPE_CHECKING, Optional
 
-from rl_algo_impls.shared.data_store.synchronous_data_store import SynchronousDataStore
 from rl_algo_impls.shared.data_store.data_store_accessor import (
     AbstractDataStoreAccessor,
 )
@@ -13,18 +12,19 @@ from rl_algo_impls.shared.data_store.data_store_data import (
     RolloutUpdate,
     RolloutView,
 )
+from rl_algo_impls.shared.data_store.synchronous_data_store import SynchronousDataStore
 from rl_algo_impls.shared.trackable import Trackable
 
 if TYPE_CHECKING:
     from rl_algo_impls.rollout.in_process_rollout import InProcessRolloutGenerator
-    from rl_algo_impls.shared.evaluator.evaluator import Evaluator
+    from rl_algo_impls.shared.evaluator.in_process_evaluator import InProcessEvaluator
 
 
 class SynchronousDataStoreAccessor(AbstractDataStoreAccessor):
     def __init__(self, history_size: int = 0):
         self._data_store = SynchronousDataStore(history_size)
         self.rollout_generator: Optional["InProcessRolloutGenerator"] = None
-        self.evaluator: Optional["Evaluator"] = None
+        self.evaluator: Optional["InProcessEvaluator"] = None
 
     def register_env_tracker(self, env_tracker: Trackable) -> None:
         self._data_store.env_trackers[env_tracker.name] = env_tracker

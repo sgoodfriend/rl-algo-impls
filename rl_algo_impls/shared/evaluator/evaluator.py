@@ -249,8 +249,6 @@ def evaluate(
 
 
 class Evaluator:
-    prior_policies: Optional[Deque[Policy]]
-
     def __init__(
         self,
         config: Config,
@@ -258,7 +256,6 @@ class Evaluator:
         tb_writer: AbstractSummaryWrapper,
         self_play_wrapper: Optional[SelfPlayWrapper] = None,
         best_model_path: Optional[str] = None,
-        step_freq: Union[int, float] = 50_000,
         n_episodes: int = 10,
         save_best: bool = True,
         deterministic: bool = True,
@@ -270,13 +267,10 @@ class Evaluator:
         score_function: str = "mean-std",
         wandb_enabled: bool = False,
         score_threshold: Optional[float] = None,
-        skip_evaluate_at_start: bool = False,
         only_checkpoint_best_policies: bool = False,
         latest_model_path: Optional[str] = None,
     ) -> None:
         super().__init__()
-        if isinstance(data_store_accessor, SynchronousDataStoreAccessor):
-            data_store_accessor.evaluator = self
         self.data_store_view = EvalDataStoreView(data_store_accessor)
         self.env = make_eval_env(
             config,
@@ -286,7 +280,6 @@ class Evaluator:
         )
         self.tb_writer = tb_writer
         self.best_model_path = best_model_path
-        self.step_freq = int(step_freq)
         self.n_episodes = n_episodes
         self.save_best = save_best
         self.deterministic = deterministic
@@ -318,29 +311,19 @@ class Evaluator:
         self.score_function = score_function
         self.wandb_enabled = wandb_enabled
         self.score_threshold = score_threshold
-        self.skip_evaluate_at_start = skip_evaluate_at_start
         self.latest_model_path = latest_model_path
 
         self.only_checkpoint_best_policies = only_checkpoint_best_policies
         policy, self.timesteps_elapsed = self.data_store_view.update_for_eval_start()
-        self.tb_writer.timesteps_elapsed = self.timesteps_elapsed
+        self.tb_writer.on_timesteps_elapsed(self.timesteps_elapsed)
         self.checkpoint_policy(policy, True)
-
-    def on_timesteps_elapsed(self, timesteps_elapsed: int) -> bool:
-        self.timesteps_elapsed = timesteps_elapsed
-        desired_num_stats = self.timesteps_elapsed // self.step_freq
-        if not self.skip_evaluate_at_start:
-            desired_num_stats += 1
-        if desired_num_stats > len(self.stats):
-            self.evaluate()
-        return True
 
     def evaluate(
         self, n_episodes: Optional[int] = None, print_returns: Optional[bool] = None
     ) -> EpisodesStats:
         start_time = perf_counter()
         policy, self.timesteps_elapsed = self.data_store_view.update_for_eval_start()
-        self.tb_writer.timesteps_elapsed = self.timesteps_elapsed
+        self.tb_writer.on_timesteps_elapsed(self.timesteps_elapsed)
         eval_stat = evaluate(
             self.env,
             policy,

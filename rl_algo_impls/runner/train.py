@@ -27,10 +27,10 @@ from rl_algo_impls.runner.running_utils import (
 from rl_algo_impls.shared.callbacks.callback import Callback
 from rl_algo_impls.shared.callbacks.hyperparam_transitions import HyperparamTransitions
 from rl_algo_impls.shared.callbacks.self_play_callback import SelfPlayCallback
-from rl_algo_impls.shared.evaluator.evaluator import Evaluator
 from rl_algo_impls.shared.data_store.synchronous_data_store_accessor import (
     SynchronousDataStoreAccessor,
 )
+from rl_algo_impls.shared.evaluator.in_process_evaluator import InProcessEvaluator
 from rl_algo_impls.shared.stats import EpisodesStats
 from rl_algo_impls.shared.summary_wrapper.in_process_summary_wrapper import (
     InProcessSummaryWrapper,
@@ -102,7 +102,7 @@ def train(args: TrainArgs):
         if isinstance(rollout_generator, InProcessRolloutGenerator)
         else None
     )
-    evaluator = Evaluator(
+    evaluator = InProcessEvaluator(
         config,
         data_store_accessor,
         tb_writer,
@@ -156,8 +156,8 @@ def train(args: TrainArgs):
         "hparam/last_mean": eval_stats.score.mean,
         "hparam/last_result": eval_stats.score.mean - eval_stats.score.std,
     }
-    if evaluator.best:
-        best_eval_stats: EpisodesStats = evaluator.best
+    best_eval_stats = evaluator.close()
+    if best_eval_stats:
         log_dict["best_eval"] = best_eval_stats._asdict()
         hparam_metric_dict.update(
             {
