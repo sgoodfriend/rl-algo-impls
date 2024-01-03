@@ -1,5 +1,7 @@
 from typing import List, Optional, Union
 
+import ray
+
 from rl_algo_impls.runner.config import Config
 from rl_algo_impls.shared.algorithm import Algorithm
 from rl_algo_impls.shared.data_store.abstract_data_store_accessor import (
@@ -7,8 +9,7 @@ from rl_algo_impls.shared.data_store.abstract_data_store_accessor import (
 )
 from rl_algo_impls.shared.data_store.data_store_data import EvalEnqueue, EvalView
 from rl_algo_impls.shared.evaluator.abstract_evaluator import AbstractEvaluator
-from rl_algo_impls.shared.evaluator.evaluator import Evaluator
-from rl_algo_impls.shared.policy.policy import Policy
+from rl_algo_impls.shared.evaluator.evaluator_actor import EvaluatorActor
 from rl_algo_impls.shared.stats import EpisodesStats
 from rl_algo_impls.shared.summary_wrapper.abstract_summary_wrapper import (
     AbstractSummaryWrapper,
@@ -16,7 +17,7 @@ from rl_algo_impls.shared.summary_wrapper.abstract_summary_wrapper import (
 from rl_algo_impls.wrappers.self_play_wrapper import SelfPlayWrapper
 
 
-class InProcessEvaluator(AbstractEvaluator):
+class RemoteEvaluator(AbstractEvaluator):
     def __init__(
         self,
         config: Config,
@@ -41,12 +42,14 @@ class InProcessEvaluator(AbstractEvaluator):
         latest_model_path: Optional[str] = None,
     ) -> None:
         super().__init__(int(step_freq), skip_evaluate_at_start)
+        assert (
+            not self_play_wrapper
+        ), "SelfPlayWrapper not supported for RemoteEvaluator"
         self.data_store_accessor = data_store_accessor
-        self.evaluator = Evaluator(
+        self.eval_actor = EvaluatorActor.remote(
             config,
             data_store_accessor,
             tb_writer,
-            self_play_wrapper=self_play_wrapper,
             best_model_path=best_model_path,
             n_episodes=n_episodes,
             save_best=save_best,
@@ -59,16 +62,17 @@ class InProcessEvaluator(AbstractEvaluator):
             score_function=score_function,
             wandb_enabled=wandb_enabled,
             score_threshold=score_threshold,
+            skip_evaluate_at_start=skip_evaluate_at_start,
             only_checkpoint_best_policies=only_checkpoint_best_policies,
             latest_model_path=latest_model_path,
         )
 
     @property
     def best_eval_stats(self) -> Optional[EpisodesStats]:
-        return self.evaluator.best
+        return ray.get(self.eval_actor.best_eval_stats.remote())
 
     def enqueue_eval(self, eval_data: EvalView) -> None:
-        self.evaluator.evaluate(eval_data)
+        self.eval_actor.evaluate.remote(eval_data)
 
     def evaluate(
         self,
@@ -76,7 +80,7 @@ class InProcessEvaluator(AbstractEvaluator):
         n_episodes: Optional[int] = None,
         print_returns: bool = False,
     ) -> EpisodesStats:
-        return self.evaluator.evaluate(eval_data, n_episodes, print_returns)
+        return ray.get(self.eval_actor.evaluate(eval_data, n_episodes, print_returns))
 
     def evaluate_latest_policy(
         self,
@@ -88,5 +92,5 @@ class InProcessEvaluator(AbstractEvaluator):
             EvalEnqueue(algorithm), n_episodes, print_returns
         )
 
-    def save(self, policy: Policy, model_path: str) -> None:
-        self.evaluator.save(policy, model_path)
+    def save(self, policy: Algorithm, model_path: str) -> None:
+        ray.get(self.eval_actor.save.remote(policy, model_path))

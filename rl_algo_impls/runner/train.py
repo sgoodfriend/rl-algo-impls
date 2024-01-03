@@ -31,7 +31,6 @@ from rl_algo_impls.shared.data_store.in_process_data_store_accessor import (
     InProcessDataStoreAccessor,
 )
 from rl_algo_impls.shared.evaluator.in_process_evaluator import InProcessEvaluator
-from rl_algo_impls.shared.stats import EpisodesStats
 from rl_algo_impls.shared.summary_wrapper.in_process_summary_wrapper import (
     InProcessSummaryWrapper,
 )
@@ -113,6 +112,7 @@ def train(args: TrainArgs):
         additional_keys_to_log=config.additional_keys_to_log,
         latest_model_path=config.model_dir_path(best=False),
     )
+    learner_data_store_view.initialize_evaluator(evaluator)
     callbacks: List[Callback] = []
     if self_play_wrapper:
         callbacks.append(SelfPlayCallback(policy, self_play_wrapper))
@@ -147,7 +147,9 @@ def train(args: TrainArgs):
 
     evaluator.save(algo.policy, config.model_dir_path(best=False))
 
-    eval_stats = evaluator.evaluate(n_episodes=10, print_returns=True)
+    eval_stats = evaluator.evaluate_latest_policy(
+        algo, n_episodes=10, print_returns=True
+    )
 
     log_dict: Dict[str, Any] = {
         "eval": eval_stats._asdict(),
@@ -156,7 +158,7 @@ def train(args: TrainArgs):
         "hparam/last_mean": eval_stats.score.mean,
         "hparam/last_result": eval_stats.score.mean - eval_stats.score.std,
     }
-    best_eval_stats = evaluator.close()
+    (best_eval_stats,) = data_store_accessor.close()
     if best_eval_stats:
         log_dict["best_eval"] = best_eval_stats._asdict()
         hparam_metric_dict.update(

@@ -1,15 +1,18 @@
 from abc import ABC, abstractmethod
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from rl_algo_impls.shared.data_store.data_store_data import (
     CheckpointState,
-    EvalView,
+    DataStoreFinalization,
+    EvalEnqueue,
     LearnerInitializeData,
     LearnerUpdate,
     LearnerView,
     RolloutUpdate,
     RolloutView,
 )
+from rl_algo_impls.shared.evaluator.abstract_evaluator import AbstractEvaluator
+from rl_algo_impls.shared.stats import EpisodesStats
 from rl_algo_impls.shared.trackable import Trackable
 
 
@@ -33,15 +36,11 @@ class AbstractDataStoreAccessor(ABC):
         ...
 
     @abstractmethod
-    def update_for_rollout_start(self) -> RolloutView:
+    def update_for_rollout_start(self) -> Optional[RolloutView]:
         ...
 
     @abstractmethod
     def submit_rollout_update(self, rollout_update: RolloutUpdate) -> None:
-        ...
-
-    @abstractmethod
-    def update_for_eval_start(self) -> Optional[EvalView]:
         ...
 
     @abstractmethod
@@ -50,4 +49,21 @@ class AbstractDataStoreAccessor(ABC):
 
     @abstractmethod
     def load(self, path: str) -> None:
+        ...
+
+    @abstractmethod
+    def initialize_evaluator(self, evaluator: AbstractEvaluator) -> None:
+        ...
+
+    @abstractmethod
+    def evaluate_latest_policy(
+        self,
+        eval_enqueue: EvalEnqueue,
+        n_episodes: Optional[int] = None,
+        print_returns: bool = False,
+    ) -> EpisodesStats:
+        ...
+
+    @abstractmethod
+    def close(self) -> DataStoreFinalization:
         ...

@@ -11,7 +11,6 @@ if TYPE_CHECKING:
 class InProcessDataStore:
     def __init__(self, checkpoint_history_size: int):
         self._policy: Optional["Policy"] = None
-        self._algo: Optional["Algorithm"] = None
         self.env_trackers: Dict[str, Trackable] = {}
         self.timesteps_elapsed = 0
         self.rollout_params: Dict[str, Any] = {}
@@ -44,17 +43,6 @@ class InProcessDataStore:
             policy.load(self.load_path)
         self._policy = policy
 
-    @property
-    def algo(self) -> "Algorithm":
-        assert self._algo is not None
-        return self._algo
-
-    @algo.setter
-    def algo(self, algo: "Algorithm") -> None:
-        if self._algo is None and self.load_path is not None:
-            algo.load(self.load_path)
-        self._algo = algo
-
     def create_checkpoint(self, checkpoint_state: CheckpointState) -> None:
         if self.checkpoint_history_size == 0:
             return
@@ -71,7 +59,5 @@ class InProcessDataStore:
         self.load_path = path
         if self._policy is not None:
             self._policy.load(path)
-        if self._algo is not None:
-            self._algo.load(path)
         for tracker in self.env_trackers.values():
             tracker.load(path)

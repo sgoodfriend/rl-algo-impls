@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING, Any, Dict, NamedTuple, Optional, Tuple
 
+from rl_algo_impls.shared.stats import EpisodesStats
 from rl_algo_impls.shared.trackable import Trackable
 
 if TYPE_CHECKING:
@@ -16,13 +17,18 @@ class LearnerView(NamedTuple):
 class LearnerInitializeData(NamedTuple):
     policy: "Policy"
     algo: "Algorithm"
+    load_path: Optional[str]
+
+
+class EvalEnqueue(NamedTuple):
+    algo: "Algorithm"
 
 
 class LearnerUpdate(NamedTuple):
     policy: "Policy"
-    algo: "Algorithm"
     rollout_params: Dict[str, Any]
     timesteps_elapsed: int
+    eval_enqueue: Optional[EvalEnqueue]
 
 
 class RolloutView(NamedTuple):
@@ -69,3 +75,7 @@ class CheckpointState(NamedTuple):
     policy: "Policy"
     algo_state: Trackable
     env_state: Dict[str, Any]
+
+
+class DataStoreFinalization(NamedTuple):
+    best_eval_stats: Optional[EpisodesStats] = None

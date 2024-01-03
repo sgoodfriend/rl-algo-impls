@@ -19,7 +19,7 @@ class InProcessRolloutGenerator(RolloutGenerator):
         config: Config,
         data_store_accessor: InProcessDataStoreAccessor,
         tb_writer: AbstractSummaryWrapper,
-        **kwargs
+        **kwargs,
     ) -> None:
         super().__init__(**kwargs)
         data_store_accessor.rollout_generator = self
@@ -36,3 +36,10 @@ class InProcessRolloutGenerator(RolloutGenerator):
     @property
     def env_spaces(self) -> EnvSpaces:
         return self._env_spaces
+
+    def get_rollout_start_data(self) -> RolloutDataStoreViewView:
+        rollout_view = self._data_store_view.update_for_rollout_start()
+        assert (
+            rollout_view is not None
+        ), f"{self.__class__.__name__} expects rollout_view to be non-None"
+        return rollout_view

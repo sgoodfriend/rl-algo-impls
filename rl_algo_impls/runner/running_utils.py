@@ -232,8 +232,6 @@ def initialize_policy_algo_data_store_view(
             api, load_run_path, config.args, config.root_dir, load_run_path_best
         )
         assert load_path
-    if load_path:
-        data_store_accessor.load(load_path)
 
     policy = POLICIES[config.algo](env_spaces, **policy_kwargs).to(device)
 
@@ -253,7 +251,7 @@ def initialize_policy_algo_data_store_view(
         **config.algo_hyperparams,
     )
     data_store_accessor.initialize_learner(
-        LearnerInitializeData(policy=policy, algo=algo)
+        LearnerInitializeData(policy=policy, algo=algo, load_path=load_path)
     )
     return policy, algo, LearnerDataStoreView(data_store_accessor)
 
