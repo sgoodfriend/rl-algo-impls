@@ -1,9 +1,8 @@
 import itertools
 import logging
 import os
-import shutil
 from time import perf_counter
-from typing import Deque, Dict, List, Optional, Union
+from typing import Dict, List, Optional
 
 import numpy as np
 
@@ -12,10 +11,8 @@ from rl_algo_impls.runner.config import Config, EnvHyperparams
 from rl_algo_impls.shared.data_store.abstract_data_store_accessor import (
     AbstractDataStoreAccessor,
 )
+from rl_algo_impls.shared.data_store.data_store_data import EvalView
 from rl_algo_impls.shared.data_store.data_store_view import EvalDataStoreView
-from rl_algo_impls.shared.data_store.in_process_data_store_accessor import (
-    InProcessDataStoreAccessor,
-)
 from rl_algo_impls.shared.policy.policy import Policy
 from rl_algo_impls.shared.stats import Episode, EpisodeAccumulator, EpisodesStats
 from rl_algo_impls.shared.summary_wrapper.abstract_summary_wrapper import (
@@ -314,15 +311,17 @@ class Evaluator:
         self.latest_model_path = latest_model_path
 
         self.only_checkpoint_best_policies = only_checkpoint_best_policies
-        policy, self.timesteps_elapsed = self.data_store_view.update_for_eval_start()
-        self.tb_writer.on_timesteps_elapsed(self.timesteps_elapsed)
-        self.checkpoint_policy(policy, True)
 
     def evaluate(
-        self, n_episodes: Optional[int] = None, print_returns: Optional[bool] = None
+        self,
+        eval_data: EvalView,
+        n_episodes: Optional[int] = None,
+        print_returns: Optional[bool] = None,
     ) -> EpisodesStats:
         start_time = perf_counter()
-        policy, self.timesteps_elapsed = self.data_store_view.update_for_eval_start()
+        policy, self.timesteps_elapsed = self.data_store_view.update_from_eval_data(
+            eval_data
+        )
         self.tb_writer.on_timesteps_elapsed(self.timesteps_elapsed)
         eval_stat = evaluate(
             self.env,

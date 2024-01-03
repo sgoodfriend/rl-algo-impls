@@ -91,7 +91,7 @@ class GuidedLearnerRolloutGenerator(InProcessRolloutGenerator):
             learning_policy,
             rollout_params,
             self.tb_writer.timesteps_elapsed,
-        ) = self._data_store_view.update_for_rollout_start()
+        ) = self.get_rollout_start_data()
         self.update_rollout_params(rollout_params)
         log_scalars(self.tb_writer, "charts", rollout_params)
 

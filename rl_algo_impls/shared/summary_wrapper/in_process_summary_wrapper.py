@@ -16,6 +16,7 @@ from rl_algo_impls.shared.summary_wrapper.abstract_summary_wrapper import (
 
 class InProcessSummaryWrapper(AbstractSummaryWrapper):
     def __init__(self, config: Config, args: TrainArgs) -> None:
+        super().__init__()
         self.config = config
         self.wandb_enabled = bool(args.wandb_project_name)
         if self.wandb_enabled:

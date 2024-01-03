@@ -190,6 +190,9 @@ class PPO(Algorithm):
         callbacks: Optional[List[Callback]] = None,
     ) -> PPOSelf:
         timesteps_elapsed = 0
+        learner_data_store_view.submit_learner_update(
+            LearnerDataStoreViewUpdate(self.policy, self, timesteps_elapsed)
+        )
         while timesteps_elapsed < train_timesteps:
             timesteps_elapsed, should_continue = self.learn_epoch(
                 learner_data_store_view, timesteps_elapsed, callbacks

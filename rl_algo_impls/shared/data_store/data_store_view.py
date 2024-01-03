@@ -1,17 +1,18 @@
-from abc import abstractmethod
 from collections import defaultdict
-from typing import Any, DefaultDict, Dict, List
+from typing import Any, DefaultDict, Dict, List, Optional
 
 from rl_algo_impls.rollout.rollout import Rollout
-from rl_algo_impls.shared.data_store.checkpoint_policies_delegate import (
-    CheckpointPoliciesDelegate,
-)
 from rl_algo_impls.shared.data_store.abstract_data_store_accessor import (
     AbstractDataStoreAccessor,
+)
+from rl_algo_impls.shared.data_store.checkpoint_policies_delegate import (
+    CheckpointPoliciesDelegate,
 )
 from rl_algo_impls.shared.data_store.data_store_data import (
     CheckpointState,
     EvalDataStoreViewView,
+    EvalEnqueue,
+    EvalView,
     LearnerDataStoreViewUpdate,
     LearnerUpdate,
     LearnerView,
@@ -21,6 +22,7 @@ from rl_algo_impls.shared.data_store.data_store_data import (
 from rl_algo_impls.shared.data_store.in_process_data_store_accessor import (
     InProcessDataStoreAccessor,
 )
+from rl_algo_impls.shared.evaluator.abstract_evaluator import AbstractEvaluator
 from rl_algo_impls.shared.policy.policy import Policy
 from rl_algo_impls.shared.trackable import Trackable
 
@@ -35,17 +37,37 @@ class LearnerDataStoreView(DataStoreView):
         super().__init__(data_store_accessor)
         self.rollout_params: Dict[str, Any] = {}
 
+        self.evaluator: Optional[AbstractEvaluator] = None
+        self.num_evaluations = 0
+
     def get_learner_view(self) -> LearnerView:
         return self.data_store_accessor.get_learner_view()
 
     def submit_learner_update(self, update: LearnerDataStoreViewUpdate) -> None:
+        assert self.evaluator is not None, "evaluator not initialized"
+        if self.evaluator.should_eval_on_timesteps_elapsed(
+            update.timesteps_elapsed, self.num_evaluations
+        ):
+            eval_enqueue = EvalEnqueue(update.algo)
+            self.num_evaluations += 1
+        else:
+            eval_enqueue = None
         self.data_store_accessor.submit_learner_update(
-            LearnerUpdate(**update._asdict(), rollout_params=self.rollout_params)
+            LearnerUpdate(
+                policy=update.policy,
+                rollout_params=self.rollout_params,
+                timesteps_elapsed=update.timesteps_elapsed,
+                eval_enqueue=eval_enqueue,
+            )
         )
         self.rollout_params = {}
 
     def update_rollout_param(self, key: str, value: Any) -> None:
         self.rollout_params[key] = value
+
+    def initialize_evaluator(self, evaluator: AbstractEvaluator) -> None:
+        self.evaluator = evaluator
+        self.data_store_accessor.initialize_evaluator(evaluator)
 
 
 class VectorEnvDataStoreView(DataStoreView):
@@ -54,11 +76,9 @@ class VectorEnvDataStoreView(DataStoreView):
         self.env_trackers: DefaultDict[str, List[Trackable]] = defaultdict(list)
         self.checkpoint_policy_trackers = []
 
-    @abstractmethod
     def add_trackable(self, trackable: Trackable) -> None:
         self.env_trackers[trackable.name].append(trackable)
 
-    @abstractmethod
     def add_checkpoint_policy_delegate(
         self, checkpoint_policy_delegate: CheckpointPoliciesDelegate
     ) -> None:
@@ -67,7 +87,10 @@ class VectorEnvDataStoreView(DataStoreView):
 
 
 class RolloutDataStoreView(VectorEnvDataStoreView):
-    def update_for_rollout_start(self) -> RolloutDataStoreViewView:
+    def update_for_rollout_start(self) -> Optional[RolloutDataStoreViewView]:
+        rollout_view = self.data_store_accessor.update_for_rollout_start()
+        if rollout_view is None:
+            return None
         (
             policy,
             env_state,
@@ -75,7 +98,7 @@ class RolloutDataStoreView(VectorEnvDataStoreView):
             latest_checkpoint_idx,
             rollout_params,
             timesteps_elapsed,
-        ) = self.data_store_accessor.update_for_rollout_start()
+        ) = rollout_view
         assert set(self.env_trackers) == set(env_state)
         for k, trackers in self.env_trackers.items():
             assert len(trackers) == 1
@@ -107,7 +130,7 @@ class EvalDataStoreView(VectorEnvDataStoreView):
         super().__init__(data_store_accessor)
         self.is_eval_job = is_eval_job
 
-    def update_for_eval_start(self) -> EvalDataStoreViewView:
+    def update_from_eval_data(self, eval_data: EvalView) -> EvalDataStoreViewView:
         (
             policy,
             self.algo_state,
@@ -115,7 +138,7 @@ class EvalDataStoreView(VectorEnvDataStoreView):
             checkpoint_policies,
             latest_checkpoint_idx,
             timesteps_elapsed,
-        ) = self.data_store_accessor.update_for_eval_start()
+        ) = eval_data
         for k, trackers in self.env_trackers.items():
             for t in trackers:
                 t.set_state(self.env_state[k])
