@@ -163,7 +163,7 @@ LunarLander-v2-async: &lunarlander-async
   <<: *lunarlander
   env_id: LunarLander-v2
   process_mode: async
-  n_timesteps: !!float 10e6
+  n_timesteps: !!float 100e6
   algo_hyperparams:
     <<: *lunarlander-algo
     n_epochs: 1
@@ -172,7 +172,7 @@ LunarLander-v2-async: &lunarlander-async
     phases:
       - learning_rate: !!float 5e-4
         clip_range: 0.2
-      - learning_rate: !!float 5e-4
+      - learning_rate: !!float 1e-5
         clip_range: 0
 
 BipedalWalker-v3:
