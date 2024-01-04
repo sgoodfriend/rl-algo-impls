@@ -1,7 +1,10 @@
-# Support for PyTorch mps mode (https://pytorch.org/docs/stable/notes/mps.html)
 import os
 
+# Support for PyTorch mps mode (https://pytorch.org/docs/stable/notes/mps.html)
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
+# Don't overwrite CUDA_VISIBLE_DEVICES on ray workers (https://discuss.ray.io/t/how-to-stop-ray-from-managing-cuda-visible-devices/8767/2)
+os.environ["RAY_EXPERIMENTAL_NOSET_CUDA_VISIBLE_DEVICES"] = "1"
+
 import logging
 import sys
 from dataclasses import asdict
