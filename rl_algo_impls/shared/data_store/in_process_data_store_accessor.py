@@ -19,7 +19,9 @@ from rl_algo_impls.shared.stats import EpisodesStats
 from rl_algo_impls.shared.trackable import Trackable
 
 if TYPE_CHECKING:
-    from rl_algo_impls.rollout.in_process_rollout import InProcessRolloutGenerator
+    from rl_algo_impls.rollout.in_process_rollout_generator import (
+        InProcessRolloutGenerator,
+    )
     from rl_algo_impls.shared.algorithm import Algorithm
     from rl_algo_impls.shared.evaluator.in_process_evaluator import InProcessEvaluator
 

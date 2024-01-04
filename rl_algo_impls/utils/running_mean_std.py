@@ -27,7 +27,7 @@ class RunningMeanStd(Trackable):
         delta = batch_mean - self.mean
         total_count = self.count + batch_count
 
-        self.mean += delta * batch_count / total_count
+        self.mean = self.mean + delta * batch_count / total_count
 
         m_a = self.var * self.count
         m_b = batch_var * batch_count

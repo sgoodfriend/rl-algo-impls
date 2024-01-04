@@ -5,13 +5,12 @@ from typing import NamedTuple
 import numpy as np
 import torch
 
-from rl_algo_impls.rollout.in_process_rollout import InProcessRolloutGenerator
+from rl_algo_impls.rollout.synchronous_rollout_generator import (
+    SynchronousRolloutGenerator,
+)
 from rl_algo_impls.runner.config import Config
 from rl_algo_impls.shared.data_store.abstract_data_store_accessor import (
     AbstractDataStoreAccessor,
-)
-from rl_algo_impls.shared.data_store.in_process_data_store_accessor import (
-    InProcessDataStoreAccessor,
 )
 from rl_algo_impls.shared.stats import log_scalars
 from rl_algo_impls.shared.summary_wrapper.abstract_summary_wrapper import (
@@ -35,7 +34,7 @@ class Transition(NamedTuple):
     next_obs: np.ndarray
 
 
-class ReplayBufferRolloutGenerator(InProcessRolloutGenerator):
+class ReplayBufferRolloutGenerator(SynchronousRolloutGenerator):
     def __init__(
         self,
         config: Config,
@@ -45,7 +44,6 @@ class ReplayBufferRolloutGenerator(InProcessRolloutGenerator):
         learning_starts: int = 50_000,
         train_freq: int = 4,
     ) -> None:
-        assert isinstance(data_store_accessor, InProcessDataStoreAccessor)
         super().__init__(
             config,
             data_store_accessor,
@@ -73,11 +71,14 @@ class ReplayBufferRolloutGenerator(InProcessRolloutGenerator):
         return self._collect_transitions(self.train_freq, **kwargs)
 
     def _collect_transitions(self, n_steps: int, **kwargs) -> int:
+        rollout_view = self.data_store_view.update_for_rollout_start()
+        if rollout_view is None:
+            return 0
         (
             policy,
             rollout_params,
             self.tb_writer.timesteps_elapsed,
-        ) = self.get_rollout_start_data()
+        ) = rollout_view
         self.update_rollout_params(rollout_params)
         log_scalars(self.tb_writer, "charts", rollout_params)
 

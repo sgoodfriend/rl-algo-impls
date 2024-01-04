@@ -3,15 +3,14 @@ from typing import Dict, List, Optional, Sequence, TypeVar
 
 import numpy as np
 
-from rl_algo_impls.rollout.in_process_rollout import InProcessRolloutGenerator
+from rl_algo_impls.rollout.synchronous_rollout_generator import (
+    SynchronousRolloutGenerator,
+)
 from rl_algo_impls.rollout.trajectory import TrajectoryBuilder
 from rl_algo_impls.rollout.trajectory_rollout import TrajectoryRollout
 from rl_algo_impls.runner.config import Config
 from rl_algo_impls.shared.data_store.abstract_data_store_accessor import (
     AbstractDataStoreAccessor,
-)
-from rl_algo_impls.shared.data_store.in_process_data_store_accessor import (
-    InProcessDataStoreAccessor,
 )
 from rl_algo_impls.shared.policy.actor_critic import ActorCritic
 from rl_algo_impls.shared.stats import log_scalars
@@ -23,7 +22,7 @@ from rl_algo_impls.wrappers.episode_stats_writer import EpisodeStatsWriter
 from rl_algo_impls.wrappers.vector_wrapper import find_wrapper
 
 
-class GuidedLearnerRolloutGenerator(InProcessRolloutGenerator):
+class GuidedLearnerRolloutGenerator(SynchronousRolloutGenerator):
     def __init__(
         self,
         config: Config,
@@ -40,7 +39,6 @@ class GuidedLearnerRolloutGenerator(InProcessRolloutGenerator):
         include_logp: bool = True,
         subaction_mask: Optional[Dict[int, Dict[int, int]]] = None,
     ) -> None:
-        assert isinstance(data_store_accessor, InProcessDataStoreAccessor)
         super().__init__(config, data_store_accessor, tb_writer)
         self.gamma = num_or_array(gamma)
         self.gae_lambda = num_or_array(gae_lambda)
@@ -86,12 +84,15 @@ class GuidedLearnerRolloutGenerator(InProcessRolloutGenerator):
             self.get_action_mask() if self.get_action_mask else None
         )
 
-    def rollout(self) -> TrajectoryRollout:
+    def rollout(self) -> Optional[TrajectoryRollout]:
+        rollout_view = self.data_store_view.update_for_rollout_start()
+        if rollout_view is None:
+            return None
         (
             learning_policy,
             rollout_params,
             self.tb_writer.timesteps_elapsed,
-        ) = self.get_rollout_start_data()
+        ) = rollout_view
         self.update_rollout_params(rollout_params)
         log_scalars(self.tb_writer, "charts", rollout_params)
 

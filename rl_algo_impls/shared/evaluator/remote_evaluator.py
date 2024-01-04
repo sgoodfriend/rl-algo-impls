@@ -62,7 +62,6 @@ class RemoteEvaluator(AbstractEvaluator):
             score_function=score_function,
             wandb_enabled=wandb_enabled,
             score_threshold=score_threshold,
-            skip_evaluate_at_start=skip_evaluate_at_start,
             only_checkpoint_best_policies=only_checkpoint_best_policies,
             latest_model_path=latest_model_path,
         )
@@ -80,7 +79,9 @@ class RemoteEvaluator(AbstractEvaluator):
         n_episodes: Optional[int] = None,
         print_returns: bool = False,
     ) -> EpisodesStats:
-        return ray.get(self.eval_actor.evaluate(eval_data, n_episodes, print_returns))
+        return ray.get(
+            self.eval_actor.evaluate.remote(eval_data, n_episodes, print_returns)
+        )
 
     def evaluate_latest_policy(
         self,

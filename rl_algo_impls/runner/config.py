@@ -80,7 +80,7 @@ HyperparamsSelf = TypeVar("HyperparamsSelf", bound="Hyperparams")
 
 @dataclass
 class Hyperparams:
-    process_mode: str = "async"
+    process_mode: str = "sync"
     device: str = "auto"
     n_timesteps: Union[int, float] = 100_000
     env_hyperparams: Dict[str, Any] = dataclasses.field(default_factory=dict)

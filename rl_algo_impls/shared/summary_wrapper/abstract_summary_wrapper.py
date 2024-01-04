@@ -1,5 +1,6 @@
+import logging
 from abc import ABC, abstractmethod
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 
 class AbstractSummaryWrapper(ABC):
@@ -28,5 +29,7 @@ class AbstractSummaryWrapper(ABC):
         ...
 
     @abstractmethod
-    def maybe_add_logging_handler(self) -> None:
+    def maybe_add_logging_handler(
+        self, logger: Optional[logging.Logger] = None
+    ) -> None:
         ...

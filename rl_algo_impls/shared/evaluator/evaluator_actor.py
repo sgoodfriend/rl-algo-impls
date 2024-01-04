@@ -1,3 +1,4 @@
+import logging
 from typing import List, Optional
 
 import ray
@@ -37,6 +38,8 @@ class EvaluatorActor:
         only_checkpoint_best_policies: bool = False,
         latest_model_path: Optional[str] = None,
     ) -> None:
+        logging.basicConfig(level=logging.INFO, handlers=[])
+        tb_writer.maybe_add_logging_handler()
         self.evaluator = Evaluator(
             config,
             data_store_accessor,

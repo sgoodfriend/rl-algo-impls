@@ -11,12 +11,10 @@ import yaml
 
 from rl_algo_impls.ppo.learning_rate_by_kl_divergence import LearningRateByKLDivergence
 from rl_algo_impls.ppo.ppo import PPO
-from rl_algo_impls.rollout.in_process_rollout import InProcessRolloutGenerator
-from rl_algo_impls.rollout.reference_ai_rollout import ReferenceAIRolloutGenerator
-from rl_algo_impls.rollout.sync_step_rollout import SyncStepRolloutGenerator
+from rl_algo_impls.rollout.in_process_rollout_generator import InProcessRolloutGenerator
+from rl_algo_impls.rollout.remote_rollout_generator import RemoteRolloutGenerator
 from rl_algo_impls.runner.config import Config, TrainArgs
 from rl_algo_impls.runner.running_utils import (
-    DEFAULT_ROLLOUT_GENERATORS,
     get_device,
     hparam_dict,
     initialize_policy_algo_data_store_view,
@@ -30,7 +28,11 @@ from rl_algo_impls.shared.callbacks.self_play_callback import SelfPlayCallback
 from rl_algo_impls.shared.data_store.in_process_data_store_accessor import (
     InProcessDataStoreAccessor,
 )
+from rl_algo_impls.shared.data_store.remote_data_store_accessor import (
+    RemoteDataStoreAccessor,
+)
 from rl_algo_impls.shared.evaluator.in_process_evaluator import InProcessEvaluator
+from rl_algo_impls.shared.evaluator.remote_evaluator import RemoteEvaluator
 from rl_algo_impls.shared.summary_wrapper.in_process_summary_wrapper import (
     InProcessSummaryWrapper,
 )
@@ -59,32 +61,24 @@ def train(args: TrainArgs):
 
     set_seeds(args.seed)
 
-    data_store_accessor = InProcessDataStoreAccessor(
-        **(config.hyperparams.checkpoints_kwargs or {})
-    )
-
-    rollout_hyperparams = {**config.rollout_hyperparams}
-    subaction_mask = config.policy_hyperparams.get("subaction_mask", None)
-    if subaction_mask is not None:
-        rollout_hyperparams["subaction_mask"] = subaction_mask
-    if config.rollout_type:
-        if config.rollout_type == "sync":
-            rollout_generator_cls = SyncStepRolloutGenerator
-        elif config.rollout_type == "reference":
-            rollout_generator_cls = ReferenceAIRolloutGenerator
-        elif config.rollout_type in {"guided", "guided_random"}:
-            raise ValueError(f"{config.rollout_type} is not currently supported")
-        else:
-            raise ValueError(f"{config.rollout_type} not recognized rollout_type")
+    if config.process_mode == "async":
+        data_store_accessor = RemoteDataStoreAccessor(
+            **(config.hyperparams.checkpoints_kwargs or {})
+        )
+        rollout_generator = RemoteRolloutGenerator(
+            args, config, data_store_accessor, tb_writer
+        )
+    elif config.process_mode == "sync":
+        data_store_accessor = InProcessDataStoreAccessor(
+            **(config.hyperparams.checkpoints_kwargs or {})
+        )
+        rollout_generator = InProcessRolloutGenerator(
+            args, config, data_store_accessor, tb_writer
+        )
     else:
-        rollout_generator_cls = DEFAULT_ROLLOUT_GENERATORS[args.algo]
-
-    rollout_generator = rollout_generator_cls(
-        config,
-        data_store_accessor,
-        tb_writer,
-        **rollout_hyperparams,
-    )
+        raise ValueError(
+            f"process_mode {config.process_mode} not recognized (Expect: sync or async)"
+        )
 
     device = get_device(config, rollout_generator.env_spaces)
     set_device_optimizations(device, **config.device_hyperparams)
@@ -97,21 +91,38 @@ def train(args: TrainArgs):
     )
 
     self_play_wrapper = (
-        find_wrapper(rollout_generator.vec_env, SelfPlayWrapper)
+        find_wrapper(rollout_generator.generator.vec_env, SelfPlayWrapper)
         if isinstance(rollout_generator, InProcessRolloutGenerator)
         else None
     )
-    evaluator = InProcessEvaluator(
-        config,
-        data_store_accessor,
-        tb_writer,
-        self_play_wrapper=self_play_wrapper,
-        best_model_path=config.model_dir_path(best=True),
-        **config.eval_callback_params(),
-        video_dir=config.videos_path,
-        additional_keys_to_log=config.additional_keys_to_log,
-        latest_model_path=config.model_dir_path(best=False),
-    )
+    if config.process_mode == "async":
+        assert self_play_wrapper is None, f"SelfPlayWrapper not supported in async mode"
+        evaluator = RemoteEvaluator(
+            config,
+            data_store_accessor,
+            tb_writer,
+            best_model_path=config.model_dir_path(best=True),
+            **config.eval_callback_params(),
+            video_dir=config.videos_path,
+            additional_keys_to_log=config.additional_keys_to_log,
+            latest_model_path=config.model_dir_path(best=False),
+        )
+    elif config.process_mode == "sync":
+        evaluator = InProcessEvaluator(
+            config,
+            data_store_accessor,
+            tb_writer,
+            self_play_wrapper=self_play_wrapper,
+            best_model_path=config.model_dir_path(best=True),
+            **config.eval_callback_params(),
+            video_dir=config.videos_path,
+            additional_keys_to_log=config.additional_keys_to_log,
+            latest_model_path=config.model_dir_path(best=False),
+        )
+    else:
+        raise ValueError(
+            f"process_mode {config.process_mode} not recognized (Expect: sync or async)"
+        )
     learner_data_store_view.initialize_evaluator(evaluator)
     callbacks: List[Callback] = []
     if self_play_wrapper:
@@ -145,6 +156,7 @@ def train(args: TrainArgs):
         callbacks=callbacks,
     )
 
+    (best_eval_stats,) = data_store_accessor.close()
     evaluator.save(algo.policy, config.model_dir_path(best=False))
 
     eval_stats = evaluator.evaluate_latest_policy(
@@ -158,7 +170,6 @@ def train(args: TrainArgs):
         "hparam/last_mean": eval_stats.score.mean,
         "hparam/last_result": eval_stats.score.mean - eval_stats.score.std,
     }
-    (best_eval_stats,) = data_store_accessor.close()
     if best_eval_stats:
         log_dict["best_eval"] = best_eval_stats._asdict()
         hparam_metric_dict.update(
