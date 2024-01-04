@@ -3,7 +3,7 @@ import logging
 import os
 import shutil
 from dataclasses import asdict
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from torch.utils.tensorboard.writer import SummaryWriter
 
@@ -84,5 +84,5 @@ class InProcessSummaryWrapper(AbstractSummaryWrapper):
                 step=self.timesteps_elapsed,
             )
 
-    def maybe_add_logging_handler(self) -> None:
+    def maybe_add_logging_handler(self, logger: Optional[logging.Logger]) -> None:
         pass

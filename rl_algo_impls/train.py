@@ -35,13 +35,16 @@ def train() -> None:
     )
     parser.set_defaults(
         algo=["ppo"],
-        env=["CartPole-v1"],
+        # env=["CartPole-v1"],
+        # env=["CartPole-v1-async"],
         # env=["LunarLander-v2"],
         # env=["LunarLander-v2-lr-by-kl"],
+        env=["LunarLander-v2-async"],
         # env="CarRacing-v2",
         # env=["HalfCheetah-v4"],
         # env=["HalfCheetah-v4-lr-by-kl"],
         # env=["PongNoFrameskip-v4"],
+        # env=["PongNoFrameskip-v4-async"],
         # env=["BreakoutNoFrameskip-v4-lr-by-kl"],
         # env=["Microrts-debug"],
         # env=["LuxAI_S2-v0-debug"],

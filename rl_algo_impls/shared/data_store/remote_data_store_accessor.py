@@ -8,6 +8,7 @@ from rl_algo_impls.shared.data_store.abstract_data_store_accessor import (
 from rl_algo_impls.shared.data_store.algorithm_state import RemoteAlgorithmState
 from rl_algo_impls.shared.data_store.data_store_actor import (
     DataStoreActor,
+    RemoteEvalEnqueue,
     RemoteLearnerInitializeData,
     RemoteLearnerUpdate,
 )
@@ -55,12 +56,12 @@ class RemoteDataStoreAccessor(AbstractDataStoreAccessor):
 
     def submit_learner_update(self, learner_update: LearnerUpdate) -> None:
         policy, rollout_params, timesteps_elapsed, eval_enqueue = learner_update
-        remote_eval_enqueue = (
-            RemoteAlgorithmState(eval_enqueue.algo) if eval_enqueue else None
-        )
         self.data_store_actor.submit_learner_update.remote(
             RemoteLearnerUpdate(
-                policy, rollout_params, timesteps_elapsed, remote_eval_enqueue
+                policy,
+                rollout_params,
+                timesteps_elapsed,
+                RemoteEvalEnqueue.from_eval_enqueue(eval_enqueue),
             )
         )
 
@@ -89,7 +90,9 @@ class RemoteDataStoreAccessor(AbstractDataStoreAccessor):
     ) -> EpisodesStats:
         return ray.get(
             self.data_store_actor.evaluate_latest_policy.remote(
-                eval_enqueue, n_episodes, print_returns
+                RemoteEvalEnqueue.from_eval_enqueue(eval_enqueue),
+                n_episodes,
+                print_returns,
             )
         )
 

@@ -18,8 +18,6 @@ import wandb
 from rl_algo_impls.a2c.a2c import A2C
 from rl_algo_impls.acbc.acbc import ACBC
 from rl_algo_impls.ppo.ppo import PPO
-from rl_algo_impls.rollout.rollout_generator import RolloutGenerator
-from rl_algo_impls.rollout.sync_step_rollout import SyncStepRolloutGenerator
 from rl_algo_impls.runner.config import Config, Hyperparams
 from rl_algo_impls.runner.wandb_load import load_player
 from rl_algo_impls.shared.algorithm import Algorithm
@@ -51,13 +49,6 @@ POLICIES: Dict[str, Type[Policy]] = {
     "a2c": ActorCritic,
     "acbc": ActorCritic,
 }
-DEFAULT_ROLLOUT_GENERATORS: Dict[str, Type[RolloutGenerator]] = {
-    # "dqn": ReplayBufferRolloutGenerator,
-    "ppo": SyncStepRolloutGenerator,
-    "a2c": SyncStepRolloutGenerator,
-    "acbc": SyncStepRolloutGenerator,
-}
-
 HYPERPARAMS_PATH = "hyperparams"
 
 

@@ -1,3 +1,5 @@
+from typing import Optional
+
 import numpy as np
 
 from rl_algo_impls.rollout.sync_step_rollout import SyncStepRolloutGenerator, fold_in
@@ -39,12 +41,15 @@ class ReferenceAIRolloutGenerator(SyncStepRolloutGenerator):
                     dtype=self.actions.dtype,
                 )
 
-    def rollout(self) -> VecRollout:
+    def rollout(self) -> Optional[VecRollout]:
+        rollout_view = self.data_store_view.update_for_rollout_start()
+        if rollout_view is None:
+            return None
         (
             policy,
             rollout_params,
             self.tb_writer.timesteps_elapsed,
-        ) = self.get_rollout_start_data()
+        ) = rollout_view
         self.update_rollout_params(rollout_params)
         log_scalars(self.tb_writer, rollout_params, self.tb_writer.timesteps_elapsed)
 

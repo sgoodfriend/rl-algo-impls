@@ -1,12 +1,13 @@
 import asyncio
-from collections import deque
-from typing import TYPE_CHECKING, Any, Deque, Dict, List, NamedTuple, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, NamedTuple, Optional, Type, TypeVar
 
 import ray
 
+from rl_algo_impls.shared.data_store.algorithm_state import RemoteAlgorithmState
 from rl_algo_impls.shared.data_store.data_store_data import (
     CheckpointState,
     DataStoreFinalization,
+    EvalEnqueue,
     EvalView,
     LearnerView,
     RolloutUpdate,
@@ -27,8 +28,17 @@ class RemoteLearnerInitializeData(NamedTuple):
     load_path: Optional[str]
 
 
+RemoteEvalEnqueueSelf = TypeVar("RemoteEvalEnqueueSelf", bound="RemoteEvalEnqueue")
+
+
 class RemoteEvalEnqueue(NamedTuple):
     algo_state: Trackable
+
+    @classmethod
+    def from_eval_enqueue(
+        cls: Type[RemoteEvalEnqueueSelf], eval_enqueue: Optional[EvalEnqueue]
+    ) -> Optional[RemoteEvalEnqueueSelf]:
+        return cls(RemoteAlgorithmState(eval_enqueue.algo)) if eval_enqueue else None
 
 
 class RemoteLearnerUpdate(NamedTuple):
@@ -193,7 +203,7 @@ class DataStoreActor:
         )
 
     @property
-    def latest_checkpoint_policy(self) -> Optional[Policy]:
+    def latest_checkpoint_policy(self) -> Optional["Policy"]:
         latest_checkpoint = self.latest_checkpoint
         if latest_checkpoint is None:
             return None

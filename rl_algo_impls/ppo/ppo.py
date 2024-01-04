@@ -1,5 +1,6 @@
 import gc
 import logging
+import warnings
 from dataclasses import asdict, astuple, dataclass
 from time import perf_counter
 from typing import Dict, List, NamedTuple, Optional, Tuple, TypeVar, Union
@@ -236,7 +237,7 @@ class PPO(Algorithm):
 
         rollouts, teacher_policy = learner_data_store_view.get_learner_view()
         if len(rollouts) > 1:
-            logging.warning(
+            warnings.warn(
                 f"PPO does not support multiple rollouts ({len(rollouts)}) per epoch. "
                 "Only the last rollout will be used"
             )
@@ -250,7 +251,7 @@ class PPO(Algorithm):
                 self.batch_size,
             )
         elif teacher_policy is not None:
-            logging.warning(
+            warnings.warn(
                 "Getting teacher_policy without teacher_kl_loss_fn could be inefficient"
             )
 

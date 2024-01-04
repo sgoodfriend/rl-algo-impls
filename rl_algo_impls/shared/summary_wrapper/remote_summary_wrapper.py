@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import ray
 
@@ -15,7 +15,7 @@ class RemoteSummaryWrapper(AbstractSummaryWrapper):
         self.tb_writer_actor = SummaryWriterActor.remote(config, args)
         self.timesteps_elapsed = 0
 
-        self.maybe_add_logging_handler(logging.getLogger())
+        self.maybe_add_logging_handler()
 
     def on_timesteps_elapsed(self, timesteps_elapsed: int) -> None:
         self.timesteps_elapsed = timesteps_elapsed
@@ -24,6 +24,9 @@ class RemoteSummaryWrapper(AbstractSummaryWrapper):
         ray.get(self.tb_writer_actor.close.remote())
 
     def __getattr__(self, name: str):
+        if name.startswith("__") and name.endswith("__"):
+            raise AttributeError(f"{self.__class__.__name__} has no attribute {name}")
+
         def method(*args, **kwargs):
             self.tb_writer_actor.call.remote(
                 name, *args, global_step=self.timesteps_elapsed, **kwargs
@@ -40,7 +43,11 @@ class RemoteSummaryWrapper(AbstractSummaryWrapper):
     def log_video(self, video_path: str, fps: int) -> None:
         self.tb_writer_actor.log_video.remote(video_path, fps, self.timesteps_elapsed)
 
-    def maybe_add_logging_handler(self, logger: logging.Logger) -> None:
+    def maybe_add_logging_handler(
+        self, logger: Optional[logging.Logger] = None
+    ) -> None:
+        if logger is None:
+            logger = logging.getLogger()
         logger.addHandler(RemoteSummaryWrapperLoggingHandler(self))
 
 
