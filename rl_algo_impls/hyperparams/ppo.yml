@@ -378,7 +378,7 @@ QbertNoFrameskip-v4-lr-by-kl:
 _atari-async: &atari-async
   <<: *atari-defaults
   process_mode: async
-  n_steps: !!float 50e6
+  n_timesteps: !!float 50e6
   algo_hyperparams:
     <<: *atari-algo-defaults
     n_epochs: 1
