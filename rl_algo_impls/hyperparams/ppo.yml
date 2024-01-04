@@ -397,6 +397,10 @@ PongNoFrameskip-v4-async:
   <<: *atari-async
   env_id: PongNoFrameskip-v4
 
+BreakoutNoFrameskip-v4-async:
+  <<: *atari-async
+  env_id: BreakoutNoFrameskip-v4
+
 HalfCheetah-v4: &mujoco-defaults
   n_timesteps: !!float 1e6
   env_hyperparams: &mujoco-env-defaults
