@@ -396,6 +396,7 @@ _atari-async: &atari-async
 PongNoFrameskip-v4-async:
   <<: *atari-async
   env_id: PongNoFrameskip-v4
+  n_timesteps: !!float 25e6
 
 BreakoutNoFrameskip-v4-async:
   <<: *atari-async
