@@ -293,6 +293,7 @@ _atari: &atari-defaults
   eval_hyperparams:
     deterministic: false
     max_video_length: 18000
+    step_freq: !!float 5e5
 
 _norm-rewards-atari: &norm-rewards-atari-default
   <<: *atari-defaults
@@ -389,7 +390,7 @@ _atari-async: &atari-async
     phases:
       - learning_rate: !!float 1e-3
         clip_range: 0.1
-      - learning_rate: !!float 1e-4
+      - learning_rate: !!float 1e-5
         clip_range: 0
 
 PongNoFrameskip-v4-async:
