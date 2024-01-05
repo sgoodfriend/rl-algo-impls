@@ -2,6 +2,7 @@ import logging
 from typing import List, Optional
 
 import ray
+from ray.runtime_env import RuntimeEnv
 
 from rl_algo_impls.runner.config import Config
 from rl_algo_impls.shared.data_store.abstract_data_store_accessor import (
@@ -16,7 +17,7 @@ from rl_algo_impls.shared.summary_wrapper.abstract_summary_wrapper import (
 )
 
 
-@ray.remote(num_cpus=4)
+@ray.remote(num_cpus=2, runtime_env=RuntimeEnv(env_vars={"OMP_NUM_THREADS": ""}))
 class EvaluatorActor:
     def __init__(
         self,
