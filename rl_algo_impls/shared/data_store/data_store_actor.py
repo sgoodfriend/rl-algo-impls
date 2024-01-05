@@ -48,7 +48,7 @@ class RemoteLearnerUpdate(NamedTuple):
     eval_enqueue: Optional[RemoteEvalEnqueue]
 
 
-@ray.remote
+@ray.remote(num_cpus=4)
 class DataStoreActor:
     def __init__(self, history_size: int) -> None:
         self.history_size = history_size
