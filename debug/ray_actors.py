@@ -54,11 +54,11 @@ class EnvData(NamedTuple):
             },
         )
 
-    def diff(self, other_dict: Dict) -> Dict[str, Any]:
+    def diff(self: EnvDataSelf, other: EnvDataSelf) -> Dict[str, Any]:
         d = {}
         for field, _dict in self._asdict().items():
-            _other_dict = other_dict[field]
-            diff = dict_diff(_dict, _other_dict)
+            other_dict = getattr(other, field)
+            diff = dict_diff(_dict, other_dict)
             if diff:
                 d[field] = diff
         return d
@@ -85,9 +85,9 @@ def dict_diff(lhs: Dict, rhs: Dict) -> Dict[str, Any]:
 
 # @ray.remote(num_cpus=2, runtime_env=RuntimeEnv(env_vars={"OMP_NUM_THREADS": ""}))
 @ray.remote(num_cpus=2)
-def get_ray_env_data() -> Dict:
+def get_ray_env_data() -> EnvData:
     init_ray_actor()
-    return EnvData.create()._asdict()
+    return EnvData.create()
 
 
 main_env_data = EnvData.create()
