@@ -3,6 +3,8 @@ import multiprocessing
 import os
 from typing import Any, Dict, NamedTuple, Type, TypeVar
 
+import jax
+
 from rl_algo_impls.utils.ray import init_ray_actor
 
 # Support for PyTorch mps mode (https://pytorch.org/docs/stable/notes/mps.html)
@@ -30,6 +32,7 @@ class EnvData(NamedTuple):
     torch: Dict[str, Any]
     multiprocessing: Dict[str, Any]
     os: Dict[str, Any]
+    jax: Dict[str, Any]
 
     @classmethod
     def create(cls: Type[EnvDataSelf]) -> EnvDataSelf:
@@ -45,6 +48,9 @@ class EnvData(NamedTuple):
             },
             os={
                 "cpu_count": os.cpu_count(),
+            },
+            jax={
+                "local_device_count": jax.local_device_count(),
             },
         )
 
