@@ -1,5 +1,4 @@
 import asyncio
-import os
 from typing import TYPE_CHECKING, Any, Dict, List, NamedTuple, Optional, Type, TypeVar
 
 import ray
@@ -17,6 +16,7 @@ from rl_algo_impls.shared.data_store.data_store_data import (
 from rl_algo_impls.shared.evaluator.abstract_evaluator import AbstractEvaluator
 from rl_algo_impls.shared.stats import EpisodesStats
 from rl_algo_impls.shared.trackable import Trackable
+from rl_algo_impls.utils.ray import init_ray_actor
 
 if TYPE_CHECKING:
     from rl_algo_impls.rollout.rollout import Rollout
@@ -52,7 +52,7 @@ class RemoteLearnerUpdate(NamedTuple):
 @ray.remote(num_cpus=2)
 class DataStoreActor:
     def __init__(self, history_size: int) -> None:
-        os.environ.pop("OMP_NUM_THREADS", None)
+        init_ray_actor()
         self.history_size = history_size
 
         self.is_closed = False

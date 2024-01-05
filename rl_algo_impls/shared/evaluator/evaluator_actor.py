@@ -1,5 +1,4 @@
 import logging
-import os
 from typing import List, Optional
 
 import ray
@@ -15,6 +14,7 @@ from rl_algo_impls.shared.stats import EpisodesStats
 from rl_algo_impls.shared.summary_wrapper.abstract_summary_wrapper import (
     AbstractSummaryWrapper,
 )
+from rl_algo_impls.utils.ray import init_ray_actor
 
 
 @ray.remote(num_cpus=2)
@@ -39,7 +39,7 @@ class EvaluatorActor:
         only_checkpoint_best_policies: bool = False,
         latest_model_path: Optional[str] = None,
     ) -> None:
-        os.environ.pop("OMP_NUM_THREADS", None)
+        init_ray_actor()
         logging.basicConfig(level=logging.INFO, handlers=[])
         tb_writer.maybe_add_logging_handler()
         self.evaluator = Evaluator(
