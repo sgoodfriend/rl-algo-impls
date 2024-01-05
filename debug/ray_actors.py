@@ -10,15 +10,15 @@ os.environ["RAY_EXPERIMENTAL_NOSET_CUDA_VISIBLE_DEVICES"] = "1"
 
 import ray
 import torch
-from ray.runtime_env import RuntimeEnv
 
 
 def ray_init_hook():
     os.environ.pop("OMP_NUM_THREADS", None)
 
 
+ray.init()
 # ray.init(runtime_env=RuntimeEnv(worker_process_setup_hook=ray_init_hook))
-ray.init(runtime_env=RuntimeEnv(env_vars={"OMP_NUM_THREADS": ""}))
+# ray.init(runtime_env=RuntimeEnv(env_vars={"OMP_NUM_THREADS": ""}))
 
 EnvDataSelf = TypeVar("EnvDataSelf", bound="EnvData")
 
@@ -76,9 +76,9 @@ def dict_diff(lhs: Dict, rhs: Dict) -> Dict[str, Any]:
 
 
 # @ray.remote(num_cpus=2, runtime_env=RuntimeEnv(env_vars={"OMP_NUM_THREADS": ""}))
-# @ray.remote(num_cpus=2, runtime_env=RuntimeEnv(worker_process_setup_hook=ray_init_hook))
 @ray.remote(num_cpus=2)
 def get_ray_env_data() -> EnvData:
+    os.environ.pop("OMP_NUM_THREADS")
     return EnvData.create()
 
 

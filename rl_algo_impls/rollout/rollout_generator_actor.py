@@ -1,7 +1,7 @@
 import logging
+import os
 
 import ray
-from ray.runtime_env import RuntimeEnv
 
 from rl_algo_impls.rollout import create_synchronous_rollout_generator
 from rl_algo_impls.runner.config import Config, TrainArgs
@@ -13,7 +13,7 @@ from rl_algo_impls.shared.summary_wrapper.abstract_summary_wrapper import (
 )
 
 
-@ray.remote(num_cpus=2, runtime_env=RuntimeEnv(env_vars={"OMP_NUM_THREADS": ""}))
+@ray.remote(num_cpus=2)
 class RolloutGeneratorActor:
     def __init__(
         self,
@@ -22,6 +22,7 @@ class RolloutGeneratorActor:
         data_store_accessor: AbstractDataStoreAccessor,
         tb_writer: AbstractSummaryWrapper,
     ) -> None:
+        os.environ.pop("OMP_NUM_THREADS", None)
         logging.basicConfig(level=logging.INFO, handlers=[])
         tb_writer.maybe_add_logging_handler()
         self.generator = create_synchronous_rollout_generator(
