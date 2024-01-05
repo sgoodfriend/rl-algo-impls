@@ -1,4 +1,3 @@
-import logging
 from typing import Dict
 
 from rl_algo_impls.lux.jux.jax_init import jax_init
