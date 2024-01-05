@@ -45,6 +45,7 @@ class EnvData(NamedTuple):
             },
             jax={
                 "local_device_count": jax.local_device_count(),
+                "default_backend": jax.default_backend(),
             },
         )
 
