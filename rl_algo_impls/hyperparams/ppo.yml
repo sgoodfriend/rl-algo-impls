@@ -389,12 +389,12 @@ _atari-async: &atari-async
   algo_hyperparams:
     <<: *atari-algo-defaults
     n_epochs: 1
-    learning_rate: !!float 1e-3
+    learning_rate: !!float 2e-3
     batch_size: 1024
   hyperparam_transitions_kwargs:
     durations: [0, 1, 0]
     phases:
-      - learning_rate: !!float 1e-3
+      - learning_rate: !!float 2e-3
         clip_range: 0.1
       - learning_rate: !!float 1e-5
         clip_range: 0
