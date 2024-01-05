@@ -1,3 +1,4 @@
+import logging
 from typing import Optional, SupportsFloat, Tuple, Union
 
 import gymnasium
