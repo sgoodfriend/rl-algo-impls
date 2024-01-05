@@ -2,6 +2,7 @@ import asyncio
 from typing import TYPE_CHECKING, Any, Dict, List, NamedTuple, Optional, Type, TypeVar
 
 import ray
+from ray.runtime_env import RuntimeEnv
 
 from rl_algo_impls.shared.data_store.algorithm_state import RemoteAlgorithmState
 from rl_algo_impls.shared.data_store.data_store_data import (
@@ -48,7 +49,7 @@ class RemoteLearnerUpdate(NamedTuple):
     eval_enqueue: Optional[RemoteEvalEnqueue]
 
 
-@ray.remote(num_cpus=4)
+@ray.remote(num_cpus=2, runtime_env=RuntimeEnv(env_vars={"OMP_NUM_THREADS": ""}))
 class DataStoreActor:
     def __init__(self, history_size: int) -> None:
         self.history_size = history_size
