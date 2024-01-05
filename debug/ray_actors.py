@@ -3,6 +3,8 @@ import multiprocessing
 import os
 from typing import Any, Dict, NamedTuple, Type, TypeVar
 
+from rl_algo_impls.utils.ray import init_ray_actor
+
 # Support for PyTorch mps mode (https://pytorch.org/docs/stable/notes/mps.html)
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
 # Don't overwrite CUDA_VISIBLE_DEVICES on ray workers (https://discuss.ray.io/t/how-to-stop-ray-from-managing-cuda-visible-devices/8767/2)
@@ -78,7 +80,7 @@ def dict_diff(lhs: Dict, rhs: Dict) -> Dict[str, Any]:
 # @ray.remote(num_cpus=2, runtime_env=RuntimeEnv(env_vars={"OMP_NUM_THREADS": ""}))
 @ray.remote(num_cpus=2)
 def get_ray_env_data() -> EnvData:
-    os.environ.pop("OMP_NUM_THREADS")
+    init_ray_actor()
     return EnvData.create()
 
 
