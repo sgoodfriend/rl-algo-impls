@@ -42,7 +42,7 @@ class RolloutView(NamedTuple):
 
 class RolloutUpdate(NamedTuple):
     rollout: "Rollout"
-    env_state: Dict[str, Any]
+    env_update: Dict[str, Any]
 
 
 class EvalView(NamedTuple):

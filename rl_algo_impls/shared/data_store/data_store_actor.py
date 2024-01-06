@@ -15,7 +15,7 @@ from rl_algo_impls.shared.data_store.data_store_data import (
 )
 from rl_algo_impls.shared.evaluator.abstract_evaluator import AbstractEvaluator
 from rl_algo_impls.shared.stats import EpisodesStats
-from rl_algo_impls.shared.trackable import Trackable
+from rl_algo_impls.shared.trackable import Trackable, UpdateTrackable
 from rl_algo_impls.utils.ray import init_ray_actor
 
 if TYPE_CHECKING:
@@ -58,7 +58,7 @@ class DataStoreActor:
         self.is_closed = False
         self.timesteps_elapsed = 0
         self.latest_policy: Optional["Policy"] = None
-        self.env_trackers: Dict[str, Trackable] = {}
+        self.env_trackers: Dict[str, UpdateTrackable] = {}
         self.rollout_params: Dict[str, Any] = {}
         self.load_path: Optional[str] = None
         self.rollouts = asyncio.Queue()
@@ -69,10 +69,9 @@ class DataStoreActor:
         self._ckpts_circular_queue: List[CheckpointState] = []
         self._latest_ckpt_idx = -1
 
-    def register_env_tracker(self, env_tracker: Trackable) -> None:
-        assert (
-            env_tracker.name not in self.env_trackers
-        ), f"{env_tracker.name} already registered"
+    def register_env_tracker(self, env_tracker: UpdateTrackable) -> None:
+        if env_tracker.name in self.env_trackers:
+            return
         if self.load_path:
             env_tracker.load(self.load_path)
         self.env_trackers[env_tracker.name] = env_tracker
@@ -132,10 +131,10 @@ class DataStoreActor:
         )
 
     def submit_rollout_update(self, rollout_update: RolloutUpdate) -> None:
-        (rollout, env_state) = rollout_update
+        (rollout, env_update) = rollout_update
         self.rollouts.put_nowait(rollout)
         for k, tracker in self.env_trackers.items():
-            tracker.set_state(env_state[k])
+            tracker.apply_update(env_update[k])
 
     def submit_checkpoint(self, checkpoint: CheckpointState) -> None:
         assert (

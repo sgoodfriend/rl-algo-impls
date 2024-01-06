@@ -24,7 +24,7 @@ from rl_algo_impls.shared.data_store.data_store_data import (
 )
 from rl_algo_impls.shared.evaluator.abstract_evaluator import AbstractEvaluator
 from rl_algo_impls.shared.stats import EpisodesStats
-from rl_algo_impls.shared.trackable import Trackable
+from rl_algo_impls.shared.trackable import UpdateTrackable
 
 
 class RemoteDataStoreAccessor(AbstractDataStoreAccessor):
@@ -32,7 +32,7 @@ class RemoteDataStoreAccessor(AbstractDataStoreAccessor):
         self.checkpoint_history_size = history_size
         self.data_store_actor = DataStoreActor.remote(history_size)
 
-    def register_env_tracker(self, env_tracker: Trackable) -> None:
+    def register_env_tracker(self, env_tracker: UpdateTrackable) -> None:
         self.data_store_actor.register_env_tracker.remote(env_tracker)
 
     def get_learner_view(self, wait: bool = False) -> LearnerView:
