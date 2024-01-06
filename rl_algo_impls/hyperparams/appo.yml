@@ -28,6 +28,8 @@ CartPole-v1: &cartpole
 LunarLander-v2: &lunarlander
   <<: *defaults
   n_timesteps: !!float 100e6
+  worker_hyperparams:
+    n_rollout_workers: 4
   env_hyperparams: &lunarlander-env
     n_envs: 16
   rollout_hyperparams:
