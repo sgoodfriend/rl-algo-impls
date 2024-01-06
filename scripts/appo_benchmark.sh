@@ -55,3 +55,5 @@ for algo in $(echo $algos); do
 
     train_jobs+=$(bash scripts/train_loop.sh -a $algo -e "$algo_envs" -p $project_name -s "${seeds[*]}")$'\n'
 done
+
+printf "$train_jobs" | xargs -I CMD -P $n_jobs bash -c CMD
