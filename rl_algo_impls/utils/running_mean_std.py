@@ -48,15 +48,15 @@ class RunningMeanStd(UpdateTrackable):
 
     @property
     def mean(self) -> NDArray:
-        return self.running.mean
+        return self.rms.mean
 
     @property
     def var(self) -> NDArray:
-        return self.running.var
+        return self.rms.var
 
     @property
     def count(self) -> float:
-        return self.running.count
+        return self.rms.count
 
     def update(self, x: NDArray) -> None:
         self.rms.update(x)
