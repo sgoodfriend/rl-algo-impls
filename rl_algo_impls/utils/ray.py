@@ -2,7 +2,6 @@ import multiprocessing
 import os
 from typing import Any, Dict, NamedTuple, Optional, Type, TypeVar
 
-import jax
 import torch
 
 
@@ -30,6 +29,16 @@ class EnvData(NamedTuple):
 
     @classmethod
     def create(cls: Type[EnvDataSelf]) -> EnvDataSelf:
+        try:
+            import jax
+
+            jax_data = {
+                "local_device_count": jax.local_device_count(),
+                "default_backend": jax.default_backend(),
+            }
+        except ImportError:
+            jax_data = {}
+
         return cls(
             env=dict(os.environ),
             torch={
@@ -43,10 +52,7 @@ class EnvData(NamedTuple):
             os={
                 "cpu_count": os.cpu_count(),
             },
-            jax={
-                "local_device_count": jax.local_device_count(),
-                "default_backend": jax.default_backend(),
-            },
+            jax=jax_data,
         )
 
     def diff(self: EnvDataSelf, other: EnvDataSelf) -> Dict[str, Any]:
