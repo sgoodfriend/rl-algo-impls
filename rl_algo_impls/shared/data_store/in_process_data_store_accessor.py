@@ -16,7 +16,7 @@ from rl_algo_impls.shared.data_store.data_store_data import (
 )
 from rl_algo_impls.shared.data_store.in_process_data_store import InProcessDataStore
 from rl_algo_impls.shared.stats import EpisodesStats
-from rl_algo_impls.shared.trackable import Trackable
+from rl_algo_impls.shared.trackable import UpdateTrackable
 
 if TYPE_CHECKING:
     from rl_algo_impls.rollout.in_process_rollout_generator import (
@@ -32,7 +32,7 @@ class InProcessDataStoreAccessor(AbstractDataStoreAccessor):
         self.rollout_generator: Optional["InProcessRolloutGenerator"] = None
         self.evaluator: Optional["InProcessEvaluator"] = None
 
-    def register_env_tracker(self, env_tracker: Trackable) -> None:
+    def register_env_tracker(self, env_tracker: UpdateTrackable) -> None:
         self._data_store.env_trackers[env_tracker.name] = env_tracker
 
     def get_learner_view(self, wait: bool = False) -> LearnerView:

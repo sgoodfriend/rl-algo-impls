@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Optional
+from typing import Optional
 
 from rl_algo_impls.shared.data_store.data_store_data import (
     CheckpointState,
@@ -13,12 +13,12 @@ from rl_algo_impls.shared.data_store.data_store_data import (
 )
 from rl_algo_impls.shared.evaluator.abstract_evaluator import AbstractEvaluator
 from rl_algo_impls.shared.stats import EpisodesStats
-from rl_algo_impls.shared.trackable import Trackable
+from rl_algo_impls.shared.trackable import UpdateTrackable
 
 
 class AbstractDataStoreAccessor(ABC):
     @abstractmethod
-    def register_env_tracker(self, env_tracker: Trackable) -> None:
+    def register_env_tracker(self, env_tracker: UpdateTrackable) -> None:
         ...
 
     @abstractmethod

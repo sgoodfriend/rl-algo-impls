@@ -1,38 +1,66 @@
 import os
+from dataclasses import asdict, dataclass
 from typing import Any, Dict, Optional, Tuple, TypeVar, Union
 
 import numpy as np
 from numpy.typing import NDArray
 
-from rl_algo_impls.shared.trackable import Trackable
+from rl_algo_impls.shared.trackable import Trackable, UpdateTrackable
 
 RunningMeanStdSelf = TypeVar("RunningMeanStdSelf", bound="RunningMeanStd")
 
+RMSSelf = TypeVar("RMSSelf", bound="RMS")
 
-class RunningMeanStd(Trackable):
+
+@dataclass
+class RMS:
+    mean: NDArray
+    var: NDArray
+    count: float
+
+    def update(self, x: np.ndarray) -> None:
+        batch_rms = self.__class__(np.mean(x, axis=0), np.var(x, axis=0), x.shape[0])
+        self.update_from_batch(batch_rms)
+
+    def update_from_batch(self: RMSSelf, batch: RMSSelf) -> None:
+        delta = batch.mean - self.mean
+        total_count = self.count + batch.count
+
+        self.mean = self.mean + delta * batch.count / total_count
+
+        m_a = self.var * self.count
+        m_b = batch.var * batch.count
+        M2 = m_a + m_b + np.square(delta) * self.count * batch.count / total_count
+        self.var = M2 / total_count
+        self.count = total_count
+
+
+class RunningMeanStd(UpdateTrackable):
     def __init__(
         self, filename: str, epsilon: float = 1e-4, shape: Tuple[int, ...] = ()
     ) -> None:
         self.filename = filename
-        self.mean = np.zeros(shape, np.float64)
-        self.var = np.ones(shape, np.float64)
-        self.count = epsilon
+        self.epsilon = epsilon
+        self.rms = RMS(np.zeros(shape, np.float64), np.ones(shape, np.float64), epsilon)
+        self.running = RMS(
+            np.zeros(shape, np.float64), np.ones(shape, np.float64), epsilon
+        )
+
+    @property
+    def mean(self) -> NDArray:
+        return self.running.mean
+
+    @property
+    def var(self) -> NDArray:
+        return self.running.var
+
+    @property
+    def count(self) -> float:
+        return self.running.count
 
     def update(self, x: NDArray) -> None:
-        batch_mean = np.mean(x, axis=0)
-        batch_var = np.var(x, axis=0)
-        batch_count = x.shape[0]
-
-        delta = batch_mean - self.mean
-        total_count = self.count + batch_count
-
-        self.mean = self.mean + delta * batch_count / total_count
-
-        m_a = self.var * self.count
-        m_b = batch_var * batch_count
-        M2 = m_a + m_b + np.square(delta) * self.count * batch_count / total_count
-        self.var = M2 / total_count
-        self.count = total_count
+        self.rms.update(x)
+        self.running.update(x)
 
     @property
     def name(self) -> str:
@@ -49,16 +77,23 @@ class RunningMeanStd(Trackable):
         self.set_state(data)
 
     def get_state(self) -> Dict[str, Any]:
-        return {
-            "mean": self.mean,
-            "var": self.var,
-            "count": self.count,
-        }
+        return asdict(self.rms)
 
     def set_state(self, state: Any) -> None:
-        self.mean = state["mean"]
-        self.var = state["var"]
-        self.count = state.get("count")
+        self.rms = RMS(**state)
+
+    def get_update(self) -> Dict[str, Any]:
+        running = asdict(self.running)
+        self.running = RMS(
+            np.zeros_like(self.running.mean),
+            np.ones_like(self.running.var),
+            self.epsilon,
+        )
+        return running
+
+    def apply_update(self, update: Dict[str, Any]) -> None:
+        running = RMS(**update)
+        self.rms.update_from_batch(running)
 
 
 ExponentialMovingMeanVarSelf = TypeVar(
@@ -66,7 +101,7 @@ ExponentialMovingMeanVarSelf = TypeVar(
 )
 
 
-class ExponentialMovingMeanVar(Trackable):
+class ExponentialMovingMeanVar(UpdateTrackable):
     def __init__(
         self,
         filename: str,
@@ -90,11 +125,17 @@ class ExponentialMovingMeanVar(Trackable):
         self.var = np.ones(shape, np.float64)
         self.initialized = False
 
+        self.running = []
+
     @property
     def name(self) -> str:
         return self.filename
 
     def update(self, x: NDArray) -> None:
+        self.running.append(x)
+        self._update(x)
+
+    def _update(self, x: NDArray) -> None:
         if not self.initialized:
             self.mean = np.mean(x, axis=0, dtype=np.float64)
             self.squared_mean = np.mean(x**2, axis=0, dtype=np.float64)
@@ -135,6 +176,14 @@ class ExponentialMovingMeanVar(Trackable):
         self.var = state["var"]
         self.squared_mean = self.var + self.mean**2
         self.initialized = state["initialized"].item()
+
+    def get_update(self) -> Any:
+        running = np.concatenate(self.running)
+        self.running = []
+        return running
+
+    def apply_update(self, update: Any) -> None:
+        self._update(update)
 
 
 HybridMovingMeanVarSelf = TypeVar(

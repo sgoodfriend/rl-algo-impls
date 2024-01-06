@@ -24,7 +24,7 @@ from rl_algo_impls.shared.data_store.in_process_data_store_accessor import (
 )
 from rl_algo_impls.shared.evaluator.abstract_evaluator import AbstractEvaluator
 from rl_algo_impls.shared.policy.policy import Policy
-from rl_algo_impls.shared.trackable import Trackable
+from rl_algo_impls.shared.trackable import Trackable, UpdateTrackable
 
 
 class DataStoreView:
@@ -73,7 +73,7 @@ class LearnerDataStoreView(DataStoreView):
 class VectorEnvDataStoreView(DataStoreView):
     def __init__(self, data_store_accessor: AbstractDataStoreAccessor):
         super().__init__(data_store_accessor)
-        self.env_trackers: DefaultDict[str, List[Trackable]] = defaultdict(list)
+        self.env_trackers: DefaultDict[str, List[UpdateTrackable]] = defaultdict(list)
         self.checkpoint_policy_trackers = []
 
     def add_trackable(self, trackable: Trackable) -> None:
@@ -111,13 +111,13 @@ class RolloutDataStoreView(VectorEnvDataStoreView):
         self.data_store_accessor.submit_rollout_update(
             RolloutUpdate(
                 rollout=rollout,
-                env_state={
-                    k: self.env_trackers[k][0].get_state() for k in self.env_trackers
+                env_update={
+                    k: self.env_trackers[k][0].get_update() for k in self.env_trackers
                 },
             )
         )
 
-    def add_trackable(self, trackable: Trackable) -> None:
+    def add_trackable(self, trackable: UpdateTrackable) -> None:
         super().add_trackable(trackable)
         assert len(self.env_trackers[trackable.name]) == 1
         self.data_store_accessor.register_env_tracker(trackable)
@@ -162,7 +162,7 @@ class EvalDataStoreView(VectorEnvDataStoreView):
             if trackers:
                 trackers[0].save(save_path)
 
-    def add_trackable(self, trackable: Trackable) -> None:
+    def add_trackable(self, trackable: UpdateTrackable) -> None:
         super().add_trackable(trackable)
         if self.is_eval_job:
             self.data_store_accessor.register_env_tracker(trackable)
