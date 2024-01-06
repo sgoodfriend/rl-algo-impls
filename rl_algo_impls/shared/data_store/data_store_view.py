@@ -76,7 +76,7 @@ class VectorEnvDataStoreView(DataStoreView):
         self.env_trackers: DefaultDict[str, List[UpdateTrackable]] = defaultdict(list)
         self.checkpoint_policy_trackers = []
 
-    def add_trackable(self, trackable: Trackable) -> None:
+    def add_trackable(self, trackable: UpdateTrackable) -> None:
         self.env_trackers[trackable.name].append(trackable)
 
     def add_checkpoint_policy_delegate(
