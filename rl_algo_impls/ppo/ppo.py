@@ -104,7 +104,6 @@ class TrainStats:
 
 
 PPOSelf = TypeVar("PPOSelf", bound="PPO")
-NL = TypeVar("NL", float, List[float])
 
 
 class PPO(Algorithm):

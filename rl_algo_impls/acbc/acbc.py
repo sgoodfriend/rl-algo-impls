@@ -9,7 +9,6 @@ import torch.nn as nn
 from torch.optim import Adam
 
 from rl_algo_impls.acbc.train_stats import TrainStats
-from rl_algo_impls.ppo.ppo import NL
 from rl_algo_impls.shared.algorithm import Algorithm
 from rl_algo_impls.shared.callbacks.callback import Callback
 from rl_algo_impls.shared.data_store.data_store_data import LearnerDataStoreViewUpdate
@@ -20,7 +19,7 @@ from rl_algo_impls.shared.stats import log_scalars
 from rl_algo_impls.shared.summary_wrapper.abstract_summary_wrapper import (
     AbstractSummaryWrapper,
 )
-from rl_algo_impls.shared.tensor_utils import num_or_array
+from rl_algo_impls.shared.tensor_utils import NumOrList, num_or_array
 
 """
 Actor-Critic Behavior Cloning with Critic Bootstrapping
@@ -38,7 +37,7 @@ class ACBC(Algorithm):
         learning_rate: float = 3e-4,
         batch_size: int = 64,
         n_epochs: int = 10,
-        vf_coef: NL = 0.25,
+        vf_coef: NumOrList = 0.25,
         max_grad_norm: float = 0.5,
         gradient_accumulation: bool = False,
         scale_loss_by_num_actions: bool = False,

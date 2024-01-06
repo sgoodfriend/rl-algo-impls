@@ -49,7 +49,7 @@ class RemoteLearnerUpdate(NamedTuple):
     eval_enqueue: Optional[RemoteEvalEnqueue]
 
 
-@ray.remote(num_cpus=2)
+@ray.remote
 class DataStoreActor:
     def __init__(self, history_size: int) -> None:
         init_ray_actor()
@@ -62,7 +62,6 @@ class DataStoreActor:
         self.rollout_params: Dict[str, Any] = {}
         self.load_path: Optional[str] = None
         self.rollouts = asyncio.Queue()
-        self.last_rollout: Optional["Rollout"] = None
 
         self.evaluator: Optional[AbstractEvaluator] = None
 
@@ -78,26 +77,20 @@ class DataStoreActor:
             env_tracker.load(self.load_path)
         self.env_trackers[env_tracker.name] = env_tracker
 
-    async def get_learner_view(self) -> Optional[LearnerView]:
+    async def get_learner_view(self, wait: bool = False) -> Optional[LearnerView]:
         if self.is_closed:
             return None
         rollouts = []
-        if self.rollouts.empty():
-            if self.last_rollout:
-                return LearnerView(
-                    rollouts=(self.last_rollout,),
-                    latest_checkpoint_policy=self.latest_checkpoint_policy,
-                )
+        if self.rollouts.empty() and wait:
             rollouts.append(await self.rollouts.get())
         while not self.rollouts.empty():
             try:
                 rollouts.append(self.rollouts.get_nowait())
             except asyncio.QueueEmpty:
                 break
-        self.last_rollout = rollouts[-1]
-        non_none_rollouts = tuple(r for r in rollouts if r is not None)
-        if not non_none_rollouts:
+        if len(rollouts) == 1 and rollouts[0] == None:
             return None
+        non_none_rollouts = tuple(r for r in rollouts if r is not None)
         return LearnerView(
             rollouts=non_none_rollouts,
             latest_checkpoint_policy=self.latest_checkpoint_policy,

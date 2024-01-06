@@ -1,0 +1,99 @@
+default: &defaults
+  process_mode: async
+
+CartPole-v1: &cartpole
+  <<: *defaults
+  n_timesteps: !!float 4e5
+  env_hyperparams: &cartpole-env-defaults
+    n_envs: 8
+  algo_hyperparams: &cartpole-algo-defaults
+    batch_size: 1024
+    ent_coef: 0.0
+    learning_rate: 0.01
+    clip_range: 0.2
+  hyperparam_transitions_kwargs:
+    durations: [0, 1, 0]
+    phases:
+      - learning_rate: 0.01
+        clip_range: 0.2
+      - learning_rate: 0.001
+        clip_range: 0
+  eval_hyperparams:
+    step_freq: !!float 2.5e4
+  rollout_hyperparams: &cartpole-rollout-defaults
+    n_steps: 128
+    gae_lambda: 0.8
+    gamma: 0.98
+
+LunarLander-v2: &lunarlander
+  <<: *defaults
+  n_timesteps: !!float 100e6
+  env_hyperparams: &lunarlander-env
+    n_envs: 16
+  rollout_hyperparams:
+    n_steps: 1024
+    gae_lambda: 0.98
+    gamma: 0.999
+  algo_hyperparams: &lunarlander-algo
+    batch_size: 64
+    learning_rate: !!float 5e-4
+    clip_range: 0.2
+    ent_coef: 0.01
+    normalize_advantage: false
+  eval_hyperparams: &lunarlander-eval
+    step_freq: !!float 1e6
+    n_episodes: 48
+    env_overrides:
+      n_envs: 48
+  hyperparam_transitions_kwargs:
+    durations: [0, 1, 0]
+    phases:
+      - learning_rate: !!float 5e-4
+        clip_range: 0.2
+      - learning_rate: !!float 1e-5
+        clip_range: 0
+
+# BreakoutNoFrameskip-v4
+# PongNoFrameskip-v4
+# SpaceInvadersNoFrameskip-v4
+# QbertNoFrameskip-v4
+_atari: &atari
+  <<: *defaults
+  n_timesteps: !!float 50e6
+  worker_hyperparams:
+    n_rollout_workers: 4
+  env_hyperparams: &atari-env
+    n_envs: 8
+    frame_stack: 4
+    no_reward_timeout_steps: 1000
+    no_reward_fire_steps: 500
+    vec_env_class: async
+  policy_hyperparams: &atari-policy
+    activation_fn: relu
+  rollout_hyperparams: &atari-rollout
+    n_steps: 128
+  algo_hyperparams: &atari-algo
+    batch_size: 1024
+    learning_rate: !!float 1e-3
+    clip_range: 0.1
+    vf_coef: 0.5
+    ent_coef: 0.01
+  hyperparam_transitions_kwargs:
+    durations: [0, 1, 0]
+    phases:
+      - learning_rate: !!float 1e-3
+        clip_range: 0.1
+      - learning_rate: !!float 1e-5
+        clip_range: 0
+  eval_hyperparams: &atari-eval
+    deterministic: false
+    max_video_length: 18000
+    step_freq: !!float 1e6
+    n_episodes: 48
+    env_overrides:
+      n_envs: 48
+
+PongNoFrameskip-v4:
+  <<: *atari
+  env_id: PongNoFrameskip-v4
+  n_timesteps: !!float 25e6

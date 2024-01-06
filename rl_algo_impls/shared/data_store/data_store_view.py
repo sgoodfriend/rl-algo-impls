@@ -40,8 +40,8 @@ class LearnerDataStoreView(DataStoreView):
         self.evaluator: Optional[AbstractEvaluator] = None
         self.num_evaluations = 0
 
-    def get_learner_view(self) -> LearnerView:
-        return self.data_store_accessor.get_learner_view()
+    def get_learner_view(self, wait: bool = False) -> LearnerView:
+        return self.data_store_accessor.get_learner_view(wait=wait)
 
     def submit_learner_update(self, update: LearnerDataStoreViewUpdate) -> None:
         assert self.evaluator is not None, "evaluator not initialized"

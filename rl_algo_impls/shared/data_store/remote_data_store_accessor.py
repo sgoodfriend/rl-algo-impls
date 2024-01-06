@@ -35,8 +35,8 @@ class RemoteDataStoreAccessor(AbstractDataStoreAccessor):
     def register_env_tracker(self, env_tracker: Trackable) -> None:
         self.data_store_actor.register_env_tracker.remote(env_tracker)
 
-    def get_learner_view(self) -> LearnerView:
-        return ray.get(self.data_store_actor.get_learner_view.remote())
+    def get_learner_view(self, wait: bool = False) -> LearnerView:
+        return ray.get(self.data_store_actor.get_learner_view.remote(wait=wait))
 
     def initialize_learner(
         self, learner_initialize_data: LearnerInitializeData

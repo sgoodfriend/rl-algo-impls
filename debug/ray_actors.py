@@ -13,7 +13,7 @@ from rl_algo_impls.utils.ray import EnvData, init_ray_actor
 ray.init()
 
 
-@ray.remote(num_cpus=2)
+@ray.remote
 def get_ray_env_data() -> EnvData:
     init_ray_actor()
     return EnvData.create()
