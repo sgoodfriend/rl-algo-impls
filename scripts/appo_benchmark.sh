@@ -46,7 +46,7 @@ BOX_ENVS=(
 
 for algo in $(echo $algos); do
     if [ -z "$envs" ]; then
-        if [ "$algo" = "ppo" ]; then
+        if [ "$algo" = "appo" ]; then
             BENCHMARK_ENVS="${BASIC_ENVS[*]} ${BOX_ENVS[*]} ${ATARI_ENVS[*]}"
         fi
     else
