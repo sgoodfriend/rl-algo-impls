@@ -22,30 +22,6 @@ CartPole-v1: &cartpole-defaults
     gae_lambda: 0.8
     gamma: 0.98
 
-CartPole-v1-async: &cartpole-async
-  <<: *cartpole-defaults
-  env_id: CartPole-v1
-  process_mode: async
-  n_timesteps: !!float 4e5
-  env_hyperparams:
-    <<: *cartpole-env-defaults
-    n_envs: 8
-  algo_hyperparams:
-    <<: *cartpole-algo-defaults
-    n_epochs: 1
-    learning_rate: 0.01
-    batch_size: 1024
-  rollout_hyperparams:
-    <<: *cartpole-rollout-defaults
-    n_steps: 128
-  hyperparam_transitions_kwargs:
-    durations: [0, 1, 0]
-    phases:
-      - learning_rate: 0.01
-        clip_range: 0.2
-      - learning_rate: 0.001
-        clip_range: 0
-
 CartPole-v0:
   <<: *cartpole-defaults
   n_timesteps: !!float 5e4
@@ -158,28 +134,6 @@ LunarLander-v2-lr-by-kl: &lunarlander-lr-by-kl
         ent_coef: 0.01
       - target_kl: 0.001
         ent_coef: 0
-
-LunarLander-v2-async: &lunarlander-async
-  <<: *lunarlander
-  env_id: LunarLander-v2
-  process_mode: async
-  n_timesteps: !!float 100e6
-  algo_hyperparams:
-    <<: *lunarlander-algo
-    n_epochs: 1
-  hyperparam_transitions_kwargs:
-    durations: [0, 1, 0]
-    phases:
-      - learning_rate: !!float 5e-4
-        clip_range: 0.2
-      - learning_rate: !!float 1e-5
-        clip_range: 0
-  eval_hyperparams:
-    <<: *lunarlander-eval
-    step_freq: !!float 1e6
-    n_episodes: 96
-    env_overrides:
-      n_envs: 48
 
 BipedalWalker-v3:
   n_timesteps: !!float 10e6
@@ -381,38 +335,6 @@ SpaceInvadersNoFrameskip-v4-lr-by-kl:
 
 QbertNoFrameskip-v4-lr-by-kl:
   <<: *atari-lr-by-kl
-
-_atari-async: &atari-async
-  <<: *atari-defaults
-  process_mode: async
-  n_timesteps: !!float 50e6
-  algo_hyperparams:
-    <<: *atari-algo-defaults
-    n_epochs: 1
-    learning_rate: !!float 1e-3
-    batch_size: 1024
-  hyperparam_transitions_kwargs:
-    durations: [0, 1, 0]
-    phases:
-      - learning_rate: !!float 1e-3
-        clip_range: 0.1
-      - learning_rate: !!float 1e-5
-        clip_range: 0
-  eval_hyperparams:
-    <<: *atari-eval-defaults
-    step_freq: !!float 1e6
-    n_episodes: 48
-    env_overrides:
-      n_envs: 48
-
-PongNoFrameskip-v4-async:
-  <<: *atari-async
-  env_id: PongNoFrameskip-v4
-  n_timesteps: !!float 25e6
-
-BreakoutNoFrameskip-v4-async:
-  <<: *atari-async
-  env_id: BreakoutNoFrameskip-v4
 
 HalfCheetah-v4: &mujoco-defaults
   n_timesteps: !!float 1e6

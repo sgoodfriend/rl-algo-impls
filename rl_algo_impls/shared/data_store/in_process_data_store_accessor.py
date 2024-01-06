@@ -35,7 +35,7 @@ class InProcessDataStoreAccessor(AbstractDataStoreAccessor):
     def register_env_tracker(self, env_tracker: Trackable) -> None:
         self._data_store.env_trackers[env_tracker.name] = env_tracker
 
-    def get_learner_view(self) -> LearnerView:
+    def get_learner_view(self, wait: bool = False) -> LearnerView:
         assert self.rollout_generator is not None
         rollouts = [self.rollout_generator.rollout()]
         latest_checkpoint = self._data_store.latest_checkpoint

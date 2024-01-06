@@ -20,13 +20,16 @@ class RemoteRolloutGenerator(RolloutGenerator):
         tb_writer: AbstractSummaryWrapper,
     ) -> None:
         super().__init__()
-        self.generator_actor = RolloutGeneratorActor.remote(
-            args, config, data_store_accessor, tb_writer
-        )
+        self.generator_actors = [
+            RolloutGeneratorActor.remote(args, config, data_store_accessor, tb_writer)
+            for _ in range(
+                config.hyperparams.worker_hyperparams.get("n_rollout_workers", 1)
+            )
+        ]
 
     def prepare(self) -> None:
-        self.generator_actor.prepare.remote()
+        [actor.prepare.remote() for actor in self.generator_actors]
 
     @property
     def env_spaces(self):
-        return ray.get(self.generator_actor.env_spaces.remote())
+        return ray.get(self.generator_actors[0].env_spaces.remote())

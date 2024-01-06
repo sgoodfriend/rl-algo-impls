@@ -22,7 +22,7 @@ class AbstractDataStoreAccessor(ABC):
         ...
 
     @abstractmethod
-    def get_learner_view(self) -> LearnerView:
+    def get_learner_view(self, wait: bool = False) -> LearnerView:
         ...
 
     @abstractmethod

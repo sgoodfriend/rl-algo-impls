@@ -17,7 +17,7 @@ from rl_algo_impls.shared.summary_wrapper.abstract_summary_wrapper import (
 from rl_algo_impls.utils.ray import init_ray_actor
 
 
-@ray.remote(num_cpus=2)
+@ray.remote
 class EvaluatorActor:
     def __init__(
         self,

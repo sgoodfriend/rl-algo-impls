@@ -18,6 +18,7 @@ DEFAULT_IN_PROCESS_ROLLOUT_GENERATORS: Dict[str, Type[SynchronousRolloutGenerato
     "ppo": SyncStepRolloutGenerator,
     "a2c": SyncStepRolloutGenerator,
     "acbc": SyncStepRolloutGenerator,
+    "appo": SyncStepRolloutGenerator,
 }
 
 
