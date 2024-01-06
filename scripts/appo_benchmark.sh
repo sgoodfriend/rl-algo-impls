@@ -44,15 +44,16 @@ BOX_ENVS=(
     "CarRacing-v2"
 )
 
+train_jobs=""
 for algo in $(echo $algos); do
     if [ -z "$envs" ]; then
         if [ "$algo" = "appo" ]; then
             BENCHMARK_ENVS="${BASIC_ENVS[*]} ${BOX_ENVS[*]} ${ATARI_ENVS[*]}"
         fi
+        algo_envs=${BENCHMARK_ENVS[*]}
     else
         algo_envs=$envs
     fi
-
     train_jobs+=$(bash scripts/train_loop.sh -a $algo -e "$algo_envs" -p $project_name -s "${seeds[*]}")$'\n'
 done
 
