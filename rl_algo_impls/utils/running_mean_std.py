@@ -191,7 +191,7 @@ HybridMovingMeanVarSelf = TypeVar(
 )
 
 
-class HybridMovingMeanVar(Trackable):
+class HybridMovingMeanVar(UpdateTrackable):
     def __init__(
         self,
         filename: str,
@@ -249,3 +249,13 @@ class HybridMovingMeanVar(Trackable):
     def set_state(self, state: Any) -> None:
         self.rms.set_state(state["rms"])
         self.emmv.set_state(state["emmv"])
+
+    def get_update(self) -> Any:
+        return {
+            "rms": self.rms.get_update(),
+            "emmv": self.emmv.get_update(),
+        }
+
+    def apply_update(self, update: Any) -> None:
+        self.rms.apply_update(update["rms"])
+        self.emmv.apply_update(update["emmv"])
