@@ -7,7 +7,7 @@ from rl_algo_impls.runner.running_utils import load_hyperparam_dict
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-e", "--env-id", type=str)
-    parser.add_argument("-a", "--algo", default="ppo")
+    parser.add_argument("-a", "--algo", default="appo")
     parser.set_defaults(
         env_id="LuxAI_S2-v0-j1024env16-80m-ent5-lr3c-mgn2-2o3m4h-nga-async-a100"
     )
