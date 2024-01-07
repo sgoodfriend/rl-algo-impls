@@ -225,12 +225,12 @@ Hopper-v4:
     max_grad_norm: 1
     vf_coef: 0.835671
   hyperparam_transitions_kwargs:
-    durations: [0, 0.05, 0, 0.95, 0]
+    durations: [0, 0.1, 0, 0.9, 0]
     phases:
       - learning_rate: !!float 1e-6
         clip_range: 0.2
         ent_coef: 0.01
-      - learning_rate: !!float 5e-5
+      - learning_rate: !!float 1e-4
         clip_range: 0.2
         ent_coef: 0.01
       - learning_rate: !!float 1e-6
