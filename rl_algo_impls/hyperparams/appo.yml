@@ -230,7 +230,7 @@ Hopper-v4:
       - learning_rate: !!float 1e-6
         clip_range: 0.2
         ent_coef: 0.01
-      - learning_rate: !!float 1e-4
+      - learning_rate: !!float 5e-5
         clip_range: 0.2
         ent_coef: 0.01
       - learning_rate: !!float 1e-6
