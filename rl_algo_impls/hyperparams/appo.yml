@@ -213,7 +213,7 @@ Hopper-v4:
     n_envs: 16
   rollout_hyperparams: &hopper-rollout
     <<: *mujoco-rollout
-    n_steps: 64
+    n_steps: 128
     gamma: 0.99
     gae_lambda: 0.95
   algo_hyperparams: &hopper-algo
