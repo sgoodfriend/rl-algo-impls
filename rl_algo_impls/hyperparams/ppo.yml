@@ -335,6 +335,7 @@ SpaceInvadersNoFrameskip-v4-lr-by-kl:
 
 QbertNoFrameskip-v4-lr-by-kl:
   <<: *atari-lr-by-kl
+  env_id: QbertNoFrameskip-v4
 
 HalfCheetah-v4: &mujoco-defaults
   n_timesteps: !!float 1e6
