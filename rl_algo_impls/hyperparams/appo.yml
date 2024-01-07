@@ -215,7 +215,7 @@ Hopper-v4:
   algo_hyperparams: &hopper-algo
     <<: *mujoco-algo
     learning_rate: !!float 5e-5
-    ent_coef: 0.00229519
+    ent_coef: 0.01
     clip_range: 0.2
     max_grad_norm: 0.7
     vf_coef: 0.835671
@@ -224,5 +224,7 @@ Hopper-v4:
     phases:
       - learning_rate: !!float 5e-5
         clip_range: 0.2
+        ent_coef: 0.01
       - learning_rate: !!float 1e-6
         clip_range: 0.01
+        ent_coef: 0
