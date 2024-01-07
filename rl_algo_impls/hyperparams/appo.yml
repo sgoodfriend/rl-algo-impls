@@ -208,16 +208,21 @@ Walker2d-v4:
 
 Hopper-v4:
   <<: *mujoco
+  env_hyperparams: &hopper-env
+    <<: *mujoco-env
+    n_envs: 16
   rollout_hyperparams: &hopper-rollout
     <<: *mujoco-rollout
-    gamma: 0.999
-    gae_lambda: 0.99
+    n_steps: 64
+    gamma: 0.99
+    gae_lambda: 0.95
   algo_hyperparams: &hopper-algo
     <<: *mujoco-algo
+    batch_size: 1024
     learning_rate: !!float 5e-5
     ent_coef: 0.01
     clip_range: 0.2
-    max_grad_norm: 0.7
+    max_grad_norm: 1
     vf_coef: 0.835671
   hyperparam_transitions_kwargs:
     durations: [0, 1, 0]
