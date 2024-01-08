@@ -152,6 +152,13 @@ def get_device(config: Config, env_spaces: EnvSpaces) -> torch.device:
                 device = "cpu"
             if is_microrts(config):
                 device = "cpu"
+    if device == "cuda":
+        import GPUtil
+
+        gpu_id = GPUtil.getFirstAvailable(order="memory")
+        logging.info(f"Using GPU {gpu_id}")
+        return torch.cuda.device(gpu_id)
+
     logging.info(f"Device: {device}")
     return torch.device(device)
 
