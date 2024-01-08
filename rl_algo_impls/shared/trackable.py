@@ -4,12 +4,7 @@ from typing import Any, TypeVar
 T = TypeVar("T", bound="Trackable")
 
 
-class Trackable(ABC):
-    @property
-    @abstractmethod
-    def name(self) -> str:
-        ...
-
+class TrackableState(ABC):
     @abstractmethod
     def save(self, path: str) -> None:
         ...
@@ -18,12 +13,18 @@ class Trackable(ABC):
     def load(self, path: str) -> None:
         ...
 
+
+class Trackable(ABC):
+    def __init__(self, name: str) -> None:
+        super().__init__()
+        self.name = name
+
     @abstractmethod
-    def get_state(self) -> Any:
+    def get_state(self) -> TrackableState:
         ...
 
     @abstractmethod
-    def set_state(self, state: Any) -> None:
+    def set_state(self, state: TrackableState) -> None:
         ...
 
 

@@ -158,9 +158,8 @@ class EvalDataStoreView(VectorEnvDataStoreView):
     def save(self, policy: Policy, save_path: str) -> None:
         policy.save(save_path)
         self.algo_state.save(save_path)
-        for trackers in self.env_trackers.values():
-            if trackers:
-                trackers[0].save(save_path)
+        for state in self.env_state.values():
+            state.save(save_path)
 
     def add_trackable(self, trackable: UpdateTrackable) -> None:
         super().add_trackable(trackable)

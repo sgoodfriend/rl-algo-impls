@@ -15,7 +15,7 @@ from rl_algo_impls.shared.data_store.data_store_data import (
 )
 from rl_algo_impls.shared.evaluator.abstract_evaluator import AbstractEvaluator
 from rl_algo_impls.shared.stats import EpisodesStats
-from rl_algo_impls.shared.trackable import Trackable, UpdateTrackable
+from rl_algo_impls.shared.trackable import Trackable, TrackableState, UpdateTrackable
 from rl_algo_impls.utils.ray import init_ray_actor
 
 if TYPE_CHECKING:
@@ -25,7 +25,7 @@ if TYPE_CHECKING:
 
 class RemoteLearnerInitializeData(NamedTuple):
     policy: "Policy"
-    algo_state: Trackable
+    algo_state: TrackableState
     load_path: Optional[str]
 
 
@@ -33,7 +33,7 @@ RemoteEvalEnqueueSelf = TypeVar("RemoteEvalEnqueueSelf", bound="RemoteEvalEnqueu
 
 
 class RemoteEvalEnqueue(NamedTuple):
-    algo_state: Trackable
+    algo_state: TrackableState
 
     @classmethod
     def from_eval_enqueue(
