@@ -43,7 +43,7 @@ LunarLander-v2: &lunarlander
     gae_lambda: 0.98
     gamma: 0.999
   algo_hyperparams: &lunarlander-algo
-    batch_size: 1024
+    batch_size: 4096
     learning_rate: !!float 1e-5
     clip_range: 0.2
     ent_coef: 0.01
