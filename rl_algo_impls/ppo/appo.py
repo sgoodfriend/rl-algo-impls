@@ -58,6 +58,7 @@ class APPO(Algorithm):
         vf_weights: Optional[List[int]] = None,
         teacher_kl_loss_coef: Optional[float] = None,
         teacher_loss_importance_sampling: bool = True,
+        max_n_epochs: Optional[int] = None,
     ) -> None:
         super().__init__(
             policy,
@@ -104,6 +105,8 @@ class APPO(Algorithm):
         self.teacher_kl_loss_coef = teacher_kl_loss_coef
         self.teacher_kl_loss_fn = TeacherKLLoss() if teacher_kl_loss_coef else None
         self.teacher_loss_importance_sampling = teacher_loss_importance_sampling
+
+        self.max_n_epochs = max_n_epochs
 
     def learn(
         self: APPOSelf,
@@ -174,9 +177,11 @@ class APPO(Algorithm):
                 minibatches_per_step = 1
 
             next_rollouts = tuple()
+            total_rollout_steps = sum(r.total_steps for r in rollouts)
             rollout_iteration_cnt = 0
             rollout_steps_elapsed = 0
             rollout_steps_iteration = 0
+            n_epochs = 0
             step_stats = []
             grad_norms = []
             y_true_list = []
@@ -186,7 +191,7 @@ class APPO(Algorithm):
                 rollout_steps_iteration = 0
                 step_stats.clear()
                 grad_norms.clear()
-                for r in rollouts:
+                for r in reversed(rollouts):
                     if self.teacher_kl_loss_fn and rollout_iteration_cnt == 1:
                         teacher_kl_loss_fn = self.teacher_kl_loss_fn
                         assert teacher_policy is not None
@@ -351,16 +356,25 @@ class APPO(Algorithm):
                     learner_data_store_view.submit_learner_update(
                         LearnerDataStoreViewUpdate(self.policy, self, timesteps_elapsed)
                     )
+                    n_epochs = (
+                        rollout_iteration_cnt
+                        - 1
+                        + rollout_steps_iteration / total_rollout_steps
+                    )
                     (
                         next_rollouts,
                         teacher_policy,
-                    ) = learner_data_store_view.get_learner_view()
+                    ) = learner_data_store_view.get_learner_view(
+                        wait=(
+                            self.max_n_epochs is not None
+                            and n_epochs >= self.max_n_epochs
+                        )
+                    )
                     if next_rollouts:
                         break
                 if rollout_iteration_cnt == 1:
                     rollout_steps_elapsed = rollout_steps_iteration
 
-            total_rollout_steps = sum(r.total_steps for r in rollouts)
             if (
                 self.freeze_policy_head
                 or self.freeze_value_head
@@ -380,9 +394,7 @@ class APPO(Algorithm):
                 step_stats,
                 explained_var,
                 grad_norms,
-                rollout_iteration_cnt
-                - 1
-                + rollout_steps_iteration / total_rollout_steps,
+                n_epochs,
             )
             train_stats.write_to_tensorboard(self.tb_writer)
 
