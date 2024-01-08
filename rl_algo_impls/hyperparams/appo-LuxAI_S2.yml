@@ -155,7 +155,6 @@ LuxAI_S2-v0-j1024env16-80m-ent5-lr3c-mgn2-2o3m4h-nga-async-a100:
   eval_hyperparams: &lux-j1024env16-eval
     deterministic: false
     env_overrides: &lux-j1024env16-eval-env-overrides
-      additional_win_loss_reward: false
       info_rewards: null
       make_kwargs: &lux-j1024env16-eval-env-overrides-make-kwargs
         MAX_FACTORIES: 2
@@ -182,8 +181,6 @@ LuxAI_S2-v0-j1024env16-80m-ent5-lr3c-mgn2-2o3m4h-nga-async-a100:
       n_envs: 128
       play_checkpoints_kwargs:
         n_envs_against_checkpoints: null
-      score_reward_kwargs: null
-      self_play_kwargs: null
     only_checkpoint_best_policies: true
     only_record_video_on_best: false
     score_function: mean
@@ -193,6 +190,7 @@ LuxAI_S2-v0-j1024env16-80m-ent5-lr3c-mgn2-2o3m4h-nga-async-a100:
   lr_by_kl_kwargs: null
   n_timesteps: 80000000.0
   policy_hyperparams:
+    &lux-j1024env16-80m-ent5-lr2c-mgn2-2o3m4h-nga-async-a100-policy
     actor_head_style: squeeze_unet
     additional_critic_activation_functions:
       - identity
@@ -265,32 +263,71 @@ LuxAI_S2-v0-j1024env16-80m-ent5-lr2c-mgn2-2o3m4h-nga-async-a100:
     <<: *lux-j1024env16-80m-ent5-lr3c-mgn2-2o3m4h-nga-async-a100-algo
     learning_rate: 0.0002
 
-LuxAI_S2-v0-debug:
+LuxAI_S2-v0-j1024env16-200m-ent5-lr2c-mgn2-2o3m4h-nga-async-a100:
+  &lux-j1024env16-200m-ent5-lr2c-mgn2-2o3m4h-nga-async-a100
+  <<: *lux-j1024env16-80m-ent5-lr2c-mgn2-2o3m4h-nga-async-a100
+  n_timesteps: !!float 200e6
+
+LuxAI_S2-v0-j1024env32-80m-ent5-lr03-mgn4-2omh1lc-ga2-tkl5c-a100:
+  &lux-j1024env32-80m-ent5-lr03-mgn4-2omh1lc-nga-tkl5c-a100
   <<: *lux-j1024env16-80m-ent5-lr3c-mgn2-2o3m4h-nga-async-a100
+  algo_hyperparams:
+    &lux-j1024env32-80m-ent5-lr03-mgn4-2omh1lc-nga-tkl5c-a100-algo
+    <<: *lux-j1024env16-80m-ent5-lr3c-mgn2-2o3m4h-nga-async-a100-algo
+    learning_rate: !!float 3e-5
+    teacher_kl_loss_coef: !!float 5e-3
+    batch_size: 512
+    gradient_accumulation: 2
+  env_hyperparams: &lux-j1024env32-env
+    <<: *lux-j1024env16-env
+    make_kwargs: &lux-j1024env32-env-make-kwargs
+      <<: *lux-j1024env16-env-make-kwargs
+      map_size: 32
+      MAX_FACTORIES: 3
+      MIN_FACTORIES: 2
+      USES_COMPACT_SPAWNS_MASK: false
+  eval_hyperparams: &lux-j1024env32-eval
+    <<: *lux-j1024env16-eval
+    env_overrides: &lux-j1024env32-eval-env-overrides
+      <<: *lux-j1024env16-eval-env-overrides
+      make_kwargs: &lux-j1024env32-eval-env-overrides-make-kwargs
+        <<: *lux-j1024env16-eval-env-overrides-make-kwargs
+        map_size: 32
+        MAX_FACTORIES: 3
+        MIN_FACTORIES: 2
+        USES_COMPACT_SPAWNS_MASK: false
+  policy_hyperparams:
+    &lux-j1024env32-80m-ent5-lr03-mgn4-2omh1lc-nga-tkl5c-a100-policy
+    <<: *lux-j1024env16-80m-ent5-lr2c-mgn2-2o3m4h-nga-async-a100-policy
+    load_run_path: sgoodfriend/rl-algo-impls-lux-nips1/tz4afaql
+    load_run_path_best: true
+
+LuxAI_S2-v0-debug:
+  <<: *lux-j1024env16-200m-ent5-lr2c-mgn2-2o3m4h-nga-async-a100
   n_timesteps: !!float 10e6
   device: mps
   env_hyperparams:
     <<: *lux-j1024env16-env
-    # <<: *lux-j1024env32-opp-resources-env
+    # <<: *lux-j1024env32-env
     # <<: *lux-j1024env64-a100-env
     make_kwargs:
       <<: *lux-j1024env16-env-make-kwargs
-      # <<: *lux-j1024env32-opp-resources-env-make-kwargs
+      # <<: *lux-j1024env32-env-make-kwargs
       # <<: *lux-j1024env64-a100-env-make-kwargs
       verbose: 3
       verify: true
     # vec_env_class: sync
   eval_hyperparams:
     <<: *lux-j1024env16-eval
-    # <<: *lux-j1024env32-opp-resources-eval
+    # <<: *lux-j1024env32-eval
     # <<: *lux-j1024env64-a100-eval
     env_overrides:
       <<: *lux-j1024env16-eval-env-overrides
-      # <<: *lux-j1024env32-80m-a100-std-norm-retrain-env-overrides
+      # <<: *lux-j1024env32-eval-env-overrides
       # <<: *lux-j1024env64-a100-eval-env-overrides
       make_kwargs:
         <<: *lux-j1024env16-eval-env-overrides-make-kwargs
-        # <<: *lux-j1024env32-80m-a100-std-norm-retrain-env-overrides-make-kwargs
+        # <<: *lux-j1024env32-eval-env-overrides-make-kwargs
         # <<: *lux-j1024env64-a100-eval-env-overrides-make-kwargs
         verbose: 3
         verify: true
