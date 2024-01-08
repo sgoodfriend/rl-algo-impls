@@ -80,7 +80,7 @@ def base_parser(multiple: bool = True) -> argparse.ArgumentParser:
         help="Seeds to run experiment. Unset will do one run with no set seed",
     )
     parser.add_argument(
-        "--device_index",
+        "--device-index",
         default=[],
         type=int,
         nargs="*" if multiple else "?",
