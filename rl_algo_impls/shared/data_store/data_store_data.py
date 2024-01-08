@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING, Any, Dict, NamedTuple, Optional, Tuple
 
 from rl_algo_impls.shared.stats import EpisodesStats
-from rl_algo_impls.shared.trackable import Trackable
+from rl_algo_impls.shared.trackable import Trackable, TrackableState
 
 if TYPE_CHECKING:
     from rl_algo_impls.rollout.rollout import Rollout
@@ -33,7 +33,7 @@ class LearnerUpdate(NamedTuple):
 
 class RolloutView(NamedTuple):
     policy: "Policy"
-    env_state: Dict[str, Any]
+    env_state: Dict[str, TrackableState]
     checkpoint_policies: Tuple["Policy", ...]
     latest_checkpoint_idx: int
     rollout_params: Dict[str, Any]
@@ -47,8 +47,8 @@ class RolloutUpdate(NamedTuple):
 
 class EvalView(NamedTuple):
     policy: "Policy"
-    algo_state: Trackable
-    env_state: Dict[str, Any]
+    algo_state: TrackableState
+    env_state: Dict[str, TrackableState]
     checkpoint_policies: Tuple["Policy", ...]
     latest_checkpoint_idx: int
     timesteps_elapsed: int
@@ -73,8 +73,8 @@ class EvalDataStoreViewView(NamedTuple):
 
 class CheckpointState(NamedTuple):
     policy: "Policy"
-    algo_state: Trackable
-    env_state: Dict[str, Any]
+    algo_state: TrackableState
+    env_state: Dict[str, TrackableState]
 
 
 class DataStoreFinalization(NamedTuple):

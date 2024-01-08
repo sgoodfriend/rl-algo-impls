@@ -1,11 +1,11 @@
 import os
 from dataclasses import asdict, dataclass
-from typing import Any, Dict, Optional, Tuple, TypeVar, Union
+from typing import Any, Dict, Optional, Tuple, Type, TypeVar, Union
 
 import numpy as np
 from numpy.typing import NDArray
 
-from rl_algo_impls.shared.trackable import Trackable, UpdateTrackable
+from rl_algo_impls.shared.trackable import TrackableState, UpdateTrackable
 
 RunningMeanStdSelf = TypeVar("RunningMeanStdSelf", bound="RunningMeanStd")
 
@@ -17,6 +17,14 @@ class RMS:
     mean: NDArray
     var: NDArray
     count: float
+
+    @classmethod
+    def empty(cls: Type[RMSSelf], shape: Tuple[int, ...], epsilon: float) -> RMSSelf:
+        return cls(
+            np.zeros(shape, np.float64),
+            np.ones(shape, np.float64),
+            epsilon,
+        )
 
     def update(self, x: np.ndarray) -> None:
         batch_rms = self.__class__(np.mean(x, axis=0), np.var(x, axis=0), x.shape[0])
@@ -35,16 +43,35 @@ class RMS:
         self.count = total_count
 
 
+@dataclass
+class TrackableRMS(TrackableState):
+    filename: str
+    rms: RMS
+
+    def save(self, path: str) -> None:
+        np.savez_compressed(
+            os.path.join(path, self.filename),
+            **asdict(self.rms),
+        )
+
+    def load(self, path: str) -> None:
+        data = np.load(os.path.join(path, self.filename))
+        for k, v in data.items():
+            assert hasattr(
+                self.rms, k
+            ), f"Unknown key {k} in {self.rms.__class__.__name__}"
+            setattr(self.rms, k, v)
+
+
 class RunningMeanStd(UpdateTrackable):
     def __init__(
         self, filename: str, epsilon: float = 1e-4, shape: Tuple[int, ...] = ()
     ) -> None:
+        super().__init__(filename)
         self.filename = filename
         self.epsilon = epsilon
-        self.rms = RMS(np.zeros(shape, np.float64), np.ones(shape, np.float64), epsilon)
-        self.running = RMS(
-            np.zeros(shape, np.float64), np.ones(shape, np.float64), epsilon
-        )
+        self.rms = RMS.empty(shape, epsilon)
+        self.running = RMS.empty(shape, epsilon)
 
     @property
     def mean(self) -> NDArray:
@@ -62,38 +89,76 @@ class RunningMeanStd(UpdateTrackable):
         self.rms.update(x)
         self.running.update(x)
 
-    @property
-    def name(self) -> str:
-        return self.filename
+    def get_state(self) -> TrackableRMS:
+        return TrackableRMS(self.filename, self.rms)
+
+    def set_state(self, state: TrackableRMS) -> None:
+        self.rms = state.rms
+
+    def get_update(self) -> RMS:
+        running = self.running
+        self.running = RMS.empty(self.running.mean.shape, self.epsilon)
+        return running
+
+    def apply_update(self, update: RMS) -> None:
+        self.rms.update_from_batch(update)
+
+
+EMMVSelf = TypeVar("EMMVSelf", bound="EMMV")
+
+
+@dataclass
+class EMMV:
+    mean: NDArray
+    squared_mean: NDArray
+    var: NDArray
+    initialized: bool
+
+    @classmethod
+    def empty(cls: Type[EMMVSelf], shape: Tuple[int, ...]) -> EMMVSelf:
+        return cls(
+            np.zeros(shape, np.float64),
+            np.zeros(shape, np.float64),
+            np.ones(shape, np.float64),
+            False,
+        )
+
+    def update(self, x: NDArray, alpha: float) -> None:
+        if not self.initialized:
+            self.mean = np.mean(x, axis=0, dtype=np.float64)
+            self.squared_mean = np.mean(x**2, axis=0, dtype=np.float64)
+            self.var = np.var(x, axis=0, dtype=np.float64)
+            self.initialized = True
+            return
+
+        weights = (alpha * ((1 - alpha) ** np.arange(x.shape[0] - 1, -1, -1)))[:, None]
+        self.mean = np.sum(weights * x, axis=0) + (1 - np.sum(weights)) * self.mean
+        self.squared_mean = (
+            np.sum(weights * (x**2), axis=0)
+            + (1 - np.sum(weights)) * self.squared_mean
+        )
+
+        self.var = self.squared_mean - self.mean**2
+
+
+@dataclass
+class TrackableEMMV(TrackableState):
+    filename: str
+    emmv: EMMV
 
     def save(self, path: str) -> None:
         np.savez_compressed(
             os.path.join(path, self.filename),
-            **self.get_state(),
+            **asdict(self.emmv),
         )
 
     def load(self, path: str) -> None:
         data = np.load(os.path.join(path, self.filename))
-        self.set_state(data)
-
-    def get_state(self) -> Dict[str, Any]:
-        return asdict(self.rms)
-
-    def set_state(self, state: Any) -> None:
-        self.rms = RMS(**state)
-
-    def get_update(self) -> Dict[str, Any]:
-        running = asdict(self.running)
-        self.running = RMS(
-            np.zeros_like(self.running.mean),
-            np.ones_like(self.running.var),
-            self.epsilon,
-        )
-        return running
-
-    def apply_update(self, update: Dict[str, Any]) -> None:
-        running = RMS(**update)
-        self.rms.update_from_batch(running)
+        for k, v in data.items():
+            assert hasattr(
+                self.emmv, k
+            ), f"Unknown key {k} in {self.emmv.__class__.__name__}"
+            setattr(self.emmv, k, v)
 
 
 ExponentialMovingMeanVarSelf = TypeVar(
@@ -109,6 +174,7 @@ class ExponentialMovingMeanVar(UpdateTrackable):
         window_size: Optional[Union[int, float]] = None,
         shape: Tuple[int, ...] = (),
     ) -> None:
+        super().__init__(filename)
         self.filename = filename
         assert (
             alpha is None or window_size is None
@@ -120,70 +186,49 @@ class ExponentialMovingMeanVar(UpdateTrackable):
         self.alpha = alpha
         self.window_size = window_size if window_size is not None else (2 / alpha - 1)
 
-        self.mean = np.zeros(shape, np.float64)
-        self.squared_mean = np.zeros(shape, np.float64)
-        self.var = np.ones(shape, np.float64)
-        self.initialized = False
+        self.emmv = EMMV.empty(shape)
 
         self.running = []
 
     @property
-    def name(self) -> str:
-        return self.filename
+    def mean(self) -> NDArray:
+        return self.emmv.mean
+
+    @property
+    def var(self) -> NDArray:
+        return self.emmv.var
 
     def update(self, x: NDArray) -> None:
         self.running.append(x)
-        self._update(x)
+        self.emmv.update(x, self.alpha)
 
-    def _update(self, x: NDArray) -> None:
-        if not self.initialized:
-            self.mean = np.mean(x, axis=0, dtype=np.float64)
-            self.squared_mean = np.mean(x**2, axis=0, dtype=np.float64)
-            self.var = np.var(x, axis=0, dtype=np.float64)
-            self.initialized = True
-            return
+    def get_state(self) -> TrackableEMMV:
+        return TrackableEMMV(self.filename, self.emmv)
 
-        weights = (
-            self.alpha * ((1 - self.alpha) ** np.arange(x.shape[0] - 1, -1, -1))
-        )[:, None]
-        self.mean = np.sum(weights * x, axis=0) + (1 - np.sum(weights)) * self.mean
-        self.squared_mean = (
-            np.sum(weights * (x**2), axis=0)
-            + (1 - np.sum(weights)) * self.squared_mean
-        )
+    def set_state(self, state: TrackableEMMV) -> None:
+        self.emmv = state.emmv
 
-        self.var = self.squared_mean - self.mean**2
-
-    def save(self, path: str) -> None:
-        np.savez_compressed(
-            os.path.join(path, self.filename),
-            **self.get_state(),
-        )
-
-    def load(self, path: str) -> None:
-        data = np.load(os.path.join(path, self.filename))
-        self.set_state(data)
-
-    def get_state(self) -> Dict[str, Any]:
-        return {
-            "mean": self.mean,
-            "var": self.var,
-            "initialized": np.array(self.initialized),
-        }
-
-    def set_state(self, state: Any) -> None:
-        self.mean = state["mean"]
-        self.var = state["var"]
-        self.squared_mean = self.var + self.mean**2
-        self.initialized = state["initialized"].item()
-
-    def get_update(self) -> Any:
+    def get_update(self) -> NDArray:
         running = np.concatenate(self.running)
         self.running = []
         return running
 
-    def apply_update(self, update: Any) -> None:
-        self._update(update)
+    def apply_update(self, update: NDArray) -> None:
+        self.emmv.update(update, self.alpha)
+
+
+@dataclass
+class TrackableHybridMMV(TrackableState):
+    rms: TrackableRMS
+    emmv: TrackableEMMV
+
+    def save(self, path: str) -> None:
+        self.rms.save(path)
+        self.emmv.save(path)
+
+    def load(self, path: str) -> None:
+        self.rms.load(path)
+        self.emmv.load(path)
 
 
 HybridMovingMeanVarSelf = TypeVar(
@@ -199,18 +244,14 @@ class HybridMovingMeanVar(UpdateTrackable):
         window_size: Optional[Union[int, float]] = None,
         shape: Tuple[int, ...] = (),
     ) -> None:
-        self.filename = filename
-        self.rms = RunningMeanStd(self.filename + "-rms.npz", shape=shape)
+        super().__init__(filename)
+        self.rms = RunningMeanStd(filename + "-rms.npz", shape=shape)
         self.emmv = ExponentialMovingMeanVar(
-            self.filename + "-emmv.npz",
+            filename + "-emmv.npz",
             alpha=alpha,
             window_size=window_size,
             shape=shape,
         )
-
-    @property
-    def name(self) -> str:
-        return self.filename
 
     @property
     def mean(self) -> NDArray:
@@ -232,30 +273,19 @@ class HybridMovingMeanVar(UpdateTrackable):
         self.rms.update(x)
         self.emmv.update(x)
 
-    def save(self, path: str) -> None:
-        self.rms.save(path)
-        self.emmv.save(path)
+    def get_state(self) -> TrackableHybridMMV:
+        return TrackableHybridMMV(self.rms.get_state(), self.emmv.get_state())
 
-    def load(self, path: str) -> None:
-        self.rms.load(path)
-        self.emmv.load(path)
+    def set_state(self, state: TrackableHybridMMV) -> None:
+        self.rms.set_state(state.rms)
+        self.emmv.set_state(state.emmv)
 
-    def get_state(self) -> Dict[str, Any]:
-        return {
-            "rms": self.rms.get_state(),
-            "emmv": self.emmv.get_state(),
-        }
-
-    def set_state(self, state: Any) -> None:
-        self.rms.set_state(state["rms"])
-        self.emmv.set_state(state["emmv"])
-
-    def get_update(self) -> Any:
+    def get_update(self) -> Dict[str, Any]:
         return {
             "rms": self.rms.get_update(),
             "emmv": self.emmv.get_update(),
         }
 
-    def apply_update(self, update: Any) -> None:
+    def apply_update(self, update: Dict[str, Any]) -> None:
         self.rms.apply_update(update["rms"])
         self.emmv.apply_update(update["emmv"])

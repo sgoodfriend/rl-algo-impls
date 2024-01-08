@@ -6,10 +6,10 @@ import torch
 from torch.optim.optimizer import StateDict
 
 from rl_algo_impls.shared.algorithm import OPTIMIZER_FILENAME, Algorithm
-from rl_algo_impls.shared.trackable import Trackable
+from rl_algo_impls.shared.trackable import TrackableState
 
 
-class SynchronousAlgorithmState(Trackable):
+class SynchronousAlgorithmState(TrackableState):
     def __init__(self, algo: Algorithm) -> None:
         self.algo = algo
 
@@ -36,8 +36,9 @@ class SynchronousAlgorithmState(Trackable):
         self.algo.optimizer.load_state_dict(state)
 
 
-class RemoteAlgorithmState(Trackable):
+class RemoteAlgorithmState(TrackableState):
     def __init__(self, algo: Algorithm) -> None:
+        self.device = algo.device
         self.state = algo.optimizer.state_dict()
 
     @property
@@ -45,17 +46,7 @@ class RemoteAlgorithmState(Trackable):
         return OPTIMIZER_FILENAME
 
     def save(self, path: str) -> None:
-        torch.save(self.get_state(), os.path.join(path, OPTIMIZER_FILENAME))
+        torch.save(self.state, os.path.join(path, OPTIMIZER_FILENAME))
 
     def load(self, path: str) -> None:
-        raise NotImplementedError(
-            f"{self.__class__.__name__} does not support loading."
-        )
-
-    def get_state(self) -> Any:
-        return self.state
-
-    def set_state(self, state: Any) -> None:
-        raise NotImplementedError(
-            f"{self.__class__.__name__} does not support setting state."
-        )
+        self.state = torch.load(path, map_location=self.device)
