@@ -86,7 +86,7 @@ BipedalWalker-v3:
         clip_range: 0.2
         ent_coef: 0.001
       - learning_rate: 0
-        clip_range: 0
+        clip_range: 0.01
         ent_coef: 0
 
 CarRacing-v2: &carracing
