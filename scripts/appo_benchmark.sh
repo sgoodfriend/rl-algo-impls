@@ -6,6 +6,7 @@ do
         -p) project_name=$2 ;;
         -s) seeds=$2 ;;
         -e) envs=$2 ;;
+        -d) devices=$2 ;;
         --procgen) procgen=t ;;
         --microrts) microrts=t ;;
         --no-mask-microrts) no_mask_microrts=t ;;
@@ -18,6 +19,7 @@ algos="${algos:-appo}"
 n_jobs="${n_jobs:-1}"
 project_name="${project_name:-rl-algo-impls-benchmarks}"
 seeds="${seeds:-1}"
+devices="${devices:-1}"
 
 BASIC_ENVS=(
     "CartPole-v1"
@@ -54,7 +56,7 @@ for algo in $(echo $algos); do
     else
         algo_envs=$envs
     fi
-    train_jobs+=$(bash scripts/train_loop.sh -a $algo -e "$algo_envs" -p $project_name -s "${seeds[*]}")$'\n'
+    train_jobs+=$(bash scripts/train_loop.sh -a $algo -e "$algo_envs" -p $project_name -s "${seeds[*]}" -d "$devices")$'\n'
 done
 
 printf "$train_jobs" | xargs -I CMD -P $n_jobs bash -c CMD
