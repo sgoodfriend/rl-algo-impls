@@ -81,9 +81,7 @@ def base_parser(multiple: bool = True) -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--device-index",
-        default=[],
         type=int,
-        nargs="*" if multiple else "?",
         help="GPU device index to use. Unset will pick free GPU",
     )
     return parser
