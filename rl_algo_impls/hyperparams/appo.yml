@@ -88,9 +88,6 @@ BipedalWalker-v3:
       - learning_rate: 0
         clip_range: 0
         ent_coef: 0
-  eval_hyperparams:
-    <<: *eval
-    step_freq: !!float 5e5
 
 CarRacing-v2: &carracing
   <<: *defaults
