@@ -33,25 +33,27 @@ CartPole-v1: &cartpole
 
 LunarLander-v2: &lunarlander
   <<: *defaults
-  n_timesteps: !!float 50e6
+  n_timesteps: !!float 25e6
   worker_hyperparams:
     n_rollout_workers: 4
   env_hyperparams: &lunarlander-env
     n_envs: 16
   rollout_hyperparams:
-    n_steps: 1024
+    n_steps: 512
     gae_lambda: 0.98
     gamma: 0.999
   algo_hyperparams: &lunarlander-algo
     batch_size: 64
-    learning_rate: !!float 5e-4
+    learning_rate: !!float 1e-5
     clip_range: 0.2
     ent_coef: 0.01
     normalize_advantage: false
   hyperparam_transitions_kwargs:
     durations: [0, 1, 0]
     phases:
-      - learning_rate: !!float 5e-4
+      - learning_rate: !!float 1e-5
+        clip_range: 0.2
+      - learning_rate: !!float 1e-3
         clip_range: 0.2
       - learning_rate: !!float 1e-5
         clip_range: 0
@@ -83,7 +85,7 @@ BipedalWalker-v3:
 
 CarRacing-v2: &carracing
   <<: *defaults
-  n_timesteps: !!float 50e6
+  n_timesteps: !!float 25e6
   worker_hyperparams:
     n_rollout_workers: 8
   env_hyperparams:
@@ -117,7 +119,7 @@ CarRacing-v2: &carracing
     durations: [0, 0.1, 0, 0.9, 0]
     phases:
       - learning_rate: !!float 1e-6
-      - learning_rate: !!float 1e-4
+      - learning_rate: !!float 2e-5
       - learning_rate: !!float 1e-6
 
 # BreakoutNoFrameskip-v4
