@@ -33,33 +33,33 @@ CartPole-v1: &cartpole
 
 LunarLander-v2: &lunarlander
   <<: *defaults
-  n_timesteps: !!float 25e6
+  n_timesteps: !!float 5e6
   worker_hyperparams:
     n_rollout_workers: 4
   env_hyperparams: &lunarlander-env
-    n_envs: 16
+    n_envs: 4
   rollout_hyperparams:
     n_steps: 256
     gae_lambda: 0.98
     gamma: 0.999
   algo_hyperparams: &lunarlander-algo
-    batch_size: 4096
-    learning_rate: !!float 1e-5
+    batch_size: 64
+    learning_rate: !!float 1e-3
     clip_range: 0.2
     ent_coef: 0.01
-    normalize_advantage: false
+    max_n_epochs: 4
   hyperparam_transitions_kwargs:
-    durations: [0, 0.1, 0, 0.9, 0]
+    durations: [0, 1, 0]
     phases:
-      - learning_rate: !!float 1e-5
+      - learning_rate: !!float 1e-3
         clip_range: 0.2
         ent_coef: 0.01
-      - learning_rate: !!float 1e-4
-        clip_range: 0.2
-        ent_coef: 0.01
-      - learning_rate: !!float 1e-5
+      - learning_rate: !!float 1e-6
         clip_range: 0
         ent_coef: 0
+  eval_hyperparams:
+    <<: *eval
+    step_freq: !!float 5e5
 
 BipedalWalker-v3:
   <<: *defaults
