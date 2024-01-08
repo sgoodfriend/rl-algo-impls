@@ -567,13 +567,13 @@ files = [
 
 [[package]]
 name = "colorful"
-version = "0.5.5"
+version = "0.5.6"
 description = "Terminal string styling done right, in Python."
 optional = false
 python-versions = "*"
 files = [
-    {file = "colorful-0.5.5-py2.py3-none-any.whl", hash = "sha256:62c187e27c1433db9463ff93b1451898d1e7e23a7e553583fd9daeb6325182e4"},
-    {file = "colorful-0.5.5.tar.gz", hash = "sha256:66f8c1264b2a26f7293b96a03bb7a76c4bc8b9634369a0bffdcd12d618056a1d"},
+    {file = "colorful-0.5.6-py2.py3-none-any.whl", hash = "sha256:eab8c1c809f5025ad2b5238a50bd691e26850da8cac8f90d660ede6ea1af9f1e"},
+    {file = "colorful-0.5.6.tar.gz", hash = "sha256:b56d5c01db1dac4898308ea889edcb113fbee3e6ec5df4bacffd61d5241b5b8d"},
 ]
 
 [package.dependencies]
@@ -1134,13 +1134,13 @@ grpcio-gcp = ["grpcio-gcp (>=0.2.2,<1.0.dev0)"]
 
 [[package]]
 name = "google-auth"
-version = "2.25.2"
+version = "2.26.1"
 description = "Google Authentication Library"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "google-auth-2.25.2.tar.gz", hash = "sha256:42f707937feb4f5e5a39e6c4f343a17300a459aaf03141457ba505812841cc40"},
-    {file = "google_auth-2.25.2-py2.py3-none-any.whl", hash = "sha256:473a8dfd0135f75bb79d878436e568f2695dce456764bf3a02b6f8c540b1d256"},
+    {file = "google-auth-2.26.1.tar.gz", hash = "sha256:54385acca5c0fbdda510cd8585ba6f3fcb06eeecf8a6ecca39d3ee148b092590"},
+    {file = "google_auth-2.26.1-py2.py3-none-any.whl", hash = "sha256:2c8b55e3e564f298122a02ab7b97458ccfcc5617840beb5d0ac757ada92c9780"},
 ]
 
 [package.dependencies]
@@ -1208,6 +1208,16 @@ psutil = ">=5.6.0"
 [package.extras]
 completion = ["shtab"]
 test = ["mockito (>=1.2.1)", "pytest (>=5.4.1)", "pytest-runner"]
+
+[[package]]
+name = "gputil"
+version = "1.4.0"
+description = "GPUtil is a Python module for getting the GPU status from NVIDA GPUs using nvidia-smi."
+optional = false
+python-versions = "*"
+files = [
+    {file = "GPUtil-1.4.0.tar.gz", hash = "sha256:099e52c65e512cdfa8c8763fca67f5a5c2afb63469602d5dcb4d296b3661efb9"},
+]
 
 [[package]]
 name = "grpcio"
@@ -1372,13 +1382,13 @@ test = ["Cython (>=0.29.24,<0.30.0)"]
 
 [[package]]
 name = "huggingface-hub"
-version = "0.20.1"
+version = "0.20.2"
 description = "Client library to download and publish models, datasets and other repos on the huggingface.co hub"
 optional = true
 python-versions = ">=3.8.0"
 files = [
-    {file = "huggingface_hub-0.20.1-py3-none-any.whl", hash = "sha256:ecfdea395a8bc68cd160106c5bd857f7e010768d95f9e1862a779010cc304831"},
-    {file = "huggingface_hub-0.20.1.tar.gz", hash = "sha256:8c88c4c3c8853e22f2dfb4d84c3d493f4e1af52fb3856a90e1eeddcf191ddbb1"},
+    {file = "huggingface_hub-0.20.2-py3-none-any.whl", hash = "sha256:53752eda2239d30a470c307a61cf9adcf136bc77b0a734338c7d04941af560d8"},
+    {file = "huggingface_hub-0.20.2.tar.gz", hash = "sha256:215c5fceff631030c7a3d19ba7b588921c908b3f21eef31d160ebc245b200ff6"},
 ]
 
 [package.dependencies]
@@ -2610,18 +2620,19 @@ signedtoken = ["cryptography (>=3.0.0)", "pyjwt (>=2.0.0,<3)"]
 
 [[package]]
 name = "opencensus"
-version = "0.11.3"
+version = "0.11.4"
 description = "A stats collection and distributed tracing framework"
 optional = false
 python-versions = "*"
 files = [
-    {file = "opencensus-0.11.3-py2.py3-none-any.whl", hash = "sha256:9c33d572059f0f0e874fc34c697a39a4193aa9cf3203f7e777df42e9edeea56a"},
-    {file = "opencensus-0.11.3.tar.gz", hash = "sha256:af7a98bd51e63968144d772f346d696ed498a32dbdc4be267cd6011c4ce05da8"},
+    {file = "opencensus-0.11.4-py2.py3-none-any.whl", hash = "sha256:a18487ce68bc19900336e0ff4655c5a116daf10c1b3685ece8d971bddad6a864"},
+    {file = "opencensus-0.11.4.tar.gz", hash = "sha256:cbef87d8b8773064ab60e5c2a1ced58bbaa38a6d052c41aec224958ce544eff2"},
 ]
 
 [package.dependencies]
 google-api-core = {version = ">=1.0.0,<3.0.0", markers = "python_version >= \"3.6\""}
 opencensus-context = ">=0.1.3"
+six = ">=1.16,<2.0"
 
 [[package]]
 name = "opencensus-context"
@@ -3496,13 +3507,13 @@ tune = ["fsspec", "pandas", "pyarrow (>=6.0.1)", "requests", "tensorboardX (>=1.
 
 [[package]]
 name = "referencing"
-version = "0.32.0"
+version = "0.32.1"
 description = "JSON Referencing + Python"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "referencing-0.32.0-py3-none-any.whl", hash = "sha256:bdcd3efb936f82ff86f993093f6da7435c7de69a3b3a5a06678a6050184bee99"},
-    {file = "referencing-0.32.0.tar.gz", hash = "sha256:689e64fe121843dcfd57b71933318ef1f91188ffb45367332700a86ac8fd6161"},
+    {file = "referencing-0.32.1-py3-none-any.whl", hash = "sha256:7e4dc12271d8e15612bfe35792f5ea1c40970dadf8624602e33db2758f7ee554"},
+    {file = "referencing-0.32.1.tar.gz", hash = "sha256:3c57da0513e9563eb7e203ebe9bb3a1b509b042016433bd1e45a2853466c3dd3"},
 ]
 
 [package.dependencies]
@@ -4618,13 +4629,13 @@ anyio = ">=3.0.0"
 
 [[package]]
 name = "wcwidth"
-version = "0.2.12"
+version = "0.2.13"
 description = "Measures the displayed width of unicode strings in a terminal"
 optional = false
 python-versions = "*"
 files = [
-    {file = "wcwidth-0.2.12-py2.py3-none-any.whl", hash = "sha256:f26ec43d96c8cbfed76a5075dac87680124fa84e0855195a6184da9c187f133c"},
-    {file = "wcwidth-0.2.12.tar.gz", hash = "sha256:f01c104efdf57971bcb756f054dd58ddec5204dd15fa31d6503ea57947d97c02"},
+    {file = "wcwidth-0.2.13-py2.py3-none-any.whl", hash = "sha256:3da69048e4540d84af32131829ff948f1e022c1c6bdb8d6102117aac784f6859"},
+    {file = "wcwidth-0.2.13.tar.gz", hash = "sha256:72ea0c06399eb286d978fdedb6923a9eb47e1c486ce63e9b4e64fc18303972b5"},
 ]
 
 [[package]]
@@ -4867,4 +4878,4 @@ test = []
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8,<3.12"
-content-hash = "f215f41a17f0ee1687b21f4558cd738e38385520c1e485e838556b658f41d2ca"
+content-hash = "9ad69fe617e7afc36b37f1801c48f6bcbd353e7bd6ecb60cb184ed2f85482538"

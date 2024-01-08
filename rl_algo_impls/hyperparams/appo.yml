@@ -85,7 +85,7 @@ CarRacing-v2: &carracing
   <<: *defaults
   n_timesteps: !!float 50e6
   worker_hyperparams:
-    n_rollout_workers: 4
+    n_rollout_workers: 8
   env_hyperparams:
     n_envs: 8
     frame_stack: 2
@@ -102,22 +102,23 @@ CarRacing-v2: &carracing
     cnn_flatten_dim: 256
     hidden_sizes: [256]
   rollout_hyperparams:
-    n_steps: 512
+    n_steps: 32
     sde_sample_freq: 4
     gamma: 0.99
     gae_lambda: 0.95
   algo_hyperparams:
-    batch_size: 128
-    learning_rate: !!float 2e-4
+    batch_size: 256
+    learning_rate: !!float 1e-6
     ent_coef: 0.0
     max_grad_norm: 0.5
     vf_coef: 0.5
     clip_range: 0.2
   hyperparam_transitions_kwargs:
-    durations: [0, 1, 0]
+    durations: [0, 0.1, 0, 0.9, 0]
     phases:
-      - learning_rate: !!float 2e-4
-      - learning_rate: 0
+      - learning_rate: !!float 1e-6
+      - learning_rate: !!float 1e-4
+      - learning_rate: !!float 1e-6
 
 # BreakoutNoFrameskip-v4
 # PongNoFrameskip-v4
