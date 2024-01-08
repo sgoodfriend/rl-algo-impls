@@ -155,9 +155,9 @@ def get_device(config: Config, env_spaces: EnvSpaces) -> torch.device:
     if device == "cuda":
         import GPUtil
 
-        gpu_id = GPUtil.getFirstAvailable(order="memory")
+        gpu_id = GPUtil.getAvailable(order="memory")[0]
         logging.info(f"Using GPU {gpu_id}")
-        return torch.cuda.device(gpu_id)
+        return torch.device(device, gpu_id)
 
     logging.info(f"Device: {device}")
     return torch.device(device)
