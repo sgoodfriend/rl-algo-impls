@@ -14,6 +14,7 @@ class RunArgs:
     algo: str
     env: str
     seed: Optional[int] = None
+    device_index: Optional[int] = None
 
     @classmethod
     def expand_from_dict(

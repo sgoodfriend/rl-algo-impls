@@ -79,6 +79,13 @@ def base_parser(multiple: bool = True) -> argparse.ArgumentParser:
         nargs="*" if multiple else "?",
         help="Seeds to run experiment. Unset will do one run with no set seed",
     )
+    parser.add_argument(
+        "--device_index",
+        default=[],
+        type=int,
+        nargs="*" if multiple else "?",
+        help="GPU device index to use. Unset will pick free GPU",
+    )
     return parser
 
 
@@ -131,7 +138,9 @@ def load_hyperparam_dict_by_env_id(algo: str, env_id: str) -> Optional[Dict[str,
     return None
 
 
-def get_device(config: Config, env_spaces: EnvSpaces) -> torch.device:
+def get_device(
+    config: Config, env_spaces: EnvSpaces, device_index: Optional[int] = None
+) -> torch.device:
     device = config.device
     # cuda by default
     if device == "auto":
@@ -153,11 +162,13 @@ def get_device(config: Config, env_spaces: EnvSpaces) -> torch.device:
             if is_microrts(config):
                 device = "cpu"
     if device == "cuda":
-        import GPUtil
+        if device_index is None:
+            import GPUtil
 
-        gpu_id = GPUtil.getAvailable(order="memory")[0]
-        logging.info(f"Using GPU {gpu_id}")
-        return torch.device(device, gpu_id)
+            device_index = GPUtil.getAvailable(order="memory")[0]
+        assert device_index is not None, "No GPU available"
+        logging.info(f"Using GPU {device_index}")
+        return torch.device(device, device_index)
 
     logging.info(f"Device: {device}")
     return torch.device(device)
