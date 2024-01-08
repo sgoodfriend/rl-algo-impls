@@ -39,11 +39,11 @@ LunarLander-v2: &lunarlander
   env_hyperparams: &lunarlander-env
     n_envs: 16
   rollout_hyperparams:
-    n_steps: 512
+    n_steps: 256
     gae_lambda: 0.98
     gamma: 0.999
   algo_hyperparams: &lunarlander-algo
-    batch_size: 64
+    batch_size: 1024
     learning_rate: !!float 1e-5
     clip_range: 0.2
     ent_coef: 0.01
@@ -53,10 +53,13 @@ LunarLander-v2: &lunarlander
     phases:
       - learning_rate: !!float 1e-5
         clip_range: 0.2
-      - learning_rate: !!float 1e-3
+        ent_coef: 0.01
+      - learning_rate: !!float 1e-4
         clip_range: 0.2
+        ent_coef: 0.01
       - learning_rate: !!float 1e-5
         clip_range: 0
+        ent_coef: 0
 
 BipedalWalker-v3:
   <<: *defaults
