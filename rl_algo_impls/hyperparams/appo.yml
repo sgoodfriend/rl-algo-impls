@@ -63,28 +63,34 @@ LunarLander-v2: &lunarlander
 
 BipedalWalker-v3:
   <<: *defaults
-  n_timesteps: !!float 50e6
+  n_timesteps: !!float 20e6
   worker_hyperparams:
     n_rollout_workers: 4
   env_hyperparams:
     n_envs: 16
     normalize: true
   rollout_hyperparams:
-    n_steps: 2048
+    n_steps: 128
     gae_lambda: 0.95
     gamma: 0.99
   algo_hyperparams:
-    batch_size: 64
+    batch_size: 1024
     ent_coef: 0.001
     learning_rate: !!float 3e-4
     clip_range: 0.2
+    max_n_epochs: 5
   hyperparam_transitions_kwargs:
     durations: [0, 1, 0]
     phases:
       - learning_rate: !!float 3e-4
         clip_range: 0.2
+        ent_coef: 0.001
       - learning_rate: 0
         clip_range: 0
+        ent_coef: 0
+  eval_hyperparams:
+    <<: *eval
+    step_freq: !!float 5e5
 
 CarRacing-v2: &carracing
   <<: *defaults
