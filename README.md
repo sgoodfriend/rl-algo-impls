@@ -46,7 +46,6 @@ git clone https://github.com/sgoodfriend/rl-algo-impls.git
 cd rl-algo-impls
 # git checkout BRANCH_NAME if running on non-main branch
 bash ./scripts/setup.sh # End of script will prompt for WandB API key
-poetry shell
 bash ./scripts/benchmark.sh [-a {"ppo"}] [-e ENVS] [-j {6}] [-p {rl-algo-impls-benchmarks}] [-s {"1 2 3"}]
 ```
 
