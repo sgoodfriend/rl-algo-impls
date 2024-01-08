@@ -163,7 +163,9 @@ def get_device(
         if device_index is None:
             import GPUtil
 
-            device_index = GPUtil.getAvailable(order="memory")[0]
+            device_index = GPUtil.getAvailable(
+                order="memory", maxLoad=1.0, maxMemory=1.0
+            )[0]
         assert device_index is not None, "No GPU available"
         logging.info(f"Using GPU {device_index}")
         return torch.device(device, device_index)
