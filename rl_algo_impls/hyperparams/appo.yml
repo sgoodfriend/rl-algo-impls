@@ -49,7 +49,7 @@ LunarLander-v2: &lunarlander
     ent_coef: 0.01
     normalize_advantage: false
   hyperparam_transitions_kwargs:
-    durations: [0, 1, 0]
+    durations: [0, 0.1, 0, 0.9, 0]
     phases:
       - learning_rate: !!float 1e-5
         clip_range: 0.2
