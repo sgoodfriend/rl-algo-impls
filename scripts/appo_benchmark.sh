@@ -7,10 +7,7 @@ do
         -s) seeds=$2 ;;
         -e) envs=$2 ;;
         -d) devices=$2 ;;
-        --procgen) procgen=t ;;
-        --microrts) microrts=t ;;
-        --no-mask-microrts) no_mask_microrts=t ;;
-        --microrts-ai) microrts_ai=t ;;
+        --mujoco-only) mujoco_only=t ;;
     esac
     shift
 done
@@ -37,20 +34,25 @@ BOX_ENVS=(
     # Basic
     # "MountainCarContinuous-v0"
     "BipedalWalker-v3"
-    # MuJoCo
+    # CarRacing
+    "CarRacing-v2"
+)
+MUJOCO_ENVS=(
     "HalfCheetah-v4"
     "Ant-v4"
     "Hopper-v4"
     "Walker2d-v4"
-    # CarRacing
-    "CarRacing-v2"
 )
 
 train_jobs=""
 for algo in $(echo $algos); do
     if [ -z "$envs" ]; then
         if [ "$algo" = "appo" ]; then
-            BENCHMARK_ENVS="${BASIC_ENVS[*]} ${BOX_ENVS[*]} ${ATARI_ENVS[*]}"
+            if [ "$mujoco_only" = "t" ]; then
+                BENCHMARK_ENVS="${MUJOCO_ENVS[*]}"
+            else
+                BENCHMARK_ENVS="${BASIC_ENVS[*]} ${MUJOCO_ENVS[*]} ${ATARI_ENVS[*]} ${BOX_ENVS[*]}"
+            fi
         fi
         algo_envs=${BENCHMARK_ENVS[*]}
     else
