@@ -14,7 +14,7 @@ class RunArgs:
     algo: str
     env: str
     seed: Optional[int] = None
-    device_index: Optional[int] = None
+    device_indexes: Optional[List[int]] = None
 
     @classmethod
     def expand_from_dict(
@@ -115,6 +115,19 @@ class Config:
     hyperparams: Hyperparams
     root_dir: str
     run_id: str = datetime.now().isoformat()
+
+    def __post_init__(self) -> None:
+        if self.args.device_indexes is not None:
+            self.gpu_ids = self.args.device_indexes
+        else:
+            import GPUtil
+
+            gpu_ids_by_avail_memory = GPUtil.getAvailable(
+                order="memory", maxLoad=1.0, maxMemory=1.0
+            )
+            self.gpu_ids = gpu_ids_by_avail_memory[:1]
+        if self.gpu_ids:
+            os.environ["CUDA_VISIBLE_DEVICES"] = ",".join(map(str, self.gpu_ids))
 
     def seed(self, training: bool = True) -> Optional[int]:
         seed = self.args.seed
