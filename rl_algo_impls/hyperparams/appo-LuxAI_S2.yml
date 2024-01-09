@@ -303,31 +303,31 @@ LuxAI_S2-v0-j1024env32-80m-ent5-lr03-mgn4-2omh1lc-ga2-tkl5c-a100:
     load_run_path_best: true
 
 LuxAI_S2-v0-debug:
-  <<: *lux-j1024env16-200m-ent5-lr2c-mgn2-2o3m4h-nga-async-a100
+  <<: *lux-j1024env32-80m-ent5-lr03-mgn4-2omh1lc-nga-tkl5c-a100
   n_timesteps: !!float 10e6
   device: mps
   env_hyperparams:
-    <<: *lux-j1024env16-env
-    # <<: *lux-j1024env32-env
+    # <<: *lux-j1024env16-env
+    <<: *lux-j1024env32-env
     # <<: *lux-j1024env64-a100-env
     make_kwargs:
-      <<: *lux-j1024env16-env-make-kwargs
-      # <<: *lux-j1024env32-env-make-kwargs
+      # <<: *lux-j1024env16-env-make-kwargs
+      <<: *lux-j1024env32-env-make-kwargs
       # <<: *lux-j1024env64-a100-env-make-kwargs
       verbose: 3
       verify: true
     # vec_env_class: sync
   eval_hyperparams:
-    <<: *lux-j1024env16-eval
-    # <<: *lux-j1024env32-eval
+    # <<: *lux-j1024env16-eval
+    <<: *lux-j1024env32-eval
     # <<: *lux-j1024env64-a100-eval
     env_overrides:
-      <<: *lux-j1024env16-eval-env-overrides
-      # <<: *lux-j1024env32-eval-env-overrides
+      # <<: *lux-j1024env16-eval-env-overrides
+      <<: *lux-j1024env32-eval-env-overrides
       # <<: *lux-j1024env64-a100-eval-env-overrides
       make_kwargs:
-        <<: *lux-j1024env16-eval-env-overrides-make-kwargs
-        # <<: *lux-j1024env32-eval-env-overrides-make-kwargs
+        # <<: *lux-j1024env16-eval-env-overrides-make-kwargs
+        <<: *lux-j1024env32-eval-env-overrides-make-kwargs
         # <<: *lux-j1024env64-a100-eval-env-overrides-make-kwargs
         verbose: 3
         verify: true

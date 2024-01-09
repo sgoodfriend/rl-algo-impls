@@ -73,7 +73,7 @@ class DataStoreActor:
         if env_tracker.name in self.env_trackers:
             return
         if self.load_path:
-            env_tracker.load(self.load_path)
+            env_tracker.get_state().load(self.load_path)
         self.env_trackers[env_tracker.name] = env_tracker
 
     async def get_learner_view(self, wait: bool = False) -> Optional[LearnerView]:
@@ -154,7 +154,7 @@ class DataStoreActor:
         if self.latest_policy is not None:
             self.latest_policy.load(path)
         for tracker in self.env_trackers.values():
-            tracker.load(path)
+            tracker.get_state().load(path)
 
     def initialize_evaluator(self, evaluator: AbstractEvaluator) -> None:
         self.evaluator = evaluator

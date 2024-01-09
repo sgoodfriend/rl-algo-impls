@@ -60,4 +60,4 @@ class InProcessDataStore:
         if self._policy is not None:
             self._policy.load(path)
         for tracker in self.env_trackers.values():
-            tracker.load(path)
+            tracker.get_state().load(path)
