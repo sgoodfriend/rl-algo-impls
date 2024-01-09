@@ -242,6 +242,7 @@ LuxAI_S2-v0-j1024env16-80m-ent5-lr3c-mgn2-2o3m4h-nga-async-a100:
         5: 2
   process_mode: async
   rollout_hyperparams:
+    &lux-j1024env16-80m-ent5-lr2c-mgn2-2o3m4h-nga-async-a100-rollout
     full_batch_off_accelerator: true
     gae_lambda: 0.95
     gamma: 1.0
@@ -332,6 +333,13 @@ LuxAI_S2-v0-j1024env32-80m-ent5-lr03-mgn4-2omh1lc-nga-tkl5c-a100:
     &lux-j1024env32-80m-ent5-lr03-mgn4-2omh1lc-nga-tkl5c-a100-algo
     <<: *lux-j1024env32-80m-ent5-lr03-mgn4-2omh1lc-ga2-tkl5c-a100-algo
     gradient_accumulation: false
+
+LuxAI_S2-v0-j1024env32-a100-debug: &lux-j1024env32-a100-debug
+  <<: *lux-j1024env32-80m-ent5-lr03-mgn4-2omh1lc-nga-tkl5c-a100
+  rollout_hyperparams:
+    <<: *lux-j1024env16-80m-ent5-lr2c-mgn2-2o3m4h-nga-async-a100-rollout
+    prepare_steps: 0
+    random_num_envs_reset_every_rollout: 0
 
 LuxAI_S2-v0-debug:
   <<: *lux-j1024env32-80m-ent5-lr03-mgn4-2omh1lc-nga-tkl5c-a100
