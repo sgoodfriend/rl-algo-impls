@@ -269,13 +269,14 @@ LuxAI_S2-v0-j1024env16-200m-ent5-lr2c-mgn2-2o3m4h-nga-async-a100:
   n_timesteps: !!float 200e6
 
 LuxAI_S2-v0-j1024env32-80m-ent5-lr03-mgn4-2omh1lc-ga2-tkl5c-a100:
-  &lux-j1024env32-80m-ent5-lr03-mgn4-2omh1lc-nga-tkl5c-a100
+  &lux-j1024env32-80m-ent5-lr03-mgn4-2omh1lc-ga2-tkl5c-a100
   <<: *lux-j1024env16-80m-ent5-lr3c-mgn2-2o3m4h-nga-async-a100
   algo_hyperparams:
-    &lux-j1024env32-80m-ent5-lr03-mgn4-2omh1lc-nga-tkl5c-a100-algo
+    &lux-j1024env32-80m-ent5-lr03-mgn4-2omh1lc-ga2-tkl5c-a100-algo
     <<: *lux-j1024env16-80m-ent5-lr3c-mgn2-2o3m4h-nga-async-a100-algo
-    learning_rate: !!float 3e-5
+    learning_rate: !!float 5e-5
     teacher_kl_loss_coef: !!float 5e-3
+    teacher_loss_batch_size: 8192
     batch_size: 512
     gradient_accumulation: 2
   env_hyperparams: &lux-j1024env32-env
@@ -297,7 +298,7 @@ LuxAI_S2-v0-j1024env32-80m-ent5-lr03-mgn4-2omh1lc-ga2-tkl5c-a100:
         MIN_FACTORIES: 2
         USES_COMPACT_SPAWNS_MASK: false
   policy_hyperparams:
-    &lux-j1024env32-80m-ent5-lr03-mgn4-2omh1lc-nga-tkl5c-a100-policy
+    &lux-j1024env32-80m-ent5-lr03-mgn4-2omh1lc-ga2-tkl5c-a100-policy
     <<: *lux-j1024env16-80m-ent5-lr2c-mgn2-2o3m4h-nga-async-a100-policy
     load_run_path: sgoodfriend/rl-algo-impls-lux-nips1/b29t2iyn
     load_run_path_best: true
@@ -307,7 +308,15 @@ LuxAI_S2-v0-j1024env32-80m-ent5-lr03-mgn4-2omh1lc-ga2-tkl5c-a100:
       - ent_coef: 0.005
       - ent_coef: 0.001
   worker_hyperparams:
-    n_rollout_workers: 2
+    n_rollout_workers: 1
+
+LuxAI_S2-v0-j1024env32-80m-ent5-lr03-mgn4-2omh1lc-nga-tkl5c-a100:
+  &lux-j1024env32-80m-ent5-lr03-mgn4-2omh1lc-nga-tkl5c-a100
+  <<: *lux-j1024env32-80m-ent5-lr03-mgn4-2omh1lc-ga2-tkl5c-a100
+  algo_hyperparams:
+    &lux-j1024env32-80m-ent5-lr03-mgn4-2omh1lc-nga-tkl5c-a100-algo
+    <<: *lux-j1024env32-80m-ent5-lr03-mgn4-2omh1lc-ga2-tkl5c-a100-algo
+    gradient_accumulation: false
 
 LuxAI_S2-v0-debug:
   <<: *lux-j1024env32-80m-ent5-lr03-mgn4-2omh1lc-nga-tkl5c-a100
