@@ -188,6 +188,8 @@ HalfCheetah-v4: &mujoco
     n_steps: 128
     gamma: 0.99
     gae_lambda: 0.95
+    prepare_steps: 1024
+    rolling_num_envs_reset_every_prepare_step: 2
   algo_hyperparams: &mujoco-algo
     batch_size: 1024
     ent_coef: 0.01
