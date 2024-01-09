@@ -279,6 +279,21 @@ LuxAI_S2-v0-j1024env32-80m-ent5-lr03-mgn4-2omh1lc-ga2-tkl5c-a100:
     teacher_loss_batch_size: 4096
     batch_size: 512
     gradient_accumulation: 2
+    multi_reward_weights:
+      - 1 # WinLoss
+      - 0.1 # ice
+      - 0.2 # ore
+      - 0.1 # water
+      - 0.2 # metal
+      - 0 # power
+      - 0.1 # light bots
+      - 0.2 # heavy bots
+      - 0.1 # opponent kills
+      - 0.1 # resources lichen
+      - 0.1 # resources factory
+      - 0 # game length
+      - -0.1 # opponent resources lichen
+      - 0 # opponent resources factory
   env_hyperparams: &lux-j1024env32-env
     <<: *lux-j1024env16-env
     make_kwargs: &lux-j1024env32-env-make-kwargs
