@@ -58,6 +58,7 @@ class APPO(Algorithm):
         vf_weights: Optional[List[int]] = None,
         teacher_kl_loss_coef: Optional[float] = None,
         teacher_loss_importance_sampling: bool = True,
+        teacher_loss_batch_size: Optional[int] = None,
         max_n_epochs: Optional[int] = None,
     ) -> None:
         super().__init__(
@@ -105,6 +106,7 @@ class APPO(Algorithm):
         self.teacher_kl_loss_coef = teacher_kl_loss_coef
         self.teacher_kl_loss_fn = TeacherKLLoss() if teacher_kl_loss_coef else None
         self.teacher_loss_importance_sampling = teacher_loss_importance_sampling
+        self.teacher_loss_batch_size = teacher_loss_batch_size
 
         self.max_n_epochs = max_n_epochs
 
@@ -199,7 +201,9 @@ class APPO(Algorithm):
                             lambda batch: teacher_kl_loss_fn.add_to_batch(
                                 teacher_policy, batch
                             ),
-                            self.batch_size,
+                            self.teacher_loss_batch_size
+                            if self.teacher_loss_batch_size is not None
+                            else self.batch_size,
                         )
                     elif teacher_policy is not None:
                         warnings.warn(
