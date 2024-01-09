@@ -43,6 +43,7 @@ class RemoteDataStoreAccessor(AbstractDataStoreAccessor):
     ) -> None:
         policy, algo, load_path = learner_initialize_data
         if load_path:
+            policy.load(load_path)
             algo.load(load_path)
         ray.get(
             self.data_store_actor.initialize_learner.remote(

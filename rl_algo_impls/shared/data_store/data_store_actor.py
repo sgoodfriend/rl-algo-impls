@@ -98,9 +98,11 @@ class DataStoreActor:
     def initialize_learner(
         self, learner_initialize_data: RemoteLearnerInitializeData
     ) -> None:
-        (self.latest_policy, algo_state, load_path) = learner_initialize_data
+        (latest_policy, algo_state, load_path) = learner_initialize_data
         if load_path:
             self.load(load_path)
+        # latest_policy has already loaded from load_path in RemoteDataStoreAccessor
+        self.latest_policy = latest_policy
         if self.checkpoint_history_size:
             self.submit_checkpoint(self._generate_checkpoint_state(algo_state))
 
@@ -203,7 +205,7 @@ class DataStoreActor:
             return None
         return latest_checkpoint.policy
 
-    def _generate_checkpoint_state(self, algo_state: Trackable) -> CheckpointState:
+    def _generate_checkpoint_state(self, algo_state: TrackableState) -> CheckpointState:
         assert self.latest_policy is not None, "Must initialize_learner first"
         return CheckpointState(
             self.latest_policy,
@@ -211,7 +213,7 @@ class DataStoreActor:
             {k: v.get_state() for k, v in self.env_trackers.items()},
         )
 
-    def _generate_eval_view(self, algo_state: Trackable) -> EvalView:
+    def _generate_eval_view(self, algo_state: TrackableState) -> EvalView:
         return EvalView(
             *self._generate_checkpoint_state(algo_state),
             checkpoint_policies=tuple(
