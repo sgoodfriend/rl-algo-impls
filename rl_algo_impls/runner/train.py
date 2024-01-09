@@ -83,9 +83,7 @@ def train(args: TrainArgs):
             f"process_mode {config.process_mode} not recognized (Expect: sync or async)"
         )
 
-    device = get_device(
-        config, rollout_generator.env_spaces, device_index=args.device_index
-    )
+    device = get_device(config, rollout_generator.env_spaces)
     set_device_optimizations(device, **config.device_hyperparams)
     policy, algo, learner_data_store_view = initialize_policy_algo_data_store_view(
         config,

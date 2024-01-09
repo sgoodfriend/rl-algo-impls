@@ -1,28 +1,33 @@
 import logging
+from typing import TYPE_CHECKING
 
 import ray
 
-from rl_algo_impls.rollout import create_synchronous_rollout_generator
-from rl_algo_impls.runner.config import Config, TrainArgs
-from rl_algo_impls.shared.data_store.abstract_data_store_accessor import (
-    AbstractDataStoreAccessor,
-)
-from rl_algo_impls.shared.summary_wrapper.abstract_summary_wrapper import (
-    AbstractSummaryWrapper,
-)
-from rl_algo_impls.utils.ray import init_ray_actor
+if TYPE_CHECKING:
+    from rl_algo_impls.runner.config import Config, TrainArgs
+    from rl_algo_impls.shared.data_store.abstract_data_store_accessor import (
+        AbstractDataStoreAccessor,
+    )
+    from rl_algo_impls.shared.summary_wrapper.abstract_summary_wrapper import (
+        AbstractSummaryWrapper,
+    )
 
 
 @ray.remote
 class RolloutGeneratorActor:
     def __init__(
         self,
-        args: TrainArgs,
-        config: Config,
-        data_store_accessor: AbstractDataStoreAccessor,
-        tb_writer: AbstractSummaryWrapper,
+        args: "TrainArgs",
+        config: "Config",
+        data_store_accessor: "AbstractDataStoreAccessor",
+        tb_writer: "AbstractSummaryWrapper",
     ) -> None:
-        init_ray_actor()
+        from rl_algo_impls.utils.ray import init_ray_actor
+
+        init_ray_actor(cuda_visible_devices=config.gpu_ids[-1:])
+
+        from rl_algo_impls.rollout import create_synchronous_rollout_generator
+
         logging.basicConfig(level=logging.INFO, handlers=[])
         tb_writer.maybe_add_logging_handler()
         self.generator = create_synchronous_rollout_generator(

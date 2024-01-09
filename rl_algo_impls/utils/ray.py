@@ -1,16 +1,18 @@
 import multiprocessing
 import os
-from typing import Any, Dict, NamedTuple, Optional, Type, TypeVar
-
-import torch
+from typing import Any, Dict, List, NamedTuple, Optional, Type, TypeVar
 
 
-def init_ray_actor(num_threads: Optional[int] = None):
+def init_ray_actor(
+    num_threads: Optional[int] = None, cuda_visible_devices: Optional[List[int]] = None
+):
     if num_threads is not None:
         os.environ["OMP_NUM_THREADS"] = str(num_threads)
     else:
         os.environ.pop("OMP_NUM_THREADS", None)
         num_threads = multiprocessing.cpu_count()
+    if cuda_visible_devices is not None:
+        os.environ["CUDA_VISIBLE_DEVICES"] = ",".join(map(str, cuda_visible_devices))
     import torch
 
     if torch.get_num_threads() != num_threads:
@@ -38,6 +40,8 @@ class EnvData(NamedTuple):
             }
         except ImportError:
             jax_data = {}
+
+        import torch
 
         return cls(
             env=dict(os.environ),

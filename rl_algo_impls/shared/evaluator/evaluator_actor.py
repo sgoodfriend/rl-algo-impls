@@ -1,29 +1,28 @@
 import logging
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional
 
 import ray
 
-from rl_algo_impls.runner.config import Config
-from rl_algo_impls.shared.data_store.abstract_data_store_accessor import (
-    AbstractDataStoreAccessor,
-)
-from rl_algo_impls.shared.data_store.data_store_data import EvalView
-from rl_algo_impls.shared.evaluator.evaluator import Evaluator
-from rl_algo_impls.shared.policy.policy import Policy
-from rl_algo_impls.shared.stats import EpisodesStats
-from rl_algo_impls.shared.summary_wrapper.abstract_summary_wrapper import (
-    AbstractSummaryWrapper,
-)
-from rl_algo_impls.utils.ray import init_ray_actor
+if TYPE_CHECKING:
+    from rl_algo_impls.runner.config import Config
+    from rl_algo_impls.shared.data_store.abstract_data_store_accessor import (
+        AbstractDataStoreAccessor,
+    )
+    from rl_algo_impls.shared.data_store.data_store_data import EvalView
+    from rl_algo_impls.shared.policy.policy import Policy
+    from rl_algo_impls.shared.stats import EpisodesStats
+    from rl_algo_impls.shared.summary_wrapper.abstract_summary_wrapper import (
+        AbstractSummaryWrapper,
+    )
 
 
 @ray.remote
 class EvaluatorActor:
     def __init__(
         self,
-        config: Config,
-        data_store_accessor: AbstractDataStoreAccessor,
-        tb_writer: AbstractSummaryWrapper,
+        config: "Config",
+        data_store_accessor: "AbstractDataStoreAccessor",
+        tb_writer: "AbstractSummaryWrapper",
         best_model_path: Optional[str] = None,
         n_episodes: int = 10,
         save_best: bool = True,
@@ -39,9 +38,14 @@ class EvaluatorActor:
         only_checkpoint_best_policies: bool = False,
         latest_model_path: Optional[str] = None,
     ) -> None:
-        init_ray_actor()
+        from rl_algo_impls.utils.ray import init_ray_actor
+
+        init_ray_actor(cuda_visible_devices=config.gpu_ids[-1:])
         logging.basicConfig(level=logging.INFO, handlers=[])
         tb_writer.maybe_add_logging_handler()
+
+        from rl_algo_impls.shared.evaluator.evaluator import Evaluator
+
         self.evaluator = Evaluator(
             config,
             data_store_accessor,
@@ -62,16 +66,16 @@ class EvaluatorActor:
             latest_model_path=latest_model_path,
         )
 
-    def best_eval_stats(self) -> Optional[EpisodesStats]:
+    def best_eval_stats(self) -> Optional["EpisodesStats"]:
         return self.evaluator.best
 
     def evaluate(
         self,
-        eval_data: EvalView,
+        eval_data: "EvalView",
         n_episodes: Optional[int] = None,
         print_returns: bool = False,
-    ) -> EpisodesStats:
+    ) -> "EpisodesStats":
         return self.evaluator.evaluate(eval_data, n_episodes, print_returns)
 
-    def save(self, policy: Policy, model_path: str) -> None:
+    def save(self, policy: "Policy", model_path: str) -> None:
         self.evaluator.save(policy, model_path)
