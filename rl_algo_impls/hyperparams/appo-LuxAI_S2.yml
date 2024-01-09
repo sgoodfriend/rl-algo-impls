@@ -323,7 +323,7 @@ LuxAI_S2-v0-j1024env32-80m-ent5-lr03-mgn4-2omh1lc-ga2-tkl5c-a100:
       - ent_coef: 0.005
       - ent_coef: 0.001
   worker_hyperparams:
-    n_rollout_workers: 1
+    n_rollout_workers: 2
 
 LuxAI_S2-v0-j1024env32-80m-ent5-lr03-mgn4-2omh1lc-nga-tkl5c-a100:
   &lux-j1024env32-80m-ent5-lr03-mgn4-2omh1lc-nga-tkl5c-a100
