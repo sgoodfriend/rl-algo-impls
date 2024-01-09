@@ -59,7 +59,7 @@ class APPO(Algorithm):
         teacher_kl_loss_coef: Optional[float] = None,
         teacher_loss_importance_sampling: bool = True,
         teacher_loss_batch_size: Optional[int] = None,
-        max_n_epochs: Optional[int] = None,
+        max_n_epochs: Optional[int] = 10,
     ) -> None:
         super().__init__(
             policy,
