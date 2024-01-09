@@ -299,7 +299,7 @@ LuxAI_S2-v0-j1024env32-80m-ent5-lr03-mgn4-2omh1lc-ga2-tkl5c-a100:
   policy_hyperparams:
     &lux-j1024env32-80m-ent5-lr03-mgn4-2omh1lc-nga-tkl5c-a100-policy
     <<: *lux-j1024env16-80m-ent5-lr2c-mgn2-2o3m4h-nga-async-a100-policy
-    load_run_path: sgoodfriend/rl-algo-impls-lux-nips1/tz4afaql
+    load_run_path: sgoodfriend/rl-algo-impls-lux-nips1/b29t2iyn
     load_run_path_best: true
 
 LuxAI_S2-v0-debug:
