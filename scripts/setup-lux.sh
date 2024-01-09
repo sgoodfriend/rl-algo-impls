@@ -8,10 +8,9 @@
 # }" > ~/.kaggle/kaggle.json
 # chmod 600 ~/.kaggle/kaggle.json
 
-# Activates poetry shell
 bash ./scripts/setup.sh
 
-# Manually install vec-noise within poetry shell
+# Manually install vec-noise within poetry environment
 poetry run pip install vec-noise
 
 poetry install -E lux
