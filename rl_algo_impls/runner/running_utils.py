@@ -158,11 +158,6 @@ def get_device(config: Config, env_spaces: EnvSpaces) -> torch.device:
                 device = "cpu"
             if is_microrts(config):
                 device = "cpu"
-    if device == "cuda":
-        assert config.gpu_ids, "No GPU available"
-        gpu_id = config.gpu_ids[0]
-        logging.info(f"Using GPU {gpu_id}")
-        return torch.device(device, gpu_id)
 
     logging.info(f"Device: {device}")
     return torch.device(device)
