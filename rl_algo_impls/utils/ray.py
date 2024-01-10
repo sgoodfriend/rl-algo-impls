@@ -1,15 +1,36 @@
 import multiprocessing
 import os
-from typing import Any, Dict, List, NamedTuple, Optional, Type, TypeVar
+from typing import TYPE_CHECKING, Any, Dict, List, NamedTuple, Optional, Type, TypeVar
+
+if TYPE_CHECKING:
+    from rl_algo_impls.runner.config import Config
 
 MAX_NUM_THREADS = 32
+
+
+def get_max_num_threads() -> int:
+    return min(multiprocessing.cpu_count(), MAX_NUM_THREADS)
+
+
+def maybe_init_ray(config: "Config") -> None:
+    os.environ["OMP_NUM_THREADS"] = str(get_max_num_threads())
+
+    if config.process_mode != "async":
+        return
+    import ray
+
+    num_workers = config.hyperparams.worker_hyperparams.get("n_rollout_workers", 1)
+
+    ray.init(
+        num_cpus=num_workers + 3,  # 3 for data store, evaluator, and summary writer
+    )
 
 
 def init_ray_actor(
     num_threads: Optional[int] = None, cuda_visible_devices: Optional[List[int]] = None
 ):
     if num_threads is None:
-        num_threads = min(multiprocessing.cpu_count(), MAX_NUM_THREADS)
+        num_threads = get_max_num_threads()
     os.environ["OMP_NUM_THREADS"] = str(num_threads)
 
     if cuda_visible_devices is not None:
