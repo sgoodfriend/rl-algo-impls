@@ -106,7 +106,7 @@ CarRacing-v2: &carracing
     use_sde: true
     log_std_init: -2
     init_layers_orthogonal: false
-    activation_fn: relu
+    activation_fn: gelu
     share_features_extractor: false
     cnn_flatten_dim: 256
     hidden_sizes: [256]

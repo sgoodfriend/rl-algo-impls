@@ -16,6 +16,7 @@ ACTIVATION: Dict[str, Type[nn.Module]] = {
     "relu": nn.ReLU,
     "identity": nn.Identity,
     "sigmoid": nn.Sigmoid,
+    "gelu": nn.GELU,
 }
 
 MODEL_FILENAME = "model.pth"
