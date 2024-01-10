@@ -44,6 +44,7 @@ def train() -> None:
         # env=["LunarLander-v2-lr-by-kl"],
         # env=["CarRacing-v2"],
         # env=["HalfCheetah-v4"],
+        # env=["HalfCheetah-v4-high-score"],
         # env=["Ant-v4"],
         # env=["HalfCheetah-v4-lr-by-kl"],
         # env=["Hopper-v4"],
