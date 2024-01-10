@@ -128,6 +128,11 @@ class Config:
             self.gpu_ids = gpu_ids_by_avail_memory[:1]
         if self.gpu_ids:
             os.environ["CUDA_VISIBLE_DEVICES"] = ",".join(map(str, self.gpu_ids))
+            import torch
+
+            assert torch.cuda.device_count() == len(
+                self.gpu_ids
+            ), f"GPU count mismatch: {torch.cuda.device_count()} vs expected {len(self.gpu_ids)}"
 
     def seed(self, training: bool = True) -> Optional[int]:
         seed = self.args.seed
