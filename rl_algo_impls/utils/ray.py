@@ -2,15 +2,16 @@ import multiprocessing
 import os
 from typing import Any, Dict, List, NamedTuple, Optional, Type, TypeVar
 
+MAX_NUM_THREADS = 32
+
 
 def init_ray_actor(
     num_threads: Optional[int] = None, cuda_visible_devices: Optional[List[int]] = None
 ):
-    if num_threads is not None:
-        os.environ["OMP_NUM_THREADS"] = str(num_threads)
-    else:
-        os.environ.pop("OMP_NUM_THREADS", None)
-        num_threads = multiprocessing.cpu_count()
+    if num_threads is None:
+        num_threads = min(multiprocessing.cpu_count(), MAX_NUM_THREADS)
+    os.environ["OMP_NUM_THREADS"] = str(num_threads)
+
     if cuda_visible_devices is not None:
         os.environ["CUDA_VISIBLE_DEVICES"] = ",".join(map(str, cuda_visible_devices))
     import torch
