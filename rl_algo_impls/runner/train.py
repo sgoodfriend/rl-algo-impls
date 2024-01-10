@@ -65,6 +65,9 @@ def train(args: TrainArgs):
     set_seeds(args.seed)
 
     if config.process_mode == "async":
+        import ray
+
+        ray.init(_system_config={"automatic_object_spilling_enabled": False})
         data_store_accessor = RemoteDataStoreAccessor(
             **(config.hyperparams.checkpoints_kwargs or {})
         )
