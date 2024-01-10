@@ -56,8 +56,6 @@ def train(args: TrainArgs):
     if config.process_mode == "sync":
         tb_writer = InProcessSummaryWrapper(config, args)
     elif config.process_mode == "async":
-        import os
-
         os.environ["OMP_NUM_THREADS"] = "16"
         import ray
 
