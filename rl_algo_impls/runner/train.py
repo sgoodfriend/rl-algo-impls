@@ -56,6 +56,9 @@ def train(args: TrainArgs):
     if config.process_mode == "sync":
         tb_writer = InProcessSummaryWrapper(config, args)
     elif config.process_mode == "async":
+        import ray
+
+        ray.init(_system_config={"automatic_object_spilling_enabled": False})
         tb_writer = RemoteSummaryWrapper(config, args)
     else:
         raise ValueError(
@@ -65,9 +68,6 @@ def train(args: TrainArgs):
     set_seeds(args.seed)
 
     if config.process_mode == "async":
-        import ray
-
-        ray.init(_system_config={"automatic_object_spilling_enabled": False})
         data_store_accessor = RemoteDataStoreAccessor(
             **(config.hyperparams.checkpoints_kwargs or {})
         )
