@@ -297,7 +297,7 @@ tests = ["ale_py", "multi_agent_ale_py"]
 name = "batchrenorm"
 version = "0.1.1"
 description = "Batch Renormalization"
-optional = true
+optional = false
 python-versions = "^3.7"
 files = []
 develop = false
@@ -512,7 +512,7 @@ files = [
 name = "chex"
 version = "0.1.7"
 description = "Chex: Testing made fun, in JAX!"
-optional = true
+optional = false
 python-versions = ">=3.8"
 files = [
     {file = "chex-0.1.7-py3-none-any.whl", hash = "sha256:9f583015303b1205443843c0b55849bb287f1dfdbd22d9907b1ebb04f964d93e"},
@@ -690,7 +690,7 @@ files = [
 name = "dm-tree"
 version = "0.1.8"
 description = "Tree is a library for working with nested data structures."
-optional = true
+optional = false
 python-versions = "*"
 files = [
     {file = "dm-tree-0.1.8.tar.gz", hash = "sha256:0fcaabbb14e7980377439e7140bd05552739ca5e515ecb3119f234acee4b9430"},
@@ -1078,20 +1078,20 @@ smmap = ">=3.0.1,<6"
 
 [[package]]
 name = "gitpython"
-version = "3.1.40"
+version = "3.1.41"
 description = "GitPython is a Python library used to interact with Git repositories"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "GitPython-3.1.40-py3-none-any.whl", hash = "sha256:cf14627d5a8049ffbf49915732e5eddbe8134c3bdb9d476e6182b676fc573f8a"},
-    {file = "GitPython-3.1.40.tar.gz", hash = "sha256:22b126e9ffb671fdd0c129796343a02bf67bf2994b35449ffc9321aa755e18a4"},
+    {file = "GitPython-3.1.41-py3-none-any.whl", hash = "sha256:c36b6634d069b3f719610175020a9aed919421c87552185b085e04fbbdb10b7c"},
+    {file = "GitPython-3.1.41.tar.gz", hash = "sha256:ed66e624884f76df22c8e16066d567aaa5a37d5b5fa19db2c6df6f7156db9048"},
 ]
 
 [package.dependencies]
 gitdb = ">=4.0.1,<5"
 
 [package.extras]
-test = ["black", "coverage[toml]", "ddt (>=1.1.1,!=1.4.3)", "mock", "mypy", "pre-commit", "pytest", "pytest-cov", "pytest-instafail", "pytest-subtests", "pytest-sugar"]
+test = ["black", "coverage[toml]", "ddt (>=1.1.1,!=1.4.3)", "mock", "mypy", "pre-commit", "pytest (>=7.3.1)", "pytest-cov", "pytest-instafail", "pytest-mock", "pytest-sugar", "sumtypes"]
 
 [[package]]
 name = "glfw"
@@ -1528,7 +1528,7 @@ colors = ["colorama (>=0.4.6)"]
 name = "jax"
 version = "0.4.7"
 description = "Differentiate, compile, and transform Numpy code."
-optional = true
+optional = false
 python-versions = ">=3.8"
 files = [
     {file = "jax-0.4.7.tar.gz", hash = "sha256:5e7002d74db25f97c99b979d4ba1233b1ef26e1597e5fc468ad11d1c8a9dc4f8"},
@@ -1558,7 +1558,7 @@ tpu = ["jaxlib (==0.4.7)", "libtpu-nightly (==0.1.dev20230327)", "requests"]
 name = "jaxlib"
 version = "0.4.7"
 description = "XLA library for JAX"
-optional = true
+optional = false
 python-versions = ">=3.8"
 files = [
     {file = "jaxlib-0.4.7-cp310-cp310-macosx_10_14_x86_64.whl", hash = "sha256:63c2890978e8646516db3d8a680b43d2bed8b63543a70556391f589a261bd85f"},
@@ -1703,7 +1703,7 @@ referencing = ">=0.31.0"
 name = "juxai-s2"
 version = "3.0.1"
 description = "JUX is a jax-accelerated engine for Lux-2022."
-optional = true
+optional = false
 python-versions = "<3.12,>=3.8"
 files = []
 develop = false
@@ -1841,7 +1841,7 @@ files = [
 name = "luxai-s2"
 version = "3.0.1"
 description = "The Lux AI Challenge Season 2"
-optional = true
+optional = false
 python-versions = ">=3.8"
 files = [
     {file = "luxai-s2-3.0.1.tar.gz", hash = "sha256:45edd0eed084221bfd9c0fbba68f21010d3b909d22255ebeb561c60f65d1dc70"},
@@ -2063,7 +2063,7 @@ files = [
 name = "ml-dtypes"
 version = "0.2.0"
 description = ""
-optional = true
+optional = false
 python-versions = ">=3.7"
 files = [
     {file = "ml_dtypes-0.2.0-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:df6a76e1c8adf484feb138ed323f9f40a7b6c21788f120f7c78bec20ac37ee81"},
@@ -2088,8 +2088,8 @@ files = [
 [package.dependencies]
 numpy = [
     {version = ">1.20", markers = "python_version <= \"3.9\""},
-    {version = ">=1.23.3", markers = "python_version > \"3.10\""},
     {version = ">=1.21.2", markers = "python_version > \"3.9\" and python_version <= \"3.10\""},
+    {version = ">=1.23.3", markers = "python_version > \"3.10\""},
 ]
 
 [package.extras]
@@ -2663,7 +2663,7 @@ numpy = [
 name = "opt-einsum"
 version = "3.3.0"
 description = "Optimizing numpys einsum function"
-optional = true
+optional = false
 python-versions = ">=3.5"
 files = [
     {file = "opt_einsum-3.3.0-py3-none-any.whl", hash = "sha256:2455e59e3947d3c275477df7f5205b30635e266fe6dc300e3d9f9646bfcea147"},
@@ -2790,7 +2790,7 @@ files = [
 name = "pettingzoo"
 version = "1.24.2"
 description = "Gymnasium for multi-agent reinforcement learning."
-optional = true
+optional = false
 python-versions = ">=3.8"
 files = [
     {file = "pettingzoo-1.24.2-py3-none-any.whl", hash = "sha256:00268cf990d243654c2bbbbf8c88322c12b041dc0a879b74747f14ee8aa93dd6"},
@@ -3731,7 +3731,7 @@ tests = ["black (>=23.3.0)", "matplotlib (>=3.1.3)", "mypy (>=1.3)", "numpydoc (
 name = "scipy"
 version = "1.10.1"
 description = "Fundamental algorithms for scientific computing in Python"
-optional = true
+optional = false
 python-versions = "<3.12,>=3.8"
 files = [
     {file = "scipy-1.10.1-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:e7354fd7527a4b0377ce55f286805b34e8c54b91be865bac273f527e1b839019"},
@@ -4156,7 +4156,7 @@ protobuf = ">=3.20"
 name = "termcolor"
 version = "2.4.0"
 description = "ANSI color formatting for output in terminal"
-optional = true
+optional = false
 python-versions = ">=3.8"
 files = [
     {file = "termcolor-2.4.0-py3-none-any.whl", hash = "sha256:9297c0df9c99445c2412e832e882a7884038a25617c60cea2ad69488d4040d63"},
@@ -4192,7 +4192,7 @@ files = [
 name = "toolz"
 version = "0.12.0"
 description = "List processing tools and functional utilities"
-optional = true
+optional = false
 python-versions = ">=3.5"
 files = [
     {file = "toolz-0.12.0-py3-none-any.whl", hash = "sha256:2059bd4148deb1884bb0eb770a3cde70e7f954cfbbdc2285f1f2de01fd21eb6f"},
@@ -4447,7 +4447,7 @@ test = ["Cython (>=0.29.36,<0.30.0)", "aiohttp (==3.9.0b0)", "aiohttp (>=3.8.1)"
 name = "vec-noise"
 version = "1.1.4"
 description = "Vectorized Perlin noise for Python"
-optional = true
+optional = false
 python-versions = "*"
 files = [
     {file = "vec_noise-1.1.4-cp36-cp36m-win32.whl", hash = "sha256:bec2db0d0c32bb0f1e1581a70c18bdc73440f74227e741691f69b93d0cd6a5d3"},
