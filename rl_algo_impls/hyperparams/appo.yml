@@ -121,6 +121,7 @@ CarRacing-v2: &carracing
     max_grad_norm: 0.5
     vf_coef: 0.5
     clip_range: 0.2
+    max_n_epochs: 5
   hyperparam_transitions_kwargs:
     durations: [0, 0.1, 0, 0.9, 0]
     phases:
