@@ -39,10 +39,10 @@ def train() -> None:
     parser.set_defaults(
         algo=["appo"],
         # env=["CartPole-v1"],
-        # env=["CartPole-v1-async"],
         # env=["LunarLander-v2"],
         # env=["LunarLander-v2-lr-by-kl"],
-        env=["CarRacing-v2"],
+        # env=["CarRacing-v2"],
+        env=["CarRacing-v2-lr-by-kl"],
         # env=["HalfCheetah-v4"],
         # env=["HalfCheetah-v4-high-score"],
         # env=["Ant-v4"],

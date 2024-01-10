@@ -1,16 +1,19 @@
-from typing import Optional
+from typing import Optional, Union
 
 import numpy as np
 
+from rl_algo_impls.ppo.appo import APPO
 from rl_algo_impls.ppo.ppo import PPO, TrainStats
 from rl_algo_impls.shared.callbacks.callback import Callback
 from rl_algo_impls.utils.running_mean_std import ExponentialMovingMeanVar
+
+SUPPORTED_ALGORITHMS = (PPO, APPO)
 
 
 class LearningRateByKLDivergence(Callback):
     def __init__(
         self,
-        algo: PPO,
+        algo: Union[PPO, APPO],
         target_kl: float,
         moving_window_size: int = 5,
         max_increase_fraction: float = 1.02,

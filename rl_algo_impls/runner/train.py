@@ -12,8 +12,10 @@ from typing import Any, Dict, List
 
 import yaml
 
+from rl_algo_impls.ppo.learning_rate_by_kl_divergence import (
+    SUPPORTED_ALGORITHMS as LR_BY_KL_SUPPORTED_ALGORITHMS,
+)
 from rl_algo_impls.ppo.learning_rate_by_kl_divergence import LearningRateByKLDivergence
-from rl_algo_impls.ppo.ppo import PPO
 from rl_algo_impls.rollout.in_process_rollout_generator import InProcessRolloutGenerator
 from rl_algo_impls.rollout.remote_rollout_generator import RemoteRolloutGenerator
 from rl_algo_impls.runner.config import Config, TrainArgs
@@ -136,8 +138,8 @@ def train(args: TrainArgs):
     lr_by_kl_callback = None
     if config.hyperparams.lr_by_kl_kwargs:
         assert isinstance(
-            algo, PPO
-        ), f"lr_by_kl_kwargs only supported for PPO, not {algo.__class__.__name__}"
+            algo, LR_BY_KL_SUPPORTED_ALGORITHMS
+        ), f"lr_by_kl_kwargs only supported for {(c.__name__ for c in LR_BY_KL_SUPPORTED_ALGORITHMS)}, not {algo.__class__.__name__}"
         lr_by_kl_callback = LearningRateByKLDivergence(
             algo,
             **config.hyperparams.lr_by_kl_kwargs,
