@@ -194,17 +194,19 @@ class APPO(Algorithm):
                 step_stats.clear()
                 grad_norms.clear()
                 for r in reversed(rollouts):
-                    if self.teacher_kl_loss_fn and rollout_iteration_cnt == 1:
-                        teacher_kl_loss_fn = self.teacher_kl_loss_fn
-                        assert teacher_policy is not None
-                        r.add_to_batch(
-                            lambda batch: teacher_kl_loss_fn.add_to_batch(
-                                teacher_policy, batch
-                            ),
-                            self.teacher_loss_batch_size
-                            if self.teacher_loss_batch_size is not None
-                            else self.batch_size,
-                        )
+                    if self.teacher_kl_loss_fn:
+                        if rollout_iteration_cnt == 1:
+                            teacher_kl_loss_fn = self.teacher_kl_loss_fn
+                            assert teacher_policy is not None
+                            _teacher_policy = teacher_policy
+                            r.add_to_batch(
+                                lambda batch: teacher_kl_loss_fn.add_to_batch(
+                                    _teacher_policy, batch
+                                ),
+                                self.teacher_loss_batch_size
+                                if self.teacher_loss_batch_size is not None
+                                else self.batch_size,
+                            )
                     elif teacher_policy is not None:
                         warnings.warn(
                             "Getting teacher_policy without teacher_kl_loss_fn could be inefficient"
