@@ -101,6 +101,7 @@ CarRacing-v2: &carracing
     normalize_kwargs:
       norm_obs: false
       norm_reward: true
+    vec_env_class: async
   policy_hyperparams: &carracing-policy
     use_sde: true
     log_std_init: -2
