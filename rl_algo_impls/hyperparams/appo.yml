@@ -93,7 +93,7 @@ CarRacing-v2: &carracing
   <<: *defaults
   n_timesteps: !!float 25e6
   worker_hyperparams:
-    n_rollout_workers: 8
+    n_rollout_workers: 5
   env_hyperparams:
     n_envs: 8
     frame_stack: 2
