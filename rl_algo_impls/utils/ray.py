@@ -15,6 +15,11 @@ def init_ray_actor(
         os.environ["CUDA_VISIBLE_DEVICES"] = ",".join(map(str, cuda_visible_devices))
     import torch
 
+    if cuda_visible_devices is not None:
+        assert torch.cuda.device_count() == len(
+            cuda_visible_devices
+        ), f"GPU count mismatch: {torch.cuda.device_count()} vs expected {len(cuda_visible_devices)}"
+
     if torch.get_num_threads() != num_threads:
         torch.set_num_threads(num_threads)
 
