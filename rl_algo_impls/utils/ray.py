@@ -5,11 +5,16 @@ from typing import TYPE_CHECKING, Any, Dict, List, NamedTuple, Optional, Type, T
 if TYPE_CHECKING:
     from rl_algo_impls.runner.config import Config
 
-MAX_NUM_THREADS = 32
+_MAX_NUM_THREADS = 32
 
 
 def get_max_num_threads() -> int:
-    return min(multiprocessing.cpu_count(), MAX_NUM_THREADS)
+    cpu_count = multiprocessing.cpu_count()
+    if cpu_count > _MAX_NUM_THREADS:
+        return _MAX_NUM_THREADS
+    elif cpu_count >= _MAX_NUM_THREADS // 2:
+        return _MAX_NUM_THREADS // 2
+    return cpu_count
 
 
 def maybe_init_ray(config: "Config") -> None:
