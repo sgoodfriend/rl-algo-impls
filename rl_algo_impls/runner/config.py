@@ -1,6 +1,7 @@
 import dataclasses
 import inspect
 import itertools
+import logging
 import os
 from dataclasses import dataclass
 from datetime import datetime
@@ -133,6 +134,9 @@ class Config:
             assert torch.cuda.device_count() == len(
                 self.gpu_ids
             ), f"GPU count mismatch: {torch.cuda.device_count()} vs expected {len(self.gpu_ids)}"
+            logging.info(f"Torch num threads: {torch.get_num_threads()}")
+            torch.set_num_threads(16)
+            logging.info(f"NEW Torch num threads: {torch.get_num_threads()}")
 
     def seed(self, training: bool = True) -> Optional[int]:
         seed = self.args.seed
