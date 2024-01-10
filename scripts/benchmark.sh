@@ -43,22 +43,6 @@ BOX_ENVS=(
     # CarRacing
     "CarRacing-v2"
 )
-LR_BY_KL_ENVS=(
-    # LunarLander
-    "LunarLander-v2-lr-by-kl"
-    # MuJoCo
-    "HalfCheetah-v4-lr-by-kl"
-    "Ant-v4-lr-by-kl"
-    "Hopper-v4-lr-by-kl"
-    "Walker2d-v4-lr-by-kl"
-    # Atari
-    "PongNoFrameskip-v4-lr-by-kl"
-    "BreakoutNoFrameskip-v4-lr-by-kl"
-    "SpaceInvadersNoFrameskip-v4-lr-by-kl"
-    "QbertNoFrameskip-v4-lr-by-kl"
-    # CarRacing
-    "CarRacing-v2-lr-by-kl"
-)
 
 train_jobs=""
 for algo in $(echo $algos); do
@@ -94,7 +78,7 @@ for algo in $(echo $algos); do
         if [ "$algo" = "dqn" ]; then
             BENCHMARK_ENVS="${BASIC_ENVS[*]} ${ATARI_ENVS[*]}"
         elif [ "$algo" = "ppo" ]; then
-            BENCHMARK_ENVS="${BASIC_ENVS[*]} ${BOX_ENVS[*]} ${ATARI_ENVS[*]} ${LR_BY_KL_ENVS[*]}"
+            BENCHMARK_ENVS="${BASIC_ENVS[*]} ${BOX_ENVS[*]} ${ATARI_ENVS[*]}}"
         else
             BENCHMARK_ENVS="${BASIC_ENVS[*]} ${BOX_ENVS[*]} ${ATARI_ENVS[*]}"
         fi
