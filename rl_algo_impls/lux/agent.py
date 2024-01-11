@@ -13,8 +13,8 @@ from rl_algo_impls.lux.observation import observation_and_action_mask
 from rl_algo_impls.lux.stats import ActionStats
 from rl_algo_impls.lux.vec_env.lux_agent_env import LuxAgentEnv
 from rl_algo_impls.runner.config import Config, EnvHyperparams, RunArgs
+from rl_algo_impls.shared.vec_env.device import get_device
 from rl_algo_impls.runner.running_utils import (
-    get_device,
     load_hyperparams,
     make_eval_policy,
 )

@@ -6,6 +6,7 @@ import numpy as np
 from gymnasium.experimental.vector.utils import batch_space
 
 from rl_algo_impls.runner.config import Config
+from rl_algo_impls.shared.vec_env.device import get_device
 from rl_algo_impls.shared.data_store.in_process_data_store_accessor import (
     InProcessDataStoreAccessor,
 )
@@ -104,7 +105,7 @@ class SelfPlayWrapper(VectorWrapper, Generic[ObsType]):
     def initialize_selfplay_bots(self) -> None:
         if not self.selfplay_bots:
             return
-        from rl_algo_impls.runner.running_utils import get_device, make_eval_policy
+        from rl_algo_impls.runner.running_utils import make_eval_policy
 
         env = self.env  # Type: ignore
         device = get_device(self.config, EnvSpaces.from_vec_env(env))
