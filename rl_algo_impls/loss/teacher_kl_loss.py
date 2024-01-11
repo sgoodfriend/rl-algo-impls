@@ -20,6 +20,7 @@ class TeacherKLLoss(_Loss):
         ), f"reduction must be 'mean', got {self.reduction}"
 
     def add_to_batch(self, teacher: Policy, batch: Batch) -> Dict[str, torch.Tensor]:
+        teacher.reset_noise()
         with torch.no_grad():
             return {
                 "teacher_logprobs": teacher(

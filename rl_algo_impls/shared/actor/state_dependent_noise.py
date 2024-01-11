@@ -125,7 +125,6 @@ class StateDependentNoiseActorHead(Actor):
 
         self.exploration_mat = None
         self.exploration_matrices = None
-        self.sample_weights()
 
     def to(
         self: StateDependentNoiseActorHeadSelf,

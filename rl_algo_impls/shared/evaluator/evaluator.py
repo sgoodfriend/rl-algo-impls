@@ -94,6 +94,7 @@ def evaluate(
     score_function: str = "mean-std",
 ) -> EpisodesStats:
     policy.eval()
+    policy.reset_noise()
 
     episodes = EvaluateAccumulator(
         env.num_envs,
