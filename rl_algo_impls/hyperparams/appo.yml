@@ -137,15 +137,18 @@ CarRacing-v2-lr-by-kl: &carracing-lr-by-kl
     <<: *carracing-algo
     learning_rate: !!float 1e-5
   lr_by_kl_kwargs:
-    target_kl: 0.01
+    target_kl: 0.02
     min_decrease_fraction: 0.9
     max_increase_fraction: 1.05
   hyperparam_transitions_kwargs:
     durations:
+      - 0
       - 0.8
+      - 0
       - 0.2
       - 0
     phases:
+      - target_kl: 0.02
       - target_kl: 0.01
       - target_kl: 0.001
 
