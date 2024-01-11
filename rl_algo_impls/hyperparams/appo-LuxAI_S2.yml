@@ -342,6 +342,7 @@ LuxAI_S2-v0-j1024env32-80m-ent5-lr03-mgn4-2omh1lc-nga-tkl5c-4r-2a100:
     <<: *lux-j1024env32-80m-ent5-lr03-mgn4-2omh1lc-nga-tkl5c-a100-algo
     batch_size: 1024
   worker_hyperparams:
+    &lux-j1024env32-80m-ent5-lr03-mgn4-2omh1lc-nga-tkl5c-4r-2a100-worker
     n_rollout_workers: 4
     rollout_gpu_index: 1
     evaluator_gpu_index: 1
@@ -356,32 +357,88 @@ LuxAI_S2-v0-j1024env32-a100-debug: &lux-j1024env32-a100-debug
     prepare_steps: 0
     random_num_envs_reset_every_rollout: 0
 
-LuxAI_S2-v0-debug:
+LuxAI_S2-v0-j1024env64-80m-ent1-lr01-mgn2-base1lc-nga-tkl5cl-2r-2a100:
+  &lux-j1024env64-80m-ent1-lr01-mgn2-base1lc-nga-tkl5cl-2r-2a100
   <<: *lux-j1024env32-80m-ent5-lr03-mgn4-2omh1lc-nga-tkl5c-4r-2a100
+  algo_hyperparams:
+    &lux-j1024env64-80m-ent1-lr01-mgn2-base1lc-nga-tkl5cl-2r-2a100-algo
+    <<: *lux-j1024env32-80m-ent5-lr03-mgn4-2omh1lc-nga-tkl5c-4r-2a100-algo
+    batch_size: 256
+    ent_coef: !!float 1e-3
+    learning_rate: !!float 1e-6
+    teacher_loss_batch_size: 512
+    multi_reward_weights:
+      - 1 # WinLoss
+      - 0.1 # ice
+      - 0.1 # ore
+      - 0.1 # water
+      - 0.1 # metal
+      - 0 # power
+      - 0.1 # light bots
+      - 0.1 # heavy bots
+      - 0.1 # opponent kills
+      - 0.1 # resources lichen
+      - 0.1 # resources factory
+      - 0 # game length
+      - -0.1 # opponent resources lichen
+      - 0 # opponent resources factory
+  env_hyperparams: &lux-j1024env64-env
+    <<: *lux-j1024env32-env
+    make_kwargs: &lux-j1024env64-env-make-kwargs
+      <<: *lux-j1024env32-env-make-kwargs
+      map_size: 64
+      MAX_FACTORIES: 10
+      MIN_FACTORIES: 4
+      MAX_N_UNITS: 384
+      MAX_GLOBAL_ID: 512
+  eval_hyperparams: &lux-j1024env64-eval
+    <<: *lux-j1024env32-eval
+    env_overrides: &lux-j1024env64-eval-env-overrides
+      <<: *lux-j1024env32-eval-env-overrides
+      make_kwargs: &lux-j1024env64-eval-env-overrides-make-kwargs
+        <<: *lux-j1024env32-eval-env-overrides-make-kwargs
+        map_size: 64
+        MAX_FACTORIES: 10
+        MIN_FACTORIES: 4
+        MAX_N_UNITS: 384
+        MAX_GLOBAL_ID: 512
+  hyperparam_transitions_kwargs: null
+  policy_hyperparams:
+    &lux-j1024env64-80m-ent1-lr01-mgn2-base1lc-nga-tkl5cl-2r-2a100-policy
+    <<: *lux-j1024env32-80m-ent5-lr03-mgn4-2omh1lc-ga2-tkl5c-a100-policy
+    load_run_path: sgoodfriend/rl-algo-impls-lux-nips1/r7yljs06
+    load_run_path_best: true
+  worker_hyperparams:
+    &lux-j1024env64-80m-ent1-lr01-mgn2-base1lc-nga-tkl5cl-2r-2a100-worker
+    <<: *lux-j1024env32-80m-ent5-lr03-mgn4-2omh1lc-nga-tkl5c-4r-2a100-worker
+    n_rollout_workers: 2
+
+LuxAI_S2-v0-debug:
+  <<: *lux-j1024env64-80m-env1-lr01-mgn2-base1lc-nga-tkl5cl-2r-2a100
   n_timesteps: !!float 10e6
   device: mps
   env_hyperparams:
     # <<: *lux-j1024env16-env
-    <<: *lux-j1024env32-env
-    # <<: *lux-j1024env64-a100-env
+    # <<: *lux-j1024env32-env
+    <<: *lux-j1024env64-env
     make_kwargs:
       # <<: *lux-j1024env16-env-make-kwargs
-      <<: *lux-j1024env32-env-make-kwargs
-      # <<: *lux-j1024env64-a100-env-make-kwargs
+      # <<: *lux-j1024env32-env-make-kwargs
+      <<: *lux-j1024env64-env-make-kwargs
       verbose: 3
       verify: true
     # vec_env_class: sync
   eval_hyperparams:
     # <<: *lux-j1024env16-eval
-    <<: *lux-j1024env32-eval
-    # <<: *lux-j1024env64-a100-eval
+    # <<: *lux-j1024env32-eval
+    <<: *lux-j1024env64-eval
     env_overrides:
       # <<: *lux-j1024env16-eval-env-overrides
-      <<: *lux-j1024env32-eval-env-overrides
-      # <<: *lux-j1024env64-a100-eval-env-overrides
+      # <<: *lux-j1024env32-eval-env-overrides
+      <<: *lux-j1024env64-eval-env-overrides
       make_kwargs:
         # <<: *lux-j1024env16-eval-env-overrides-make-kwargs
-        <<: *lux-j1024env32-eval-env-overrides-make-kwargs
-        # <<: *lux-j1024env64-a100-eval-env-overrides-make-kwargs
+        # <<: *lux-j1024env32-eval-env-overrides-make-kwargs
+        <<: *lux-j1024env64-eval-env-overrides-make-kwargs
         verbose: 3
         verify: true
