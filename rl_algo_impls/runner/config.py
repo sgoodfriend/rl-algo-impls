@@ -2,6 +2,7 @@ import dataclasses
 import inspect
 import itertools
 import os
+import warnings
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Sequence, Type, TypeVar, Union
@@ -84,6 +85,9 @@ class Config:
     run_id: str = datetime.now().isoformat()
 
     def __post_init__(self) -> None:
+        self._worker_hyperparams = WorkerHyperparams(
+            **self.hyperparams.worker_hyperparams
+        )
         if self.args.device_indexes is not None:
             self.gpu_ids = self.args.device_indexes
         else:
@@ -92,8 +96,14 @@ class Config:
             gpu_ids_by_avail_memory = GPUtil.getAvailable(
                 order="memory", maxLoad=1.0, maxMemory=1.0
             )
-            self.gpu_ids = gpu_ids_by_avail_memory[:1]
+            self.gpu_ids = gpu_ids_by_avail_memory[
+                : self._worker_hyperparams.desired_num_accelerators
+            ]
         if self.gpu_ids:
+            if self._worker_hyperparams.desired_num_accelerators > len(self.gpu_ids):
+                warnings.warn(
+                    f"Desired {self._worker_hyperparams.desired_num_accelerators} GPUs but only found {len(self.gpu_ids)} GPUs"
+                )
             os.environ["CUDA_VISIBLE_DEVICES"] = ",".join(map(str, self.gpu_ids))
             import torch
 
@@ -101,6 +111,10 @@ class Config:
                 self.gpu_ids
             ), f"GPU count mismatch: {torch.cuda.device_count()} vs expected {len(self.gpu_ids)}"
             torch.set_num_threads(get_max_num_threads())
+        elif self._worker_hyperparams.desired_num_accelerators > 1:
+            warnings.warn(
+                f"No GPUs found despite desiring {self._worker_hyperparams.desired_num_accelerators} GPUs"
+            )
 
     def seed(self, training: bool = True) -> Optional[int]:
         seed = self.args.seed
@@ -234,3 +248,23 @@ class Config:
     @property
     def videos_path(self) -> str:
         return os.path.join(self.videos_dir, self.model_name())
+
+    @property
+    def worker_hyperparams(self) -> WorkerHyperparams:
+        return self._worker_hyperparams
+
+    @property
+    def worker_cuda_index(self) -> Optional[int]:
+        if self.gpu_ids:
+            return max(
+                self._worker_hyperparams.rollout_gpu_index, len(self.gpu_ids) - 1
+            )
+        return None
+
+    @property
+    def evaluator_cuda_index(self) -> Optional[int]:
+        if self.gpu_ids:
+            return max(
+                self._worker_hyperparams.evaluator_gpu_index, len(self.gpu_ids) - 1
+            )
+        return None

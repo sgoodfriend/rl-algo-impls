@@ -40,7 +40,12 @@ class EvaluatorActor:
     ) -> None:
         from rl_algo_impls.utils.ray import init_ray_actor
 
-        init_ray_actor(cuda_visible_devices=config.gpu_ids[-1:])
+        evaluator_cuda_index = config.evaluator_cuda_index
+        init_ray_actor(
+            cuda_visible_devices=[evaluator_cuda_index]
+            if evaluator_cuda_index is not None
+            else []
+        )
         logging.basicConfig(level=logging.INFO, handlers=[])
         tb_writer.maybe_add_logging_handler()
 

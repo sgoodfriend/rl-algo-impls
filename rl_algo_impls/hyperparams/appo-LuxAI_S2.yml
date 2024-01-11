@@ -334,6 +334,18 @@ LuxAI_S2-v0-j1024env32-80m-ent5-lr03-mgn4-2omh1lc-nga-tkl5c-a100:
     <<: *lux-j1024env32-80m-ent5-lr03-mgn4-2omh1lc-ga2-tkl5c-a100-algo
     gradient_accumulation: false
 
+LuxAI_S2-v0-j1024env32-80m-ent5-lr03-mgn4-2omh1lc-nga-tkl5c-4r-2a100:
+  &lux-j1024env32-80m-ent5-lr03-mgn4-2omh1lc-nga-tkl5c-4r-2a100
+  <<: *lux-j1024env32-80m-ent5-lr03-mgn4-2omh1lc-nga-tkl5c-a100
+  algo_hyperparams:
+    &lux-j1024env32-80m-ent5-lr03-mgn4-2omh1lc-nga-tkl5c-4r-2a100-algo
+    <<: *lux-j1024env32-80m-ent5-lr03-mgn4-2omh1lc-nga-tkl5c-a100-algo
+    batch_size: 1024
+  worker_hyperparams:
+    n_rollout_workers: 4
+    rollout_gpu_index: 1
+    evaluator_gpu_index: 1
+
 LuxAI_S2-v0-j1024env32-a100-debug: &lux-j1024env32-a100-debug
   <<: *lux-j1024env32-80m-ent5-lr03-mgn4-2omh1lc-nga-tkl5c-a100
   algo_hyperparams: &lux-j1024env32-a100-debug-algo
@@ -345,7 +357,7 @@ LuxAI_S2-v0-j1024env32-a100-debug: &lux-j1024env32-a100-debug
     random_num_envs_reset_every_rollout: 0
 
 LuxAI_S2-v0-debug:
-  <<: *lux-j1024env32-a100-debug
+  <<: *lux-j1024env32-80m-ent5-lr03-mgn4-2omh1lc-nga-tkl5c-4r-2a100
   n_timesteps: !!float 10e6
   device: mps
   env_hyperparams:
