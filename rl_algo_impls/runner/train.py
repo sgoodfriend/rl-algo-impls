@@ -20,7 +20,6 @@ from rl_algo_impls.rollout.in_process_rollout_generator import InProcessRolloutG
 from rl_algo_impls.rollout.remote_rollout_generator import RemoteRolloutGenerator
 from rl_algo_impls.runner.config import Config, TrainArgs
 from rl_algo_impls.runner.running_utils import (
-    get_device,
     hparam_dict,
     initialize_policy_algo_data_store_view,
     load_hyperparams,
@@ -44,6 +43,7 @@ from rl_algo_impls.shared.summary_wrapper.in_process_summary_wrapper import (
 from rl_algo_impls.shared.summary_wrapper.remote_summary_wrapper import (
     RemoteSummaryWrapper,
 )
+from rl_algo_impls.shared.vec_env.device import get_device
 from rl_algo_impls.utils.ray import maybe_init_ray
 from rl_algo_impls.wrappers.self_play_wrapper import SelfPlayWrapper
 from rl_algo_impls.wrappers.vector_wrapper import find_wrapper

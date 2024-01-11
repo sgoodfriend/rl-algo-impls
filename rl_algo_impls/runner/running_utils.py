@@ -12,7 +12,6 @@ import numpy as np
 import torch
 import torch.backends.cudnn
 import yaml
-from gymnasium.spaces import Box, Discrete
 
 import wandb
 from rl_algo_impls.a2c.a2c import A2C
@@ -36,7 +35,7 @@ from rl_algo_impls.shared.summary_wrapper.abstract_summary_wrapper import (
     AbstractSummaryWrapper,
 )
 from rl_algo_impls.shared.vec_env.env_spaces import EnvSpaces
-from rl_algo_impls.shared.vec_env.utils import import_for_env_id, is_microrts
+from rl_algo_impls.shared.vec_env.utils import import_for_env_id
 
 ALGOS: Dict[str, Type[Algorithm]] = {
     # "dqn": DQN,
@@ -135,32 +134,6 @@ def load_hyperparam_dict_by_env_id(algo: str, env_id: str) -> Optional[Dict[str,
     if env_id in hyperparams_dict:
         return hyperparams_dict[env_id]
     return None
-
-
-def get_device(config: Config, env_spaces: EnvSpaces) -> torch.device:
-    device = config.device
-    # cuda by default
-    if device == "auto":
-        device = "cuda"
-        # Apple MPS is a second choice (sometimes)
-        if device == "cuda" and not torch.cuda.is_available():
-            device = "mps"
-        # If no MPS, fallback to cpu
-        if device == "mps" and not torch.backends.mps.is_available():
-            device = "cpu"
-        # Simple environments like Discreet and 1-D Boxes might also be better
-        # served with the CPU.
-        if device == "mps":
-            obs_space = env_spaces.single_observation_space
-            if isinstance(obs_space, Discrete):
-                device = "cpu"
-            elif isinstance(obs_space, Box) and len(obs_space.shape) == 1:
-                device = "cpu"
-            if is_microrts(config):
-                device = "cpu"
-
-    logging.info(f"Device: {device}")
-    return torch.device(device)
 
 
 def set_device_optimizations(
