@@ -5,7 +5,8 @@ from typing import List, Optional
 import numpy as np
 
 import wandb
-from rl_algo_impls.runner.config import Config, EnvHyperparams, RunArgs
+from rl_algo_impls.runner.env_hyperparams import EnvHyperparams
+from rl_algo_impls.runner.config import Config, RunArgs
 from rl_algo_impls.runner.evaluate import Evaluation
 from rl_algo_impls.shared.vec_env.device import get_device
 from rl_algo_impls.runner.running_utils import (

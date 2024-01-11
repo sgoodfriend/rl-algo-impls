@@ -8,7 +8,7 @@ from typing import NamedTuple
 import numpy as np
 
 from rl_algo_impls.lux.vec_env.lux_replay_env import LuxReplayEnv
-from rl_algo_impls.runner.config import EnvHyperparams
+from rl_algo_impls.runner.env_hyperparams import EnvHyperparams
 from rl_algo_impls.runner.running_utils import load_hyperparams
 
 

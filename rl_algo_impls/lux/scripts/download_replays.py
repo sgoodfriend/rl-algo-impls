@@ -11,7 +11,7 @@ import polars as pl
 import requests
 
 from rl_algo_impls.lux.scripts.replay_preprocess import replays_to_npz
-from rl_algo_impls.runner.config import EnvHyperparams
+from rl_algo_impls.runner.env_hyperparams import EnvHyperparams
 from rl_algo_impls.runner.running_utils import load_hyperparams
 
 LUX_COMPETITION_ID = 45040

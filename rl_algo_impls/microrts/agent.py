@@ -25,7 +25,8 @@ from rl_algo_impls.microrts.map_size_policy_picker import (
     MapSizePolicyPicker,
     PickerArgs,
 )
-from rl_algo_impls.runner.config import Config, EnvHyperparams, RunArgs
+from rl_algo_impls.runner.config import Config, RunArgs
+from rl_algo_impls.runner.env_hyperparams import EnvHyperparams
 from rl_algo_impls.runner.running_utils import load_hyperparams
 from rl_algo_impls.shared.vec_env.device import get_device
 from rl_algo_impls.shared.vec_env.make_env import make_eval_env
