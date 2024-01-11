@@ -259,15 +259,17 @@ class Config:
     @property
     def worker_cuda_index(self) -> Optional[int]:
         if self.gpu_ids:
-            return max(
+            gpu_idx = max(
                 self._worker_hyperparams.rollout_gpu_index, len(self.gpu_ids) - 1
             )
+            return self.gpu_ids[gpu_idx]
         return None
 
     @property
     def evaluator_cuda_index(self) -> Optional[int]:
         if self.gpu_ids:
-            return max(
+            gpu_idx = max(
                 self._worker_hyperparams.evaluator_gpu_index, len(self.gpu_ids) - 1
             )
+            return self.gpu_ids[gpu_idx]
         return None
