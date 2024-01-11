@@ -82,42 +82,13 @@ class Config:
     args: RunArgs
     hyperparams: Hyperparams
     root_dir: str
+    gpu_ids: Optional[List[int]] = None
     run_id: str = datetime.now().isoformat()
 
     def __post_init__(self) -> None:
         self._worker_hyperparams = WorkerHyperparams(
             **self.hyperparams.worker_hyperparams
         )
-        if self.args.device_indexes is not None:
-            self.gpu_ids = self.args.device_indexes
-        else:
-            import GPUtil
-
-            gpu_ids_by_avail_memory = GPUtil.getAvailable(
-                order="memory",
-                maxLoad=1.0,
-                maxMemory=1.0,
-                limit=self._worker_hyperparams.desired_num_accelerators,
-            )
-            self.gpu_ids = gpu_ids_by_avail_memory[
-                : self._worker_hyperparams.desired_num_accelerators
-            ]
-        if self.gpu_ids:
-            if self._worker_hyperparams.desired_num_accelerators > len(self.gpu_ids):
-                warnings.warn(
-                    f"Desired {self._worker_hyperparams.desired_num_accelerators} GPUs but only found {len(self.gpu_ids)} GPUs"
-                )
-            os.environ["CUDA_VISIBLE_DEVICES"] = ",".join(map(str, self.gpu_ids))
-            import torch
-
-            assert torch.cuda.device_count() == len(
-                self.gpu_ids
-            ), f"GPU count mismatch: {torch.cuda.device_count()} vs expected {len(self.gpu_ids)}"
-            torch.set_num_threads(get_max_num_threads())
-        elif self._worker_hyperparams.desired_num_accelerators > 1:
-            warnings.warn(
-                f"No GPUs found despite desiring {self._worker_hyperparams.desired_num_accelerators} GPUs"
-            )
 
     def seed(self, training: bool = True) -> Optional[int]:
         seed = self.args.seed
