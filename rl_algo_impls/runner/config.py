@@ -94,7 +94,10 @@ class Config:
             import GPUtil
 
             gpu_ids_by_avail_memory = GPUtil.getAvailable(
-                order="memory", maxLoad=1.0, maxMemory=1.0
+                order="memory",
+                maxLoad=1.0,
+                maxMemory=1.0,
+                limit=self._worker_hyperparams.desired_num_accelerators,
             )
             self.gpu_ids = gpu_ids_by_avail_memory[
                 : self._worker_hyperparams.desired_num_accelerators
