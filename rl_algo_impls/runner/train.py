@@ -43,7 +43,7 @@ from rl_algo_impls.shared.summary_wrapper.in_process_summary_wrapper import (
 from rl_algo_impls.shared.summary_wrapper.remote_summary_wrapper import (
     RemoteSummaryWrapper,
 )
-from rl_algo_impls.utils.device import get_device
+from rl_algo_impls.utils.device import get_device, initialize_cuda_devices
 from rl_algo_impls.utils.ray import maybe_init_ray
 from rl_algo_impls.wrappers.self_play_wrapper import SelfPlayWrapper
 from rl_algo_impls.wrappers.vector_wrapper import find_wrapper
@@ -54,7 +54,8 @@ def train(args: TrainArgs):
     logging.info(args)
     hyperparams = load_hyperparams(args.algo, args.env)
     logging.info(hyperparams)
-    config = Config(args, hyperparams, os.getcwd())
+    gpu_ids = initialize_cuda_devices(args, hyperparams)
+    config = Config(args, hyperparams, os.getcwd(), gpu_ids=gpu_ids)
     maybe_init_ray(config)
 
     if config.process_mode == "sync":
