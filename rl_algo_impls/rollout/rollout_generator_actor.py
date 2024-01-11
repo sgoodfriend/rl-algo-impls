@@ -21,13 +21,14 @@ class RolloutGeneratorActor:
         config: "Config",
         data_store_accessor: "AbstractDataStoreAccessor",
         tb_writer: "AbstractSummaryWrapper",
+        rollout_worker_idx: int,
     ) -> None:
         from rl_algo_impls.utils.ray import init_ray_actor
 
-        worker_cuda_index = config.worker_cuda_index
+        rollout_cuda_index = config.rollout_cuda_index(rollout_worker_idx)
         init_ray_actor(
-            cuda_visible_devices=[worker_cuda_index]
-            if worker_cuda_index is not None
+            cuda_visible_devices=[rollout_cuda_index]
+            if rollout_cuda_index is not None
             else []
         )
 

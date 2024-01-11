@@ -21,8 +21,10 @@ class RemoteRolloutGenerator(RolloutGenerator):
     ) -> None:
         super().__init__()
         self.generator_actors = [
-            RolloutGeneratorActor.remote(args, config, data_store_accessor, tb_writer)
-            for _ in range(
+            RolloutGeneratorActor.remote(
+                args, config, data_store_accessor, tb_writer, rollout_worker_idx
+            )
+            for rollout_worker_idx in range(
                 config.hyperparams.worker_hyperparams.get("n_rollout_workers", 1)
             )
         ]
