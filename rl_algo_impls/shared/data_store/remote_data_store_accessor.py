@@ -1,6 +1,8 @@
+from copy import deepcopy
 from typing import Optional
 
 import ray
+import torch
 
 from rl_algo_impls.shared.data_store.abstract_data_store_accessor import (
     AbstractDataStoreAccessor,
@@ -23,6 +25,7 @@ from rl_algo_impls.shared.data_store.data_store_data import (
     RolloutView,
 )
 from rl_algo_impls.shared.evaluator.abstract_evaluator import AbstractEvaluator
+from rl_algo_impls.shared.policy.policy_state import RemotePolicyState
 from rl_algo_impls.shared.stats import EpisodesStats
 from rl_algo_impls.shared.trackable import UpdateTrackable
 
@@ -48,7 +51,7 @@ class RemoteDataStoreAccessor(AbstractDataStoreAccessor):
         ray.get(
             self.data_store_actor.initialize_learner.remote(
                 RemoteLearnerInitializeData(
-                    policy=policy,
+                    policy=deepcopy(policy).to(torch.device("cpu")),
                     algo_state=RemoteAlgorithmState(algo),
                     load_path=load_path,
                 )
@@ -59,7 +62,7 @@ class RemoteDataStoreAccessor(AbstractDataStoreAccessor):
         policy, rollout_params, timesteps_elapsed, eval_enqueue = learner_update
         self.data_store_actor.submit_learner_update.remote(
             RemoteLearnerUpdate(
-                policy,
+                RemotePolicyState(policy),
                 rollout_params,
                 timesteps_elapsed,
                 RemoteEvalEnqueue.from_eval_enqueue(eval_enqueue),
@@ -75,7 +78,9 @@ class RemoteDataStoreAccessor(AbstractDataStoreAccessor):
     def submit_checkpoint(self, checkpoint: CheckpointState) -> None:
         if not self.checkpoint_history_size:
             return
-        self.data_store_actor.submit_checkpoint.remote(checkpoint)
+        self.data_store_actor.submit_checkpoint.remote(
+            checkpoint.to(torch.device("cpu"))
+        )
 
     def load(self, load_path: str) -> None:
         ray.get(self.data_store_actor.load.remote(load_path))
