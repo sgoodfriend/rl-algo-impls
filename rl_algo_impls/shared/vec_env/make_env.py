@@ -1,7 +1,8 @@
 from dataclasses import asdict
 from typing import Any, Dict, Optional
 
-from rl_algo_impls.runner.config import Config, EnvHyperparams
+from rl_algo_impls.runner.config import Config
+from rl_algo_impls.runner.env_hyperparams import EnvHyperparams
 from rl_algo_impls.shared.data_store.data_store_view import VectorEnvDataStoreView
 from rl_algo_impls.shared.summary_wrapper.abstract_summary_wrapper import (
     AbstractSummaryWrapper,

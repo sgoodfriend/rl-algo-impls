@@ -6,7 +6,8 @@ import numpy as np
 import torch
 
 from rl_algo_impls.rollout.rollout import flatten_actions_to_tensor, flatten_to_tensor
-from rl_algo_impls.runner.config import Config, EnvHyperparams, RunArgs
+from rl_algo_impls.runner.env_hyperparams import EnvHyperparams
+from rl_algo_impls.runner.config import Config, RunArgs
 from rl_algo_impls.shared.vec_env.device import get_device
 from rl_algo_impls.runner.running_utils import (
     load_hyperparams,

@@ -7,7 +7,8 @@ from typing import Dict, List, Optional
 import numpy as np
 
 from rl_algo_impls.lux.jux_verify import jux_verify_enabled
-from rl_algo_impls.runner.config import Config, EnvHyperparams
+from rl_algo_impls.runner.env_hyperparams import EnvHyperparams
+from rl_algo_impls.runner.config import Config
 from rl_algo_impls.shared.data_store.abstract_data_store_accessor import (
     AbstractDataStoreAccessor,
 )

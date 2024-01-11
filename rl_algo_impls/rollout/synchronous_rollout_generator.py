@@ -2,7 +2,8 @@ from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional
 
 from rl_algo_impls.rollout.rollout import Rollout
-from rl_algo_impls.runner.config import Config, EnvHyperparams
+from rl_algo_impls.runner.env_hyperparams import EnvHyperparams
+from rl_algo_impls.runner.config import Config
 from rl_algo_impls.shared.vec_env.device import get_device
 from rl_algo_impls.shared.data_store.abstract_data_store_accessor import (
     AbstractDataStoreAccessor,
