@@ -391,7 +391,7 @@ LuxAI_S2-v0-j512env64-80m-ent1-lr01-mgn2-base1lc-nga-tkl5cl-2r-2a100:
       MAX_FACTORIES: 10
       MIN_FACTORIES: 4
       MAX_N_UNITS: 384
-      MAX_GLOBAL_ID: 512
+      MAX_GLOBAL_ID: 768
   eval_hyperparams: &lux-j512env64-eval
     <<: *lux-j1024env32-eval
     env_overrides: &lux-j512env64-eval-env-overrides
@@ -402,7 +402,7 @@ LuxAI_S2-v0-j512env64-80m-ent1-lr01-mgn2-base1lc-nga-tkl5cl-2r-2a100:
         MAX_FACTORIES: 10
         MIN_FACTORIES: 4
         MAX_N_UNITS: 384
-        MAX_GLOBAL_ID: 512
+        MAX_GLOBAL_ID: 768
   hyperparam_transitions_kwargs: null
   policy_hyperparams:
     &lux-j512env64-80m-ent1-lr01-mgn2-base1lc-nga-tkl5cl-2r-2a100-policy
