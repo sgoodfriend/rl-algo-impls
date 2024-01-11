@@ -135,8 +135,9 @@ class SyncStepRolloutGenerator(SynchronousRolloutGenerator):
         (
             policy,
             rollout_params,
-            self.tb_writer.timesteps_elapsed,
+            timesteps_elapsed,
         ) = rollout_view
+        self.tb_writer.on_timesteps_elapsed(timesteps_elapsed)
         self.update_rollout_params(rollout_params)
 
         self.next_obs, _ = self.vec_env.reset()
@@ -185,8 +186,9 @@ class SyncStepRolloutGenerator(SynchronousRolloutGenerator):
         (
             policy,
             rollout_params,
-            self.tb_writer.timesteps_elapsed,
+            timesteps_elapsed,
         ) = rollout_view
+        self.tb_writer.on_timesteps_elapsed(timesteps_elapsed)
         self.update_rollout_params(rollout_params)
         log_scalars(self.tb_writer, "charts", rollout_params)
 
@@ -200,7 +202,6 @@ class SyncStepRolloutGenerator(SynchronousRolloutGenerator):
         )
 
         return VecRollout(
-            device=policy.device,
             next_episode_starts=self.next_episode_starts,
             next_values=next_values,
             obs=self.obs,

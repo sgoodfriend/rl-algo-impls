@@ -37,7 +37,6 @@ class VecRollout(Rollout):
 
     def __init__(
         self,
-        device: torch.device,
         next_episode_starts: np.ndarray,
         next_values: np.ndarray,
         obs: np.ndarray,
@@ -55,7 +54,6 @@ class VecRollout(Rollout):
         action_plane_space: Optional[MultiDiscrete] = None,
     ) -> None:
         super().__init__()
-        self.device = device
         self.obs = obs
         self.actions = actions
         self.rewards = rewards
@@ -110,8 +108,7 @@ class VecRollout(Rollout):
             1 if self.total_steps % batch_size else 0
         )
 
-    def batch(self) -> Batch:
-        device = torch.device("cpu") if self.full_batch_off_accelerator else self.device
+    def batch(self, device: torch.device) -> Batch:
         if self._batch is None:
             b_obs = flatten_to_tensor(self.obs, device)
             b_logprobs = (
@@ -152,19 +149,27 @@ class VecRollout(Rollout):
             )
         return self._batch
 
-    def add_to_batch(self, map_fn: BatchMapFn, batch_size: int) -> None:
-        batch = self.batch()
+    def add_to_batch(
+        self, map_fn: BatchMapFn, batch_size: int, device: torch.device
+    ) -> None:
+        batch = self.batch(
+            torch.device("cpu") if self.full_batch_off_accelerator else device
+        )
         to_add: DefaultDict[str, List[torch.Tensor]] = defaultdict(list)
         for i in range(0, self.total_steps, batch_size):
-            mb_dict = map_fn(batch[torch.arange(i, i + batch_size)].to(self.device))
+            mb_dict = map_fn(batch[torch.arange(i, i + batch_size)].to(device))
             for k, v in mb_dict.items():
                 to_add[k].append(v)
         batch.additional.update(
             {k: torch.cat(v).to(batch.device) for k, v in to_add.items()}
         )
 
-    def minibatches(self, batch_size: int, shuffle: bool = True) -> Iterator[Batch]:
-        batch = self.batch()
+    def minibatches(
+        self, batch_size: int, device: torch.device, shuffle: bool = True
+    ) -> Iterator[Batch]:
+        batch = self.batch(
+            torch.device("cpu") if self.full_batch_off_accelerator else device
+        )
         b_idxs = (
             torch.randperm(self.total_steps)
             if shuffle
@@ -172,4 +177,4 @@ class VecRollout(Rollout):
         )
         for i in range(0, self.total_steps, batch_size):
             mb_idxs = b_idxs[i : i + batch_size]
-            yield batch[mb_idxs].to(self.device)
+            yield batch[mb_idxs].to(device)

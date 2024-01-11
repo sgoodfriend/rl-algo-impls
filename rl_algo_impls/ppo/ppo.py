@@ -248,6 +248,7 @@ class PPO(Algorithm):
             r.add_to_batch(
                 lambda batch: teacher_kl_loss_fn.add_to_batch(teacher_policy, batch),
                 self.batch_size,
+                self.device,
             )
         elif teacher_policy is not None:
             warnings.warn(
@@ -291,7 +292,9 @@ class PPO(Algorithm):
             step_stats.clear()
             grad_norms.clear()
             mb_idx = 0
-            for mb in r.minibatches(self.batch_size, shuffle=shuffle_minibatches):
+            for mb in r.minibatches(
+                self.batch_size, self.device, shuffle=shuffle_minibatches
+            ):
                 mb_idx += 1
                 self.policy.reset_noise(self.batch_size)
 
