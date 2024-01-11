@@ -15,12 +15,12 @@ from rl_algo_impls.shared.data_store.data_store_data import (
 )
 from rl_algo_impls.shared.evaluator.abstract_evaluator import AbstractEvaluator
 from rl_algo_impls.shared.stats import EpisodesStats
-from rl_algo_impls.shared.trackable import Trackable, TrackableState, UpdateTrackable
+from rl_algo_impls.shared.trackable import TrackableState, UpdateTrackable
 from rl_algo_impls.utils.ray import init_ray_actor
 
 if TYPE_CHECKING:
-    from rl_algo_impls.rollout.rollout import Rollout
     from rl_algo_impls.shared.policy.policy import Policy
+    from rl_algo_impls.shared.policy.policy_state import RemotePolicyState
 
 
 class RemoteLearnerInitializeData(NamedTuple):
@@ -43,10 +43,16 @@ class RemoteEvalEnqueue(NamedTuple):
 
 
 class RemoteLearnerUpdate(NamedTuple):
-    policy: "Policy"
+    policy_state: "RemotePolicyState"
     rollout_params: Dict[str, Any]
     timesteps_elapsed: int
     eval_enqueue: Optional[RemoteEvalEnqueue]
+
+
+class RemoteCheckpointState(NamedTuple):
+    policy_state: "RemotePolicyState"
+    algo_state: TrackableState
+    env_states: Dict[str, TrackableState]
 
 
 @ray.remote
@@ -108,11 +114,13 @@ class DataStoreActor:
 
     def submit_learner_update(self, learner_update: RemoteLearnerUpdate) -> None:
         (
-            self.latest_policy,
+            latest_policy_state,
             self.rollout_params,
             self.timesteps_elapsed,
             eval_enqueue,
         ) = learner_update
+        assert self.latest_policy is not None, "Must initialize_learner first"
+        latest_policy_state.set_on_policy(self.latest_policy)
 
         if eval_enqueue:
             self.enqueue_latest_policy(eval_enqueue)

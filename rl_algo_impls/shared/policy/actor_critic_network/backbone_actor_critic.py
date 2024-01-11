@@ -23,7 +23,8 @@ from rl_algo_impls.shared.policy.actor_critic_network.network import (
     ACNForward,
     ActorCriticNetwork,
 )
-from rl_algo_impls.shared.policy.policy import ACTIVATION, MODEL_FILENAME
+from rl_algo_impls.shared.policy.policy import ACTIVATION
+from rl_algo_impls.shared.policy.policy import MODEL_FILENAME
 
 CRITIC_FILENAME = "critic.pth"
 

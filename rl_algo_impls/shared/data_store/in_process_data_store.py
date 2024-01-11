@@ -4,7 +4,6 @@ from rl_algo_impls.shared.data_store.data_store_data import CheckpointState
 from rl_algo_impls.shared.trackable import Trackable
 
 if TYPE_CHECKING:
-    from rl_algo_impls.shared.algorithm import Algorithm
     from rl_algo_impls.shared.policy.policy import Policy
 
 

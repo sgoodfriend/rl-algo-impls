@@ -227,7 +227,7 @@ def initialize_policy_algo_data_store_view(
     data_store_accessor.initialize_learner(
         LearnerInitializeData(policy=policy, algo=algo, load_path=load_path)
     )
-    return policy, algo, LearnerDataStoreView(data_store_accessor)
+    return policy, algo, LearnerDataStoreView(data_store_accessor, device)
 
 
 Scalar = Union[bool, str, float, int, None]
