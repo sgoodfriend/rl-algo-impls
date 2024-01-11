@@ -7,7 +7,6 @@ import torch
 import torch.nn as nn
 
 from rl_algo_impls.shared.tensor_utils import NumpyOrDict, TensorOrDict, numpy_to_tensor
-from rl_algo_impls.shared.trackable import Trackable
 from rl_algo_impls.shared.vec_env.env_spaces import EnvSpaces
 from rl_algo_impls.wrappers.vector_wrapper import ObsType
 
@@ -21,11 +20,10 @@ ACTIVATION: Dict[str, Type[nn.Module]] = {
 
 MODEL_FILENAME = "model.pth"
 
-
 PolicySelf = TypeVar("PolicySelf", bound="Policy")
 
 
-class Policy(nn.Module, Trackable, ABC, Generic[ObsType]):
+class Policy(nn.Module, ABC, Generic[ObsType]):
     @abstractmethod
     def __init__(
         self,
@@ -36,10 +34,6 @@ class Policy(nn.Module, Trackable, ABC, Generic[ObsType]):
         self.env_spaces = env_spaces
 
         self._device = None
-
-    @property
-    def name(self) -> str:
-        return MODEL_FILENAME
 
     def to(
         self: PolicySelf,
