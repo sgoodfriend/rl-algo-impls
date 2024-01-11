@@ -414,7 +414,7 @@ LuxAI_S2-v0-j1024env64-80m-ent1-lr01-mgn2-base1lc-nga-tkl5cl-2r-2a100:
     n_rollout_workers: 2
 
 LuxAI_S2-v0-debug:
-  <<: *lux-j1024env64-80m-env1-lr01-mgn2-base1lc-nga-tkl5cl-2r-2a100
+  <<: *lux-j1024env64-80m-ent1-lr01-mgn2-base1lc-nga-tkl5cl-2r-2a100
   n_timesteps: !!float 10e6
   device: mps
   env_hyperparams:
