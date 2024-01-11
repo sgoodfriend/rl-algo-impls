@@ -148,7 +148,7 @@ CarRacing-v2-lr-by-kl: &carracing-lr-by-kl
       - 0.2
       - 0
     phases:
-      - target_kl: 0.02
+      - target_kl: 0.03
       - target_kl: 0.01
       - target_kl: 0.001
 
