@@ -24,7 +24,12 @@ class RolloutGeneratorActor:
     ) -> None:
         from rl_algo_impls.utils.ray import init_ray_actor
 
-        init_ray_actor(cuda_visible_devices=config.gpu_ids[-1:])
+        worker_cuda_index = config.worker_cuda_index
+        init_ray_actor(
+            cuda_visible_devices=[worker_cuda_index]
+            if worker_cuda_index is not None
+            else []
+        )
 
         from rl_algo_impls.rollout import create_synchronous_rollout_generator
 
