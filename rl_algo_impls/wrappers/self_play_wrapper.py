@@ -6,7 +6,7 @@ import numpy as np
 from gymnasium.experimental.vector.utils import batch_space
 
 from rl_algo_impls.runner.config import Config
-from rl_algo_impls.shared.vec_env.device import get_device
+from rl_algo_impls.utils.device import get_device
 from rl_algo_impls.shared.data_store.in_process_data_store_accessor import (
     InProcessDataStoreAccessor,
 )

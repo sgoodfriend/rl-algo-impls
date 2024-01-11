@@ -20,7 +20,7 @@ from rl_algo_impls.shared.summary_wrapper.abstract_summary_wrapper import (
     AbstractSummaryWrapper,
 )
 from rl_algo_impls.shared.tensor_utils import batch_dict_keys
-from rl_algo_impls.shared.vec_env.device import get_device
+from rl_algo_impls.utils.device import get_device
 from rl_algo_impls.shared.vec_env.env_spaces import EnvSpaces
 from rl_algo_impls.shared.vec_env.make_env import make_eval_env
 from rl_algo_impls.wrappers.self_play_wrapper import SelfPlayWrapper
