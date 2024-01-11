@@ -366,6 +366,7 @@ class ActorCritic(OnPolicy, Generic[ObsType]):
             self.network.set_state(state)
         else:
             super().load_state(state)
+        self.reset_noise()
 
     def save(self, path: str) -> None:
         if (
