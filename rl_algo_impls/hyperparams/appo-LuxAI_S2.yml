@@ -415,6 +415,18 @@ LuxAI_S2-v0-j512env64-80m-ent1-lr01-mgn2-base1lc-nga-tkl5cl-2r-2a100:
     n_rollout_workers: 2
     evaluator_gpu_index: 0
 
+LuxAI_S2-v0-j256env64-80m-ent1-lr01-mgn2-base1lc-nga-tkl5cl-3r-2a100:
+  &lux-j256env64-80m-ent1-lr01-mgn2-base1lc-nga-tkl5cl-3r-2a100
+  <<: *lux-j512env64-80m-ent1-lr01-mgn2-base1lc-nga-tkl5cl-2r-2a100
+  env_hyperparams:
+    <<: *lux-j512env64-env
+    n_envs: 256
+  worker_hyperparams:
+    &lux-j256env64-80m-ent1-lr01-mgn2-base1lc-nga-tkl5cl-3r-2a100-worker
+    <<: *lux-j512env64-80m-ent1-lr01-mgn2-base1lc-nga-tkl5cl-2r-2a100-worker
+    n_rollout_workers: 3
+    evaluator_gpu_index: 1
+
 LuxAI_S2-v0-debug:
   <<: *lux-j512env64-80m-ent1-lr01-mgn2-base1lc-nga-tkl5cl-2r-2a100
   n_timesteps: !!float 10e6
