@@ -113,6 +113,7 @@ class A2C(Algorithm):
             )
             for mb in r.minibatches(
                 r.total_steps // self.num_minibatches,
+                self.device,
                 shuffle=not self.gradient_accumulation,
             ):
                 (

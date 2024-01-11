@@ -206,6 +206,7 @@ class APPO(Algorithm):
                                 self.teacher_loss_batch_size
                                 if self.teacher_loss_batch_size is not None
                                 else self.batch_size,
+                                self.device,
                             )
                     elif teacher_policy is not None:
                         warnings.warn(
@@ -216,7 +217,7 @@ class APPO(Algorithm):
 
                     mb_idx = 0
                     for mb in r.minibatches(
-                        self.batch_size, shuffle=shuffle_minibatches
+                        self.batch_size, self.device, shuffle=shuffle_minibatches
                     ):
                         mb_idx += 1
                         self.policy.reset_noise(self.batch_size)
