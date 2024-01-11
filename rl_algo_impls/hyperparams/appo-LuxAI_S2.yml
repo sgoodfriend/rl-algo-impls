@@ -409,6 +409,11 @@ LuxAI_S2-v0-j512env64-80m-ent1-lr01-mgn2-base1lc-nga-tkl5cl-2r-2a100:
     <<: *lux-j1024env32-80m-ent5-lr03-mgn4-2omh1lc-ga2-tkl5c-a100-policy
     load_run_path: sgoodfriend/rl-algo-impls-lux-nips1/r7yljs06
     load_run_path_best: true
+  rollout_hyperparams:
+    &lux-j512env64-80m-ent1-lr01-mgn2-base1lc-nga-tkl5cl-2r-2a100-rollout
+    <<: *lux-j1024env16-80m-ent5-lr2c-mgn2-2o3m4h-nga-async-a100-rollout
+    rolling_num_envs_reset_every_prepare_step: 16
+    random_num_envs_reset_every_rollout: 2
   worker_hyperparams:
     &lux-j512env64-80m-ent1-lr01-mgn2-base1lc-nga-tkl5cl-2r-2a100-worker
     <<: *lux-j1024env32-80m-ent5-lr03-mgn4-2omh1lc-nga-tkl5c-4r-2a100-worker
@@ -421,6 +426,10 @@ LuxAI_S2-v0-j256env64-80m-ent1-lr01-mgn2-base1lc-nga-tkl5cl-3r-2a100:
   env_hyperparams:
     <<: *lux-j512env64-env
     n_envs: 256
+  rollout_hyperparams:
+    &lux-j256env64-80m-ent1-lr01-mgn2-base1lc-nga-tkl5cl-3r-2a100-rollout
+    <<: *lux-j512env64-80m-ent1-lr01-mgn2-base1lc-nga-tkl5cl-2r-2a100-rollout
+    n_steps: 64
   worker_hyperparams:
     &lux-j256env64-80m-ent1-lr01-mgn2-base1lc-nga-tkl5cl-3r-2a100-worker
     <<: *lux-j512env64-80m-ent1-lr01-mgn2-base1lc-nga-tkl5cl-2r-2a100-worker
