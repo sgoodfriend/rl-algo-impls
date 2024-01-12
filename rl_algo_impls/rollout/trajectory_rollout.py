@@ -16,7 +16,6 @@ class TrajectoryRollout(Rollout):
     def __init__(
         self,
         trajectories: List[Trajectory],
-        scale_advantage_by_values_accuracy: bool = False,
         full_batch_off_accelerator: bool = True,  # Unused: Assumed True
         subaction_mask: Optional[Dict[int, Dict[int, int]]] = None,
         action_plane_space: Optional[MultiDiscrete] = None,
@@ -43,11 +42,7 @@ class TrajectoryRollout(Rollout):
         )
 
         self.returns = advantages + self.values
-
-        assert (
-            not scale_advantage_by_values_accuracy
-        ), f"{self.__class__.__name__} doesn't implement scale_advantage_by_values_accuracy"
-
+        
         batch_device = torch.device("cpu")
         self.batch = Batch(
             obs=torch.from_numpy(obs).to(batch_device),

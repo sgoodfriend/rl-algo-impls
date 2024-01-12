@@ -48,7 +48,6 @@ class VecRollout(Rollout):
         action_masks: Optional[NumpyOrDict],
         gamma: NumOrArray,
         gae_lambda: NumOrArray,
-        scale_advantage_by_values_accuracy: bool = False,
         full_batch_off_accelerator: bool = False,
         subaction_mask: Optional[Dict[int, Dict[int, int]]] = None,
         action_plane_space: Optional[MultiDiscrete] = None,
@@ -61,7 +60,6 @@ class VecRollout(Rollout):
         self.values = values
         self.logprobs = logprobs
         self.action_masks = action_masks
-        self.scale_advantage_by_values_accuracy = scale_advantage_by_values_accuracy
         self.full_batch_off_accelerator = full_batch_off_accelerator
 
         self.num_actions = num_actions(
@@ -86,10 +84,6 @@ class VecRollout(Rollout):
         self.returns = self.advantages + self.values
         self._y_true = self.returns.reshape((-1,) + self.returns.shape[2:])
 
-        if self.scale_advantage_by_values_accuracy:
-            self.advantages *= np.exp(
-                -np.abs(self.values - self.returns) / self.returns.ptp()
-            )
 
     @property
     def y_true(self) -> np.ndarray:

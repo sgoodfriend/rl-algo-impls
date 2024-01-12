@@ -1303,7 +1303,7 @@ Microrts-squnet-d16-128-iMayari: &microrts-squnet-d16-128-imayari
     score_reward_kwargs: null
   rollout_hyperparams:
     <<: *microrts-ai-rollout-defaults
-    scale_advantage_by_values_accuracy: true
+    # scale_advantage_by_values_accuracy: true
     gamma: 0.999
     gae_lambda: 0.99
   policy_hyperparams: &microrts-squnet-d16-128-imayari-policy
