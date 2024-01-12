@@ -1,14 +1,13 @@
 import os
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Generic, Optional, Type, TypeVar, Union
+from typing import Any, Dict, Optional, Type, TypeVar, Union
 
-import numpy as np
 import torch
 import torch.nn as nn
 
+from rl_algo_impls.shared.policy.abstract_policy import AbstractPolicy
 from rl_algo_impls.shared.tensor_utils import NumpyOrDict, TensorOrDict, numpy_to_tensor
 from rl_algo_impls.shared.vec_env.env_spaces import EnvSpaces
-from rl_algo_impls.wrappers.vector_wrapper import ObsType
 
 ACTIVATION: Dict[str, Type[nn.Module]] = {
     "tanh": nn.Tanh,
@@ -23,7 +22,7 @@ MODEL_FILENAME = "model.pth"
 PolicySelf = TypeVar("PolicySelf", bound="Policy")
 
 
-class Policy(nn.Module, ABC, Generic[ObsType]):
+class Policy(nn.Module, AbstractPolicy, ABC):
     @abstractmethod
     def __init__(
         self,
@@ -49,15 +48,6 @@ class Policy(nn.Module, ABC, Generic[ObsType]):
     def device(self) -> torch.device:
         assert self._device, "Expect device to be set"
         return self._device
-
-    @abstractmethod
-    def act(
-        self,
-        obs: ObsType,
-        deterministic: bool = True,
-        action_masks: Optional[NumpyOrDict] = None,
-    ) -> np.ndarray:
-        ...
 
     def save(self, path: str) -> None:
         os.makedirs(path, exist_ok=True)

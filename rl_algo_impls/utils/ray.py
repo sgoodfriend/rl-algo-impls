@@ -25,9 +25,15 @@ def maybe_init_ray(config: "Config") -> None:
     import ray
 
     num_workers = config.hyperparams.worker_hyperparams.get("n_rollout_workers", 1)
+    num_checkpoints = config.hyperparams.checkpoints_kwargs.get("history_size", 0)
 
     ray.init(
-        num_cpus=num_workers + 3,  # 3 for data store, evaluator, and summary writer
+        num_cpus=(
+            num_workers
+            + num_checkpoints
+            + 3  # 3 for data store, evaluator, and summary writer
+            + 3  # 3 for latest, eval, and buffer policies
+        ),
     )
 
 

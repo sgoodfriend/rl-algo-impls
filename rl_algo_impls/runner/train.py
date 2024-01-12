@@ -70,9 +70,7 @@ def train(args: TrainArgs):
     set_seeds(args.seed)
 
     if config.process_mode == "async":
-        data_store_accessor = RemoteDataStoreAccessor(
-            **(config.hyperparams.checkpoints_kwargs or {})
-        )
+        data_store_accessor = RemoteDataStoreAccessor(config)
         rollout_generator = RemoteRolloutGenerator(
             args, config, data_store_accessor, tb_writer
         )

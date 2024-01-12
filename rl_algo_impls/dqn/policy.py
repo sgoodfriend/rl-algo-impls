@@ -55,3 +55,13 @@ class DQNPolicy(Policy):
             o = self._as_tensor(obs)
             with torch.no_grad():
                 return self.q_net(o).argmax(axis=1).cpu().numpy()
+
+    def value(self, obs: ObsType) -> np.ndarray:
+        raise NotImplementedError(
+            f"value function not relevant for {self.__class__.__name__}"
+        )
+
+    def step(self, obs: ObsType, action_masks: Optional[np.ndarray] = None):
+        raise NotImplementedError(
+            f"step function not relevant for {self.__class__.__name__}"
+        )

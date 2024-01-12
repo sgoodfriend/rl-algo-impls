@@ -12,6 +12,7 @@ from rl_algo_impls.runner.config import Config
 from rl_algo_impls.shared.data_store.abstract_data_store_accessor import (
     AbstractDataStoreAccessor,
 )
+from rl_algo_impls.shared.policy.abstract_policy import AbstractPolicy
 from rl_algo_impls.shared.policy.policy import Policy
 from rl_algo_impls.shared.stats import log_scalars
 from rl_algo_impls.shared.summary_wrapper.abstract_summary_wrapper import (
@@ -220,7 +221,7 @@ class SyncStepRolloutGenerator(SynchronousRolloutGenerator):
         )
 
     def _rollout(
-        self, policy: Policy, output_next_values: bool
+        self, policy: AbstractPolicy, output_next_values: bool
     ) -> Optional[np.ndarray]:
         policy.eval()
         policy.reset_noise()

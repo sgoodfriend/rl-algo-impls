@@ -2,13 +2,11 @@ import dataclasses
 import inspect
 import itertools
 import os
-import warnings
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Sequence, Type, TypeVar, Union
 
 from rl_algo_impls.runner.worker_hyperparams import WorkerHyperparams
-from rl_algo_impls.utils.ray import get_max_num_threads
 
 RunArgsSelf = TypeVar("RunArgsSelf", bound="RunArgs")
 
@@ -244,3 +242,16 @@ class Config:
             )
             return self.gpu_ids[gpu_idx]
         return None
+
+    @property
+    def inference_cuda_index(self) -> Optional[int]:
+        if self.gpu_ids:
+            gpu_idx = min(
+                self._worker_hyperparams.inference_gpu_index, len(self.gpu_ids) - 1
+            )
+            return self.gpu_ids[gpu_idx]
+        return None
+
+    @property
+    def checkpoint_history_size(self) -> int:
+        return self.hyperparams.checkpoints_kwargs.get("history_size", 0)

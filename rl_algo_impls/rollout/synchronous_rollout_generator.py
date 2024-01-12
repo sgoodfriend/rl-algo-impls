@@ -2,9 +2,8 @@ from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional
 
 from rl_algo_impls.rollout.rollout import Rollout
-from rl_algo_impls.runner.env_hyperparams import EnvHyperparams
 from rl_algo_impls.runner.config import Config
-from rl_algo_impls.utils.device import get_device
+from rl_algo_impls.runner.env_hyperparams import EnvHyperparams
 from rl_algo_impls.shared.data_store.abstract_data_store_accessor import (
     AbstractDataStoreAccessor,
 )
@@ -36,7 +35,6 @@ class SynchronousRolloutGenerator(ABC):
         )
         self.tb_writer = tb_writer
         self._env_spaces = EnvSpaces.from_vec_env(self.vec_env)
-        self.data_store_view.device = get_device(config, self._env_spaces)
 
     @abstractmethod
     def prepare(self) -> None:
