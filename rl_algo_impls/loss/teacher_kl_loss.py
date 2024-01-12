@@ -4,7 +4,7 @@ import torch
 from torch.nn.modules.loss import _Loss
 
 from rl_algo_impls.rollout.rollout import Batch
-from rl_algo_impls.shared.policy.abstract_policy import AbstractPolicy
+from rl_algo_impls.shared.policy.policy import Policy
 
 
 class TeacherKLLoss(_Loss):
@@ -19,9 +19,7 @@ class TeacherKLLoss(_Loss):
             self.reduction == "mean"
         ), f"reduction must be 'mean', got {self.reduction}"
 
-    def add_to_batch(
-        self, teacher: AbstractPolicy, batch: Batch
-    ) -> Dict[str, torch.Tensor]:
+    def add_to_batch(self, teacher: Policy, batch: Batch) -> Dict[str, torch.Tensor]:
         teacher.reset_noise()
         with torch.no_grad():
             return {

@@ -63,9 +63,6 @@ class RemoteInferencePolicy(AbstractPolicy, Generic[ObsType]):
             )
         )
 
-    def __call__(self, *args, **kwargs) -> Any:
-        return ray.get(self.policy_actor.call.remote(self.policy_idx, *args, **kwargs))
-
     def reset_noise(self) -> None:
         return self.policy_actor.reset_noise.remote(self.policy_idx)
 
