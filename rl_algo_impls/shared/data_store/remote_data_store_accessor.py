@@ -4,6 +4,7 @@ from typing import Optional
 import ray
 import torch
 
+from rl_algo_impls.runner.config import Config
 from rl_algo_impls.shared.data_store.abstract_data_store_accessor import (
     AbstractDataStoreAccessor,
 )
@@ -25,15 +26,16 @@ from rl_algo_impls.shared.data_store.data_store_data import (
     RolloutView,
 )
 from rl_algo_impls.shared.evaluator.abstract_evaluator import AbstractEvaluator
-from rl_algo_impls.shared.policy.policy_state import RemotePolicyState
+from rl_algo_impls.shared.policy.remote_inference_policy import RemoteInferencePolicy
 from rl_algo_impls.shared.stats import EpisodesStats
 from rl_algo_impls.shared.trackable import UpdateTrackable
 
 
 class RemoteDataStoreAccessor(AbstractDataStoreAccessor):
-    def __init__(self, history_size: int = 0) -> None:
-        self.checkpoint_history_size = history_size
-        self.data_store_actor = DataStoreActor.remote(history_size)
+    def __init__(self, config: Config) -> None:
+        self.config = config
+        self.data_store_actor = DataStoreActor.remote(config)
+        self.latest_policy: Optional[RemoteInferencePolicy] = None
 
     def register_env_tracker(self, env_tracker: UpdateTrackable) -> None:
         self.data_store_actor.register_env_tracker.remote(env_tracker)
@@ -48,10 +50,13 @@ class RemoteDataStoreAccessor(AbstractDataStoreAccessor):
         if load_path:
             policy.load(load_path)
             algo.load(load_path)
+        self.latest_policy = RemoteInferencePolicy(
+            self.config.inference_cuda_index, policy
+        )
         ray.get(
             self.data_store_actor.initialize_learner.remote(
                 RemoteLearnerInitializeData(
-                    policy=deepcopy(policy).to(torch.device("cpu")),
+                    policy=self.latest_policy,
                     algo_state=RemoteAlgorithmState(algo),
                     load_path=load_path,
                 )
@@ -60,9 +65,10 @@ class RemoteDataStoreAccessor(AbstractDataStoreAccessor):
 
     def submit_learner_update(self, learner_update: LearnerUpdate) -> None:
         policy, rollout_params, timesteps_elapsed, eval_enqueue = learner_update
+        assert self.latest_policy is not None, "Must initialize_learner first"
+        self.latest_policy.set_state(policy.get_state())
         self.data_store_actor.submit_learner_update.remote(
             RemoteLearnerUpdate(
-                RemotePolicyState(policy),
                 rollout_params,
                 timesteps_elapsed,
                 RemoteEvalEnqueue.from_eval_enqueue(eval_enqueue),
@@ -76,11 +82,9 @@ class RemoteDataStoreAccessor(AbstractDataStoreAccessor):
         self.data_store_actor.submit_rollout_update.remote(rollout_update)
 
     def submit_checkpoint(self, checkpoint: CheckpointState) -> None:
-        if not self.checkpoint_history_size:
+        if not self.config.checkpoint_history_size:
             return
-        self.data_store_actor.submit_checkpoint.remote(
-            checkpoint.to(torch.device("cpu"))
-        )
+        self.data_store_actor.submit_checkpoint.remote(checkpoint)
 
     def load(self, load_path: str) -> None:
         ray.get(self.data_store_actor.load.remote(load_path))

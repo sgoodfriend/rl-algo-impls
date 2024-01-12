@@ -7,21 +7,19 @@ from typing import Dict, List, Optional
 import numpy as np
 
 from rl_algo_impls.lux.jux_verify import jux_verify_enabled
-from rl_algo_impls.runner.env_hyperparams import EnvHyperparams
 from rl_algo_impls.runner.config import Config
+from rl_algo_impls.runner.env_hyperparams import EnvHyperparams
 from rl_algo_impls.shared.data_store.abstract_data_store_accessor import (
     AbstractDataStoreAccessor,
 )
 from rl_algo_impls.shared.data_store.data_store_data import EvalView
 from rl_algo_impls.shared.data_store.data_store_view import EvalDataStoreView
-from rl_algo_impls.shared.policy.policy import Policy
+from rl_algo_impls.shared.policy.abstract_policy import AbstractPolicy
 from rl_algo_impls.shared.stats import Episode, EpisodeAccumulator, EpisodesStats
 from rl_algo_impls.shared.summary_wrapper.abstract_summary_wrapper import (
     AbstractSummaryWrapper,
 )
 from rl_algo_impls.shared.tensor_utils import batch_dict_keys
-from rl_algo_impls.utils.device import get_device
-from rl_algo_impls.shared.vec_env.env_spaces import EnvSpaces
 from rl_algo_impls.shared.vec_env.make_env import make_eval_env
 from rl_algo_impls.wrappers.self_play_wrapper import SelfPlayWrapper
 from rl_algo_impls.wrappers.vec_episode_recorder import VecEpisodeRecorder
@@ -87,7 +85,7 @@ class EvaluateAccumulator(EpisodeAccumulator):
 
 def evaluate(
     env: VectorEnv,
-    policy: Policy,
+    policy: AbstractPolicy,
     n_episodes: int,
     render: bool = False,
     deterministic: bool = True,
@@ -279,9 +277,6 @@ class Evaluator:
             self.data_store_view,
             self_play_wrapper=self_play_wrapper,
         )
-        self.data_store_view.device = get_device(
-            config, EnvSpaces.from_vec_env(self.env)
-        )
         self.tb_writer = tb_writer
         self.best_model_path = best_model_path
         self.n_episodes = n_episodes
@@ -375,7 +370,7 @@ class Evaluator:
         self.checkpoint_policy(policy, is_best)
         return eval_stat
 
-    def checkpoint_policy(self, policy: Policy, is_best: bool):
+    def checkpoint_policy(self, policy: AbstractPolicy, is_best: bool):
         if self.only_checkpoint_best_policies:
             if not is_best:
                 return
@@ -383,7 +378,7 @@ class Evaluator:
                 logging.info(f"Checkpointing best policy at {self.timesteps_elapsed}")
         self.data_store_view.submit_checkpoint(policy)
 
-    def generate_video(self, policy: Policy) -> None:
+    def generate_video(self, policy: AbstractPolicy) -> None:
         assert self.video_env and self.video_dir
         best_video_base_path = os.path.join(self.video_dir, str(self.timesteps_elapsed))
         self.video_env.base_path = best_video_base_path
@@ -397,5 +392,5 @@ class Evaluator:
         )
         logging.info(f"Saved video: {video_stats}")
 
-    def save(self, policy: Policy, model_path: str) -> None:
+    def save(self, policy: AbstractPolicy, model_path: str) -> None:
         self.data_store_view.save(policy, model_path)

@@ -1,8 +1,6 @@
 from collections import defaultdict
 from typing import Any, DefaultDict, Dict, List, Optional
 
-import torch
-
 from rl_algo_impls.rollout.rollout import Rollout
 from rl_algo_impls.shared.data_store.abstract_data_store_accessor import (
     AbstractDataStoreAccessor,
@@ -25,31 +23,25 @@ from rl_algo_impls.shared.data_store.in_process_data_store_accessor import (
     InProcessDataStoreAccessor,
 )
 from rl_algo_impls.shared.evaluator.abstract_evaluator import AbstractEvaluator
-from rl_algo_impls.shared.policy.policy import Policy
+from rl_algo_impls.shared.policy.abstract_policy import AbstractPolicy
 from rl_algo_impls.shared.trackable import UpdateTrackable
 
 
 class DataStoreView:
-    device: Optional[torch.device] = None
-
     def __init__(self, data_store_accessor: AbstractDataStoreAccessor):
         self.data_store_accessor = data_store_accessor
 
 
 class LearnerDataStoreView(DataStoreView):
-    def __init__(
-        self, data_store_accessor: AbstractDataStoreAccessor, device: torch.device
-    ):
+    def __init__(self, data_store_accessor: AbstractDataStoreAccessor):
         super().__init__(data_store_accessor)
-        self.device = device
         self.rollout_params: Dict[str, Any] = {}
 
         self.evaluator: Optional[AbstractEvaluator] = None
         self.num_evaluations = 0
 
     def get_learner_view(self, wait: bool = False) -> LearnerView:
-        assert self.device is not None, "device not set"
-        return self.data_store_accessor.get_learner_view(wait=wait).to(self.device)
+        return self.data_store_accessor.get_learner_view(wait=wait)
 
     def submit_learner_update(self, update: LearnerDataStoreViewUpdate) -> None:
         assert self.evaluator is not None, "evaluator not initialized"
@@ -99,7 +91,6 @@ class RolloutDataStoreView(VectorEnvDataStoreView):
         rollout_view = self.data_store_accessor.update_for_rollout_start()
         if rollout_view is None:
             return None
-        assert self.device is not None, "device not set"
         (
             policy,
             env_state,
@@ -107,7 +98,7 @@ class RolloutDataStoreView(VectorEnvDataStoreView):
             latest_checkpoint_idx,
             rollout_params,
             timesteps_elapsed,
-        ) = rollout_view.to(self.device)
+        ) = rollout_view
         assert set(self.env_trackers) == set(env_state)
         for k, trackers in self.env_trackers.items():
             assert len(trackers) == 1
@@ -140,7 +131,6 @@ class EvalDataStoreView(VectorEnvDataStoreView):
         self.is_eval_job = is_eval_job
 
     def update_from_eval_data(self, eval_data: EvalView) -> EvalDataStoreViewView:
-        assert self.device is not None, "device not set"
         (
             policy,
             self.algo_state,
@@ -148,7 +138,7 @@ class EvalDataStoreView(VectorEnvDataStoreView):
             checkpoint_policies,
             latest_checkpoint_idx,
             timesteps_elapsed,
-        ) = eval_data.to(self.device)
+        ) = eval_data
         for k, trackers in self.env_trackers.items():
             for t in trackers:
                 t.set_state(self.env_state[k])
@@ -156,7 +146,7 @@ class EvalDataStoreView(VectorEnvDataStoreView):
             cpt.update_checkpoint_policies(checkpoint_policies, latest_checkpoint_idx)
         return EvalDataStoreViewView(policy, timesteps_elapsed)
 
-    def submit_checkpoint(self, policy: Policy) -> None:
+    def submit_checkpoint(self, policy: AbstractPolicy) -> None:
         self.data_store_accessor.submit_checkpoint(
             CheckpointState(
                 policy=policy,
@@ -165,7 +155,7 @@ class EvalDataStoreView(VectorEnvDataStoreView):
             )
         )
 
-    def save(self, policy: Policy, save_path: str) -> None:
+    def save(self, policy: AbstractPolicy, save_path: str) -> None:
         policy.save(save_path)
         self.algo_state.save(save_path)
         for state in self.env_state.values():

@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, NamedTuple, Optional, Type, T
 
 import ray
 
+from rl_algo_impls.runner.config import Config
 from rl_algo_impls.shared.data_store.algorithm_state import RemoteAlgorithmState
 from rl_algo_impls.shared.data_store.data_store_data import (
     CheckpointState,
@@ -20,12 +21,12 @@ from rl_algo_impls.shared.trackable import TrackableState, UpdateTrackable
 from rl_algo_impls.utils.ray import init_ray_actor
 
 if TYPE_CHECKING:
-    from rl_algo_impls.shared.policy.policy import Policy
-    from rl_algo_impls.shared.policy.policy_state import RemotePolicyState
+    from rl_algo_impls.shared.policy.abstract_policy import AbstractPolicy
+    from rl_algo_impls.shared.policy.remote_inference_policy import RemoteInferencePolicy
 
 
 class RemoteLearnerInitializeData(NamedTuple):
-    policy: "Policy"
+    policy: "RemoteInferencePolicy"
     algo_state: TrackableState
     load_path: Optional[str]
 
@@ -44,27 +45,20 @@ class RemoteEvalEnqueue(NamedTuple):
 
 
 class RemoteLearnerUpdate(NamedTuple):
-    policy_state: "RemotePolicyState"
     rollout_params: Dict[str, Any]
     timesteps_elapsed: int
     eval_enqueue: Optional[RemoteEvalEnqueue]
 
 
-class RemoteCheckpointState(NamedTuple):
-    policy_state: "RemotePolicyState"
-    algo_state: TrackableState
-    env_states: Dict[str, TrackableState]
-
-
 @ray.remote
 class DataStoreActor:
-    def __init__(self, history_size: int) -> None:
+    def __init__(self, config: Config) -> None:
         init_ray_actor()
-        self.history_size = history_size
+        self.config = config
 
         self.is_closed = False
         self.timesteps_elapsed = 0
-        self.latest_policy: Optional["Policy"] = None
+        self.latest_policy: Optional["RemoteInferencePolicy"] = None
         self.env_trackers: Dict[str, UpdateTrackable] = {}
         self.rollout_params: Dict[str, Any] = {}
         self.load_path: Optional[str] = None
@@ -72,7 +66,6 @@ class DataStoreActor:
 
         self.evaluator: Optional[AbstractEvaluator] = None
 
-        self.checkpoint_history_size = history_size
         self._ckpts_circular_queue: List[CheckpointState] = []
         self._latest_ckpt_idx = -1
 
@@ -82,6 +75,10 @@ class DataStoreActor:
         if self.load_path:
             env_tracker.get_state().load(self.load_path)
         self.env_trackers[env_tracker.name] = env_tracker
+
+    @property
+    def uses_teacher_policy(self) -> bool:
+        return self.config.algo_hyperparams.get("teacher_kl_loss_coef", None)
 
     async def get_learner_view(self, wait: bool = False) -> Optional[LearnerView]:
         if self.is_closed:
@@ -99,7 +96,9 @@ class DataStoreActor:
         non_none_rollouts = tuple(r for r in rollouts if r is not None)
         return LearnerView(
             rollouts=non_none_rollouts,
-            latest_checkpoint_policy=self.latest_checkpoint_policy,
+            latest_checkpoint_policy=self.latest_checkpoint_policy
+            if self.uses_teacher_policy
+            else None,
         )
 
     def initialize_learner(
@@ -115,13 +114,12 @@ class DataStoreActor:
 
     def submit_learner_update(self, learner_update: RemoteLearnerUpdate) -> None:
         (
-            latest_policy_state,
             self.rollout_params,
             self.timesteps_elapsed,
             eval_enqueue,
         ) = learner_update
+        # latest_policy updated within RemoteDataStoreAccessor
         assert self.latest_policy is not None, "Must initialize_learner first"
-        latest_policy_state.set_on_policy(self.latest_policy)
 
         if eval_enqueue:
             self.enqueue_latest_policy(eval_enqueue)
@@ -147,6 +145,10 @@ class DataStoreActor:
         for k, tracker in self.env_trackers.items():
             tracker.apply_update(env_update[k])
 
+    @property
+    def checkpoint_history_size(self) -> int:
+        return self.config.checkpoint_history_size
+
     def submit_checkpoint(self, checkpoint: CheckpointState) -> None:
         assert (
             self.checkpoint_history_size > 0
@@ -158,12 +160,26 @@ class DataStoreActor:
             self._latest_ckpt_idx = (
                 self._latest_ckpt_idx + 1
             ) % self.checkpoint_history_size
-            self._ckpts_circular_queue[self._latest_ckpt_idx] = checkpoint
+            # Reuse the old checkpoint policy process while destroying the new policy
+            # process. This allows us to avoid accumulating too many processes while
+            # guaranteeing rollout processes access to live actors.
+            old_policy, _, _ = self._ckpts_circular_queue[self._latest_ckpt_idx]
+            new_policy, new_algo_state, new_env_state = checkpoint
+            assert isinstance(old_policy, RemoteInferencePolicy) and isinstance(
+                new_policy, RemoteInferencePolicy
+            ), "Checkpoint policy must be RemotePolicy"
+            new_policy.transfer_policy_to(old_policy, exit_after_transfer=True)
+            self._ckpts_circular_queue[self._latest_ckpt_idx] = CheckpointState(
+                old_policy,
+                new_algo_state,
+                new_env_state,
+            )
 
     def load(self, path: str) -> None:
         self.load_path = path
-        if self.latest_policy is not None:
-            self.latest_policy.load(path)
+        assert (
+            self.latest_policy is None
+        ), f"latest_policy doesn't support loading in {self.__class__.__name__}"
         for tracker in self.env_trackers.values():
             tracker.get_state().load(path)
 
@@ -208,7 +224,7 @@ class DataStoreActor:
         )
 
     @property
-    def latest_checkpoint_policy(self) -> Optional["Policy"]:
+    def latest_checkpoint_policy(self) -> Optional["AbstractPolicy"]:
         latest_checkpoint = self.latest_checkpoint
         if latest_checkpoint is None:
             return None
@@ -217,7 +233,7 @@ class DataStoreActor:
     def _generate_checkpoint_state(self, algo_state: TrackableState) -> CheckpointState:
         assert self.latest_policy is not None, "Must initialize_learner first"
         return CheckpointState(
-            deepcopy(self.latest_policy),
+            self.latest_policy.clone(self.config.inference_cuda_index),
             algo_state,
             {k: v.get_state() for k, v in self.env_trackers.items()},
         )

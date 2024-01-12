@@ -18,6 +18,7 @@ import torch
 from gymnasium.spaces import Box
 from gymnasium.spaces import Dict as DictSpace
 
+from rl_algo_impls.shared.policy.abstract_policy import Step
 from rl_algo_impls.shared.policy.actor_critic_network import (
     ConnectedTrioActorCriticNetwork,
     SeparateActorCriticNetwork,
@@ -40,13 +41,6 @@ from rl_algo_impls.shared.tensor_utils import NumpyOrDict, tensor_to_numpy
 from rl_algo_impls.shared.vec_env.action_shape import ActionShape
 from rl_algo_impls.shared.vec_env.env_spaces import EnvSpaces
 from rl_algo_impls.wrappers.vector_wrapper import ObsType
-
-
-class Step(NamedTuple):
-    a: NumpyOrDict
-    v: np.ndarray
-    logp_a: np.ndarray
-    clamped_a: np.ndarray
 
 
 class ACForward(NamedTuple):
@@ -91,14 +85,6 @@ def clamp_actions(
 
 
 class OnPolicy(Policy, Generic[ObsType]):
-    @abstractmethod
-    def value(self, obs: ObsType) -> np.ndarray:
-        ...
-
-    @abstractmethod
-    def step(self, obs: ObsType, action_masks: Optional[NumpyOrDict] = None) -> Step:
-        ...
-
     @property
     @abstractmethod
     def action_shape(self) -> ActionShape:
