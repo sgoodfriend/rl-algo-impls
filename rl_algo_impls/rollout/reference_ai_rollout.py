@@ -106,7 +106,6 @@ class ReferenceAIRolloutGenerator(SyncStepRolloutGenerator):
             action_masks=self.action_masks,
             gamma=self.gamma,
             gae_lambda=self.gae_lambda,
-            scale_advantage_by_values_accuracy=self.scale_advantage_by_values_accuracy,
             full_batch_off_accelerator=self.full_batch_off_accelerator,
             subaction_mask=self.subaction_mask,
             action_plane_space=getattr(self.vec_env, "action_plane_space", None),

@@ -34,7 +34,6 @@ class SyncStepRolloutGenerator(SynchronousRolloutGenerator):
         gae_lambda: NumOrList = 0.95,
         n_steps: int = 2048,
         sde_sample_freq: int = -1,
-        scale_advantage_by_values_accuracy: bool = False,
         full_batch_off_accelerator: bool = False,
         include_logp: bool = True,
         subaction_mask: Optional[Dict[int, Dict[int, int]]] = None,
@@ -49,7 +48,6 @@ class SyncStepRolloutGenerator(SynchronousRolloutGenerator):
         self.gae_lambda = num_or_array(gae_lambda)
         self.n_steps = n_steps
         self.sde_sample_freq = sde_sample_freq
-        self.scale_advantage_by_values_accuracy = scale_advantage_by_values_accuracy
         self.full_batch_off_accelerator = full_batch_off_accelerator
         self.include_logp = include_logp
         self.subaction_mask = subaction_mask
@@ -214,7 +212,6 @@ class SyncStepRolloutGenerator(SynchronousRolloutGenerator):
             action_masks=self.action_masks,
             gamma=self.gamma,
             gae_lambda=self.gae_lambda,
-            scale_advantage_by_values_accuracy=self.scale_advantage_by_values_accuracy,
             full_batch_off_accelerator=self.full_batch_off_accelerator,
             subaction_mask=self.subaction_mask,
             action_plane_space=getattr(self.vec_env, "action_plane_space", None),
