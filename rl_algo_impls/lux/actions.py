@@ -9,6 +9,7 @@ from typing import (
     List,
     NamedTuple,
     Optional,
+    Set,
     Tuple,
     TypeVar,
     Union,
@@ -215,16 +216,18 @@ def to_lux_actions(
             cancel_action(state.units[player][u_id])
             action_stats.pickup_cancelled_simultaneous_pickups += 1
 
+    cancel_factory_actions_positions: Set[int] = set()
     for f in state.factories[player].values():
         if no_valid_factory_actions(f, action_mask, cfg.map_size):
             continue
-        a = actions[pos_to_idx(f.pos, cfg.map_size), 0]
+        f_pos_idx = pos_to_idx(f.pos, cfg.map_size)
+        a = actions[f_pos_idx, 0]
         if a in {1, 2}:
-            if pos_to_idx(f.pos, cfg.map_size) in positions_occupied:
+            if f_pos_idx in positions_occupied:
                 action_stats.build_cancelled += 1
-                actions[pos_to_idx(f.pos, cfg.map_size), 0] = 0  # DO_NOTHING
+                cancel_factory_actions_positions.add(f_pos_idx)
             else:
-                positions_occupied[pos_to_idx(f.pos, cfg.map_size)] = "BUILD"
+                positions_occupied[f_pos_idx] = "BUILD"
 
     def cancel_move(unit: LuxUnit):
         cancel_action(unit)
@@ -331,6 +334,8 @@ def to_lux_actions(
             continue
         f_pos_idx = pos_to_idx(f.pos, cfg.map_size)
         a = actions[f_pos_idx, 0]
+        if f_pos_idx in cancel_factory_actions_positions:
+            continue
         if a > 0:
             if a in {1, 2} and positions_occupied[f_pos_idx] != "BUILD":
                 # Likely a unit that was going to move out had to cancel its action.
