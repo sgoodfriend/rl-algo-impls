@@ -22,7 +22,9 @@ from rl_algo_impls.utils.ray import init_ray_actor
 
 if TYPE_CHECKING:
     from rl_algo_impls.shared.policy.abstract_policy import AbstractPolicy
-    from rl_algo_impls.shared.policy.remote_inference_policy import RemoteInferencePolicy
+    from rl_algo_impls.shared.policy.remote_inference_policy import (
+        RemoteInferencePolicy,
+    )
 
 
 class RemoteLearnerInitializeData(NamedTuple):
@@ -168,7 +170,7 @@ class DataStoreActor:
             assert isinstance(old_policy, RemoteInferencePolicy) and isinstance(
                 new_policy, RemoteInferencePolicy
             ), "Checkpoint policy must be RemotePolicy"
-            new_policy.transfer_policy_to(old_policy, exit_after_transfer=True)
+            new_policy.transfer_policy_to(old_policy, delete_origin_policy=True)
             self._ckpts_circular_queue[self._latest_ckpt_idx] = CheckpointState(
                 old_policy,
                 new_algo_state,

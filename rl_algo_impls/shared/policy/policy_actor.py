@@ -1,4 +1,5 @@
-from typing import TYPE_CHECKING, Any, Generic, Optional
+from copy import deepcopy
+from typing import TYPE_CHECKING, Any, Dict, Generic, Optional
 
 import numpy as np
 import ray
@@ -20,54 +21,89 @@ class PolicyActor(AbstractPolicy, Generic[ObsType]):
             cuda_visible_devices=[cuda_index] if cuda_index is not None else []
         )
 
-        self._policy: Optional["Policy"] = None
+        self._next_idx = 0
+        self._policies_by_key: Dict[int, "Policy"] = {}
 
-    def set_policy(self, policy: "Policy", train: Optional[bool] = None) -> None:
-        self._policy = policy
-        if train is not None:
-            self._policy.train(train)
+    def add_policy(self, policy: "Policy") -> int:
+        idx = self._next_idx
+        self._next_idx += 1
+        self._policies_by_key[idx] = policy
+        return idx
+
+    def clone_policy(self, policy_idx: int) -> int:
+        assert policy_idx in self._policies_by_key, f"No policy with idx {policy_idx}"
+        return self.add_policy(deepcopy(self._policies_by_key[policy_idx]))
+
+    def transfer_state(
+        self,
+        origin_policy_idx: int,
+        destination_policy_idx: int,
+        delete_origin_policy: bool = False,
+    ) -> None:
+        assert (
+            origin_policy_idx in self._policies_by_key
+        ), f"No policy with idx {origin_policy_idx}"
+        assert (
+            destination_policy_idx in self._policies_by_key
+        ), f"No policy with idx {destination_policy_idx}"
+        self._policies_by_key[destination_policy_idx].set_state(
+            self._policies_by_key[origin_policy_idx].get_state()
+        )
+        if delete_origin_policy:
+            del self._policies_by_key[origin_policy_idx]
 
     def act(
         self,
+        policy_idx: int,
         obs: ObsType,
         deterministic: bool = True,
         action_masks: Optional["NumpyOrDict"] = None,
     ) -> np.ndarray:
-        assert self._policy is not None, "Policy must be set"
-        return self._policy.act(obs, deterministic, action_masks)
+        assert policy_idx in self._policies_by_key, f"No policy with idx {policy_idx}"
+        return self._policies_by_key[policy_idx].act(obs, deterministic, action_masks)
 
-    def reset_noise(self) -> None:
-        assert self._policy is not None, "Policy must be set"
-        self._policy.reset_noise()
+    def reset_noise(self, policy_idx: int) -> None:
+        assert policy_idx in self._policies_by_key, f"No policy with idx {policy_idx}"
+        self._policies_by_key[policy_idx].reset_noise()
 
-    def save(self, path: str) -> None:
-        assert self._policy is not None, "Policy must be set"
-        self._policy.save(path)
+    def save(self, policy_idx: int, path: str) -> None:
+        assert policy_idx in self._policies_by_key, f"No policy with idx {policy_idx}"
+        self._policies_by_key[policy_idx].save(path)
 
-    def set_state(self, state: Any) -> None:
-        assert self._policy is not None, "Policy must be set"
-        self._policy.set_state(state)
+    def set_state(self, policy_idx: int, state: Any) -> None:
+        assert policy_idx in self._policies_by_key, f"No policy with idx {policy_idx}"
+        self._policies_by_key[policy_idx].set_state(state)
 
-    def eval(self) -> None:
-        assert self._policy is not None, "Policy must be set"
-        self._policy.eval()
+    def eval(self, policy_idx: int) -> None:
+        assert policy_idx in self._policies_by_key, f"No policy with idx {policy_idx}"
+        self._policies_by_key[policy_idx].eval()
 
-    def train(self, mode: bool = True) -> None:
-        assert self._policy is not None, "Policy must be set"
-        self._policy.train(mode)
+    def train(self, policy_idx: int, mode: bool = True) -> None:
+        assert policy_idx in self._policies_by_key, f"No policy with idx {policy_idx}"
+        self._policies_by_key[policy_idx].train(mode)
 
-    def value(self, obs: Any) -> np.ndarray:
-        assert self._policy is not None, "Policy must be set"
-        return self._policy.value(obs)
+    def value(self, policy_idx: int, obs: Any) -> np.ndarray:
+        assert policy_idx in self._policies_by_key, f"No policy with idx {policy_idx}"
+        return self._policies_by_key[policy_idx].value(obs)
 
-    def step(self, obs: Any, action_masks: Optional["NumpyOrDict"] = None) -> Step:
-        assert self._policy is not None, "Policy must be set"
-        return self._policy.step(obs, action_masks)
+    def step(
+        self, policy_idx: int, obs: Any, action_masks: Optional["NumpyOrDict"] = None
+    ) -> Step:
+        assert policy_idx in self._policies_by_key, f"No policy with idx {policy_idx}"
+        return self._policies_by_key[policy_idx].step(obs, action_masks)
 
     def transfer_policy_to(
-        self, target: "PolicyActor", exit_after_transfer: bool = False
-    ) -> None:
-        assert self._policy is not None, "Policy must be set"
-        ray.get(target.set_policy.remote(self._policy))
-        if exit_after_transfer:
-            ray.actor.exit_actor()
+        self,
+        origin_policy_idx: int,
+        target: "PolicyActor",
+        delete_origin_policy: bool = False,
+    ) -> int:
+        assert (
+            origin_policy_idx in self._policies_by_key
+        ), f"No policy with idx {origin_policy_idx}"
+        destination_policy_idx = ray.get(
+            target.add_policy.remote(self._policies_by_key[origin_policy_idx])
+        )
+        if delete_origin_policy:
+            del self._policies_by_key[origin_policy_idx]
+        return destination_policy_idx
