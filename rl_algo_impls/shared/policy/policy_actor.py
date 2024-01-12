@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
 
 @ray.remote
-class PolicyActor(Generic[ObsType]):
+class PolicyActor(AbstractPolicy, Generic[ObsType]):
     def __init__(self, cuda_index: Optional[int]) -> None:
         from rl_algo_impls.utils.ray import init_ray_actor
 
@@ -61,10 +61,6 @@ class PolicyActor(Generic[ObsType]):
     ) -> np.ndarray:
         assert policy_idx in self._policies_by_key, f"No policy with idx {policy_idx}"
         return self._policies_by_key[policy_idx].act(obs, deterministic, action_masks)
-
-    def call(self, policy_idx: int, *args, **kwargs) -> Any:
-        assert policy_idx in self._policies_by_key, f"No policy with idx {policy_idx}"
-        return self._policies_by_key[policy_idx](*args, **kwargs)
 
     def reset_noise(self, policy_idx: int) -> None:
         assert policy_idx in self._policies_by_key, f"No policy with idx {policy_idx}"
