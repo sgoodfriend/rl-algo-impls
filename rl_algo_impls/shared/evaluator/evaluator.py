@@ -6,7 +6,6 @@ from typing import Dict, List, Optional
 
 import numpy as np
 
-from rl_algo_impls.lux.jux_verify import jux_verify_enabled
 from rl_algo_impls.runner.config import Config
 from rl_algo_impls.runner.env_hyperparams import EnvHyperparams
 from rl_algo_impls.shared.data_store.abstract_data_store_accessor import (
@@ -108,43 +107,6 @@ def evaluate(
     obs, _ = env.reset()
     get_action_mask = getattr(env, "get_action_mask", None)
 
-    old_vec_jux_state = None
-    old_jux_obs = None
-    old_jux_action_mask = None
-    jux_env_batch = None
-    if jux_verify_enabled(env):
-        import jax
-        import jax.numpy as jnp
-        from jux.env import JuxEnvBatch
-        from jux.state.state import State as JuxState
-
-        from rl_algo_impls.lux.jux.actions import step_unified
-        from rl_algo_impls.lux.jux.observation import observation_and_action_mask
-        from rl_algo_impls.lux.vec_env.jux_vector_env import JuxVectorEnv
-
-        lux_gridnet = env.unwrapped.envs[0]
-        action_mask = get_action_mask()
-
-        jux_env = policy.env.unwrapped
-        assert isinstance(jux_env, JuxVectorEnv)
-        lux_state = lux_gridnet.state
-        jux_state = JuxState.from_lux(lux_state, jux_env.buf_cfg)
-        old_vec_jux_state = jax.tree_util.tree_map(
-            lambda a: jnp.expand_dims(a, 0), jux_state
-        )
-        old_jux_obs, old_jux_action_mask = observation_and_action_mask(
-            old_vec_jux_state, jux_env.env_cfg, jux_env.buf_cfg, jux_env.agent_cfg
-        )
-        assert np.allclose(obs[0], old_jux_obs[1])
-        assert np.allclose(
-            action_mask[0]["per_position"], old_jux_action_mask["per_position"][1]
-        )
-        assert np.allclose(
-            action_mask[0]["pick_position"], old_jux_action_mask["pick_position"][1]
-        )
-
-        jux_env_batch = JuxEnvBatch(jux_env.env_cfg, jux_env.buf_cfg)
-
     while not episodes.is_done():
         act = policy.act(
             obs,
@@ -154,85 +116,6 @@ def evaluate(
             else None,
         )
         obs, rew, terminations, truncations, info = env.step(act)
-
-        if jux_verify_enabled(env):
-            import jax
-            import jax.numpy as jnp
-            from jux.state.state import State as JuxState
-
-            from rl_algo_impls.lux.jux.actions import step_unified
-            from rl_algo_impls.lux.jux.observation import observation_and_action_mask
-            from rl_algo_impls.lux.vec_env.jux_vector_env import JuxVectorEnv
-
-            assert old_vec_jux_state is not None
-            assert old_jux_obs is not None
-            assert old_jux_action_mask is not None
-            assert jux_env_batch is not None
-            lux_gridnet = env.unwrapped.envs[0]
-            action_mask = get_action_mask()
-
-            jux_env = policy.env.unwrapped
-            assert isinstance(jux_env, JuxVectorEnv)
-            lux_state = lux_gridnet.env.state
-            jux_state = JuxState.from_lux(lux_state, jux_env.buf_cfg)
-            vec_jux_state = jax.tree_util.tree_map(
-                lambda a: jnp.expand_dims(a, 0), jux_state
-            )
-            jux_obs, jux_action_mask = observation_and_action_mask(
-                vec_jux_state, jux_env.env_cfg, jux_env.buf_cfg, jux_env.agent_cfg
-            )
-
-            assert np.allclose(obs[0], jux_obs[1])
-            assert np.allclose(
-                action_mask[0]["per_position"], jux_action_mask["per_position"][1]
-            )
-            assert np.allclose(
-                action_mask[0]["pick_position"], jux_action_mask["pick_position"][1]
-            )
-
-            gridnet_act = lux_gridnet._prior_action
-            jax_actions = {
-                "pick_position": jnp.array(
-                    tuple(a["pick_position"] for a in gridnet_act), dtype=jnp.int16
-                ).reshape(1, 2, -1),
-                "per_position": jnp.array(
-                    tuple(a["per_position"] for a in gridnet_act), dtype=jnp.int8
-                ).reshape(1, 2, jux_env.map_size, jux_env.map_size, -1),
-            }
-            (
-                jux_run_state,
-                jux_run_obs,
-                jux_run_action_mask,
-                _,
-                jux_run_done,
-                _,
-            ) = step_unified(
-                jux_env_batch,
-                old_vec_jux_state,
-                jux_env.env_cfg,
-                jux_env.buf_cfg,
-                jax_actions,
-                old_jux_obs,
-                jux_env.agent_cfg,
-            )
-
-            assert jux_run_done[1] == terminations[0]
-            if not terminations[0]:
-                assert np.allclose(obs[0], jux_run_obs[1])
-                assert np.allclose(
-                    action_mask[0]["per_position"],
-                    jux_run_action_mask["per_position"][1],
-                )
-                assert np.allclose(
-                    action_mask[0]["pick_position"],
-                    jux_run_action_mask["pick_position"][1],
-                )
-
-                old_vec_jux_state = jux_run_state
-            else:
-                old_vec_jux_state = vec_jux_state
-            old_jux_obs = jux_obs
-            old_jux_action_mask = jux_action_mask
 
         done = terminations | truncations
         episodes.step(rew, done, info)
