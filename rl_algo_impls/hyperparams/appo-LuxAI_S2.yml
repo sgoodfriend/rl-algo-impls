@@ -350,9 +350,6 @@ LuxAI_S2-v0-j1024env32-80m-ent5-lr03-mgn4-2omh1lc-nga-tkl5c-4r-2a100:
 
 LuxAI_S2-v0-j1024env32-a100-debug: &lux-j1024env32-a100-debug
   <<: *lux-j1024env32-80m-ent5-lr03-mgn4-2omh1lc-nga-tkl5c-a100
-  algo_hyperparams: &lux-j1024env32-a100-debug-algo
-    <<: *lux-j1024env32-80m-ent5-lr03-mgn4-2omh1lc-nga-tkl5c-a100-algo
-    teacher_kl_loss_coef: null
   rollout_hyperparams:
     <<: *lux-j1024env16-80m-ent5-lr2c-mgn2-2o3m4h-nga-async-a100-rollout
     prepare_steps: 0

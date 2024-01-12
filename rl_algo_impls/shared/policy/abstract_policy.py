@@ -28,6 +28,10 @@ class AbstractPolicy(ABC, Generic[ObsType]):
         ...
 
     @abstractmethod
+    def __call__(self, *args, **kwargs) -> Any:
+        ...
+
+    @abstractmethod
     def reset_noise(self) -> None:
         ...
 
