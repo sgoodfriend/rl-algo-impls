@@ -5,16 +5,17 @@ import numpy as np
 import torch
 
 from rl_algo_impls.loss.teacher_kl_loss import teacher_kl_loss_enabled
-from rl_algo_impls.rollout.rollout import Batch, Rollout, flatten_batch_step
+from rl_algo_impls.rollout.rollout import (
+    Batch,
+    Rollout,
+    flatten_actions_to_tensor,
+    flatten_batch_step,
+    flatten_to_tensor,
+)
 from rl_algo_impls.runner.config import Config
 from rl_algo_impls.shared.data_store.data_store_data import RolloutView
 from rl_algo_impls.shared.gae import compute_advantages
-from rl_algo_impls.shared.tensor_utils import (
-    NumOrArray,
-    NumpyOrDict,
-    get_items,
-    numpy_to_tensor,
-)
+from rl_algo_impls.shared.tensor_utils import NumOrArray, NumpyOrDict, get_items
 
 
 @dataclass
