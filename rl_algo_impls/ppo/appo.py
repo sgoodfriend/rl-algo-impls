@@ -119,7 +119,7 @@ class APPO(Algorithm):
         learner_data_store_view.submit_learner_update(
             LearnerDataStoreViewUpdate(self.policy, self, timesteps_elapsed)
         )
-        (rollouts,) = learner_data_store_view.get_learner_view(wait=True)
+        rollouts = learner_data_store_view.get_learner_view(wait=True)
         while timesteps_elapsed < train_timesteps:
             start_time = perf_counter()
 
@@ -351,7 +351,7 @@ class APPO(Algorithm):
                         - 1
                         + rollout_steps_iteration / total_rollout_steps
                     )
-                    (next_rollouts,) = learner_data_store_view.get_learner_view(
+                    next_rollouts = learner_data_store_view.get_learner_view(
                         wait=(
                             self.max_n_epochs is not None
                             and n_epochs >= self.max_n_epochs

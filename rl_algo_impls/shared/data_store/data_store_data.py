@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any, Dict, NamedTuple, Optional, Tuple, TypeVar
+from typing import TYPE_CHECKING, Any, Dict, NamedTuple, Optional, Tuple
 
 from rl_algo_impls.shared.policy.abstract_policy import AbstractPolicy
 from rl_algo_impls.shared.stats import EpisodesStats
@@ -10,11 +10,7 @@ if TYPE_CHECKING:
     from rl_algo_impls.shared.policy.policy import Policy
 
 
-LearnerViewSelf = TypeVar("LearnerViewSelf", bound="LearnerView")
-
-
-class LearnerView(NamedTuple):
-    rollouts: Tuple["Rollout", ...]
+LearnerView = Tuple["Rollout", ...]
 
 
 class LearnerInitializeData(NamedTuple):
@@ -32,9 +28,6 @@ class LearnerUpdate(NamedTuple):
     rollout_params: Dict[str, Any]
     timesteps_elapsed: int
     eval_enqueue: Optional[EvalEnqueue]
-
-
-RolloutViewSelf = TypeVar("RolloutViewSelf", bound="RolloutView")
 
 
 class RolloutView(NamedTuple):
@@ -57,9 +50,6 @@ class RolloutView(NamedTuple):
 class RolloutUpdate(NamedTuple):
     rollout: "Rollout"
     env_update: Dict[str, Any]
-
-
-EvalViewSelf = TypeVar("EvalViewSelf", bound="EvalView")
 
 
 class EvalView(NamedTuple):
@@ -87,9 +77,6 @@ class RolloutDataStoreViewView(NamedTuple):
 class EvalDataStoreViewView(NamedTuple):
     policy: "AbstractPolicy"
     timesteps_elapsed: int
-
-
-CheckpointStateSelf = TypeVar("CheckpointStateSelf", bound="CheckpointState")
 
 
 class CheckpointState(NamedTuple):

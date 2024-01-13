@@ -90,9 +90,7 @@ class DataStoreActor:
         if len(rollouts) == 1 and rollouts[0] == None:
             return None
         non_none_rollouts = tuple(r for r in rollouts if r is not None)
-        return LearnerView(
-            rollouts=non_none_rollouts,
-        )
+        return non_none_rollouts
 
     def initialize_learner(
         self, learner_initialize_data: RemoteLearnerInitializeData
