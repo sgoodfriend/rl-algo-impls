@@ -8,8 +8,7 @@ from gymnasium.spaces import MultiDiscrete
 from rl_algo_impls.rollout.rollout import (
     Batch,
     Rollout,
-    flatten_actions_to_tensor,
-    flatten_to_tensor,
+    flatten_batch_step,
     num_actions,
 )
 from rl_algo_impls.runner.config import Config
@@ -45,18 +44,15 @@ class ACBCRollout(Rollout):
         **kwargs,
     ) -> None:
         super().__init__()
-        cpu_device = torch.device("cpu")
-        self.obs = flatten_to_tensor(obs, cpu_device)
-        self.actions = flatten_actions_to_tensor(actions, cpu_device)
-        self.values = flatten_to_tensor(values, cpu_device)
+        self.obs = flatten_batch_step(obs)
+        self.actions = flatten_batch_step(actions)
+        self.values = flatten_batch_step(values)
         self.action_masks = (
-            flatten_actions_to_tensor(action_masks, cpu_device)
-            if action_masks is not None
-            else None
+            flatten_batch_step(action_masks) if action_masks is not None else None
         )
         self.full_batch_off_accelerator = full_batch_off_accelerator
 
-        advantages = flatten_to_tensor(
+        advantages = flatten_batch_step(
             compute_advantages(
                 rewards,
                 values,
@@ -65,8 +61,7 @@ class ACBCRollout(Rollout):
                 next_values,
                 gamma,
                 gae_lambda,
-            ),
-            cpu_device,
+            )
         )
 
         self.returns = advantages + self.values
@@ -82,20 +77,16 @@ class ACBCRollout(Rollout):
                 else None,
                 action_plane_space,
             )
-            self.num_actions = (
-                torch.tensor(n_actions.reshape(-1)).to(cpu_device)
-                if n_actions is not None
-                else None
-            )
+            self.num_actions = n_actions.reshape(-1) if n_actions is not None else None
         else:
             self.num_actions = None
 
     @property
-    def y_true(self) -> torch.Tensor:
+    def y_true(self) -> np.ndarray:
         return self.returns
 
     @property
-    def y_pred(self) -> torch.Tensor:
+    def y_pred(self) -> np.ndarray:
         return self.values
 
     @property
@@ -111,12 +102,16 @@ class ACBCRollout(Rollout):
         if self._batch is not None:
             return self._batch.to(device)
         self._batch = ACBCBatch(
-            self.obs,
-            self.actions,
-            self.action_masks,
-            self.returns,
-            self.num_actions,
-        ).to(device)
+            numpy_to_tensor(self.obs, device),
+            numpy_to_tensor(self.actions, device),
+            numpy_to_tensor(self.action_masks, device)
+            if self.action_masks is not None
+            else None,
+            numpy_to_tensor(self.returns, device),
+            numpy_to_tensor(self.num_actions, device)
+            if self.num_actions is not None
+            else None,
+        )
         return self._batch
 
     def minibatches(

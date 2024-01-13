@@ -171,13 +171,10 @@ class A2C(Algorithm):
 
             self.tb_writer.on_timesteps_elapsed(timesteps_elapsed)
 
-            with torch.no_grad():
-                var_y = r.y_true.var().item()
-                explained_var = (
-                    np.nan
-                    if var_y == 0
-                    else 1 - (r.y_true - r.y_pred).var().item() / var_y
-                )
+            var_y = np.var(r.y_true).item()
+            explained_var = (
+                np.nan if var_y == 0 else 1 - np.var(r.y_true - r.y_pred).item() / var_y
+            )
 
             end_time = perf_counter()
             rollout_steps = r.total_steps

@@ -373,13 +373,13 @@ class APPO(Algorithm):
 
             self.tb_writer.on_timesteps_elapsed(timesteps_elapsed)
 
-            with torch.no_grad():
-                y_true = torch.concatenate(y_true_list)
-                y_pred = torch.concatenate(y_pred_list)
-                var_y = y_true.var().item()
-                explained_var = (
-                    np.nan if var_y == 0 else 1 - (y_true - y_pred).var().item() / var_y
-                )
+            y_true = np.concatenate(y_true_list)
+            y_pred = np.concatenate(y_pred_list)
+            var_y = np.var(y_true).item()
+            explained_var = (
+                np.nan if var_y == 0 else 1 - np.var(y_true - y_pred).item() / var_y
+            )
+
             train_stats = APPOTrainStats(
                 step_stats,
                 explained_var,
