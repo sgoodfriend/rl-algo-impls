@@ -277,7 +277,6 @@ LuxAI_S2-v0-j1024env32-80m-ent5-lr03-mgn4-2omh1lc-ga2-tkl5c-a100:
     <<: *lux-j1024env16-80m-ent5-lr3c-mgn2-2o3m4h-nga-async-a100-algo
     learning_rate: !!float 5e-5
     teacher_kl_loss_coef: !!float 5e-3
-    teacher_loss_batch_size: 1024
     batch_size: 512
     gradient_accumulation: 2
     multi_reward_weights:
@@ -367,7 +366,6 @@ LuxAI_S2-v0-j512env64-80m-ent1-lr01-mgn2-base1lc-nga-tkl5cl-2r-2a100:
     batch_size: 256
     ent_coef: !!float 1e-3
     learning_rate: !!float 1e-6
-    teacher_loss_batch_size: 512
     multi_reward_weights:
       - 1 # WinLoss
       - 0.1 # ice
