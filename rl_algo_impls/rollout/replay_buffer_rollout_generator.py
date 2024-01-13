@@ -74,11 +74,7 @@ class ReplayBufferRolloutGenerator(SynchronousRolloutGenerator):
         rollout_view = self.data_store_view.update_for_rollout_start()
         if rollout_view is None:
             return 0
-        (
-            policy,
-            rollout_params,
-            self.tb_writer.timesteps_elapsed,
-        ) = rollout_view
+        (policy, rollout_params, self.tb_writer.timesteps_elapsed, _) = rollout_view
         self.update_rollout_params(rollout_params)
         log_scalars(self.tb_writer, "charts", rollout_params)
 

@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, TypeVar, Union
 
 import numpy as np
 import torch
@@ -63,13 +63,13 @@ def numpy_to_tensor(a: NumpyOrDict, device: torch.device) -> TensorOrDict:
     return to_tensor_fn(a)
 
 
-def tensor_by_indicies(t: TensorOrDict, idxs: torch.Tensor) -> TensorOrDict:
-    def by_indicies_fn(_t: torch.Tensor) -> torch.Tensor:
+def tensor_by_indices(t: TensorOrDict, idxs: torch.Tensor) -> TensorOrDict:
+    def by_indices_fn(_t: torch.Tensor) -> torch.Tensor:
         return _t[idxs]
 
     if isinstance(t, dict):
-        return {k: by_indicies_fn(v) for k, v in t.items()}
-    return by_indicies_fn(t)
+        return {k: by_indices_fn(v) for k, v in t.items()}
+    return by_indices_fn(t)
 
 
 def batch_dict_keys(a: Optional[np.ndarray]) -> Optional[NumpyOrDict]:
@@ -78,3 +78,28 @@ def batch_dict_keys(a: Optional[np.ndarray]) -> Optional[NumpyOrDict]:
     if a.dtype.char == "O":
         return {k: np.array([a_i[k] for a_i in a]) for k in a[0]}
     return a
+
+
+ND = TypeVar("ND", np.ndarray, Dict[str, np.ndarray])
+
+
+def set_items(destination: ND, subset: ND, idx: Union[int, np.ndarray]):
+    def fn(_d: np.ndarray, _s: np.ndarray):
+        _d[idx] = _s
+
+    if isinstance(destination, dict):
+        assert isinstance(subset, dict)
+        for k, d in destination.items():
+            fn(d, subset[k])
+    else:
+        assert isinstance(subset, np.ndarray)
+        fn(destination, subset)
+
+
+def get_items(source: ND, idx: Union[int, np.ndarray]) -> ND:
+    def fn(_s: np.ndarray) -> np.ndarray:
+        return _s[idx]
+
+    if isinstance(source, dict):
+        return {k: fn(v) for k, v in source.items()}
+    return fn(source)

@@ -9,6 +9,7 @@ import torch.nn as nn
 from torch.optim import Adam
 
 from rl_algo_impls.acbc.train_stats import TrainStats
+from rl_algo_impls.rollout.acbc_rollout import ACBCBatch
 from rl_algo_impls.shared.algorithm import Algorithm
 from rl_algo_impls.shared.callbacks.callback import Callback
 from rl_algo_impls.shared.data_store.data_store_data import LearnerDataStoreViewUpdate
@@ -76,36 +77,30 @@ class ACBC(Algorithm):
             }
             log_scalars(self.tb_writer, "charts", chart_scalars)
 
-            rollouts, teacher_policy = learner_data_store_view.get_learner_view()
+            (rollouts,) = learner_data_store_view.get_learner_view()
             if len(rollouts) > 1:
                 logging.warning(
                     f"A2C does not support multiple rollouts ({len(rollouts)}) per epoch. "
                     "Only the last rollout will be used"
                 )
             r = rollouts[-1]
-            if teacher_policy is not None:
-                logging.warning("A2c doesn't support teacher policies")
             timesteps_elapsed += r.total_steps
 
             step_stats: List[Dict[str, Union[float, np.ndarray]]] = []
             vf_coef = torch.Tensor(np.array(self.vf_coef)).to(self.device)
-            for e in range(self.n_epochs):
+            for _ in range(self.n_epochs):
                 step_stats.clear()
                 for mb in r.minibatches(
-                    self.batch_size, shuffle=not self.gradient_accumulation
+                    self.batch_size, self.device, shuffle=not self.gradient_accumulation
                 ):
                     self.policy.reset_noise(self.batch_size)
-
+                    assert isinstance(mb, ACBCBatch)
                     (
                         mb_obs,
-                        _,
                         mb_actions,
                         mb_action_masks,
-                        mb_num_actions,
-                        _,
-                        _,
                         mb_returns,
-                        _,  # mb_additional,
+                        mb_num_actions,
                     ) = astuple(mb)
 
                     new_logprobs, _, new_values = self.policy(
@@ -139,10 +134,13 @@ class ACBC(Algorithm):
 
             self.tb_writer.on_timesteps_elapsed(timesteps_elapsed)
 
-            var_y = np.var(r.y_true).item()
-            explained_var = (
-                np.nan if var_y == 0 else 1 - np.var(r.y_true - r.y_pred).item() / var_y
-            )
+            with torch.no_grad():
+                var_y = r.y_true.var().item()
+                explained_var = (
+                    np.nan
+                    if var_y == 0
+                    else 1 - (r.y_true - r.y_pred).var().item() / var_y
+                )
             TrainStats(step_stats, explained_var).write_to_tensorboard(self.tb_writer)
 
             end_time = perf_counter()

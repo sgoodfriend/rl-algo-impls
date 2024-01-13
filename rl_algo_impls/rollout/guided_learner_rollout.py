@@ -34,7 +34,6 @@ class GuidedLearnerRolloutGenerator(SynchronousRolloutGenerator):
         gae_lambda: NumOrList = 0.95,
         n_steps: int = 2048,
         sde_sample_freq: int = -1,
-        scale_advantage_by_values_accuracy: bool = False,
         full_batch_off_accelerator: bool = True,  # Unused, assumed True
         include_logp: bool = True,
         subaction_mask: Optional[Dict[int, Dict[int, int]]] = None,
@@ -48,7 +47,6 @@ class GuidedLearnerRolloutGenerator(SynchronousRolloutGenerator):
         self.switch_range = switch_range
         self.n_steps = n_steps
         self.sde_sample_freq = sde_sample_freq
-        self.scale_advantage_by_values_accuracy = scale_advantage_by_values_accuracy
         if not full_batch_off_accelerator:
             logging.warn(
                 f"{self.__class__.__name__} doesn't support full_batch_off_accelerator=False"
@@ -92,6 +90,7 @@ class GuidedLearnerRolloutGenerator(SynchronousRolloutGenerator):
             learning_policy,
             rollout_params,
             self.tb_writer.timesteps_elapsed,
+            _,
         ) = rollout_view
         self.update_rollout_params(rollout_params)
         log_scalars(self.tb_writer, "charts", rollout_params)
@@ -212,7 +211,6 @@ class GuidedLearnerRolloutGenerator(SynchronousRolloutGenerator):
         return TrajectoryRollout(
             learning_policy.device,
             trajectories,
-            scale_advantage_by_values_accuracy=self.scale_advantage_by_values_accuracy,
             subaction_mask=self.subaction_mask,
             action_plane_space=getattr(self.vec_env, "action_plane_space", None),
         )

@@ -2,9 +2,11 @@ from typing import Optional, Sequence, TypeVar
 
 import numpy as np
 import torch
+from numpy import ndarray
 
 from rl_algo_impls.dqn.q_net import QNetwork
 from rl_algo_impls.shared.policy.policy import Policy
+from rl_algo_impls.shared.tensor_utils import NumpyOrDict
 from rl_algo_impls.shared.vec_env.env_spaces import EnvSpaces
 from rl_algo_impls.wrappers.vector_wrapper import ObsType
 
@@ -64,4 +66,14 @@ class DQNPolicy(Policy):
     def step(self, obs: ObsType, action_masks: Optional[np.ndarray] = None):
         raise NotImplementedError(
             f"step function not relevant for {self.__class__.__name__}"
+        )
+
+    def logprobs(
+        self,
+        obs: ObsType,
+        actions: NumpyOrDict,
+        action_masks: Optional[NumpyOrDict] = None,
+    ) -> ndarray:
+        raise NotImplementedError(
+            f"logprobs function not relevant for {self.__class__.__name__}"
         )

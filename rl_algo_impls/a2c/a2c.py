@@ -8,6 +8,7 @@ import torch
 import torch.nn as nn
 
 from rl_algo_impls.a2c.train_stats import TrainStats, TrainStepStats
+from rl_algo_impls.rollout.a2c_rollout import A2CBatch
 from rl_algo_impls.shared.algorithm import Algorithm
 from rl_algo_impls.shared.autocast import maybe_autocast
 from rl_algo_impls.shared.callbacks import Callback
@@ -92,15 +93,13 @@ class A2C(Algorithm):
                 chart_scalars["reward_weights"] = self.multi_reward_weights
             log_scalars(self.tb_writer, "charts", chart_scalars)
 
-            rollouts, teacher_policy = learner_data_store_view.get_learner_view()
+            (rollouts,) = learner_data_store_view.get_learner_view()
             if len(rollouts) > 1:
                 logging.warning(
                     f"A2C does not support multiple rollouts ({len(rollouts)}) per epoch. "
                     "Only the last rollout will be used"
                 )
             r = rollouts[-1]
-            if teacher_policy is not None:
-                logging.warning("A2c doesn't support teacher policies")
             timesteps_elapsed += r.total_steps
 
             vf_coef = torch.Tensor(np.array(self.vf_coef)).to(self.device)
@@ -116,16 +115,14 @@ class A2C(Algorithm):
                 self.device,
                 shuffle=not self.gradient_accumulation,
             ):
+                assert isinstance(mb, A2CBatch)
                 (
                     mb_obs,
-                    _,
                     mb_actions,
                     mb_action_masks,
-                    mb_num_actions,
-                    _,
                     mb_advantages,
                     mb_returns,
-                    _,  # mb_additional,
+                    mb_num_actions,
                 ) = astuple(mb)
 
                 if self.normalize_advantage:
@@ -174,10 +171,13 @@ class A2C(Algorithm):
 
             self.tb_writer.on_timesteps_elapsed(timesteps_elapsed)
 
-            var_y = np.var(r.y_true).item()
-            explained_var = (
-                np.nan if var_y == 0 else 1 - np.var(r.y_true - r.y_pred).item() / var_y
-            )
+            with torch.no_grad():
+                var_y = r.y_true.var().item()
+                explained_var = (
+                    np.nan
+                    if var_y == 0
+                    else 1 - (r.y_true - r.y_pred).var().item() / var_y
+                )
 
             end_time = perf_counter()
             rollout_steps = r.total_steps

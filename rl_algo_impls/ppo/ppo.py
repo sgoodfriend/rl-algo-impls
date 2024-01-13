@@ -12,6 +12,7 @@ import torch.nn.functional as F
 from torch.optim import Adam
 
 from rl_algo_impls.loss.teacher_kl_loss import TeacherKLLoss
+from rl_algo_impls.rollout.ppo_rollout import PPOBatch
 from rl_algo_impls.shared.algorithm import Algorithm
 from rl_algo_impls.shared.autocast import maybe_autocast
 from rl_algo_impls.shared.callbacks import Callback
@@ -234,26 +235,13 @@ class PPO(Algorithm):
             chart_scalars["teacher_kl_loss_coef"] = self.teacher_kl_loss_coef
         log_scalars(self.tb_writer, "charts", chart_scalars)
 
-        rollouts, teacher_policy = learner_data_store_view.get_learner_view()
+        (rollouts,) = learner_data_store_view.get_learner_view()
         if len(rollouts) > 1:
             warnings.warn(
                 f"PPO does not support multiple rollouts ({len(rollouts)}) per epoch. "
                 "Only the last rollout will be used"
             )
         r = rollouts[-1]
-
-        if self.teacher_kl_loss_fn:
-            teacher_kl_loss_fn = self.teacher_kl_loss_fn
-            assert teacher_policy is not None
-            r.add_to_batch(
-                lambda batch: teacher_kl_loss_fn.add_to_batch(teacher_policy, batch),
-                self.batch_size,
-                self.device,
-            )
-        elif teacher_policy is not None:
-            warnings.warn(
-                "Getting teacher_policy without teacher_kl_loss_fn could be inefficient"
-            )
 
         gc.collect()
         timesteps_elapsed += r.total_steps
@@ -298,16 +286,16 @@ class PPO(Algorithm):
                 mb_idx += 1
                 self.policy.reset_noise(self.batch_size)
 
+                assert isinstance(mb, PPOBatch)
                 (
                     mb_obs,
-                    mb_logprobs,
                     mb_actions,
                     mb_action_masks,
-                    _,
+                    mb_logprobs,
                     mb_values,
                     mb_adv,
                     mb_returns,
-                    mb_additional,
+                    mb_teacher_logprobs,
                 ) = astuple(mb)
 
                 if self.normalize_advantages_after_scaling:
@@ -368,9 +356,12 @@ class PPO(Algorithm):
 
                     if self.teacher_kl_loss_coef:
                         assert self.teacher_kl_loss_fn
+                        assert (
+                            mb_teacher_logprobs is not None
+                        ), "Teacher logprobs missing"
                         teacher_kl_loss = self.teacher_kl_loss_fn(
                             new_logprobs,
-                            mb_additional,
+                            mb_teacher_logprobs,
                             ratio if self.teacher_loss_importance_sampling else None,
                         )
                         additional_losses["teacher_kl_loss"] = teacher_kl_loss.item()
@@ -419,10 +410,11 @@ class PPO(Algorithm):
 
         self.tb_writer.on_timesteps_elapsed(timesteps_elapsed)
 
-        var_y = np.var(r.y_true).item()
-        explained_var = (
-            np.nan if var_y == 0 else 1 - np.var(r.y_true - r.y_pred).item() / var_y
-        )
+        with torch.no_grad():
+            var_y = r.y_true.var().item()
+            explained_var = (
+                np.nan if var_y == 0 else 1 - (r.y_true - r.y_pred).var().item() / var_y
+            )
         train_stats = TrainStats(step_stats, explained_var, grad_norms)
         train_stats.write_to_tensorboard(self.tb_writer)
 

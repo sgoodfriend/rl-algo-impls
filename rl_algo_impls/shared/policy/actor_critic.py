@@ -311,6 +311,19 @@ class ActorCritic(OnPolicy, Generic[ObsType]):
         )
         return Step(a_np, v.cpu().numpy(), logp_a.cpu().numpy(), clamped_a_np)
 
+    def logprobs(
+        self,
+        obs: np.ndarray,
+        actions: NumpyOrDict,
+        action_masks: Optional[NumpyOrDict] = None,
+    ) -> np.ndarray:
+        o = self._as_tensor(obs)
+        a = self._as_tensor(actions)
+        a_masks = self._as_tensor(action_masks) if action_masks is not None else None
+        with torch.no_grad():
+            (_, logp_a, _), _ = self.network(o, a, action_masks=a_masks)
+        return logp_a.cpu().numpy()
+
     def act(
         self,
         obs: np.ndarray,

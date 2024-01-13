@@ -1,6 +1,10 @@
 from typing import Dict, Type
 
+from rl_algo_impls.rollout.a2c_rollout import A2CRollout
+from rl_algo_impls.rollout.acbc_rollout import ACBCRollout
+from rl_algo_impls.rollout.ppo_rollout import PPORollout
 from rl_algo_impls.rollout.reference_ai_rollout import ReferenceAIRolloutGenerator
+from rl_algo_impls.rollout.rollout import Rollout
 from rl_algo_impls.rollout.sync_step_rollout import SyncStepRolloutGenerator
 from rl_algo_impls.rollout.synchronous_rollout_generator import (
     SynchronousRolloutGenerator,
@@ -19,6 +23,13 @@ DEFAULT_IN_PROCESS_ROLLOUT_GENERATORS: Dict[str, Type[SynchronousRolloutGenerato
     "a2c": SyncStepRolloutGenerator,
     "acbc": SyncStepRolloutGenerator,
     "appo": SyncStepRolloutGenerator,
+}
+
+ROLLOUT_CLASS_BY_ALGO: Dict[str, Type[Rollout]] = {
+    "ppo": PPORollout,
+    "a2c": A2CRollout,
+    "acbc": ACBCRollout,
+    "appo": PPORollout,
 }
 
 
@@ -49,5 +60,6 @@ def create_synchronous_rollout_generator(
         config,
         data_store_accessor,
         tb_writer,
+        ROLLOUT_CLASS_BY_ALGO[args.algo],
         **rollout_hyperparams,
     )
