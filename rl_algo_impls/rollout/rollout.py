@@ -58,12 +58,12 @@ BatchMapFn = Callable[[Batch], Dict[str, torch.Tensor]]
 class Rollout(ABC):
     @property
     @abstractmethod
-    def y_true(self) -> torch.Tensor:
+    def y_true(self) -> np.ndarray:
         ...
 
     @property
     @abstractmethod
-    def y_pred(self) -> torch.Tensor:
+    def y_pred(self) -> np.ndarray:
         ...
 
     @property
@@ -80,6 +80,18 @@ class Rollout(ABC):
         self, batch_size: int, device: torch.device, shuffle: bool = True
     ) -> Iterator[Batch]:
         ...
+
+
+ND = TypeVar("ND", np.ndarray, Dict[str, np.ndarray])
+
+
+def flatten_batch_step(a: ND) -> ND:
+    def flatten_array_fn(_a: np.ndarray) -> np.ndarray:
+        return _a.reshape((-1,) + _a.shape[2:])
+
+    if isinstance(a, dict):
+        return {k: flatten_array_fn(v) for k, v in a.items()}
+    return flatten_array_fn(a)
 
 
 def flatten_to_tensor(a: np.ndarray, device: torch.device) -> torch.Tensor:

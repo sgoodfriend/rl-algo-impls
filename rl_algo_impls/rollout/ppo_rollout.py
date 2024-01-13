@@ -5,16 +5,16 @@ import numpy as np
 import torch
 
 from rl_algo_impls.loss.teacher_kl_loss import teacher_kl_loss_enabled
-from rl_algo_impls.rollout.rollout import (
-    Batch,
-    Rollout,
-    flatten_actions_to_tensor,
-    flatten_to_tensor,
-)
+from rl_algo_impls.rollout.rollout import Batch, Rollout, flatten_batch_step
 from rl_algo_impls.runner.config import Config
 from rl_algo_impls.shared.data_store.data_store_data import RolloutView
 from rl_algo_impls.shared.gae import compute_advantages
-from rl_algo_impls.shared.tensor_utils import NumOrArray, NumpyOrDict, get_items
+from rl_algo_impls.shared.tensor_utils import (
+    NumOrArray,
+    NumpyOrDict,
+    get_items,
+    numpy_to_tensor,
+)
 
 
 @dataclass
@@ -50,19 +50,16 @@ class PPORollout(Rollout):
         **kwargs,
     ) -> None:
         super().__init__()
-        cpu_device = torch.device("cpu")
-        self.obs = flatten_to_tensor(obs, cpu_device)
-        self.actions = flatten_actions_to_tensor(actions, cpu_device)
-        self.values = flatten_to_tensor(values, cpu_device)
-        self.logprobs = torch.tensor(logprobs.reshape(-1)).to(cpu_device)
+        self.obs = flatten_batch_step(obs)
+        self.actions = flatten_batch_step(actions)
+        self.values = flatten_batch_step(values)
+        self.logprobs = logprobs.reshape(-1)
         self.action_masks = (
-            flatten_actions_to_tensor(action_masks, cpu_device)
-            if action_masks is not None
-            else None
+            flatten_batch_step(action_masks) if action_masks is not None else None
         )
         self.full_batch_off_accelerator = full_batch_off_accelerator
 
-        self.advantages = flatten_to_tensor(
+        self.advantages = flatten_batch_step(
             compute_advantages(
                 rewards,
                 values,
@@ -71,8 +68,7 @@ class PPORollout(Rollout):
                 next_values,
                 gamma,
                 gae_lambda,
-            ),
-            cpu_device,
+            )
         )
 
         self.returns = self.advantages + self.values
@@ -88,18 +84,16 @@ class PPORollout(Rollout):
                 teacher_logprobs[idx] = teacher_policy.logprobs(
                     o_batch, action_batch, action_mask_batch
                 )
-            self.teacher_logprobs = torch.tensor(teacher_logprobs.reshape(-1)).to(
-                cpu_device
-            )
+            self.teacher_logprobs = teacher_logprobs.reshape(-1)
         else:
             self.teacher_logprobs = None
 
     @property
-    def y_true(self) -> torch.Tensor:
+    def y_true(self) -> np.ndarray:
         return self.returns
 
     @property
-    def y_pred(self) -> torch.Tensor:
+    def y_pred(self) -> np.ndarray:
         return self.values
 
     @property
@@ -115,15 +109,19 @@ class PPORollout(Rollout):
         if self._batch is not None:
             return self._batch.to(device)
         self._batch = PPOBatch(
-            self.obs,
-            self.actions,
-            self.action_masks,
-            self.logprobs,
-            self.values,
-            self.advantages,
-            self.returns,
-            self.teacher_logprobs,
-        ).to(device)
+            numpy_to_tensor(self.obs, device),
+            numpy_to_tensor(self.actions, device),
+            numpy_to_tensor(self.action_masks, device)
+            if self.action_masks is not None
+            else None,
+            numpy_to_tensor(self.logprobs, device),
+            numpy_to_tensor(self.values, device),
+            numpy_to_tensor(self.advantages, device),
+            numpy_to_tensor(self.returns, device),
+            numpy_to_tensor(self.teacher_logprobs, device)
+            if self.teacher_logprobs is not None
+            else None,
+        )
         return self._batch
 
     def minibatches(
