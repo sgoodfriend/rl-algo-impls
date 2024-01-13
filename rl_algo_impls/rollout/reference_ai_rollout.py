@@ -2,8 +2,8 @@ from typing import Optional
 
 import numpy as np
 
-from rl_algo_impls.rollout.sync_step_rollout import SyncStepRolloutGenerator, fold_in
-from rl_algo_impls.rollout.vec_rollout import VecRollout
+from rl_algo_impls.rollout.rollout import Rollout
+from rl_algo_impls.rollout.sync_step_rollout import SyncStepRolloutGenerator
 from rl_algo_impls.runner.config import Config
 from rl_algo_impls.shared.data_store.abstract_data_store_accessor import (
     AbstractDataStoreAccessor,
@@ -12,7 +12,7 @@ from rl_algo_impls.shared.stats import log_scalars
 from rl_algo_impls.shared.summary_wrapper.abstract_summary_wrapper import (
     AbstractSummaryWrapper,
 )
-from rl_algo_impls.shared.tensor_utils import batch_dict_keys
+from rl_algo_impls.shared.tensor_utils import batch_dict_keys, set_items
 
 
 class ReferenceAIRolloutGenerator(SyncStepRolloutGenerator):
@@ -41,15 +41,11 @@ class ReferenceAIRolloutGenerator(SyncStepRolloutGenerator):
                     dtype=self.actions.dtype,
                 )
 
-    def rollout(self) -> Optional[VecRollout]:
+    def rollout(self) -> Optional[Rollout]:
         rollout_view = self.data_store_view.update_for_rollout_start()
         if rollout_view is None:
             return None
-        (
-            policy,
-            rollout_params,
-            self.tb_writer.timesteps_elapsed,
-        ) = rollout_view
+        (policy, rollout_params, self.tb_writer.timesteps_elapsed, _) = rollout_view
         self.update_rollout_params(rollout_params)
         log_scalars(self.tb_writer, rollout_params, self.tb_writer.timesteps_elapsed)
 
@@ -63,7 +59,7 @@ class ReferenceAIRolloutGenerator(SyncStepRolloutGenerator):
             self.obs[s] = self.next_obs
             self.episode_starts[s] = self.next_episode_starts
             if self.action_masks is not None:
-                fold_in(self.action_masks, self.next_action_masks, s)
+                set_items(self.action_masks, self.next_action_masks, s)
 
             if self.include_logp:
                 (
@@ -83,7 +79,7 @@ class ReferenceAIRolloutGenerator(SyncStepRolloutGenerator):
                 _,
             ) = self.vec_env.step(step_actions)
             actions = batch_dict_keys(getattr(self.vec_env, "last_action"))
-            fold_in(self.actions, actions, s)
+            set_items(self.actions, actions, s)
 
             self.next_action_masks = (
                 self.get_action_mask() if self.get_action_mask else None
@@ -93,8 +89,9 @@ class ReferenceAIRolloutGenerator(SyncStepRolloutGenerator):
 
         policy.train()
         assert isinstance(self.next_obs, np.ndarray)
-        return VecRollout(
-            policy.device,
+        return self.rollout_cls(
+            config=self.config,
+            rollout_view=rollout_view,
             next_episode_starts=self.next_episode_starts,
             next_values=next_values,
             obs=self.obs,

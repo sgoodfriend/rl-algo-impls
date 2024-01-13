@@ -55,3 +55,11 @@ class AbstractPolicy(ABC, Generic[ObsType]):
     @abstractmethod
     def step(self, obs: ObsType, action_masks: Optional[NumpyOrDict] = None) -> Step:
         ...
+
+    def logprobs(
+        self,
+        obs: ObsType,
+        actions: NumpyOrDict,
+        action_masks: Optional[NumpyOrDict] = None,
+    ) -> np.ndarray:
+        ...

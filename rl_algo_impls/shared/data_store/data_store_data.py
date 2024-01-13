@@ -15,7 +15,6 @@ LearnerViewSelf = TypeVar("LearnerViewSelf", bound="LearnerView")
 
 class LearnerView(NamedTuple):
     rollouts: Tuple["Rollout", ...]
-    latest_checkpoint_policy: Optional["AbstractPolicy"]
 
 
 class LearnerInitializeData(NamedTuple):
@@ -46,6 +45,14 @@ class RolloutView(NamedTuple):
     rollout_params: Dict[str, Any]
     timesteps_elapsed: int
 
+    @property
+    def latest_checkpoint_policy(self) -> Optional["AbstractPolicy"]:
+        return (
+            self.checkpoint_policies[self.latest_checkpoint_idx]
+            if self.checkpoint_policies
+            else None
+        )
+
 
 class RolloutUpdate(NamedTuple):
     rollout: "Rollout"
@@ -74,6 +81,7 @@ class RolloutDataStoreViewView(NamedTuple):
     policy: "AbstractPolicy"
     rollout_params: Dict[str, Any]
     timesteps_elapsed: int
+    latest_checkpoint_policy: Optional["AbstractPolicy"]
 
 
 class EvalDataStoreViewView(NamedTuple):

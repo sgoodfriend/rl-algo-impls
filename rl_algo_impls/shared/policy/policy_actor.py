@@ -82,15 +82,28 @@ class PolicyActor(AbstractPolicy, Generic[ObsType]):
         assert policy_idx in self._policies_by_key, f"No policy with idx {policy_idx}"
         self._policies_by_key[policy_idx].train(mode)
 
-    def value(self, policy_idx: int, obs: Any) -> np.ndarray:
+    def value(self, policy_idx: int, obs: ObsType) -> np.ndarray:
         assert policy_idx in self._policies_by_key, f"No policy with idx {policy_idx}"
         return self._policies_by_key[policy_idx].value(obs)
 
     def step(
-        self, policy_idx: int, obs: Any, action_masks: Optional["NumpyOrDict"] = None
+        self,
+        policy_idx: int,
+        obs: ObsType,
+        action_masks: Optional["NumpyOrDict"] = None,
     ) -> Step:
         assert policy_idx in self._policies_by_key, f"No policy with idx {policy_idx}"
         return self._policies_by_key[policy_idx].step(obs, action_masks)
+
+    def logprobs(
+        self,
+        policy_idx: int,
+        obs: ObsType,
+        actions: "NumpyOrDict",
+        action_masks: Optional["NumpyOrDict"] = None,
+    ) -> np.ndarray:
+        assert policy_idx in self._policies_by_key, f"No policy with idx {policy_idx}"
+        return self._policies_by_key[policy_idx].logprobs(obs, actions, action_masks)
 
     def transfer_policy_to(
         self,
