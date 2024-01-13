@@ -50,25 +50,21 @@ class PPORollout(Rollout):
         **kwargs,
     ) -> None:
         super().__init__()
-        self.obs = flatten_batch_step(obs)
-        self.actions = flatten_batch_step(actions)
-        self.values = flatten_batch_step(values)
-        self.logprobs = logprobs.reshape(-1)
-        self.action_masks = (
-            flatten_batch_step(action_masks) if action_masks is not None else None
-        )
+        self.obs = obs
+        self.actions = actions
+        self.values = values
+        self.logprobs = logprobs
+        self.action_masks = action_masks
         self.full_batch_off_accelerator = full_batch_off_accelerator
 
-        self.advantages = flatten_batch_step(
-            compute_advantages(
-                rewards,
-                values,
-                episode_starts,
-                next_episode_starts,
-                next_values,
-                gamma,
-                gae_lambda,
-            )
+        self.advantages = compute_advantages(
+            rewards,
+            values,
+            episode_starts,
+            next_episode_starts,
+            next_values,
+            gamma,
+            gae_lambda,
         )
 
         self.returns = self.advantages + self.values
@@ -84,21 +80,21 @@ class PPORollout(Rollout):
                 teacher_logprobs[idx] = teacher_policy.logprobs(
                     o_batch, action_batch, action_mask_batch
                 )
-            self.teacher_logprobs = teacher_logprobs.reshape(-1)
+            self.teacher_logprobs = teacher_logprobs
         else:
             self.teacher_logprobs = None
 
     @property
     def y_true(self) -> np.ndarray:
-        return self.returns
+        return flatten_batch_step(self.returns)
 
     @property
     def y_pred(self) -> np.ndarray:
-        return self.values
+        return flatten_batch_step(self.values)
 
     @property
     def total_steps(self) -> int:
-        return self.obs.shape[0]
+        return int(np.prod(self.values.shape[:2]))
 
     def num_minibatches(self, batch_size: int) -> int:
         return self.total_steps // batch_size + (
@@ -109,16 +105,16 @@ class PPORollout(Rollout):
         if self._batch is not None:
             return self._batch.to(device)
         self._batch = PPOBatch(
-            numpy_to_tensor(self.obs, device),
-            numpy_to_tensor(self.actions, device),
-            numpy_to_tensor(self.action_masks, device)
+            flatten_to_tensor(self.obs, device),
+            flatten_actions_to_tensor(self.actions, device),
+            flatten_actions_to_tensor(self.action_masks, device)
             if self.action_masks is not None
             else None,
-            numpy_to_tensor(self.logprobs, device),
-            numpy_to_tensor(self.values, device),
-            numpy_to_tensor(self.advantages, device),
-            numpy_to_tensor(self.returns, device),
-            numpy_to_tensor(self.teacher_logprobs, device)
+            torch.tensor(self.logprobs.reshape(-1)).to(device),
+            flatten_to_tensor(self.values, device),
+            flatten_to_tensor(self.advantages, device),
+            flatten_to_tensor(self.returns, device),
+            torch.tensor(self.teacher_logprobs.reshape(-1)).to(device)
             if self.teacher_logprobs is not None
             else None,
         )
