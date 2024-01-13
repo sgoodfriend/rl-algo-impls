@@ -16,15 +16,13 @@ from rl_algo_impls.shared.data_store.data_store_data import (
     RolloutView,
 )
 from rl_algo_impls.shared.evaluator.abstract_evaluator import AbstractEvaluator
+from rl_algo_impls.shared.policy.remote_inference_policy import RemoteInferencePolicy
 from rl_algo_impls.shared.stats import EpisodesStats
 from rl_algo_impls.shared.trackable import TrackableState, UpdateTrackable
 from rl_algo_impls.utils.ray import init_ray_actor
 
 if TYPE_CHECKING:
     from rl_algo_impls.shared.policy.abstract_policy import AbstractPolicy
-    from rl_algo_impls.shared.policy.remote_inference_policy import (
-        RemoteInferencePolicy,
-    )
 
 
 class RemoteLearnerInitializeData(NamedTuple):
