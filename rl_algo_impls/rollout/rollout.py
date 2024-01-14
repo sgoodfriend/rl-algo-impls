@@ -55,7 +55,17 @@ class Batch:
                 return {k: v[indices] for k, v in _t.items()}
             return _t[indices]
 
-        return self.__class__(*(by_indices_fn(t) for t in astuple(self)))
+        return self.__class__(
+            by_indices_fn(self.obs),
+            by_indices_fn(self.logprobs),
+            by_indices_fn(self.actions),
+            by_indices_fn(self.action_masks),
+            by_indices_fn(self.num_actions),
+            by_indices_fn(self.values),
+            by_indices_fn(self.advantages),
+            by_indices_fn(self.returns),
+            by_indices_fn(self.additional),
+        )
 
     def __len__(self) -> int:
         return self.obs.shape[0]
