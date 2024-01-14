@@ -1,7 +1,7 @@
 import dataclasses
 from abc import ABC, abstractmethod
 from dataclasses import astuple, dataclass
-from typing import Callable, Dict, Iterator, Optional, TypeVar
+from typing import Callable, Dict, Iterator, NamedTuple, Optional, TypeVar
 
 import numpy as np
 import torch
@@ -14,8 +14,7 @@ BatchSelf = TypeVar("BatchSelf", bound="Batch")
 TDN = TypeVar("TDN", torch.Tensor, Dict[str, torch.Tensor], None)
 
 
-@dataclass
-class Batch:
+class Batch(NamedTuple):
     obs: torch.Tensor
     logprobs: Optional[torch.Tensor]
 
