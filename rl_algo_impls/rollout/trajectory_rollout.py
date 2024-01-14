@@ -42,7 +42,7 @@ class TrajectoryRollout(Rollout):
         )
 
         self.returns = advantages + self.values
-        
+
         batch_device = torch.device("cpu")
         self.batch = Batch(
             obs=torch.from_numpy(obs).to(batch_device),
@@ -71,18 +71,6 @@ class TrajectoryRollout(Rollout):
 
     def num_minibatches(self, batch_size: int) -> int:
         return self.total_steps // batch_size
-
-    def add_to_batch(
-        self, map_fn: BatchMapFn, batch_size: int, device: torch.device
-    ) -> None:
-        to_add: DefaultDict[str, List[torch.Tensor]] = defaultdict(list)
-        for i in range(0, self.total_steps, batch_size):
-            mb_dict = map_fn(self.batch[torch.arange(i, i + batch_size)].to(device))
-            for k, v in mb_dict.items():
-                to_add[k].append(v)
-        self.batch.additional.update(
-            {k: torch.cat(v).to(self.batch.device) for k, v in to_add.items()}
-        )
 
     def minibatches(
         self, batch_size: int, device: torch.device, shuffle: bool = True

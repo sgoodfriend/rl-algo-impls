@@ -11,7 +11,7 @@ from rl_algo_impls.shared.actor.gridnet import ValueDependentMask
 from rl_algo_impls.shared.tensor_utils import (
     NumpyOrDict,
     TensorOrDict,
-    tensor_by_indicies,
+    tensor_by_indices,
 )
 
 BatchSelf = TypeVar("BatchSelf", bound="Batch")
@@ -55,8 +55,8 @@ class Batch:
         return self.__class__(
             self.obs[indices],
             self.logprobs[indices] if self.logprobs is not None else None,
-            tensor_by_indicies(self.actions, indices),
-            tensor_by_indicies(self.action_masks, indices)
+            tensor_by_indices(self.actions, indices),
+            tensor_by_indices(self.action_masks, indices)
             if self.action_masks is not None
             else None,
             self.num_actions[indices] if self.num_actions is not None else None,
