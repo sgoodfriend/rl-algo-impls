@@ -8,11 +8,7 @@ import torch
 from gymnasium.spaces import MultiDiscrete
 
 from rl_algo_impls.shared.actor.gridnet import ValueDependentMask
-from rl_algo_impls.shared.tensor_utils import (
-    NumpyOrDict,
-    TensorOrDict,
-    tensor_by_indices,
-)
+from rl_algo_impls.shared.tensor_utils import NumpyOrDict, TensorOrDict
 
 BatchSelf = TypeVar("BatchSelf", bound="Batch")
 TDN = TypeVar("TDN", torch.Tensor, Dict[str, torch.Tensor], None)
@@ -52,19 +48,14 @@ class Batch:
         return self.__class__(*(to_device(t) for t in astuple(self)))
 
     def __getitem__(self: BatchSelf, indices: torch.Tensor) -> BatchSelf:
-        return self.__class__(
-            self.obs[indices],
-            self.logprobs[indices] if self.logprobs is not None else None,
-            tensor_by_indices(self.actions, indices),
-            tensor_by_indices(self.action_masks, indices)
-            if self.action_masks is not None
-            else None,
-            self.num_actions[indices] if self.num_actions is not None else None,
-            self.values[indices],
-            self.advantages[indices],
-            self.returns[indices],
-            {k: v[indices] for k, v in self.additional.items()},
-        )
+        def by_indices_fn(_t: TDN) -> TDN:
+            if _t is None:
+                return _t
+            if isinstance(_t, dict):
+                return {k: v[indices] for k, v in _t.items()}
+            return _t[indices]
+
+        return self.__class__(*(by_indices_fn(t) for t in astuple(self)))
 
     def __len__(self) -> int:
         return self.obs.shape[0]
