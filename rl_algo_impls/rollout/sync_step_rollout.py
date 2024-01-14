@@ -1,24 +1,28 @@
 import logging
-from typing import Dict, Optional, TypeVar, Union
+from typing import Dict, Optional, Type
 
 import numpy as np
 from gymnasium.spaces import Dict as DictSpace
 
+from rl_algo_impls.rollout.rollout import Rollout
 from rl_algo_impls.rollout.synchronous_rollout_generator import (
     SynchronousRolloutGenerator,
 )
-from rl_algo_impls.rollout.vec_rollout import VecRollout
 from rl_algo_impls.runner.config import Config
 from rl_algo_impls.shared.data_store.abstract_data_store_accessor import (
     AbstractDataStoreAccessor,
 )
 from rl_algo_impls.shared.policy.abstract_policy import AbstractPolicy
-from rl_algo_impls.shared.policy.policy import Policy
 from rl_algo_impls.shared.stats import log_scalars
 from rl_algo_impls.shared.summary_wrapper.abstract_summary_wrapper import (
     AbstractSummaryWrapper,
 )
-from rl_algo_impls.shared.tensor_utils import NumOrList, batch_dict_keys, num_or_array
+from rl_algo_impls.shared.tensor_utils import (
+    NumOrList,
+    batch_dict_keys,
+    num_or_array,
+    set_items,
+)
 from rl_algo_impls.shared.vec_env.env_spaces import EnvSpaces
 from rl_algo_impls.wrappers.episode_stats_writer import EpisodeStatsWriter
 from rl_algo_impls.wrappers.vector_wrapper import find_wrapper
@@ -30,6 +34,7 @@ class SyncStepRolloutGenerator(SynchronousRolloutGenerator):
         config: Config,
         data_store_accessor: AbstractDataStoreAccessor,
         tb_writer: AbstractSummaryWrapper,
+        rollout_cls: Type[Rollout],
         gamma: NumOrList = 0.99,
         gae_lambda: NumOrList = 0.95,
         n_steps: int = 2048,
@@ -43,7 +48,7 @@ class SyncStepRolloutGenerator(SynchronousRolloutGenerator):
         prepare_steps: int = 0,
         rolling_num_envs_reset_every_prepare_step: int = 0,
     ) -> None:
-        super().__init__(config, data_store_accessor, tb_writer)
+        super().__init__(config, data_store_accessor, tb_writer, rollout_cls)
         self.gamma = num_or_array(gamma)
         self.gae_lambda = num_or_array(gae_lambda)
         self.n_steps = n_steps
@@ -174,7 +179,7 @@ class SyncStepRolloutGenerator(SynchronousRolloutGenerator):
         if episode_stats_writer:
             episode_stats_writer.enable_record_stats()
 
-    def rollout(self) -> Optional[VecRollout]:
+    def rollout(self) -> Optional[Rollout]:
         rollout_view = self.data_store_view.update_for_rollout_start()
         if rollout_view is None:
             return None
@@ -192,7 +197,7 @@ class SyncStepRolloutGenerator(SynchronousRolloutGenerator):
             self.random_num_envs_reset_every_rollout,
         )
 
-        return VecRollout(
+        return self.rollout_cls(
             next_episode_starts=self.next_episode_starts,
             next_values=next_values,
             obs=self.obs,
@@ -221,7 +226,7 @@ class SyncStepRolloutGenerator(SynchronousRolloutGenerator):
             self.obs[s] = self.next_obs
             self.episode_starts[s] = self.next_episode_starts
             if self.action_masks is not None:
-                fold_in(self.action_masks, self.next_action_masks, s)
+                set_items(self.action_masks, self.next_action_masks, s)
 
             (
                 actions,
@@ -231,7 +236,7 @@ class SyncStepRolloutGenerator(SynchronousRolloutGenerator):
             ) = policy.step(self.next_obs, action_masks=self.next_action_masks)
             if self.logprobs is not None:
                 self.logprobs[s] = logprobs
-            fold_in(self.actions, actions, s)
+            set_items(self.actions, actions, s)
             (
                 self.next_obs,
                 self.rewards[s],
@@ -304,24 +309,8 @@ class SyncStepRolloutGenerator(SynchronousRolloutGenerator):
             assert isinstance(self.next_obs, np.ndarray)
             self.next_obs[masked_reset_mask] = next_obs
             if self.next_action_masks is not None:
-                fold_in(
+                set_items(
                     self.next_action_masks,
                     batch_dict_keys(action_mask),
                     masked_reset_mask,
                 )
-
-
-ND = TypeVar("ND", np.ndarray, Dict[str, np.ndarray])
-
-
-def fold_in(destination: ND, subset: ND, idx: Union[int, np.ndarray]):
-    def fn(_d: np.ndarray, _s: np.ndarray):
-        _d[idx] = _s
-
-    if isinstance(destination, dict):
-        assert isinstance(subset, dict)
-        for k, d in destination.items():
-            fn(d, subset[k])
-    else:
-        assert isinstance(subset, np.ndarray)
-        fn(destination, subset)

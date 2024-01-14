@@ -1,10 +1,12 @@
 from typing import Dict, Type
 
 from rl_algo_impls.rollout.reference_ai_rollout import ReferenceAIRolloutGenerator
+from rl_algo_impls.rollout.rollout import Rollout
 from rl_algo_impls.rollout.sync_step_rollout import SyncStepRolloutGenerator
 from rl_algo_impls.rollout.synchronous_rollout_generator import (
     SynchronousRolloutGenerator,
 )
+from rl_algo_impls.rollout.vec_rollout import VecRollout
 from rl_algo_impls.runner.config import Config, TrainArgs
 from rl_algo_impls.shared.data_store.abstract_data_store_accessor import (
     AbstractDataStoreAccessor,
@@ -19,6 +21,13 @@ DEFAULT_IN_PROCESS_ROLLOUT_GENERATORS: Dict[str, Type[SynchronousRolloutGenerato
     "a2c": SyncStepRolloutGenerator,
     "acbc": SyncStepRolloutGenerator,
     "appo": SyncStepRolloutGenerator,
+}
+
+ROLLOUT_CLASS_BY_ALGO: Dict[str, Type[Rollout]] = {
+    "ppo": VecRollout,
+    "a2c": VecRollout,
+    "acbc": VecRollout,
+    "appo": VecRollout,
 }
 
 
@@ -49,5 +58,6 @@ def create_synchronous_rollout_generator(
         config,
         data_store_accessor,
         tb_writer,
+        ROLLOUT_CLASS_BY_ALGO[args.algo],
         **rollout_hyperparams,
     )

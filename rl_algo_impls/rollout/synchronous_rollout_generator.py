@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Type
 
 from rl_algo_impls.rollout.rollout import Rollout
 from rl_algo_impls.runner.config import Config
@@ -19,9 +19,11 @@ class SynchronousRolloutGenerator(ABC):
         config: Config,
         data_store_accessor: AbstractDataStoreAccessor,
         tb_writer: AbstractSummaryWrapper,
+        rollout_cls: Type[Rollout],
         **kwargs,
     ) -> None:
         super().__init__()
+        self.config = config
 
         from rl_algo_impls.shared.data_store.data_store_view import RolloutDataStoreView
         from rl_algo_impls.shared.vec_env.make_env import make_env
@@ -34,6 +36,7 @@ class SynchronousRolloutGenerator(ABC):
             tb_writer=tb_writer,
         )
         self.tb_writer = tb_writer
+        self.rollout_cls = rollout_cls
         self._env_spaces = EnvSpaces.from_vec_env(self.vec_env)
 
     @abstractmethod
