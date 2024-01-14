@@ -30,6 +30,17 @@ class PPOBatch(Batch):
 
 
 class PPORollout(Rollout):
+    obs: np.ndarray
+    actions: NumpyOrDict
+    rewards: np.ndarray
+    episode_starts: np.ndarray
+    values: np.ndarray
+    logprobs: Optional[np.ndarray]
+    action_masks: Optional[NumpyOrDict]
+
+    advantages: np.ndarray
+    returns: np.ndarray
+
     _batch: Optional[PPOBatch] = None
 
     def __init__(

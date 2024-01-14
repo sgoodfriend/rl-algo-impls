@@ -15,6 +15,7 @@ LearnerViewSelf = TypeVar("LearnerViewSelf", bound="LearnerView")
 
 class LearnerView(NamedTuple):
     rollouts: Tuple["Rollout", ...]
+    latest_checkpoint_policy: Optional["AbstractPolicy"]
 
 
 class LearnerInitializeData(NamedTuple):

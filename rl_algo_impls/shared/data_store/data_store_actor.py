@@ -92,7 +92,29 @@ class DataStoreActor:
         non_none_rollouts = tuple(r for r in rollouts if r is not None)
         return LearnerView(
             rollouts=non_none_rollouts,
+            latest_checkpoint_policy=self.latest_checkpoint_policy
+            if self.uses_teacher_policy
+            else None,
         )
+
+    @property
+    def uses_teacher_policy(self) -> bool:
+        return self.config.algo_hyperparams.get("teacher_kl_loss_coef", None)
+
+    @property
+    def latest_checkpoint(self) -> Optional[CheckpointState]:
+        return (
+            self._ckpts_circular_queue[self._latest_ckpt_idx]
+            if self._ckpts_circular_queue
+            else None
+        )
+
+    @property
+    def latest_checkpoint_policy(self) -> Optional["AbstractPolicy"]:
+        latest_checkpoint = self.latest_checkpoint
+        if latest_checkpoint is None:
+            return None
+        return latest_checkpoint.policy
 
     def initialize_learner(
         self, learner_initialize_data: RemoteLearnerInitializeData
