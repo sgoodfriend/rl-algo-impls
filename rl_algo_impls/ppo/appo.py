@@ -1,7 +1,5 @@
 import gc
 import logging
-import warnings
-from dataclasses import astuple
 from time import perf_counter
 from typing import List, Optional, TypeVar, Union
 
@@ -213,7 +211,7 @@ class APPO(Algorithm):
                             mb_adv,
                             mb_returns,
                             mb_additional,
-                        ) = astuple(mb)
+                        ) = mb
 
                         if self.normalize_advantages_after_scaling:
                             if multi_reward_weights is not None:
