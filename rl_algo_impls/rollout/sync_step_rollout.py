@@ -131,11 +131,7 @@ class SyncStepRolloutGenerator(SynchronousRolloutGenerator):
     def prepare(self) -> None:
         rollout_view = self.data_store_view.update_for_rollout_start()
         assert rollout_view is not None
-        (
-            policy,
-            rollout_params,
-            timesteps_elapsed,
-        ) = rollout_view
+        (policy, rollout_params, timesteps_elapsed, _) = rollout_view
         self.tb_writer.on_timesteps_elapsed(timesteps_elapsed)
         self.update_rollout_params(rollout_params)
 
