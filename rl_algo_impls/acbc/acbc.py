@@ -76,20 +76,18 @@ class ACBC(Algorithm):
             }
             log_scalars(self.tb_writer, "charts", chart_scalars)
 
-            rollouts, teacher_policy = learner_data_store_view.get_learner_view()
+            (rollouts,) = learner_data_store_view.get_learner_view()
             if len(rollouts) > 1:
                 logging.warning(
                     f"A2C does not support multiple rollouts ({len(rollouts)}) per epoch. "
                     "Only the last rollout will be used"
                 )
             r = rollouts[-1]
-            if teacher_policy is not None:
-                logging.warning("A2c doesn't support teacher policies")
             timesteps_elapsed += r.total_steps
 
             step_stats: List[Dict[str, Union[float, np.ndarray]]] = []
             vf_coef = torch.Tensor(np.array(self.vf_coef)).to(self.device)
-            for e in range(self.n_epochs):
+            for _ in range(self.n_epochs):
                 step_stats.clear()
                 for mb in r.minibatches(
                     self.batch_size, shuffle=not self.gradient_accumulation

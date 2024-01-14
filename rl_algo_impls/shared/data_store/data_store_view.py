@@ -105,7 +105,12 @@ class RolloutDataStoreView(VectorEnvDataStoreView):
             trackers[0].set_state(env_state[k])
         for cpt in self.checkpoint_policy_trackers:
             cpt.update_checkpoint_policies(checkpoint_policies, latest_checkpoint_idx)
-        return RolloutDataStoreViewView(policy, rollout_params, timesteps_elapsed)
+        return RolloutDataStoreViewView(
+            policy,
+            rollout_params,
+            timesteps_elapsed,
+            rollout_view.latest_checkpoint_policy,
+        )
 
     def submit_rollout_update(self, rollout: Rollout) -> None:
         self.data_store_accessor.submit_rollout_update(

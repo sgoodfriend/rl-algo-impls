@@ -92,15 +92,13 @@ class A2C(Algorithm):
                 chart_scalars["reward_weights"] = self.multi_reward_weights
             log_scalars(self.tb_writer, "charts", chart_scalars)
 
-            rollouts, teacher_policy = learner_data_store_view.get_learner_view()
+            (rollouts,) = learner_data_store_view.get_learner_view()
             if len(rollouts) > 1:
                 logging.warning(
                     f"A2C does not support multiple rollouts ({len(rollouts)}) per epoch. "
                     "Only the last rollout will be used"
                 )
             r = rollouts[-1]
-            if teacher_policy is not None:
-                logging.warning("A2c doesn't support teacher policies")
             timesteps_elapsed += r.total_steps
 
             vf_coef = torch.Tensor(np.array(self.vf_coef)).to(self.device)
