@@ -178,11 +178,7 @@ class SyncStepRolloutGenerator(SynchronousRolloutGenerator):
         rollout_view = self.data_store_view.update_for_rollout_start()
         if rollout_view is None:
             return None
-        (
-            policy,
-            rollout_params,
-            timesteps_elapsed,
-        ) = rollout_view
+        (policy, rollout_params, timesteps_elapsed, _) = rollout_view
         self.tb_writer.on_timesteps_elapsed(timesteps_elapsed)
         self.update_rollout_params(rollout_params)
         log_scalars(self.tb_writer, "charts", rollout_params)
