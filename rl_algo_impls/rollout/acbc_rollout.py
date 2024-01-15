@@ -1,27 +1,50 @@
 from dataclasses import dataclass
-from typing import Dict, Iterator, Optional
+from typing import Dict, Iterator, NamedTuple, Optional, TypeVar
 
 import numpy as np
 import torch
 from gymnasium.spaces import MultiDiscrete
 
-from rl_algo_impls.rollout.rollout import (
-    Batch,
-    Rollout,
-    flatten_batch_step,
-    num_actions,
-)
+from rl_algo_impls.rollout.rollout import TDN, Rollout, flatten_batch_step, num_actions
 from rl_algo_impls.runner.config import Config
 from rl_algo_impls.shared.actor.gridnet import ValueDependentMask
 from rl_algo_impls.shared.gae import compute_advantages
-from rl_algo_impls.shared.tensor_utils import NumOrArray, NumpyOrDict
+from rl_algo_impls.shared.tensor_utils import NumOrArray, NumpyOrDict, TensorOrDict
+
+ACBCBatchSelf = TypeVar("ACBCBatchSelf", bound="ACBCBatch")
 
 
 @dataclass
-class ACBCBatch(Batch):
+class ACBCBatch(NamedTuple):
+    obs: torch.Tensor
+
+    actions: TensorOrDict
+    action_masks: Optional[TensorOrDict]
+
     returns: torch.Tensor
 
     num_actions: Optional[torch.Tensor] = None
+
+    def to(self: ACBCBatchSelf, device: torch.device) -> ACBCBatchSelf:
+        def to_device(t: TDN) -> TDN:
+            if t is None:
+                return t
+            elif isinstance(t, dict):
+                return {k: v.to(device) for k, v in t.items()}  # type: ignore
+            else:
+                return t.to(device)
+
+        return self.__class__(*(to_device(t) for t in self))
+
+    def __getitem__(self: ACBCBatchSelf, indices: torch.Tensor) -> ACBCBatchSelf:
+        def by_indices_fn(_t: TDN) -> TDN:
+            if _t is None:
+                return _t
+            if isinstance(_t, dict):
+                return {k: v[indices] for k, v in _t.items()}
+            return _t[indices]
+
+        return self.__class__(*(by_indices_fn(t) for t in self))
 
 
 class ACBCRollout(Rollout):

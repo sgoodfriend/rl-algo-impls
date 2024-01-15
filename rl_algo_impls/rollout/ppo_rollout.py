@@ -1,23 +1,31 @@
 from dataclasses import dataclass
-from typing import Iterator, Optional
+from typing import Iterator, NamedTuple, Optional, TypeVar
 
 import numpy as np
 import torch
 
 from rl_algo_impls.loss.teacher_kl_loss import teacher_kl_loss_enabled
-from rl_algo_impls.rollout.rollout import Batch, Rollout, flatten_batch_step
+from rl_algo_impls.rollout.rollout import TDN, Rollout, flatten_batch_step
 from rl_algo_impls.runner.config import Config
 from rl_algo_impls.shared.data_store.data_store_data import RolloutView
 from rl_algo_impls.shared.gae import compute_advantages
 from rl_algo_impls.shared.tensor_utils import (
     NumOrArray,
     NumpyOrDict,
+    TensorOrDict,
     get_items,
     numpy_to_tensor,
 )
 
+PPOBatchSelf = TypeVar("PPOBatchSelf", bound="PPOBatch")
 
-class PPOBatch(Batch):
+
+class PPOBatch(NamedTuple):
+    obs: torch.Tensor
+
+    actions: TensorOrDict
+    action_masks: Optional[TensorOrDict]
+
     logprobs: torch.Tensor
 
     values: torch.Tensor
@@ -25,6 +33,27 @@ class PPOBatch(Batch):
     returns: torch.Tensor
 
     teacher_logprobs: Optional[torch.Tensor]
+
+    def to(self: PPOBatchSelf, device: torch.device) -> PPOBatchSelf:
+        def to_device(t: TDN) -> TDN:
+            if t is None:
+                return t
+            elif isinstance(t, dict):
+                return {k: v.to(device) for k, v in t.items()}  # type: ignore
+            else:
+                return t.to(device)
+
+        return self.__class__(*(to_device(t) for t in self))
+
+    def __getitem__(self: PPOBatchSelf, indices: torch.Tensor) -> PPOBatchSelf:
+        def by_indices_fn(_t: TDN) -> TDN:
+            if _t is None:
+                return _t
+            if isinstance(_t, dict):
+                return {k: v[indices] for k, v in _t.items()}
+            return _t[indices]
+
+        return self.__class__(*(by_indices_fn(t) for t in self))
 
 
 class PPORollout(Rollout):
