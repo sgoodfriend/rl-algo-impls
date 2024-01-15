@@ -1,7 +1,7 @@
 import gc
 import logging
 import warnings
-from dataclasses import asdict, astuple, dataclass
+from dataclasses import asdict, dataclass
 from time import perf_counter
 from typing import Dict, List, NamedTuple, Optional, Tuple, TypeVar, Union
 
@@ -296,7 +296,7 @@ class PPO(Algorithm):
                     mb_adv,
                     mb_returns,
                     mb_teacher_logprobs,
-                ) = astuple(mb)
+                ) = mb
 
                 if self.normalize_advantages_after_scaling:
                     if multi_reward_weights is not None:

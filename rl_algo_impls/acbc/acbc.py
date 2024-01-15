@@ -1,5 +1,4 @@
 import logging
-from dataclasses import astuple
 from time import perf_counter
 from typing import Dict, List, Optional, TypeVar, Union
 
@@ -101,7 +100,7 @@ class ACBC(Algorithm):
                         mb_action_masks,
                         mb_returns,
                         mb_num_actions,
-                    ) = astuple(mb)
+                    ) = mb
 
                     new_logprobs, _, new_values = self.policy(
                         mb_obs, mb_actions, action_masks=mb_action_masks
