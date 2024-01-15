@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
-from dataclasses import astuple, dataclass
-from typing import Callable, Dict, Iterator, Optional, TypeVar
+from typing import Callable, Dict, Iterator, NamedTuple, Optional, TypeVar
 
 import numpy as np
 import torch
@@ -13,8 +12,7 @@ BatchSelf = TypeVar("BatchSelf", bound="Batch")
 TDN = TypeVar("TDN", torch.Tensor, Dict[str, torch.Tensor], None)
 
 
-@dataclass
-class Batch:
+class Batch(NamedTuple):
     obs: torch.Tensor
 
     actions: TensorOrDict
@@ -36,7 +34,7 @@ class Batch:
             else:
                 return t.to(device)
 
-        return self.__class__(*(to_device(t) for t in astuple(self)))
+        return self.__class__(*(to_device(t) for t in self))
 
     def __getitem__(self: BatchSelf, indices: torch.Tensor) -> BatchSelf:
         def by_indices_fn(_t: TDN) -> TDN:
@@ -46,7 +44,7 @@ class Batch:
                 return {k: v[indices] for k, v in _t.items()}
             return _t[indices]
 
-        return self.__class__(*(by_indices_fn(t) for t in astuple(self)))
+        return self.__class__(*(by_indices_fn(t) for t in self))
 
     def __len__(self) -> int:
         return self.obs.shape[0]
