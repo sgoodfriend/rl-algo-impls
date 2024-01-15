@@ -21,5 +21,5 @@ while true; do
 
     # Step 4: Run the benchmark
     ./scripts/benchmark.sh
-    ./scripts/appo_benchmark.sh -j 4 -d 4
+    ./scripts/appo_benchmark.sh
 done
