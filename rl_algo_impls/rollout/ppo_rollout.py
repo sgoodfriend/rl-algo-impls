@@ -17,7 +17,6 @@ from rl_algo_impls.shared.tensor_utils import (
 )
 
 
-@dataclass
 class PPOBatch(Batch):
     logprobs: torch.Tensor
 
