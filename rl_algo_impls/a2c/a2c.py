@@ -1,5 +1,4 @@
 import logging
-from dataclasses import astuple
 from time import perf_counter
 from typing import List, Optional, TypeVar
 
@@ -123,7 +122,7 @@ class A2C(Algorithm):
                     mb_advantages,
                     mb_returns,
                     mb_num_actions,
-                ) = astuple(mb)
+                ) = mb
 
                 if self.normalize_advantage:
                     mb_advantages = (mb_advantages - mb_advantages.mean(0)) / (
