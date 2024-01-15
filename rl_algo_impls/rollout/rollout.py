@@ -25,7 +25,6 @@ class Batch(NamedTuple):
 
     advantages: torch.Tensor
     returns: torch.Tensor
-    additional: Dict[str, torch.Tensor] = dataclasses.field(default_factory=dict)
 
     @property
     def device(self) -> torch.device:
@@ -62,7 +61,6 @@ class Batch(NamedTuple):
             by_indices_fn(self.values),
             by_indices_fn(self.advantages),
             by_indices_fn(self.returns),
-            by_indices_fn(self.additional),
         )
 
     def __len__(self) -> int:
@@ -96,11 +94,6 @@ class Rollout(ABC):
     def minibatches(
         self, batch_size: int, device: torch.device, shuffle: bool = True
     ) -> Iterator[Batch]:
-        ...
-
-    def add_to_batch(
-        self, map_fn: BatchMapFn, batch_size: int, device: torch.device
-    ) -> None:
         ...
 
 

@@ -84,7 +84,6 @@ class VecRollout(Rollout):
         self.returns = self.advantages + self.values
         self._y_true = self.returns.reshape((-1,) + self.returns.shape[2:])
 
-
     @property
     def y_true(self) -> np.ndarray:
         return self._y_true
@@ -142,21 +141,6 @@ class VecRollout(Rollout):
                 b_returns,
             )
         return self._batch
-
-    def add_to_batch(
-        self, map_fn: BatchMapFn, batch_size: int, device: torch.device
-    ) -> None:
-        batch = self.batch(
-            torch.device("cpu") if self.full_batch_off_accelerator else device
-        )
-        to_add: DefaultDict[str, List[torch.Tensor]] = defaultdict(list)
-        for i in range(0, self.total_steps, batch_size):
-            mb_dict = map_fn(batch[torch.arange(i, i + batch_size)].to(device))
-            for k, v in mb_dict.items():
-                to_add[k].append(v)
-        batch.additional.update(
-            {k: torch.cat(v).to(batch.device) for k, v in to_add.items()}
-        )
 
     def minibatches(
         self, batch_size: int, device: torch.device, shuffle: bool = True
