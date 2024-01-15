@@ -210,7 +210,6 @@ class APPO(Algorithm):
                             mb_values,
                             mb_adv,
                             mb_returns,
-                            mb_additional,
                         ) = mb
 
                         if self.normalize_advantages_after_scaling:
@@ -286,7 +285,7 @@ class APPO(Algorithm):
                                 assert self.teacher_kl_loss_fn
                                 teacher_kl_loss = self.teacher_kl_loss_fn(
                                     new_logprobs,
-                                    mb_additional,
+                                    None,
                                     ratio
                                     if self.teacher_loss_importance_sampling
                                     else None,
