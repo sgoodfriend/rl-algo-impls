@@ -46,7 +46,7 @@ class ACBCBatch(NamedTuple):
 
 
 class ACBCRollout(Rollout):
-    _batch: Optional[A2CBatch] = None
+    _batch: Optional[ACBCBatch] = None
 
     def __init__(
         self,
