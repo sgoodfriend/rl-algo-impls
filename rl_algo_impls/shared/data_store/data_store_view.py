@@ -1,3 +1,4 @@
+import os
 from collections import defaultdict
 from typing import Any, DefaultDict, Dict, List, Optional
 
@@ -161,6 +162,7 @@ class EvalDataStoreView(VectorEnvDataStoreView):
         )
 
     def save(self, policy: AbstractPolicy, save_path: str) -> None:
+        os.makedirs(save_path, exist_ok=True)
         policy.save(save_path)
         self.algo_state.save(save_path)
         for state in self.env_state.values():

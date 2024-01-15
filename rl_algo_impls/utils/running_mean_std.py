@@ -49,6 +49,7 @@ class TrackableRMS(TrackableState):
     rms: RMS
 
     def save(self, path: str) -> None:
+        os.makedirs(path, exist_ok=True)
         np.savez_compressed(
             os.path.join(path, self.filename),
             **asdict(self.rms),
@@ -147,6 +148,7 @@ class TrackableEMMV(TrackableState):
     emmv: EMMV
 
     def save(self, path: str) -> None:
+        os.makedirs(path, exist_ok=True)
         np.savez_compressed(
             os.path.join(path, self.filename),
             **asdict(self.emmv),
@@ -223,6 +225,7 @@ class TrackableHybridMMV(TrackableState):
     emmv: TrackableEMMV
 
     def save(self, path: str) -> None:
+        os.makedirs(path, exist_ok=True)
         self.rms.save(path)
         self.emmv.save(path)
 
