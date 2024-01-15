@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 from typing import Dict, Iterator, NamedTuple, Optional, TypeVar
 
 import numpy as np
@@ -14,7 +13,6 @@ from rl_algo_impls.shared.tensor_utils import NumOrArray, NumpyOrDict, TensorOrD
 ACBCBatchSelf = TypeVar("ACBCBatchSelf", bound="ACBCBatch")
 
 
-@dataclass
 class ACBCBatch(NamedTuple):
     obs: torch.Tensor
 
@@ -48,6 +46,8 @@ class ACBCBatch(NamedTuple):
 
 
 class ACBCRollout(Rollout):
+    _batch: Optional[A2CBatch] = None
+
     def __init__(
         self,
         config: Config,
