@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Callable, Dict, Iterator, NamedTuple, Optional, TypeVar
+from typing import Callable, Dict, Iterator, NamedTuple, Optional, Tuple, TypeVar
 
 import numpy as np
 import torch
@@ -8,49 +8,9 @@ from gymnasium.spaces import MultiDiscrete
 from rl_algo_impls.shared.actor.gridnet import ValueDependentMask
 from rl_algo_impls.shared.tensor_utils import NumpyOrDict, TensorOrDict
 
-BatchSelf = TypeVar("BatchSelf", bound="Batch")
 TDN = TypeVar("TDN", torch.Tensor, Dict[str, torch.Tensor], None)
 
-
-class Batch(NamedTuple):
-    obs: torch.Tensor
-
-    actions: TensorOrDict
-    action_masks: Optional[TensorOrDict]
-
-    @property
-    def device(self) -> torch.device:
-        return self.obs.device
-
-    def to(self: BatchSelf, device: torch.device) -> BatchSelf:
-        if self.device == device:
-            return self
-
-        def to_device(t: TDN) -> TDN:
-            if t is None:
-                return t
-            elif isinstance(t, dict):
-                return {k: v.to(device) for k, v in t.items()}  # type: ignore
-            else:
-                return t.to(device)
-
-        return self.__class__(*(to_device(t) for t in self))
-
-    def __getitem__(self: BatchSelf, indices: torch.Tensor) -> BatchSelf:
-        def by_indices_fn(_t: TDN) -> TDN:
-            if _t is None:
-                return _t
-            if isinstance(_t, dict):
-                return {k: v[indices] for k, v in _t.items()}
-            return _t[indices]
-
-        return self.__class__(*(by_indices_fn(t) for t in self))
-
-    def __len__(self) -> int:
-        return self.obs.shape[0]
-
-
-BatchMapFn = Callable[[Batch], Dict[str, torch.Tensor]]
+BatchTuple = Tuple[TDN, ...]
 
 
 class Rollout(ABC):
@@ -76,7 +36,7 @@ class Rollout(ABC):
     @abstractmethod
     def minibatches(
         self, batch_size: int, device: torch.device, shuffle: bool = True
-    ) -> Iterator[Batch]:
+    ) -> Iterator[BatchTuple]:
         ...
 
 
