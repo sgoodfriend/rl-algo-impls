@@ -38,12 +38,8 @@ class InProcessDataStoreAccessor(AbstractDataStoreAccessor):
     def get_learner_view(self, wait: bool = False) -> LearnerView:
         assert self.rollout_generator is not None
         rollouts = [self.rollout_generator.rollout()]
-        latest_checkpoint = self._data_store.latest_checkpoint
         return LearnerView(
             rollouts=tuple(rollouts),
-            latest_checkpoint_policy=latest_checkpoint.policy
-            if latest_checkpoint
-            else None,
         )
 
     def initialize_learner(
