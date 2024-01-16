@@ -116,7 +116,7 @@ class RemoteInferencePolicy(AbstractPolicy, Generic[ObsType]):
         target: RemoteInferencePolicySelf,
         delete_origin_policy: bool = False,
     ) -> None:
-        if self.policy_actor == target.policy_actor:
+        if self.policy_actor._actor_id == target.policy_actor._actor_id:
             ray.get(
                 self.policy_actor.transfer_state.remote(
                     self.policy_idx,
