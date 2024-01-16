@@ -1,8 +1,6 @@
-from copy import deepcopy
 from typing import Optional
 
 import ray
-import torch
 
 from rl_algo_impls.runner.config import Config
 from rl_algo_impls.shared.data_store.abstract_data_store_accessor import (
