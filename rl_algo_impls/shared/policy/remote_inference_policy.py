@@ -1,10 +1,12 @@
+import logging
+import uuid
 from typing import TYPE_CHECKING, Any, Generic, Optional, TypeVar
 
 import numpy as np
 import ray
 
 from rl_algo_impls.shared.policy.abstract_policy import AbstractPolicy, Step
-from rl_algo_impls.shared.policy.policy_actor import PolicyActor
+from rl_algo_impls.shared.policy.policy_worker_pool import PolicyWorkerPool
 from rl_algo_impls.wrappers.vector_wrapper import ObsType
 
 if TYPE_CHECKING:
@@ -19,37 +21,32 @@ RemoteInferencePolicySelf = TypeVar(
 class RemoteInferencePolicy(AbstractPolicy, Generic[ObsType]):
     def __init__(
         self,
-        cuda_index: Optional[int],
+        policy_worker_pool: PolicyWorkerPool,
         policy: "Policy",  # policy is None when using private cloning path
         **kwargs,
     ) -> None:
-        self.cuda_index = cuda_index
+        self.policy_worker_pool = policy_worker_pool
+        self.policy_id = uuid.uuid4().hex
 
         _clone_origin = kwargs.get("_clone_origin", None)
         # Private cloning path
         if _clone_origin:
-            if _clone_origin.cuda_index == cuda_index:
-                self.policy_actor = _clone_origin.policy_actor
-                self.policy_idx = self.policy_actor.clone_policy.remote(
-                    _clone_origin.policy_idx
+            assert policy is None
+            assert (
+                policy_worker_pool._actor_id
+                == _clone_origin.policy_worker_pool._actor_id
+            ), f"Cannot clone policy from different PolicyWorkerPool"
+            ray.get(
+                policy_worker_pool.clone_policy.remote(
+                    _clone_origin.policy_id, self.policy_id
                 )
-            else:
-                self.policy_actor = PolicyActor.remote(cuda_index)
-                self.policy_idx = ray.get(
-                    _clone_origin.transfer_policy_to.remote(
-                        _clone_origin.policy_idx, self.policy_actor
-                    )
-                )
+            )
         # Public policy path
         else:
-            self.policy_actor = PolicyActor.remote(cuda_index)
-            self.policy_idx = ray.get(self.policy_actor.add_policy.remote(policy))
+            ray.get(policy_worker_pool.add_policy.remote(self.policy_id, policy))
 
     def __repr__(self) -> str:
-        return (
-            super().__repr__()
-            + f"(cuda_index={self.cuda_index}, policy_idx={self.policy_idx})"
-        )
+        return super().__repr__() + f"(policy_id={self.policy_id})"
 
     def act(
         self,
@@ -58,19 +55,19 @@ class RemoteInferencePolicy(AbstractPolicy, Generic[ObsType]):
         action_masks: Optional["NumpyOrDict"] = None,
     ) -> np.ndarray:
         return ray.get(
-            self.policy_actor.act.remote(
-                self.policy_idx, obs, deterministic, action_masks
+            self.policy_worker_pool.act.remote(
+                self.policy_id, obs, deterministic, action_masks
             )
         )
 
     def reset_noise(self) -> None:
-        return self.policy_actor.reset_noise.remote(self.policy_idx)
+        return self.policy_worker_pool.reset_noise.remote(self.policy_id)
 
     def save(self, path: str) -> None:
-        return self.policy_actor.save.remote(self.policy_idx, path)
+        return self.policy_worker_pool.save.remote(self.policy_id, path)
 
     def set_state(self, state: Any) -> None:
-        self.policy_actor.set_state.remote(self.policy_idx, state)
+        self.policy_worker_pool.set_state.remote(self.policy_id, state)
 
     def eval(self: RemoteInferencePolicySelf) -> RemoteInferencePolicySelf:
         # No-op because policy is always in eval mode
@@ -83,11 +80,11 @@ class RemoteInferencePolicy(AbstractPolicy, Generic[ObsType]):
         return self
 
     def value(self, obs: ObsType) -> np.ndarray:
-        return ray.get(self.policy_actor.value.remote(self.policy_idx, obs))
+        return ray.get(self.policy_worker_pool.value.remote(self.policy_id, obs))
 
     def step(self, obs: ObsType, action_masks: Optional["NumpyOrDict"] = None) -> Step:
         return ray.get(
-            self.policy_actor.step.remote(self.policy_idx, obs, action_masks)
+            self.policy_worker_pool.step.remote(self.policy_id, obs, action_masks)
         )
 
     def logprobs(
@@ -97,16 +94,14 @@ class RemoteInferencePolicy(AbstractPolicy, Generic[ObsType]):
         action_masks: Optional["NumpyOrDict"] = None,
     ) -> np.ndarray:
         return ray.get(
-            self.policy_actor.logprobs.remote(
-                self.policy_idx, obs, actions, action_masks
+            self.policy_worker_pool.logprobs.remote(
+                self.policy_id, obs, actions, action_masks
             )
         )
 
-    def clone(
-        self: RemoteInferencePolicySelf, target_cuda_index: Optional[int]
-    ) -> RemoteInferencePolicySelf:
+    def clone(self: RemoteInferencePolicySelf) -> RemoteInferencePolicySelf:
         return self.__class__(
-            target_cuda_index,
+            self.policy_worker_pool,
             None,  # type: ignore
             _clone_origin=self,
         )
@@ -116,15 +111,11 @@ class RemoteInferencePolicy(AbstractPolicy, Generic[ObsType]):
         target: RemoteInferencePolicySelf,
         delete_origin_policy: bool = False,
     ) -> None:
-        if self.policy_actor._actor_id == target.policy_actor._actor_id:
-            self.policy_actor.transfer_state.remote(
-                self.policy_idx,
-                target.policy_idx,
-                delete_origin_policy=delete_origin_policy,
-            )
-        else:
-            self.policy_actor.transfer_policy_to.remote(
-                self.policy_idx,
-                target.policy_actor,
-                delete_origin_policy=delete_origin_policy,
-            )
+        assert (
+            self.policy_worker_pool._actor_id == target.policy_worker_pool._actor_id
+        ), f"Cannot currently transfer policy between different PolicyWorkerPools"
+        self.policy_worker_pool.transfer_state.remote(
+            self.policy_id,
+            target.policy_id,
+            delete_origin_policy=delete_origin_policy,
+        )

@@ -244,12 +244,14 @@ class Config:
         return None
 
     @property
-    def inference_cuda_index(self) -> Optional[int]:
+    def inference_cuda_indexes(self) -> Optional[List[int]]:
         if self.gpu_ids:
-            gpu_idx = min(
-                self._worker_hyperparams.inference_gpu_index, len(self.gpu_ids) - 1
-            )
-            return self.gpu_ids[gpu_idx]
+            if not self._worker_hyperparams.inference_gpu_indexes:
+                return [self.gpu_ids[0]]
+            return [
+                self.gpu_ids[gpu_idx % len(self.gpu_ids)]
+                for gpu_idx in self._worker_hyperparams.inference_gpu_indexes
+            ]
         return None
 
     @property
