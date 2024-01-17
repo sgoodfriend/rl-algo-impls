@@ -11,6 +11,7 @@ from typing import (
     Dict,
     Generic,
     List,
+    NamedTuple,
     Optional,
     Set,
     TypeVar,
@@ -36,6 +37,10 @@ class ActorAssignment:
 
 
 T = TypeVar("T")
+
+
+class PolicyArgsRef(NamedTuple):
+    args: ray.ObjectRef
 
 
 @ray.remote
@@ -112,8 +117,8 @@ class PolicyWorkerPool(AbstractPolicy, Generic[ObsType]):
             ]
         )
 
-    async def add_policy(self, policy_id: str, policy: "Policy") -> None:
-        task = lambda a: a.add_policy.remote(policy_id, policy)
+    async def add_policy(self, args_ref: PolicyArgsRef) -> None:
+        task = lambda a: a.add_policy.remote(args_ref.args)
         await self.execute_task_on_all(task)
 
     async def clone_policy(
@@ -135,16 +140,8 @@ class PolicyWorkerPool(AbstractPolicy, Generic[ObsType]):
         )
         await self.execute_task_on_all(task)
 
-    async def act(
-        self,
-        policy_id: str,
-        obs: ObsType,
-        deterministic: bool = True,
-        action_masks: Optional["NumpyOrDict"] = None,
-    ) -> np.ndarray:
-        task = lambda a: a.act.remote(
-            policy_id, obs, deterministic, action_masks=action_masks
-        )
+    async def act(self, args_ref: PolicyArgsRef) -> np.ndarray:
+        task = lambda a: a.act.remote(args_ref.args)
         return await self.execute_task_once(task)
 
     async def reset_noise(self, policy_id: str) -> None:
@@ -155,8 +152,8 @@ class PolicyWorkerPool(AbstractPolicy, Generic[ObsType]):
         task = lambda a: a.save.remote(policy_id, path)
         await self.execute_task_once(task)
 
-    async def set_state(self, policy_id: str, state: Any) -> None:
-        task = lambda a: a.set_state.remote(policy_id, state)
+    async def set_state(self, args_ref: PolicyArgsRef) -> None:
+        task = lambda a: a.set_state.remote(args_ref.args)
         await self.execute_task_on_all(task)
 
     async def eval(self, policy_id: str) -> None:
@@ -167,26 +164,16 @@ class PolicyWorkerPool(AbstractPolicy, Generic[ObsType]):
         task = lambda a: a.train.remote(policy_id, mode)
         await self.execute_task_on_all(task)
 
-    async def value(self, policy_id: str, obs: ObsType) -> np.ndarray:
-        task = lambda a: a.value.remote(policy_id, obs)
+    async def value(self, args_ref: PolicyArgsRef) -> np.ndarray:
+        task = lambda a: a.value.remote(args_ref.args)
         return await self.execute_task_once(task)
 
-    async def step(
-        self, policy_id: str, obs: ObsType, action_masks: Optional["NumpyOrDict"] = None
-    ) -> Step:
-        task = lambda a: a.step.remote(policy_id, obs, action_masks=action_masks)
+    async def step(self, args_ref: PolicyArgsRef) -> Step:
+        task = lambda a: a.step.remote(args_ref.args)
         return await self.execute_task_once(task)
 
-    async def logprobs(
-        self,
-        policy_id: str,
-        obs: ObsType,
-        actions: "NumpyOrDict",
-        action_masks: Optional["NumpyOrDict"] = None,
-    ) -> np.ndarray:
-        task = lambda a: a.logprobs.remote(
-            policy_id, obs, actions, action_masks=action_masks
-        )
+    async def logprobs(self, args_ref: PolicyArgsRef) -> np.ndarray:
+        task = lambda a: a.logprobs.remote(args_ref.args)
         return await self.execute_task_once(task)
 
 

@@ -6,7 +6,10 @@ import numpy as np
 import ray
 
 from rl_algo_impls.shared.policy.abstract_policy import AbstractPolicy, Step
-from rl_algo_impls.shared.policy.policy_worker_pool import PolicyWorkerPool
+from rl_algo_impls.shared.policy.policy_worker_pool import (
+    PolicyArgsRef,
+    PolicyWorkerPool,
+)
 from rl_algo_impls.wrappers.vector_wrapper import ObsType
 
 if TYPE_CHECKING:
@@ -43,7 +46,11 @@ class RemoteInferencePolicy(AbstractPolicy, Generic[ObsType]):
             )
         # Public policy path
         else:
-            ray.get(policy_worker_pool.add_policy.remote(self.policy_id, policy))
+            ray.get(
+                policy_worker_pool.add_policy.remote(
+                    PolicyArgsRef(ray.put((self.policy_id, policy)))
+                )
+            )
 
     def __repr__(self) -> str:
         return super().__repr__() + f"(policy_id={self.policy_id})"
@@ -56,7 +63,9 @@ class RemoteInferencePolicy(AbstractPolicy, Generic[ObsType]):
     ) -> np.ndarray:
         return ray.get(
             self.policy_worker_pool.act.remote(
-                self.policy_id, obs, deterministic, action_masks
+                PolicyArgsRef(
+                    ray.put((self.policy_id, obs, deterministic, action_masks))
+                )
             )
         )
 
@@ -67,7 +76,9 @@ class RemoteInferencePolicy(AbstractPolicy, Generic[ObsType]):
         return self.policy_worker_pool.save.remote(self.policy_id, path)
 
     def set_state(self, state: Any) -> None:
-        self.policy_worker_pool.set_state.remote(self.policy_id, state)
+        self.policy_worker_pool.set_state.remote(
+            PolicyArgsRef(ray.put((self.policy_id, state)))
+        )
 
     def eval(self: RemoteInferencePolicySelf) -> RemoteInferencePolicySelf:
         # No-op because policy is always in eval mode
@@ -80,11 +91,17 @@ class RemoteInferencePolicy(AbstractPolicy, Generic[ObsType]):
         return self
 
     def value(self, obs: ObsType) -> np.ndarray:
-        return ray.get(self.policy_worker_pool.value.remote(self.policy_id, obs))
+        return ray.get(
+            self.policy_worker_pool.value.remote(
+                PolicyArgsRef(ray.put((self.policy_id, obs)))
+            )
+        )
 
     def step(self, obs: ObsType, action_masks: Optional["NumpyOrDict"] = None) -> Step:
         return ray.get(
-            self.policy_worker_pool.step.remote(self.policy_id, obs, action_masks)
+            self.policy_worker_pool.step.remote(
+                PolicyArgsRef(ray.put((self.policy_id, obs, action_masks)))
+            )
         )
 
     def logprobs(
@@ -95,7 +112,7 @@ class RemoteInferencePolicy(AbstractPolicy, Generic[ObsType]):
     ) -> np.ndarray:
         return ray.get(
             self.policy_worker_pool.logprobs.remote(
-                self.policy_id, obs, actions, action_masks
+                PolicyArgsRef(ray.put((self.policy_id, obs, actions, action_masks)))
             )
         )
 
