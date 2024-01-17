@@ -36,6 +36,7 @@ LunarLander-v2: &lunarlander
   n_timesteps: !!float 5e6
   worker_hyperparams:
     n_rollout_workers: 4
+    n_inference_workers: 2
   env_hyperparams: &lunarlander-env
     n_envs: 4
   rollout_hyperparams:
@@ -66,6 +67,7 @@ BipedalWalker-v3:
   n_timesteps: !!float 20e6
   worker_hyperparams:
     n_rollout_workers: 4
+    n_inference_workers: 2
   env_hyperparams:
     n_envs: 16
     normalize: true
@@ -94,6 +96,7 @@ CarRacing-v2: &carracing
   n_timesteps: !!float 25e6
   worker_hyperparams:
     n_rollout_workers: 4
+    n_inference_workers: 2
   env_hyperparams:
     n_envs: 8
     frame_stack: 2
@@ -161,6 +164,7 @@ _atari: &atari
   n_timesteps: !!float 50e6
   worker_hyperparams:
     n_rollout_workers: 4
+    n_inference_workers: 2
   env_hyperparams: &atari-env
     n_envs: 8
     frame_stack: 4
@@ -199,6 +203,7 @@ HalfCheetah-v4: &mujoco
   n_timesteps: !!float 25e6
   worker_hyperparams:
     n_rollout_workers: 4
+    n_inference_workers: 2
   env_hyperparams: &mujoco-env
     n_envs: 16
     normalize: true

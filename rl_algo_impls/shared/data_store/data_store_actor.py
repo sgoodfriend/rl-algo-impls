@@ -207,7 +207,7 @@ class DataStoreActor:
     def _generate_checkpoint_state(self, algo_state: TrackableState) -> CheckpointState:
         assert self.latest_policy is not None, "Must initialize_learner first"
         return CheckpointState(
-            self.latest_policy.clone(self.config.inference_cuda_index),
+            self.latest_policy.clone(),
             algo_state,
             {k: v.get_state() for k, v in self.env_trackers.items()},
         )
