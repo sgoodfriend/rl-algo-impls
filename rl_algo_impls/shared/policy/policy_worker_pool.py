@@ -1,13 +1,27 @@
+import asyncio
 from asyncio import Event
+from collections import deque
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Dict, Generic, List, Optional, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Coroutine,
+    Deque,
+    Dict,
+    Generic,
+    List,
+    Optional,
+    Set,
+    TypeVar,
+    Union,
+)
 
 import numpy as np
 import ray
-from ray.util.queue import Queue as RayQueue
 
 from rl_algo_impls.shared.policy.abstract_policy import AbstractPolicy, Step
-from rl_algo_impls.shared.policy.policy_worker import PolicyWorker, PolicyWorkerJob
+from rl_algo_impls.shared.policy.policy_actor import PolicyActor
 from rl_algo_impls.wrappers.vector_wrapper import ObsType
 
 if TYPE_CHECKING:
@@ -16,10 +30,12 @@ if TYPE_CHECKING:
 
 
 @dataclass
-class WorkerState:
-    worker: PolicyWorker
-    queue: RayQueue
-    idle: bool = True
+class ActorAssignment:
+    event: Event
+    actor: Optional[PolicyActor] = None
+
+
+T = TypeVar("T")
 
 
 @ray.remote
@@ -35,98 +51,89 @@ class PolicyWorkerPool(AbstractPolicy, Generic[ObsType]):
             _cuda_indexes = cuda_indexes
         assert len(_cuda_indexes) == num_policy_workers
 
-        self.shared_job_queue = RayQueue()
+        actors = [PolicyActor.remote(cuda_idx) for cuda_idx in _cuda_indexes]
+        self.actor_by_id = {get_actor_id(a): a for a in actors}
+        self._actor_ids_occupied: Set[str] = set()
+        self.waiting_events_for_actor_id: Dict[str, Deque[Event]] = {
+            a_id: deque() for a_id in self.actor_by_id
+        }
+        self.awaiting_assignment: Deque[ActorAssignment] = deque()
 
-        self.worker_state_by_id = {}
-        for cuda_idx in _cuda_indexes:
-            queue = RayQueue()
-            worker = PolicyWorker.remote(
-                cuda_idx,
-                ray.get_runtime_context().current_actor,
-                queue,
-                self.shared_job_queue,
-            )
-            worker_state = WorkerState(worker, queue)
-            self.worker_state_by_id[worker._actor_id.hex()] = worker_state
+    def get_idle_actor(self) -> Optional[PolicyActor]:
+        idle_actors = [
+            actor
+            for actor_id, actor in self.actor_by_id.items()
+            if actor_id not in self._actor_ids_occupied
+        ]
+        return idle_actors[0] if idle_actors else None
 
-        self._next_job_id = 0
-        self.job_events_by_id: Dict[int, Event] = {}
-        self.job_results_by_id: Dict[int, Any] = {}
+    async def execute_task_once(
+        self, task: Callable[[PolicyActor], Coroutine[Any, Any, T]]
+    ) -> T:
+        a = self.get_idle_actor()
+        if a:
+            return await self._execute_task_on_actor(task, a, True)
+        aa = ActorAssignment(Event())
+        self.awaiting_assignment.append(aa)
+        await aa.event.wait()
+        assert aa.actor is not None
+        return await self._execute_task_on_actor(task, aa.actor, False)
 
-    def next_job_id(self) -> int:
-        job_id = self._next_job_id
-        self._next_job_id += 1
-        return job_id
-
-    def _submit_job_to_all_workers(self, job: PolicyWorkerJob) -> None:
-        for worker_state in self.worker_state_by_id.values():
-            worker_state.queue.put(job)
-            if worker_state.idle:
-                worker_state.idle = False
-                worker_state.worker.run.remote()
-
-    def _submit_job(self, job: PolicyWorkerJob) -> None:
-        assert not job.wait_for_output, "Use _execute_job instead"
-        self.shared_job_queue.put(job)
-        self.run_idle_worker()
-
-    async def _execute_job(self, job: PolicyWorkerJob) -> Any:
-        assert job.wait_for_output, "Use _submit_job instead"
-        event = Event()
-        self.job_events_by_id[job.job_id] = event
-        self.shared_job_queue.put(job)
-        self.run_idle_worker()
-        await event.wait()
-        del self.job_events_by_id[job.job_id]
-        return self.job_results_by_id.pop(job.job_id)
-
-    def job_completed(self, job_id: int, result: Any) -> None:
-        self.job_results_by_id[job_id] = result
-        if job_id in self.job_events_by_id:
-            self.job_events_by_id[job_id].set()
-
-    def worker_done(self, worker_actor_id: str) -> None:
-        worker_state = self.worker_state_by_id[worker_actor_id]
-        if worker_state.queue.empty() and self.shared_job_queue.empty():
-            worker_state.idle = True
+    async def _execute_task_on_actor(
+        self,
+        task: Callable[[PolicyActor], Coroutine[Any, Any, T]],
+        actor: PolicyActor,
+        wait_if_actor_occupied: bool,
+    ) -> T:
+        actor_id = get_actor_id(actor)
+        if wait_if_actor_occupied and actor_id in self._actor_ids_occupied:
+            event = Event()
+            self.waiting_events_for_actor_id[actor_id].append(event)
+            await event.wait()
+        self._actor_ids_occupied.add(actor_id)
+        result = await task(actor)
+        if self.waiting_events_for_actor_id[actor_id]:
+            self.waiting_events_for_actor_id[actor_id].popleft().set()
+        elif self.awaiting_assignment:
+            assignment = self.awaiting_assignment.popleft()
+            assignment.actor = actor
+            assignment.event.set()
         else:
-            worker_state.worker.run.remote()
+            self._actor_ids_occupied.remove(actor_id)
+        return result
 
-    def run_idle_worker(self) -> None:
-        for worker_state in self.worker_state_by_id.values():
-            if worker_state.idle:
-                worker_state.idle = False
-                worker_state.worker.run.remote()
-                break
-
-    def add_policy(self, policy_id: str, policy: "Policy") -> None:
-        job = PolicyWorkerJob(
-            "add_policy", (policy_id, policy), self.next_job_id(), False
+    async def execute_task_on_all(
+        self, task: Callable[[PolicyActor], Coroutine]
+    ) -> None:
+        await asyncio.gather(
+            *[
+                self._execute_task_on_actor(task, a, True)
+                for a in self.actor_by_id.values()
+            ]
         )
-        self._submit_job_to_all_workers(job)
 
-    def clone_policy(self, origin_policy_id: str, destination_policy_id: str) -> None:
-        job = PolicyWorkerJob(
-            "clone_policy",
-            (origin_policy_id, destination_policy_id),
-            self.next_job_id(),
-            False,
-        )
-        self._submit_job_to_all_workers(job)
+    async def add_policy(self, policy_id: str, policy: "Policy") -> None:
+        task = lambda a: a.add_policy.remote(policy_id, policy)
+        await self.execute_task_on_all(task)
 
-    def transfer_state(
+    async def clone_policy(
+        self, origin_policy_id: str, destination_policy_id: str
+    ) -> None:
+        task = lambda a: a.clone_policy.remote(origin_policy_id, destination_policy_id)
+        await self.execute_task_on_all(task)
+
+    async def transfer_state(
         self,
         origin_policy_id: str,
         destination_policy_id: str,
         delete_origin_policy: bool = False,
     ) -> None:
-        job = PolicyWorkerJob(
-            "transfer_state",
-            (origin_policy_id, destination_policy_id, delete_origin_policy),
-            self.next_job_id(),
-            False,
+        task = lambda a: a.transfer_state.remote(
+            origin_policy_id,
+            destination_policy_id,
+            delete_origin_policy=delete_origin_policy,
         )
-        self._submit_job_to_all_workers(job)
+        await self.execute_task_on_all(task)
 
     async def act(
         self,
@@ -135,47 +142,40 @@ class PolicyWorkerPool(AbstractPolicy, Generic[ObsType]):
         deterministic: bool = True,
         action_masks: Optional["NumpyOrDict"] = None,
     ) -> np.ndarray:
-        job = PolicyWorkerJob(
-            "act",
-            (policy_id, obs, deterministic, action_masks),
-            self.next_job_id(),
-            True,
+        task = lambda a: a.act.remote(
+            policy_id, obs, deterministic, action_masks=action_masks
         )
-        return await self._execute_job(job)
+        return await self.execute_task_once(task)
 
-    def reset_noise(self, policy_id: str) -> None:
-        job = PolicyWorkerJob("reset_noise", (policy_id,), self.next_job_id(), False)
-        self._submit_job_to_all_workers(job)
+    async def reset_noise(self, policy_id: str) -> None:
+        task = lambda a: a.reset_noise.remote(policy_id)
+        await self.execute_task_on_all(task)
 
-    def save(self, policy_id: str, path: str) -> None:
-        job = PolicyWorkerJob("save", (policy_id, path), self.next_job_id(), False)
-        self._submit_job(job)
+    async def save(self, policy_id: str, path: str) -> None:
+        task = lambda a: a.save.remote(policy_id, path)
+        await self.execute_task_once(task)
 
-    def set_state(self, policy_id: str, state: Any) -> None:
-        job = PolicyWorkerJob(
-            "set_state", (policy_id, state), self.next_job_id(), False
-        )
-        self._submit_job_to_all_workers(job)
+    async def set_state(self, policy_id: str, state: Any) -> None:
+        task = lambda a: a.set_state.remote(policy_id, state)
+        await self.execute_task_on_all(task)
 
-    def eval(self, policy_id: str) -> None:
-        job = PolicyWorkerJob("eval", (policy_id,), self.next_job_id(), False)
-        self._submit_job_to_all_workers(job)
+    async def eval(self, policy_id: str) -> None:
+        task = lambda a: a.eval.remote(policy_id)
+        await self.execute_task_on_all(task)
 
-    def train(self, policy_id: str, mode: bool = True) -> None:
-        job = PolicyWorkerJob("train", (policy_id, mode), self.next_job_id(), False)
-        self._submit_job_to_all_workers(job)
+    async def train(self, policy_id: str, mode: bool = True) -> None:
+        task = lambda a: a.train.remote(policy_id, mode)
+        await self.execute_task_on_all(task)
 
     async def value(self, policy_id: str, obs: ObsType) -> np.ndarray:
-        job = PolicyWorkerJob("value", (policy_id, obs), self.next_job_id(), True)
-        return await self._execute_job(job)
+        task = lambda a: a.value.remote(policy_id, obs)
+        return await self.execute_task_once(task)
 
     async def step(
         self, policy_id: str, obs: ObsType, action_masks: Optional["NumpyOrDict"] = None
     ) -> Step:
-        job = PolicyWorkerJob(
-            "step", (policy_id, obs, action_masks), self.next_job_id(), True
-        )
-        return await self._execute_job(job)
+        task = lambda a: a.step.remote(policy_id, obs, action_masks=action_masks)
+        return await self.execute_task_once(task)
 
     async def logprobs(
         self,
@@ -184,10 +184,13 @@ class PolicyWorkerPool(AbstractPolicy, Generic[ObsType]):
         actions: "NumpyOrDict",
         action_masks: Optional["NumpyOrDict"] = None,
     ) -> np.ndarray:
-        job = PolicyWorkerJob(
-            "logprobs",
-            (policy_id, obs, actions, action_masks),
-            self.next_job_id(),
-            True,
+        task = lambda a: a.logprobs.remote(
+            policy_id, obs, actions, action_masks=action_masks
         )
-        return await self._execute_job(job)
+        return await self.execute_task_once(task)
+
+
+def get_actor_id(
+    actor: PolicyActor,  # type: ignore
+) -> str:
+    return actor._actor_id.hex()
