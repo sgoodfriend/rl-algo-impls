@@ -56,6 +56,7 @@ class AbstractPolicy(ABC, Generic[ObsType]):
     def step(self, obs: ObsType, action_masks: Optional[NumpyOrDict] = None) -> Step:
         ...
 
+    @abstractmethod
     def logprobs(
         self,
         obs: ObsType,
