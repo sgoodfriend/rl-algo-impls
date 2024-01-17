@@ -23,8 +23,7 @@ class PolicyActor:
 
         self.policies_by_id: Dict[str, "Policy"] = {}
 
-    def add_policy(self, args) -> None:
-        policy_id, policy = args
+    def add_policy(self, policy_id: str, policy: "Policy") -> None:
         assert (
             policy_id not in self.policies_by_id
         ), f"Policy with id {policy_id} exists"
@@ -61,9 +60,11 @@ class PolicyActor:
 
     def act(
         self,
-        args,
+        policy_id: str,
+        obs: ObsType,
+        deterministic: bool = True,
+        action_masks: Optional["NumpyOrDict"] = None,
     ) -> np.ndarray:
-        policy_id, obs, deterministic, action_masks = args
         assert policy_id in self.policies_by_id, f"No policy with id {policy_id}"
         return self.policies_by_id[policy_id].act(obs, deterministic, action_masks)
 
@@ -75,8 +76,7 @@ class PolicyActor:
         assert policy_id in self.policies_by_id, f"No policy with id {policy_id}"
         self.policies_by_id[policy_id].save(path)
 
-    def set_state(self, args) -> None:
-        policy_id, state = args
+    def set_state(self, policy_id: str, state: Any) -> None:
         assert policy_id in self.policies_by_id, f"No policy with id {policy_id}"
         self.policies_by_id[policy_id].set_state(state)
 
@@ -88,17 +88,25 @@ class PolicyActor:
         assert policy_id in self.policies_by_id, f"No policy with id {policy_id}"
         self.policies_by_id[policy_id].train(mode)
 
-    def value(self, args) -> np.ndarray:
-        policy_id, obs = args
+    def value(self, policy_id: str, obs: ObsType) -> np.ndarray:
         assert policy_id in self.policies_by_id, f"No policy with id {policy_id}"
         return self.policies_by_id[policy_id].value(obs)
 
-    def step(self, args) -> Step:
-        policy_id, obs, action_masks = args
+    def step(
+        self,
+        policy_id: str,
+        obs: ObsType,
+        action_masks: Optional["NumpyOrDict"] = None,
+    ) -> Step:
         assert policy_id in self.policies_by_id, f"No policy with id {policy_id}"
         return self.policies_by_id[policy_id].step(obs, action_masks)
 
-    def logprobs(self, args) -> np.ndarray:
-        policy_id, obs, actions, action_masks = args
+    def logprobs(
+        self,
+        policy_id: str,
+        obs: ObsType,
+        actions: "NumpyOrDict",
+        action_masks: Optional["NumpyOrDict"] = None,
+    ) -> np.ndarray:
         assert policy_id in self.policies_by_id, f"No policy with id {policy_id}"
         return self.policies_by_id[policy_id].logprobs(obs, actions, action_masks)
