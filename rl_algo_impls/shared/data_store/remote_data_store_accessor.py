@@ -91,7 +91,7 @@ class RemoteDataStoreAccessor(AbstractDataStoreAccessor):
         ray.get(self.data_store_actor.load.remote(load_path))
 
     def initialize_evaluator(self, evaluator: AbstractEvaluator) -> None:
-        self.data_store_actor.initialize_evaluator.remote(evaluator)
+        ray.get(self.data_store_actor.initialize_evaluator.remote(evaluator))
 
     def evaluate_latest_policy(
         self,
