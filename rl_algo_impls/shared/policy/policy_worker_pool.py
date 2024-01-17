@@ -1,50 +1,13 @@
-import asyncio
-from asyncio import Event
-from collections import deque
-from dataclasses import dataclass
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Callable,
-    Coroutine,
-    Deque,
-    Dict,
-    Generic,
-    List,
-    NamedTuple,
-    Optional,
-    Set,
-    TypeVar,
-    Union,
-)
+from collections import defaultdict
+from typing import List, Union
 
-import numpy as np
 import ray
 
-from rl_algo_impls.shared.policy.abstract_policy import AbstractPolicy, Step
 from rl_algo_impls.shared.policy.policy_actor import PolicyActor
-from rl_algo_impls.wrappers.vector_wrapper import ObsType
-
-if TYPE_CHECKING:
-    from rl_algo_impls.shared.policy.policy import Policy
-    from rl_algo_impls.shared.tensor_utils import NumpyOrDict
-
-
-@dataclass
-class ActorAssignment:
-    event: Event
-    actor: Optional[PolicyActor] = None
-
-
-T = TypeVar("T")
-
-
-class PolicyArgsRef(NamedTuple):
-    args: ray.ObjectRef
 
 
 @ray.remote
-class PolicyWorkerPool(AbstractPolicy, Generic[ObsType]):
+class PolicyWorkerPool:
     def __init__(
         self, num_policy_workers: int, cuda_indexes: Union[int, List[int], None]
     ) -> None:
@@ -56,128 +19,17 @@ class PolicyWorkerPool(AbstractPolicy, Generic[ObsType]):
             _cuda_indexes = cuda_indexes
         assert len(_cuda_indexes) == num_policy_workers
 
-        actors = [PolicyActor.remote(cuda_idx) for cuda_idx in _cuda_indexes]
-        self.actor_by_id = {get_actor_id(a): a for a in actors}
-        self._actor_ids_occupied: Set[str] = set()
-        self.waiting_events_for_actor_id: Dict[str, Deque[Event]] = {
-            a_id: deque() for a_id in self.actor_by_id
-        }
-        self.awaiting_assignment: Deque[ActorAssignment] = deque()
-
-    def get_idle_actor(self) -> Optional[PolicyActor]:
-        idle_actors = [
-            actor
-            for actor_id, actor in self.actor_by_id.items()
-            if actor_id not in self._actor_ids_occupied
+        self.policy_actors = [
+            PolicyActor.remote(cuda_idx) for cuda_idx in _cuda_indexes
         ]
-        return idle_actors[0] if idle_actors else None
+        self.consumer_actor_id_to_policy_actor = {}
 
-    async def execute_task_once(
-        self, task: Callable[[PolicyActor], Coroutine[Any, Any, T]]
-    ) -> T:
-        a = self.get_idle_actor()
-        if a:
-            return await self._execute_task_on_actor(task, a, True)
-        aa = ActorAssignment(Event())
-        self.awaiting_assignment.append(aa)
-        await aa.event.wait()
-        assert aa.actor is not None
-        return await self._execute_task_on_actor(task, aa.actor, False)
-
-    async def _execute_task_on_actor(
-        self,
-        task: Callable[[PolicyActor], Coroutine[Any, Any, T]],
-        actor: PolicyActor,
-        wait_if_actor_occupied: bool,
-    ) -> T:
-        actor_id = get_actor_id(actor)
-        if wait_if_actor_occupied and actor_id in self._actor_ids_occupied:
-            event = Event()
-            self.waiting_events_for_actor_id[actor_id].append(event)
-            await event.wait()
-        self._actor_ids_occupied.add(actor_id)
-        result = await task(actor)
-        if self.waiting_events_for_actor_id[actor_id]:
-            self.waiting_events_for_actor_id[actor_id].popleft().set()
-        elif self.awaiting_assignment:
-            assignment = self.awaiting_assignment.popleft()
-            assignment.actor = actor
-            assignment.event.set()
-        else:
-            self._actor_ids_occupied.remove(actor_id)
-        return result
-
-    async def execute_task_on_all(
-        self, task: Callable[[PolicyActor], Coroutine]
-    ) -> None:
-        await asyncio.gather(
-            *[
-                self._execute_task_on_actor(task, a, True)
-                for a in self.actor_by_id.values()
+    def get_policy_for_actor_id(self, actor_id: str) -> PolicyActor:
+        if actor_id not in self.consumer_actor_id_to_policy_actor:
+            self.consumer_actor_id_to_policy_actor[actor_id] = self.policy_actors[
+                len(self.consumer_actor_id_to_policy_actor) % len(self.policy_actors)
             ]
-        )
+        return self.consumer_actor_id_to_policy_actor[actor_id]
 
-    async def add_policy(self, args_ref: PolicyArgsRef) -> None:
-        task = lambda a: a.add_policy.remote(args_ref.args)
-        await self.execute_task_on_all(task)
-
-    async def clone_policy(
-        self, origin_policy_id: str, destination_policy_id: str
-    ) -> None:
-        task = lambda a: a.clone_policy.remote(origin_policy_id, destination_policy_id)
-        await self.execute_task_on_all(task)
-
-    async def transfer_state(
-        self,
-        origin_policy_id: str,
-        destination_policy_id: str,
-        delete_origin_policy: bool = False,
-    ) -> None:
-        task = lambda a: a.transfer_state.remote(
-            origin_policy_id,
-            destination_policy_id,
-            delete_origin_policy=delete_origin_policy,
-        )
-        await self.execute_task_on_all(task)
-
-    async def act(self, args_ref: PolicyArgsRef) -> np.ndarray:
-        task = lambda a: a.act.remote(args_ref.args)
-        return await self.execute_task_once(task)
-
-    async def reset_noise(self, policy_id: str) -> None:
-        task = lambda a: a.reset_noise.remote(policy_id)
-        await self.execute_task_on_all(task)
-
-    async def save(self, policy_id: str, path: str) -> None:
-        task = lambda a: a.save.remote(policy_id, path)
-        await self.execute_task_once(task)
-
-    async def set_state(self, args_ref: PolicyArgsRef) -> None:
-        task = lambda a: a.set_state.remote(args_ref.args)
-        await self.execute_task_on_all(task)
-
-    async def eval(self, policy_id: str) -> None:
-        task = lambda a: a.eval.remote(policy_id)
-        await self.execute_task_on_all(task)
-
-    async def train(self, policy_id: str, mode: bool = True) -> None:
-        task = lambda a: a.train.remote(policy_id, mode)
-        await self.execute_task_on_all(task)
-
-    async def value(self, args_ref: PolicyArgsRef) -> np.ndarray:
-        task = lambda a: a.value.remote(args_ref.args)
-        return await self.execute_task_once(task)
-
-    async def step(self, args_ref: PolicyArgsRef) -> Step:
-        task = lambda a: a.step.remote(args_ref.args)
-        return await self.execute_task_once(task)
-
-    async def logprobs(self, args_ref: PolicyArgsRef) -> np.ndarray:
-        task = lambda a: a.logprobs.remote(args_ref.args)
-        return await self.execute_task_once(task)
-
-
-def get_actor_id(
-    actor: PolicyActor,  # type: ignore
-) -> str:
-    return actor._actor_id.hex()
+    def get_all_actors(self) -> List[PolicyActor]:
+        return self.policy_actors
