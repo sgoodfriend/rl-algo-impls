@@ -38,8 +38,8 @@ def train() -> None:
     )
     parser.set_defaults(
         algo=["appo"],
-        # env=["CartPole-v1"],
-        env=["LunarLander-v2"],
+        env=["CartPole-v1"],
+        # env=["LunarLander-v2"],
         # env=["LunarLander-v2-lr-by-kl"],
         # env=["CarRacing-v2"],
         # env=["CarRacing-v2-lr-by-kl"],

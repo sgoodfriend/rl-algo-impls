@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 import ray
 
 if TYPE_CHECKING:
+    from rl_algo_impls.rollout.rollout_generator_pool import RolloutGeneratorPool
     from rl_algo_impls.runner.config import Config, TrainArgs
     from rl_algo_impls.shared.data_store.abstract_data_store_accessor import (
         AbstractDataStoreAccessor,
@@ -13,10 +14,11 @@ if TYPE_CHECKING:
     )
 
 
-@ray.remote
+@ray.remote(max_restarts=3)
 class RolloutGeneratorActor:
     def __init__(
         self,
+        rollout_generator_pool: "RolloutGeneratorPool",
         args: "TrainArgs",
         config: "Config",
         data_store_accessor: "AbstractDataStoreAccessor",
@@ -40,7 +42,20 @@ class RolloutGeneratorActor:
             args, config, data_store_accessor, tb_writer
         )
 
-    def prepare(self) -> None:
+        self._is_started = False
+        if ray.get_runtime_context().was_current_actor_reconstructed:
+            print(f"{self.__class__.__name__} was reconstructed")
+            logging.warning(f"{self.__class__.__name__} was reconstructed")
+            if (
+                ray.get(rollout_generator_pool.is_started.remote())
+                and not self._is_started
+            ):
+                print(f"{self.__class__.__name__} restarting")
+                logging.info(f"{self.__class__.__name__} restarting")
+                self.start()
+
+    def start(self) -> None:
+        self._is_started = True
         self.generator.prepare()
         while True:
             rollout = self.generator.rollout()
