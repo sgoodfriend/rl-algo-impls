@@ -3,6 +3,10 @@ from typing import Dict, List, Optional, Tuple, TypeVar, Union
 import numpy as np
 import torch
 
+ND = TypeVar("ND", np.ndarray, Dict[str, np.ndarray])
+TD = TypeVar("TD", torch.Tensor, Dict[str, torch.Tensor])
+TDN = TypeVar("TDN", torch.Tensor, Dict[str, torch.Tensor], None)
+
 
 def expand_dims_to_match(a: np.ndarray, shape: Tuple[int, ...]) -> np.ndarray:
     assert (
@@ -72,15 +76,21 @@ def tensor_by_indices(t: TensorOrDict, idxs: torch.Tensor) -> TensorOrDict:
     return by_indices_fn(t)
 
 
+def to_device(t: TDN, device: torch.device) -> TDN:
+    if t is None:
+        return t
+    elif isinstance(t, dict):
+        return {k: v.to(device) for k, v in t.items()}
+    else:
+        return t.to(device)
+
+
 def batch_dict_keys(a: Optional[np.ndarray]) -> Optional[NumpyOrDict]:
     if a is None:
         return None
     if a.dtype.char == "O":
         return {k: np.array([a_i[k] for a_i in a]) for k in a[0]}
     return a
-
-
-ND = TypeVar("ND", np.ndarray, Dict[str, np.ndarray])
 
 
 def set_items(destination: ND, subset: ND, idx: Union[int, np.ndarray]):
