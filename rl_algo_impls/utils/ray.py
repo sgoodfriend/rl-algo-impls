@@ -31,6 +31,7 @@ def maybe_init_ray(config: "Config") -> None:
             worker_hyperparams.n_rollout_workers
             + worker_hyperparams.n_inference_workers
             + 1  # 1 for PolicyWorkerPool
+            + 1  # RolloutGeneratorPool
             + 3  # 3 for data store, evaluator, and summary writer
         ),
     )

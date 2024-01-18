@@ -1,7 +1,7 @@
 import ray
 
 from rl_algo_impls.rollout.rollout_generator import RolloutGenerator
-from rl_algo_impls.rollout.rollout_generator_actor import RolloutGeneratorActor
+from rl_algo_impls.rollout.rollout_generator_pool import RolloutGeneratorPool
 from rl_algo_impls.runner.config import Config, TrainArgs
 from rl_algo_impls.shared.data_store.abstract_data_store_accessor import (
     AbstractDataStoreAccessor,
@@ -20,18 +20,16 @@ class RemoteRolloutGenerator(RolloutGenerator):
         tb_writer: AbstractSummaryWrapper,
     ) -> None:
         super().__init__()
-        self.generator_actors = [
-            RolloutGeneratorActor.remote(
-                args, config, data_store_accessor, tb_writer, rollout_worker_idx
-            )
-            for rollout_worker_idx in range(
-                config.hyperparams.worker_hyperparams.get("n_rollout_workers", 1)
-            )
-        ]
+        self.generator_pool = RolloutGeneratorPool.remote(
+            args, config, data_store_accessor, tb_writer
+        )
+        self._env_spaces = None
 
     def prepare(self) -> None:
-        [actor.prepare.remote() for actor in self.generator_actors]
+        self.generator_pool.start.remote()
 
     @property
     def env_spaces(self):
-        return ray.get(self.generator_actors[0].env_spaces.remote())
+        if self._env_spaces is None:
+            self._env_spaces = ray.get(self.generator_pool.env_spaces.remote())
+        return self._env_spaces
