@@ -1,10 +1,10 @@
 from copy import deepcopy
-from typing import TYPE_CHECKING, Any, Dict, Generic, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 import numpy as np
 import ray
 
-from rl_algo_impls.shared.policy.abstract_policy import AbstractPolicy, Step
+from rl_algo_impls.shared.policy.abstract_policy import Step
 from rl_algo_impls.wrappers.vector_wrapper import ObsType
 
 if TYPE_CHECKING:
