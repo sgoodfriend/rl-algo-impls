@@ -1,5 +1,7 @@
+from dataclasses import replace
 from typing import TYPE_CHECKING
 
+import numpy as np
 import ray
 
 from rl_algo_impls.rollout.rollout_generator_actor import RolloutGeneratorActor
@@ -23,17 +25,36 @@ class RolloutGeneratorPool:
         data_store_accessor: "AbstractDataStoreAccessor",
         tb_writer: "AbstractSummaryWrapper",
     ) -> None:
-        self.generator_actors = [
-            RolloutGeneratorActor.remote(
-                ray.get_runtime_context().current_actor,
-                args,
-                config,
-                data_store_accessor,
-                tb_writer,
-                rollout_worker_idx,
+        worker_hyperparams = config.worker_hyperparams
+        seeds = (
+            np.random.RandomState(args.seed).randint(
+                0, np.iinfo(np.int32).max, worker_hyperparams.n_rollout_workers
             )
-            for rollout_worker_idx in range(config.worker_hyperparams.n_rollout_workers)
-        ]
+            if (
+                args.seed is not None
+                and worker_hyperparams.n_rollout_workers > 1
+                and worker_hyperparams.different_seeds_for_rollout_workers
+            )
+            else None
+        )
+        self.generator_actors = []
+        for rollout_worker_idx in range(worker_hyperparams.n_rollout_workers):
+            if seeds is not None:
+                _args = replace(args, seed=seeds[rollout_worker_idx])
+                _config = replace(config, args=args)
+            else:
+                _args = args
+                _config = config
+            self.generator_actors.append(
+                RolloutGeneratorActor.remote(
+                    ray.get_runtime_context().current_actor,
+                    _args,
+                    _config,
+                    data_store_accessor,
+                    tb_writer,
+                    rollout_worker_idx,
+                )
+            )
         self._is_started = False
 
     async def start(self) -> None:
