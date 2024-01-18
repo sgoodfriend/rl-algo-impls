@@ -352,12 +352,15 @@ LuxAI_S2-v0-j1024env32-80m-ent5-lr03-mgn4-2omh1lc-nga-tkl5c-4r-2a100:
 
 LuxAI_S2-v0-j1024env32-a100-debug: &lux-j1024env32-a100-debug
   <<: *lux-j1024env32-80m-ent5-lr03-mgn4-2omh1lc-nga-tkl5c-a100
+  checkpoints_kwargs:
+    history_size: 1
   rollout_hyperparams:
     <<: *lux-j1024env16-80m-ent5-lr2c-mgn2-2o3m4h-nga-async-a100-rollout
     prepare_steps: 0
     random_num_envs_reset_every_rollout: 0
-  checkpoints_kwargs:
-    history_size: 1
+  worker_hyperparams:
+    n_rollout_workers: 2
+    n_inference_workers: 1
 
 LuxAI_S2-v0-j512env64-80m-ent1-lr01-mgn2-base1lc-nga-tkl5cl-2r-2a100:
   &lux-j512env64-80m-ent1-lr01-mgn2-base1lc-nga-tkl5cl-2r-2a100
