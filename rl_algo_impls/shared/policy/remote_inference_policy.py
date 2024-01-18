@@ -18,7 +18,7 @@ RemoteInferencePolicySelf = TypeVar(
 )
 
 _current_actor_id: Optional[str] = None
-_policy_worker_for_current_actor: Optional[PolicyWorker] = None
+_policy_worker_for_current_actor: Optional[PolicyActor] = None
 
 
 class RemoteInferencePolicy(AbstractPolicy, Generic[ObsType]):
