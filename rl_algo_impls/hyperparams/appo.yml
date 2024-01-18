@@ -35,8 +35,8 @@ LunarLander-v2: &lunarlander
   <<: *defaults
   n_timesteps: !!float 5e6
   worker_hyperparams:
-    n_rollout_workers: 4
-    n_inference_workers: 2
+    n_rollout_workers: 5
+    n_inference_workers: 3
   env_hyperparams: &lunarlander-env
     n_envs: 4
   rollout_hyperparams:
