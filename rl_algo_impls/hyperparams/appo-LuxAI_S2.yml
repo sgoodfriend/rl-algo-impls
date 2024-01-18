@@ -348,7 +348,7 @@ LuxAI_S2-v0-j1024env32-80m-ent5-lr03-mgn4-2omh1lc-nga-tkl5c-4r-2a100:
     rollout_gpu_indexes: [1]
     evaluator_gpu_index: 1
     n_inference_workers: 2
-    inference_gpu_indexes: 1
+    inference_gpu_indexes: [1]
 
 LuxAI_S2-v0-j1024env32-a100-debug: &lux-j1024env32-a100-debug
   <<: *lux-j1024env32-80m-ent5-lr03-mgn4-2omh1lc-nga-tkl5c-a100
