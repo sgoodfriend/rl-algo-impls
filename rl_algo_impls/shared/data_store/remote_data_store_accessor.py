@@ -24,7 +24,7 @@ from rl_algo_impls.shared.data_store.data_store_data import (
     RolloutView,
 )
 from rl_algo_impls.shared.evaluator.abstract_evaluator import AbstractEvaluator
-from rl_algo_impls.shared.policy.policy_worker_pool import PolicyWorkerPool
+from rl_algo_impls.shared.policy.policy_actor_pool import PolicyActorPool
 from rl_algo_impls.shared.policy.remote_inference_policy import RemoteInferencePolicy
 from rl_algo_impls.shared.stats import EpisodesStats
 from rl_algo_impls.shared.trackable import UpdateTrackable
@@ -49,11 +49,11 @@ class RemoteDataStoreAccessor(AbstractDataStoreAccessor):
         if load_path:
             policy.load(load_path)
             algo.load(load_path)
-        policy_worker_pool = PolicyWorkerPool.remote(
+        policy_actor_pool = PolicyActorPool.remote(
             self.config.worker_hyperparams.n_inference_workers,
             self.config.inference_cuda_indexes,
         )
-        self.latest_policy = RemoteInferencePolicy(policy_worker_pool, policy)
+        self.latest_policy = RemoteInferencePolicy(policy_actor_pool, policy)
         ray.get(
             self.data_store_actor.initialize_learner.remote(
                 RemoteLearnerInitializeData(
