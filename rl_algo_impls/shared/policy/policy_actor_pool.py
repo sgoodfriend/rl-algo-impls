@@ -6,7 +6,7 @@ from rl_algo_impls.shared.policy.policy_actor import PolicyActor
 
 
 @ray.remote
-class PolicyWorkerPool:
+class PolicyActorPool:
     def __init__(
         self, num_policy_workers: int, cuda_indexes: Union[int, List[int], None]
     ) -> None:

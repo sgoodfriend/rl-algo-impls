@@ -6,7 +6,7 @@ import ray
 
 from rl_algo_impls.shared.policy.abstract_policy import AbstractPolicy, Step
 from rl_algo_impls.shared.policy.policy_actor import PolicyActor
-from rl_algo_impls.shared.policy.policy_worker_pool import PolicyWorkerPool
+from rl_algo_impls.shared.policy.policy_actor_pool import PolicyActorPool
 from rl_algo_impls.wrappers.vector_wrapper import ObsType
 
 if TYPE_CHECKING:
@@ -24,22 +24,21 @@ _policy_worker_for_current_actor: Optional[PolicyActor] = None
 class RemoteInferencePolicy(AbstractPolicy, Generic[ObsType]):
     def __init__(
         self,
-        policy_worker_pool: PolicyWorkerPool,
+        policy_actor_pool: PolicyActorPool,
         policy: "Policy",  # policy is None when using private cloning path
         **kwargs,
     ) -> None:
-        self.policy_worker_pool = policy_worker_pool
+        self.policy_actor_pool = policy_actor_pool
         self.policy_id = uuid.uuid4().hex
 
-        self.all_actors = ray.get(self.policy_worker_pool.get_all_actors.remote())
+        self.all_actors = ray.get(self.policy_actor_pool.get_all_actors.remote())
 
         _clone_origin = kwargs.get("_clone_origin", None)
         # Private cloning path
         if _clone_origin:
             assert policy is None
             assert (
-                policy_worker_pool._actor_id
-                == _clone_origin.policy_worker_pool._actor_id
+                policy_actor_pool._actor_id == _clone_origin.policy_actor_pool._actor_id
             ), f"Cannot clone policy from different PolicyWorkerPool"
             ray.get(
                 [
@@ -67,9 +66,7 @@ class RemoteInferencePolicy(AbstractPolicy, Generic[ObsType]):
             _current_actor_id = ray.get_runtime_context().get_actor_id()
         if _policy_worker_for_current_actor is None:
             _policy_worker_for_current_actor = ray.get(
-                self.policy_worker_pool.get_policy_for_actor_id.remote(
-                    _current_actor_id
-                )
+                self.policy_actor_pool.get_policy_for_actor_id.remote(_current_actor_id)
             )
         return _policy_worker_for_current_actor
 
@@ -128,7 +125,7 @@ class RemoteInferencePolicy(AbstractPolicy, Generic[ObsType]):
 
     def clone(self: RemoteInferencePolicySelf) -> RemoteInferencePolicySelf:
         return self.__class__(
-            self.policy_worker_pool,
+            self.policy_actor_pool,
             None,  # type: ignore
             _clone_origin=self,
         )
@@ -139,9 +136,9 @@ class RemoteInferencePolicy(AbstractPolicy, Generic[ObsType]):
         delete_origin_policy: bool = False,
     ) -> None:
         assert (
-            self.policy_worker_pool._actor_id == target.policy_worker_pool._actor_id
+            self.policy_actor_pool._actor_id == target.policy_actor_pool._actor_id
         ), f"Cannot currently transfer policy between different PolicyWorkerPools"
-        self.policy_worker_pool.transfer_state.remote(
+        self.policy_actor_pool.transfer_state.remote(
             self.policy_id,
             target.policy_id,
             delete_origin_policy=delete_origin_policy,
