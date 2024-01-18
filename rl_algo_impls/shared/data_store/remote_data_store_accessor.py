@@ -12,6 +12,7 @@ from rl_algo_impls.shared.data_store.data_store_actor import (
     RemoteEvalEnqueue,
     RemoteLearnerInitializeData,
     RemoteLearnerUpdate,
+    RemoteRolloutUpdate,
 )
 from rl_algo_impls.shared.data_store.data_store_data import (
     CheckpointState,
@@ -40,7 +41,12 @@ class RemoteDataStoreAccessor(AbstractDataStoreAccessor):
         self.data_store_actor.register_env_tracker.remote(env_tracker)
 
     def get_learner_view(self, wait: bool = False) -> LearnerView:
-        return ray.get(self.data_store_actor.get_learner_view.remote(wait=wait))
+        remote_learner_update = ray.get(
+            self.data_store_actor.get_learner_view.remote(wait=wait)
+        )
+        return LearnerView(
+            rollouts=tuple(ray.get(remote_learner_update.rollout_refs)),
+        )
 
     def initialize_learner(
         self, learner_initialize_data: LearnerInitializeData
@@ -80,7 +86,12 @@ class RemoteDataStoreAccessor(AbstractDataStoreAccessor):
         return ray.get(self.data_store_actor.update_for_rollout_start.remote())
 
     def submit_rollout_update(self, rollout_update: RolloutUpdate) -> None:
-        self.data_store_actor.submit_rollout_update.remote(rollout_update)
+        self.data_store_actor.submit_rollout_update.remote(
+            RemoteRolloutUpdate(
+                rollout_ref=ray.put(rollout_update.rollout),
+                env_update=rollout_update.env_update,
+            )
+        )
 
     def submit_checkpoint(self, checkpoint: CheckpointState) -> None:
         if not self.config.checkpoint_history_size:

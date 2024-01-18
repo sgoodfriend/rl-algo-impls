@@ -1,5 +1,5 @@
 import asyncio
-from typing import Any, Dict, List, NamedTuple, Optional, Type, TypeVar
+from typing import Any, Dict, List, NamedTuple, Optional, Tuple, Type, TypeVar
 
 import ray
 
@@ -10,7 +10,6 @@ from rl_algo_impls.shared.data_store.data_store_data import (
     DataStoreFinalization,
     EvalEnqueue,
     EvalView,
-    LearnerView,
     RolloutUpdate,
     RolloutView,
 )
@@ -40,10 +39,19 @@ class RemoteEvalEnqueue(NamedTuple):
         return cls(RemoteAlgorithmState(eval_enqueue.algo)) if eval_enqueue else None
 
 
+class RemoteLearnerView(NamedTuple):
+    rollout_refs: List[ray.ObjectRef]
+
+
 class RemoteLearnerUpdate(NamedTuple):
     rollout_params: Dict[str, Any]
     timesteps_elapsed: int
     eval_enqueue: Optional[RemoteEvalEnqueue]
+
+
+class RemoteRolloutUpdate(NamedTuple):
+    rollout_ref: ray.ObjectRef
+    env_update: Dict[str, Any]
 
 
 @ray.remote
@@ -72,7 +80,7 @@ class DataStoreActor:
             env_tracker.get_state().load(self.load_path)
         self.env_trackers[env_tracker.name] = env_tracker
 
-    async def get_learner_view(self, wait: bool = False) -> Optional[LearnerView]:
+    async def get_learner_view(self, wait: bool = False) -> Optional[RemoteLearnerView]:
         if self.is_closed:
             return None
         rollouts = []
@@ -85,10 +93,8 @@ class DataStoreActor:
                 break
         if len(rollouts) == 1 and rollouts[0] == None:
             return None
-        non_none_rollouts = tuple(r for r in rollouts if r is not None)
-        return LearnerView(
-            rollouts=non_none_rollouts,
-        )
+        non_none_rollouts = [r for r in rollouts if r is not None]
+        return RemoteLearnerView(rollout_refs=non_none_rollouts)
 
     def initialize_learner(
         self, learner_initialize_data: RemoteLearnerInitializeData
