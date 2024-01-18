@@ -9,6 +9,7 @@ class WorkerHyperparams:
     evaluator_gpu_index: int = 0
     n_inference_workers: int = 1
     inference_gpu_indexes: Optional[List[int]] = None
+    different_seeds_for_rollout_workers: bool = True
 
     @property
     def desired_num_accelerators(self) -> int:
