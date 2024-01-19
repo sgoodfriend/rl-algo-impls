@@ -8,7 +8,7 @@ def ray_worker(queue: torch.multiprocessing.Queue):
     ray.init(ignore_reinit_error=True, address="auto", namespace="avocado")
     queue.put(f"worker ray address {ray.get_runtime_context().gcs_address}")
     # Now this process can use Ray tasks or actors
-    actor = ray.get_actor("actor")
+    actor = ray.get_actor("actor", namespace="avocado")
     queue.put("actor")
     queue.put(ray.get(actor.f.remote()))
     queue.put("f output")
