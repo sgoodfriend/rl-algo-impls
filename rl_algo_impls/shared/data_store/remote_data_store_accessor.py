@@ -35,8 +35,8 @@ _rollout_queue: Optional[torch.multiprocessing.Queue] = None
 _rollout_getter_process: Optional[torch.multiprocessing.Process] = None
 
 
-def rollout_getter(queue: torch.multiprocessing.Queue):
-    ray.init(ignore_reinit_error=True, address="auto", namespace="rl_algo_impls")
+def rollout_getter(queue: torch.multiprocessing.Queue, ray_address: str):
+    ray.init(address=ray_address, namespace="rl_algo_impls")
     data_store_actor = ray.get_actor("DataStoreActor")
     while True:
         (rollouts,) = ray.get(data_store_actor.get_learner_view.remote(wait=True))
@@ -75,7 +75,7 @@ class RemoteDataStoreAccessor(AbstractDataStoreAccessor):
         _rollout_queue = torch.multiprocessing.Queue()
         _rollout_getter_process = torch.multiprocessing.Process(
             target=rollout_getter,
-            args=(_rollout_queue,),
+            args=(_rollout_queue, ray.get_runtime_context().gcs_address),
         )
         _rollout_getter_process.start()
         policy, algo, load_path = learner_initialize_data
