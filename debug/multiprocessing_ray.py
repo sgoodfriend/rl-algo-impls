@@ -6,7 +6,7 @@ import torch.multiprocessing as mp
 def ray_worker(queue: torch.multiprocessing.Queue):
     queue.put("start")
     # Connect to the existing Ray cluster
-    ray.init(ignore_reinit_error=True, address="auto", namespace="avocado")
+    ray.init(address="auto", namespace="avocado")
     queue.put(f"worker ray address {ray.get_runtime_context().gcs_address}")
     # Now this process can use Ray tasks or actors
     actor = ray.get_actor("actor", namespace="avocado")
