@@ -18,7 +18,7 @@ class SynchronousAlgorithmState(TrackableState):
         return OPTIMIZER_FILENAME
 
     def save(self, path: str) -> None:
-        os.makedirs(save_path, exist_ok=True)
+        os.makedirs(path, exist_ok=True)
         torch.save(self._get_state(), os.path.join(path, OPTIMIZER_FILENAME))
 
     def load(self, path: str) -> None:
