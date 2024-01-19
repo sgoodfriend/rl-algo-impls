@@ -166,3 +166,40 @@ class PPORollout(Rollout):
         for i in range(0, self.total_steps, batch_size):
             mb_idxs = b_idxs[i : i + batch_size]
             yield batch[mb_idxs].to(device)
+
+    def tensor(self) -> "PPOTensorRollout":
+        return PPOTensorRollout(self.batch(torch.device("cpu")))
+
+
+class PPOTensorRollout(Rollout):
+    def __init__(self, batch: PPOBatch) -> None:
+        self.batch = batch
+
+    @property
+    def y_true(self) -> np.ndarray:
+        return self.batch.returns.numpy()
+
+    @property
+    def y_pred(self) -> np.ndarray:
+        return self.batch.values.numpy()
+
+    @property
+    def total_steps(self) -> int:
+        return self.batch.obs.shape[0]
+
+    def num_minibatches(self, batch_size: int) -> int:
+        return self.total_steps // batch_size + (
+            1 if self.total_steps % batch_size else 0
+        )
+
+    def minibatches(
+        self, batch_size: int, device: torch.device, shuffle: bool = True
+    ) -> Iterator[PPOBatch]:
+        b_idxs = (
+            torch.randperm(self.total_steps)
+            if shuffle
+            else torch.arange(self.total_steps)
+        )
+        for i in range(0, self.total_steps, batch_size):
+            mb_idxs = b_idxs[i : i + batch_size]
+            yield self.batch[mb_idxs].to(device)

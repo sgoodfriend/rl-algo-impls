@@ -1,6 +1,8 @@
+import queue
 from typing import Optional
 
 import ray
+import torch
 
 from rl_algo_impls.runner.config import Config
 from rl_algo_impls.shared.data_store.abstract_data_store_accessor import (
@@ -29,22 +31,52 @@ from rl_algo_impls.shared.policy.remote_inference_policy import RemoteInferenceP
 from rl_algo_impls.shared.stats import EpisodesStats
 from rl_algo_impls.shared.trackable import UpdateTrackable
 
+_rollout_queue: Optional[torch.multiprocessing.Queue] = None
+_rollout_getter_process: Optional[torch.multiprocessing.Process] = None
+
+
+def rollout_getter(queue: torch.multiprocessing.Queue):
+    ray.init(address="auto", namespace="rl_algo_impls")
+    data_store_actor = ray.get_actor("DataStoreActor")
+    while True:
+        (rollouts,) = ray.get(data_store_actor.get_learner_view.remote(wait=True))
+        for rollout in rollouts:
+            queue.put(rollout.tensor())
+
 
 class RemoteDataStoreAccessor(AbstractDataStoreAccessor):
     def __init__(self, config: Config) -> None:
         self.config = config
-        self.data_store_actor = DataStoreActor.remote(config)
+        self.data_store_actor = DataStoreActor.options(name="DataStoreActor").remote(
+            config
+        )
         self.latest_policy: Optional[RemoteInferencePolicy] = None
 
     def register_env_tracker(self, env_tracker: UpdateTrackable) -> None:
         self.data_store_actor.register_env_tracker.remote(env_tracker)
 
     def get_learner_view(self, wait: bool = False) -> LearnerView:
-        return ray.get(self.data_store_actor.get_learner_view.remote(wait=wait))
+        global _rollout_queue
+        assert _rollout_queue is not None, "Must initialize_learner first"
+        rollouts = []
+        while True:
+            try:
+                rollout = _rollout_queue.get(block=wait and not rollouts)
+                rollouts.append(rollout)
+            except queue.Empty:
+                break
+        return LearnerView(rollouts=tuple(rollouts))
 
     def initialize_learner(
         self, learner_initialize_data: LearnerInitializeData
     ) -> None:
+        global _rollout_queue, _rollout_getter_process
+        _rollout_queue = torch.multiprocessing.Queue()
+        _rollout_getter_process = torch.multiprocessing.Process(
+            target=rollout_getter,
+            args=(_rollout_queue,),
+        )
+        _rollout_getter_process.start()
         policy, algo, load_path = learner_initialize_data
         if load_path:
             policy.load(load_path)
@@ -108,4 +140,8 @@ class RemoteDataStoreAccessor(AbstractDataStoreAccessor):
         )
 
     def close(self) -> DataStoreFinalization:
+        if _rollout_getter_process:
+            _rollout_getter_process.terminate()
+            assert _rollout_queue
+            _rollout_queue.close()
         return ray.get(self.data_store_actor.close.remote())

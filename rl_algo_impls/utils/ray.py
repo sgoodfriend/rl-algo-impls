@@ -27,6 +27,7 @@ def maybe_init_ray(config: "Config") -> None:
     worker_hyperparams = config.worker_hyperparams
 
     ray.init(
+        namespace="rl_algo_impls",
         num_cpus=(
             worker_hyperparams.n_rollout_workers
             + worker_hyperparams.n_inference_workers
