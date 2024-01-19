@@ -1,5 +1,6 @@
 import ray
 import torch
+import torch.multiprocessing as mp
 
 
 def ray_worker(queue: torch.multiprocessing.Queue):
@@ -28,6 +29,7 @@ class Actor:
 
 
 if __name__ == "__main__":
+    mp.set_start_method("spawn")
     # Start Ray in the main process
     ray.init(
         namespace="avocado"
