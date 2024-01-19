@@ -3,10 +3,10 @@ import torch
 import torch.multiprocessing as mp
 
 
-def ray_worker(queue: torch.multiprocessing.Queue):
+def ray_worker(queue: torch.multiprocessing.Queue, address: str):
     queue.put("start")
     # Connect to the existing Ray cluster
-    ray.init(address="auto", namespace="avocado")
+    ray.init(address=address, namespace="avocado")
     queue.put(f"worker ray address {ray.get_runtime_context().gcs_address}")
     # Now this process can use Ray tasks or actors
     actor = ray.get_actor("actor", namespace="avocado")
@@ -39,7 +39,9 @@ if __name__ == "__main__":
     # Start a child process that also uses Ray
     q = torch.multiprocessing.Queue()
     actor = Actor.options(name="actor").remote()
-    p = torch.multiprocessing.Process(target=ray_worker, args=(q,))
+    p = torch.multiprocessing.Process(
+        target=ray_worker, args=(q, ray.get_runtime_context().gcs_address)
+    )
     p.start()
 
     while True:
