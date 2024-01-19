@@ -6,7 +6,9 @@ import torch
 from gymnasium.spaces import MultiDiscrete
 
 from rl_algo_impls.shared.actor.gridnet import ValueDependentMask
-from rl_algo_impls.shared.tensor_utils import TDN, NumpyOrDict, TensorOrDict
+from rl_algo_impls.shared.tensor_utils import NumpyOrDict, TensorOrDict
+
+TDN = TypeVar("TDN", torch.Tensor, Dict[str, torch.Tensor], None)
 
 BatchTuple = Tuple[TDN, ...]
 
