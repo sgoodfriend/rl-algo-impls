@@ -5,13 +5,14 @@ import torch
 def ray_worker(queue: torch.multiprocessing.Queue):
     queue.put("start")
     # Connect to the existing Ray cluster
-    ray.init(address="auto", namespace="avocado")
+    ray.init(ignore_reinit_error=True, address="auto", namespace="avocado")
     # Now this process can use Ray tasks or actors
     # ...
     actor = ray.get_actor("actor")
     queue.put("actor")
     queue.put(ray.get(actor.f.remote()))
     queue.put("f output")
+    queue.put("exit")
 
 
 @ray.remote
@@ -41,3 +42,7 @@ if __name__ == "__main__":
     while True:
         s = q.get()
         print(s)
+        if s == "exit":
+            break
+    p.join()
+    q.close()
