@@ -71,6 +71,7 @@ class RemoteDataStoreAccessor(AbstractDataStoreAccessor):
         self, learner_initialize_data: LearnerInitializeData
     ) -> None:
         global _rollout_queue, _rollout_getter_process
+        torch.multiprocessing.set_start_method("spawn")
         _rollout_queue = torch.multiprocessing.Queue()
         _rollout_getter_process = torch.multiprocessing.Process(
             target=rollout_getter,
