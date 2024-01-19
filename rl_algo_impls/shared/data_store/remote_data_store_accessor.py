@@ -36,7 +36,7 @@ _rollout_getter_process: Optional[torch.multiprocessing.Process] = None
 
 
 def rollout_getter(queue: torch.multiprocessing.Queue):
-    ray.init(address="auto", namespace="rl_algo_impls")
+    ray.init(ignore_reinit_error=True, address="auto", namespace="rl_algo_impls")
     data_store_actor = ray.get_actor("DataStoreActor")
     while True:
         (rollouts,) = ray.get(data_store_actor.get_learner_view.remote(wait=True))
