@@ -138,8 +138,9 @@ class RemoteInferencePolicy(AbstractPolicy, Generic[ObsType]):
         assert (
             self.policy_actor_pool._actor_id == target.policy_actor_pool._actor_id
         ), f"Cannot currently transfer policy between different PolicyWorkerPools"
-        self.assigned_policy_actor.transfer_state.remote(
-            self.policy_id,
-            target.policy_id,
-            delete_origin_policy=delete_origin_policy,
-        )
+        for agent in self.all_actors:
+            agent.transfer_state.remote(
+                self.policy_id,
+                target.policy_id,
+                delete_origin_policy=delete_origin_policy,
+            )
