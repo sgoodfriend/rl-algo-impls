@@ -38,7 +38,7 @@ def train() -> None:
     )
     parser.set_defaults(
         algo=["appo"],
-        env=["CartPole-v1"],
+        # env=["CartPole-v1"],
         # env=["LunarLander-v2"],
         # env=["LunarLander-v2-lr-by-kl"],
         # env=["CarRacing-v2"],
@@ -52,7 +52,7 @@ def train() -> None:
         # env=["PongNoFrameskip-v4"],
         # env=["BreakoutNoFrameskip-v4"],
         # env=["Microrts-debug"],
-        # env=["LuxAI_S2-v0-debug"],
+        env=["LuxAI_S2-v0-debug"],
         seed=[1],
         pool_size=3,
         # wandb_project_name=None,

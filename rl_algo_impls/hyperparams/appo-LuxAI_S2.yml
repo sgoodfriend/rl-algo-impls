@@ -459,33 +459,41 @@ LuxAI_S2-v0-j256env64-80m-ent1-lr01-mgn2-base1lc-nga-tkl5cl-4r-2a100:
     <<: *lux-j256env64-80m-ent1-lr01-mgn2-base1lc-nga-tkl5cl-3r-2a100-worker
     n_rollout_workers: 4
 
+LuxAI_S2-v0-j256env64-80m-ent1-lr01-mgn2-base1lc-ga2-tkl5cl-4r-2a100:
+  &lux-j256env64-80m-ent1-lr01-mgn2-base1lc-ga2-tkl5cl-4r-2a100
+  <<: *lux-j256env64-80m-ent1-lr01-mgn2-base1lc-nga-tkl5cl-4r-2a100
+  algo_hyperparams:
+    &lux-j256env64-80m-ent1-lr01-mgn2-base1lc-ga2-tkl5cl-4r-2a100-algo
+    <<: *lux-j512env64-80m-ent1-lr01-mgn2-base1lc-nga-tkl5cl-2r-2a100-algo
+    gradient_accumulation: 2
+
 LuxAI_S2-v0-debug:
-  <<: *lux-j1024env32-a100-debug
+  <<: *lux-j256env64-80m-ent1-lr01-mgn2-base1lc-ga2-tkl5cl-4r-2a100
   n_timesteps: !!float 10e6
   device: mps
   env_hyperparams:
     # <<: *lux-j1024env16-env
-    <<: *lux-j1024env32-env
+    # <<: *lux-j1024env32-env
     # <<: *lux-j512env64-env
-    # <<: *lux-j256env64-env
+    <<: *lux-j256env64-env
     make_kwargs:
       # <<: *lux-j1024env16-env-make-kwargs
-      <<: *lux-j1024env32-env-make-kwargs
-      # <<: *lux-j512env64-env-make-kwargs
+      # <<: *lux-j1024env32-env-make-kwargs
+      <<: *lux-j512env64-env-make-kwargs
       verbose: 3
       verify: true
     # vec_env_class: sync
   eval_hyperparams:
     # <<: *lux-j1024env16-eval
-    <<: *lux-j1024env32-eval
-    # <<: *lux-j512env64-eval
+    # <<: *lux-j1024env32-eval
+    <<: *lux-j512env64-eval
     env_overrides:
       # <<: *lux-j1024env16-eval-env-overrides
-      <<: *lux-j1024env32-eval-env-overrides
-      # <<: *lux-j512env64-eval-env-overrides
+      # <<: *lux-j1024env32-eval-env-overrides
+      <<: *lux-j512env64-eval-env-overrides
       make_kwargs:
         # <<: *lux-j1024env16-eval-env-overrides-make-kwargs
-        <<: *lux-j1024env32-eval-env-overrides-make-kwargs
-        # <<: *lux-j512env64-eval-env-overrides-make-kwargs
+        # <<: *lux-j1024env32-eval-env-overrides-make-kwargs
+        <<: *lux-j512env64-eval-env-overrides-make-kwargs
         verbose: 3
         verify: true
