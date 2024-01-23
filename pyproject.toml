@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "rl_algo_impls"
-version = "0.1.1"
+version = "0.1.2"
 description = "Implementations of reinforcement learning algorithms"
 authors = ["Scott Goodfriend <goodfriend.scott@gmail.com>"]
 license = "MIT"
@@ -36,6 +36,7 @@ moviepy = "*"
 tqdm = "*"
 GPUtil = "*"
 ray = {extras = ["air"], version = "^2.8.1"}
+accelerate = "*"
 
 AutoROM = {extras = ["accept-rom-license"], version = "^0.6", optional = true}
 pyglet = {version = "==1.5.27", optional = true}
