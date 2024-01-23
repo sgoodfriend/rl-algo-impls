@@ -1,6 +1,7 @@
 import copy
 import logging
 import os
+from typing import TypeVar
 
 import torch
 from torch.optim.optimizer import StateDict
@@ -37,6 +38,20 @@ class SynchronousAlgorithmState(TrackableState):
         self.algo.optimizer.load_state_dict(state)
 
 
+T = TypeVar("T")
+
+
+def _recursive_copy_to_device(item: T, device: torch.device) -> T:
+    if torch.is_tensor(item):
+        return item.to(device)
+    elif isinstance(item, dict):
+        return {k: _recursive_copy_to_device(v, device) for k, v in item.items()}
+    elif isinstance(item, list):
+        return [_recursive_copy_to_device(v, device) for v in item]
+    else:
+        return copy.copy(item)
+
+
 class RemoteAlgorithmState(TrackableState):
     def __init__(self, algo: Algorithm) -> None:
         cpu_device = torch.device("cpu")
@@ -44,11 +59,7 @@ class RemoteAlgorithmState(TrackableState):
         dest_state_dict = {}
         for k, v in orig_state_dict.items():
             if k == "state":
-                dest_state_dict[k] = {}
-                for k2, v2 in v.items():
-                    dest_state_dict[k][k2] = {}
-                    if torch.is_tensor(v2):
-                        dest_state_dict[k][k2] = v2.to(cpu_device)
+                dest_state_dict[k] = _recursive_copy_to_device(v, cpu_device)
             else:
                 dest_state_dict[k] = copy.copy(v)
         self.state = dest_state_dict
