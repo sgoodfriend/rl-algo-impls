@@ -1,7 +1,8 @@
-from typing import Callable, TypeVar
+from typing import Callable, List, Optional, TypeVar, Union
 
 import numpy as np
 from torch.optim import Optimizer
+from torch.optim.lr_scheduler import LRScheduler
 
 from rl_algo_impls.shared.tensor_utils import NumOrArray
 from rl_algo_impls.utils.interpolate import lerp
@@ -64,3 +65,24 @@ def schedule(name: str, start_val: NT) -> Schedule:
 def update_learning_rate(optimizer: Optimizer, learning_rate: float) -> None:
     for param_group in optimizer.param_groups:
         param_group["lr"] = learning_rate
+
+
+class SetLRScheduler(LRScheduler):
+    def __init__(
+        self, optimizer: Optimizer, last_epoch: int = -1, verbose: bool = False
+    ) -> None:
+        self._target_lr: List[float] = [group["lr"] for group in optimizer.param_groups]
+        super().__init__(optimizer, last_epoch, verbose)
+
+    def get_lr(self) -> List[float]:
+        return self._target_lr
+
+    def step(self, learning_rate: Optional[Union[float, List[float]]] = None):
+        if learning_rate is not None:
+            if isinstance(learning_rate, list):
+                assert len(learning_rate) == len(self._target_lr)
+                self._target_lr = learning_rate
+            else:
+                self._target_lr = [learning_rate] * len(self._target_lr)
+
+        super().step()

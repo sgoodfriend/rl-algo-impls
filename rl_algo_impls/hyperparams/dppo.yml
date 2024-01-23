@@ -1,0 +1,63 @@
+default: &defaults
+  process_mode: async
+  eval_hyperparams: &eval
+    step_freq: !!float 1e6
+    n_episodes: 48
+    env_overrides:
+      n_envs: 16
+
+CartPole-v1: &cartpole
+  <<: *defaults
+  n_timesteps: !!float 4e5
+  env_hyperparams: &cartpole-env-defaults
+    n_envs: 8
+  algo_hyperparams: &cartpole-algo-defaults
+    batch_size: 1024
+    ent_coef: 0.0
+    learning_rate: 0.01
+    clip_range: 0.2
+  hyperparam_transitions_kwargs:
+    durations: [0, 1, 0]
+    phases:
+      - learning_rate: 0.01
+        clip_range: 0.2
+      - learning_rate: 0.001
+        clip_range: 0
+  rollout_hyperparams: &cartpole-rollout-defaults
+    n_steps: 128
+    gae_lambda: 0.8
+    gamma: 0.98
+  eval_hyperparams:
+    <<: *eval
+    step_freq: !!float 2.5e4
+
+LunarLander-v2: &lunarlander
+  <<: *defaults
+  n_timesteps: !!float 5e6
+  worker_hyperparams:
+    n_rollout_workers: 4
+    n_inference_workers: 2
+  env_hyperparams: &lunarlander-env
+    n_envs: 4
+  rollout_hyperparams:
+    n_steps: 256
+    gae_lambda: 0.98
+    gamma: 0.999
+  algo_hyperparams: &lunarlander-algo
+    batch_size: 64
+    learning_rate: !!float 1e-3
+    clip_range: 0.2
+    ent_coef: 0.01
+    max_n_epochs: 4
+  hyperparam_transitions_kwargs:
+    durations: [0, 1, 0]
+    phases:
+      - learning_rate: !!float 1e-3
+        clip_range: 0.2
+        ent_coef: 0.01
+      - learning_rate: !!float 1e-6
+        clip_range: 0
+        ent_coef: 0
+  eval_hyperparams:
+    <<: *eval
+    step_freq: !!float 5e5

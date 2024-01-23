@@ -59,12 +59,16 @@ def initialize_cuda_devices(args: RunArgs, hyperparams: Hyperparams) -> List[int
             warnings.warn(
                 f"Desired {worker_hyperparams.desired_num_accelerators} GPUs but only found {len(gpu_ids)} GPUs"
             )
-        os.environ["CUDA_VISIBLE_DEVICES"] = ",".join(map(str, gpu_ids))
+        learner_gpu_indexes = worker_hyperparams.learner_gpu_indexes or [0]
+        learner_cuda_indexes = [
+            gpu_ids[gpu_idx % len(gpu_ids)] for gpu_idx in learner_gpu_indexes
+        ]
+        os.environ["CUDA_VISIBLE_DEVICES"] = ",".join(map(str, learner_cuda_indexes))
         import torch
 
         assert torch.cuda.device_count() == len(
-            gpu_ids
-        ), f"GPU count mismatch: {torch.cuda.device_count()} vs expected {len(gpu_ids)}"
+            learner_cuda_indexes
+        ), f"GPU count mismatch: {torch.cuda.device_count()} vs expected {len(learner_cuda_indexes)}"
         torch.set_num_threads(get_max_num_threads())
     elif worker_hyperparams.desired_num_accelerators > 1:
         warnings.warn(
