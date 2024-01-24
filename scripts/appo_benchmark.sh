@@ -47,12 +47,10 @@ MUJOCO_ENVS=(
 train_jobs=""
 for algo in $(echo $algos); do
     if [ -z "$envs" ]; then
-        if [ "$algo" = "appo" ]; then
-            if [ "$mujoco_only" = "t" ]; then
-                BENCHMARK_ENVS="${MUJOCO_ENVS[*]}"
-            else
-                BENCHMARK_ENVS="${BASIC_ENVS[*]} ${MUJOCO_ENVS[*]} ${ATARI_ENVS[*]} ${BOX_ENVS[*]}"
-            fi
+        if [ "$mujoco_only" = "t" ]; then
+            BENCHMARK_ENVS="${MUJOCO_ENVS[*]}"
+        else
+            BENCHMARK_ENVS="${BASIC_ENVS[*]} ${MUJOCO_ENVS[*]} ${ATARI_ENVS[*]} ${BOX_ENVS[*]}"
         fi
         algo_envs=${BENCHMARK_ENVS[*]}
     else
