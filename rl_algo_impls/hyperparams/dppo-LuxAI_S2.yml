@@ -281,7 +281,7 @@ LuxAI_S2-v0-j256env64-80m-ent1-lr01-mgn2-base1lc-ga2-tkl5-2lw-8rw-4a100:
     rollout_gpu_indexes: [2, 3]
 
 LuxAI_S2-v0-j256env64-4a100-debug: &lux-j256env64-4a100-debug
-  <<: *lux-j256env64-80m-ent1-lr01-mgn2-base1lc-ga4-tkl5cl-4rw-2a100
+  <<: *lux-j256env64-80m-ent1-lr01-mgn2-base1lc-ga2-tkl5-2lw-8rw-4a100
   checkpoints_kwargs:
     history_size: 1
   rollout_hyperparams:
