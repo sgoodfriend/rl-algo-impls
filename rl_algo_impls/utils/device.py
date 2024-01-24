@@ -63,6 +63,7 @@ def initialize_cuda_devices(args: RunArgs, hyperparams: Hyperparams) -> List[int
         learner_cuda_indexes = [
             gpu_ids[gpu_idx % len(gpu_ids)] for gpu_idx in learner_gpu_indexes
         ]
+        logging.info(f"Learner using GPUs: {learner_cuda_indexes}")
         os.environ["CUDA_VISIBLE_DEVICES"] = ",".join(map(str, learner_cuda_indexes))
         import torch
 
