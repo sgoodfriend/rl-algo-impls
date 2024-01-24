@@ -136,11 +136,6 @@ class DPPO(Algorithm):
 
         lr_scheduler = SetLRScheduler(self.optimizer)
 
-        dataset = rollouts[0].dataset(self.device)
-        dataloader = RolloutDataLoader(
-            dataset, batch_size=self.batch_size, shuffle=shuffle_minibatches
-        )
-
         accelerator = Accelerator(
             gradient_accumulation_steps=minibatches_per_step,
             mixed_precision="bf16"
@@ -151,8 +146,8 @@ class DPPO(Algorithm):
             device_placement=self.device.type != "cpu",
             cpu=self.device.type == "cpu",
         )
-        policy, optimizer, lr_scheduler, dataloader = accelerator.prepare(
-            self.policy, self.optimizer, lr_scheduler, dataloader
+        policy, optimizer, lr_scheduler = accelerator.prepare(
+            self.policy, self.optimizer, lr_scheduler
         )
 
         while timesteps_elapsed < train_timesteps:
@@ -219,11 +214,11 @@ class DPPO(Algorithm):
                 for r in reversed(rollouts):
                     rollout_steps_iteration += r.total_steps
 
-                    # dataset = r.dataset(self.device)
-                    # dataloader = RolloutDataLoader(
-                    #     dataset, batch_size=self.batch_size, shuffle=shuffle_minibatches
-                    # )
-                    # dataloader = accelerator.prepare(dataloader)
+                    dataset = r.dataset(self.device)
+                    dataloader = RolloutDataLoader(
+                        dataset, batch_size=self.batch_size, shuffle=shuffle_minibatches
+                    )
+                    dataloader = accelerator.prepare(dataloader)
 
                     for (
                         mb_obs,
