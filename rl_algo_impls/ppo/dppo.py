@@ -145,6 +145,12 @@ class DPPO(Algorithm):
             device_placement=self.device.type != "cpu",
             cpu=self.device.type == "cpu",
         )
+        logging.info(
+            f"Accelerator num_processed: {accelerator.num_processes}; "
+            f"distributed_type: {accelerator.distributed_type}; "
+            f"mixed_precision: {accelerator.mixed_precision}; "
+            f"use_distributed": {accelerator.use_distributed}"
+        )
         policy, optimizer, lr_scheduler = accelerator.prepare(
             self.policy, self.optimizer, lr_scheduler
         )
