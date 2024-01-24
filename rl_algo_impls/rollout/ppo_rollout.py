@@ -1,26 +1,16 @@
-from dataclasses import dataclass
-from typing import (
-    Callable,
-    Dict,
-    Iterator,
-    NamedTuple,
-    Optional,
-    Tuple,
-    Type,
-    TypeVar,
-    Union,
-)
+from typing import Iterator, List, NamedTuple, Optional, TypeVar, Union
 
 import numpy as np
 import torch
-from torch.utils.data import Dataset
 
 from rl_algo_impls.loss.teacher_kl_loss import teacher_kl_loss_enabled
-from rl_algo_impls.rollout.rollout import TDN, Rollout, flatten_batch_step
+from rl_algo_impls.rollout.rollout import Rollout, flatten_batch_step
+from rl_algo_impls.rollout.rollout_dataloader import RolloutDataset
 from rl_algo_impls.runner.config import Config
 from rl_algo_impls.shared.data_store.data_store_data import RolloutView
 from rl_algo_impls.shared.gae import compute_advantages
 from rl_algo_impls.shared.tensor_utils import (
+    TDN,
     NumOrArray,
     NumpyOrDict,
     TensorOrDict,
@@ -29,19 +19,6 @@ from rl_algo_impls.shared.tensor_utils import (
 )
 
 PPOBatchSelf = TypeVar("PPOBatchSelf", bound="PPOBatch")
-
-from torch.utils.data._utils.collate import default_collate_fn_map
-
-
-def collat_none_fn(
-    batch,
-    *,
-    collate_fn_map: Optional[Dict[Union[Type, Tuple[Type, ...]], Callable]] = None,
-):
-    return None
-
-
-default_collate_fn_map[type(None)] = collat_none_fn
 
 
 class PPOBatch(NamedTuple):
@@ -69,7 +46,9 @@ class PPOBatch(NamedTuple):
 
         return self.__class__(*(to_device(t) for t in self))
 
-    def __getitem__(self: PPOBatchSelf, indices: torch.Tensor) -> PPOBatchSelf:
+    def __getitem__(
+        self: PPOBatchSelf, indices: Union[int, List[int], torch.Tensor]
+    ) -> PPOBatchSelf:
         def by_indices_fn(_t: TDN) -> TDN:
             if _t is None:
                 return _t
@@ -78,35 +57,6 @@ class PPOBatch(NamedTuple):
             return _t[indices]
 
         return self.__class__(*(by_indices_fn(t) for t in self))
-
-
-@dataclass
-class PPODataset(Dataset):
-    obs: torch.Tensor
-
-    actions: TensorOrDict
-    action_masks: Optional[TensorOrDict]
-
-    logprobs: torch.Tensor
-
-    values: torch.Tensor
-    advantages: torch.Tensor
-    returns: torch.Tensor
-
-    teacher_logprobs: Optional[torch.Tensor]
-
-    def __getitem__(self, index: int) -> PPOBatch:
-        def by_index_fn(_t: TDN) -> TDN:
-            if _t is None:
-                return _t
-            if isinstance(_t, dict):
-                return {k: v[index] for k, v in _t.items()}
-            return _t[index]
-
-        return PPOBatch(*(by_index_fn(t) for t in vars(self).values()))
-
-    def __len__(self):
-        return self.obs.shape[0]
 
 
 class PPORollout(Rollout):
@@ -220,19 +170,6 @@ class PPORollout(Rollout):
             mb_idxs = b_idxs[i : i + batch_size]
             yield batch[mb_idxs].to(device)
 
-    def dataset(self, device: torch.device) -> PPODataset:
+    def dataset(self, device: torch.device) -> RolloutDataset:
         device = torch.device("cpu") if self.full_batch_off_accelerator else device
-        return PPODataset(
-            numpy_to_tensor(self.obs, device),
-            numpy_to_tensor(self.actions, device),
-            numpy_to_tensor(self.action_masks, device)
-            if self.action_masks is not None
-            else None,
-            numpy_to_tensor(self.logprobs, device),
-            numpy_to_tensor(self.values, device),
-            numpy_to_tensor(self.advantages, device),
-            numpy_to_tensor(self.returns, device),
-            numpy_to_tensor(self.teacher_logprobs, device)
-            if self.teacher_logprobs is not None
-            else None,
-        )
+        return RolloutDataset(self.batch(device))

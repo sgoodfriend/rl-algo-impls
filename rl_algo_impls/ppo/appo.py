@@ -12,7 +12,7 @@ from torch.optim import Adam
 from rl_algo_impls.loss.teacher_kl_loss import TeacherKLLoss
 from rl_algo_impls.ppo.appo_train_stats import APPOTrainStats
 from rl_algo_impls.ppo.ppo import TrainStepStats
-from rl_algo_impls.rollout.ppo_rollout import PPOBatch
+from rl_algo_impls.rollout.rollout_dataloader import RolloutDataLoader
 from rl_algo_impls.shared.algorithm import Algorithm
 from rl_algo_impls.shared.autocast import maybe_autocast
 from rl_algo_impls.shared.callbacks.callback import Callback
@@ -195,24 +195,24 @@ class APPO(Algorithm):
                 for r in reversed(rollouts):
                     rollout_steps_iteration += r.total_steps
 
+                    dataset = r.dataset(self.device)
+                    dataloader = RolloutDataLoader(
+                        dataset, batch_size=self.batch_size, shuffle=shuffle_minibatches
+                    )
+
                     mb_idx = 0
-                    for mb in r.minibatches(
-                        self.batch_size, self.device, shuffle=shuffle_minibatches
-                    ):
+                    for (
+                        mb_obs,
+                        mb_actions,
+                        mb_action_masks,
+                        mb_logprobs,
+                        mb_values,
+                        mb_adv,
+                        mb_returns,
+                        mb_teacher_logprobs,
+                    ) in dataloader:
                         mb_idx += 1
                         self.policy.reset_noise(self.batch_size)
-
-                        assert isinstance(mb, PPOBatch)
-                        (
-                            mb_obs,
-                            mb_actions,
-                            mb_action_masks,
-                            mb_logprobs,
-                            mb_values,
-                            mb_adv,
-                            mb_returns,
-                            mb_teacher_logprobs,
-                        ) = mb
 
                         if self.normalize_advantages_after_scaling:
                             if multi_reward_weights is not None:

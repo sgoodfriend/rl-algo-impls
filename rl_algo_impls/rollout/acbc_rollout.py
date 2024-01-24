@@ -4,11 +4,12 @@ import numpy as np
 import torch
 from gymnasium.spaces import MultiDiscrete
 
-from rl_algo_impls.rollout.rollout import TDN, Rollout, flatten_batch_step, num_actions
+from rl_algo_impls.rollout.rollout import Rollout, flatten_batch_step, num_actions
+from rl_algo_impls.rollout.rollout_dataloader import RolloutDataset
 from rl_algo_impls.runner.config import Config
 from rl_algo_impls.shared.actor.gridnet import ValueDependentMask
 from rl_algo_impls.shared.gae import compute_advantages
-from rl_algo_impls.shared.tensor_utils import NumOrArray, NumpyOrDict, TensorOrDict
+from rl_algo_impls.shared.tensor_utils import TDN, NumOrArray, NumpyOrDict, TensorOrDict
 
 ACBCBatchSelf = TypeVar("ACBCBatchSelf", bound="ACBCBatch")
 
@@ -151,3 +152,7 @@ class ACBCRollout(Rollout):
         for i in range(0, self.total_steps, batch_size):
             mb_idxs = b_idxs[i : i + batch_size]
             yield batch[mb_idxs].to(device)
+
+    def dataset(self, device: torch.device) -> RolloutDataset:
+        device = torch.device("cpu") if self.full_batch_off_accelerator else device
+        return RolloutDataset(self.batch(device))
