@@ -1,0 +1,289 @@
+LuxAI_S2-v0-j256env64-80m-ent1-lr01-mgn2-base1lc-ga4-tkl5cl-4rw-2a100:
+  &lux-j256env64-80m-ent1-lr01-mgn2-base1lc-ga4-tkl5cl-4rw-2a100
+  additional_keys_to_log:
+    - results
+    - stats
+    - relative_stats
+  algo_hyperparams:
+    &lux-j256env64-80m-ent1-lr01-mgn2-base1lc-ga4-tkl5cl-4rw-2a100-algo
+    autocast_loss: true
+    batch_size: 256
+    clip_range: 0.1
+    clip_range_vf: null
+    ent_coef: 0.001
+    gradient_accumulation: 4
+    learning_rate: 1.0e-06
+    max_grad_norm: 2.0
+    multi_reward_weights:
+      - 1
+      - 0.1
+      - 0.1
+      - 0.1
+      - 0.1
+      - 0
+      - 0.1
+      - 0.1
+      - 0.1
+      - 0.1
+      - 0.1
+      - 0
+      - -0.1
+      - 0
+    normalize_advantage: true
+    normalize_advantages_after_scaling: false
+    ppo2_vf_coef_halving: true
+    standardize_advantage: false
+    teacher_kl_loss_coef: 0.005
+    teacher_loss_batch_size: 512
+    vf_coef: 0.24
+    vf_loss_fn: huber_loss
+    vf_weights:
+      - 1
+      - 0.5
+      - 0.5
+      - 0.5
+      - 0.5
+      - 0.5
+      - 0.5
+      - 0.5
+      - 0.5
+      - 0.5
+      - 0.5
+      - 0.5
+      - 0.5
+      - 0.5
+  checkpoints_kwargs:
+    history_size: 4
+  device_hyperparams:
+    set_float32_matmul_precision: high
+    use_deterministic_algorithms: false
+  env_hyperparams: &j256env64-env
+    additional_win_loss_reward: false
+    additional_win_loss_smoothing_factor: none
+    env_type: lux
+    info_rewards:
+      episode_end: false
+      info_paths:
+        - - delta_stats
+          - generation
+          - ice
+        - - delta_stats
+          - generation
+          - ore
+        - - delta_stats
+          - generation
+          - water
+        - - delta_stats
+          - generation
+          - metal
+        - - delta_stats
+          - generation
+          - power
+        - - delta_stats
+          - generation
+          - light_bots
+        - - delta_stats
+          - generation
+          - heavy_bots
+        - - delta_stats
+          - generation
+          - opponent_kills
+        - - delta_stats
+          - resources
+          - lichen
+        - - delta_stats
+          - resources
+          - factories
+        - - delta_stats
+          - real_env_steps
+        - - delta_stats
+          - resources
+          - opponent_lichen
+        - - delta_stats
+          - resources
+          - opponent_factories
+    make_kwargs: &j256env64-env-make-kwargs
+      MAX_FACTORIES: 10
+      MAX_GLOBAL_ID: 768
+      MAX_N_UNITS: 384
+      MIN_FACTORIES: 4
+      USES_COMPACT_SPAWNS_MASK: false
+      bid_std_dev: 0
+      disable_cargo_pickup: true
+      disable_unit_to_unit_transfers: true
+      enable_factory_to_digger_power_transfers: true
+      enable_light_water_pickup: true
+      factory_ice_distance_buffer: 0
+      factory_ore_distance_buffer: 0
+      init_water_constant: true
+      map_size: 64
+      min_ice: 2
+      min_ore: 2
+      relative_stats_eps:
+        generation:
+          heavy_bots: 0.22
+          ice: 22
+          light_bots: 0.22
+          metal: 11
+          opponent_kills: 0.22
+          ore: 22
+          water: 11
+        resources:
+          heavy_bots: 0.22
+          lichen: 0.22
+          light_bots: 0.22
+          water_in_factories: 0.22
+      reward_weights:
+        win_loss: 1
+      use_difference_ratio: true
+      use_simplified_spaces: true
+      valid_spawns_mask_ore_ice_union: true
+    n_envs: 256
+    normalize: true
+    normalize_kwargs:
+      clip_reward: 1
+      emv_window_size: 5000000.0
+      exponential_moving_mean_var_reward: true
+      gamma_reward: 1
+      norm_obs: false
+      norm_reward: true
+    play_checkpoints_kwargs:
+      n_envs_against_checkpoints: 192
+    score_reward_kwargs: null
+    self_play_kwargs: null
+    vec_env_class: jux
+  env_id: LuxAI_S2-v0
+  eval_hyperparams: &j256env64-eval
+    deterministic: false
+    env_overrides: &j256env64-eval-env-overrides
+      info_rewards: null
+      make_kwargs: &j256env64-eval-env-overrides-make-kwargs
+        MAX_FACTORIES: 10
+        MAX_GLOBAL_ID: 768
+        MAX_N_UNITS: 384
+        MIN_FACTORIES: 4
+        USES_COMPACT_SPAWNS_MASK: false
+        bid_std_dev: 0
+        disable_cargo_pickup: true
+        disable_unit_to_unit_transfers: true
+        enable_factory_to_digger_power_transfers: true
+        enable_light_water_pickup: true
+        factory_ice_distance_buffer: 0
+        factory_ore_distance_buffer: 0
+        init_water_constant: true
+        map_size: 64
+        min_ice: 2
+        min_ore: 2
+        reward_weights:
+          win_loss: 1
+        use_difference_ratio: true
+        use_simplified_spaces: true
+        valid_spawns_mask_ore_ice_union: true
+      n_envs: 128
+      play_checkpoints_kwargs:
+        n_envs_against_checkpoints: null
+    only_checkpoint_best_policies: true
+    only_record_video_on_best: false
+    score_function: mean
+    score_threshold: 0.14
+    step_freq: 2500000.0
+  hyperparam_transitions_kwargs: null
+  lr_by_kl_kwargs: null
+  n_timesteps: 80000000.0
+  policy_hyperparams:
+    actor_head_style: squeeze_unet
+    additional_critic_activation_functions:
+      - identity
+      - identity
+      - identity
+      - identity
+      - identity
+      - identity
+      - identity
+      - identity
+      - identity
+      - identity
+      - identity
+      - identity
+      - identity
+    channels_per_level:
+      - 128
+      - 128
+      - 128
+    critic_channels: 128
+    critic_shares_backbone: true
+    decoder_residual_blocks_per_level:
+      - 2
+      - 3
+    deconv_strides_per_level:
+      - - 2
+        - 2
+      - - 2
+        - 2
+    encoder_residual_blocks_per_level:
+      - 3
+      - 2
+      - 2
+    load_path: null
+    load_run_path: sgoodfriend/rl-algo-impls-lux-nips1/r7yljs06
+    load_run_path_best: true
+    normalization: layer
+    output_activation_fn: identity
+    save_critic_separate: false
+    shared_critic_head: true
+    strides_per_level:
+      - 4
+      - 4
+    subaction_mask:
+      1:
+        2: 0
+        3: 1
+        4: 1
+        5: 2
+  process_mode: async
+  rollout_hyperparams:
+    &lux-j256env64-80m-ent1-lr01-mgn2-base1lc-ga4-tkl5cl-4rw-2a100-rollout
+    full_batch_off_accelerator: true
+    gae_lambda: 0.95
+    gamma: 1.0
+    n_steps: 64
+    num_envs_reset_every_rollout: 0
+    prepare_steps: 1024
+    random_num_envs_reset_every_rollout: 2
+    rolling_num_envs_reset_every_prepare_step: 16
+    rolling_num_envs_reset_every_rollout: 0
+  rollout_type: sync
+  worker_hyperparams:
+    &lux-j256env64-80m-ent1-lr01-mgn2-base1lc-ga4-tkl5cl-4rw-2a100-worker
+    evaluator_gpu_index: 1
+    inference_gpu_indexes:
+      - 1
+    n_inference_workers: 2
+    n_rollout_workers: 4
+    rollout_gpu_indexes:
+      - 1
+
+LuxAI_S2-v0-debug:
+  <<: *lux-j256env64-80m-ent1-lr01-mgn2-base1lc-ga4-tkl5cl-4rw-2a100
+  n_timesteps: !!float 10e6
+  device: mps
+  env_hyperparams:
+    <<: *j256env64-env
+    make_kwargs:
+      <<: *j256env64-env-make-kwargs
+      verbose: 3
+      verify: true
+  eval_hyperparams:
+    <<: *j256env64-eval
+    env_overrides:
+      <<: *j256env64-eval-env-overrides
+      make_kwargs:
+        <<: *j256env64-eval-env-overrides-make-kwargs
+        verbose: 3
+        verify: true
+  worker_hyperparams:
+    <<: *lux-j256env64-80m-ent1-lr01-mgn2-base1lc-ga4-tkl5cl-4rw-2a100-worker
+    evaluator_gpu_index: 0
+    learner_gpu_indexes: []
+    inference_gpu_indexes: []
+    rollout_gpu_indexes: []

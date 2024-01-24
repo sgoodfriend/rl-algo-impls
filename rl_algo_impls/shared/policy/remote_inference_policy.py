@@ -1,4 +1,6 @@
+import os
 import uuid
+import warnings
 from typing import TYPE_CHECKING, Any, Generic, Optional, TypeVar
 
 import numpy as np
@@ -65,8 +67,29 @@ class RemoteInferencePolicy(AbstractPolicy, Generic[ObsType]):
         if _current_actor_id is None:
             _current_actor_id = ray.get_runtime_context().get_actor_id()
         if _policy_worker_for_current_actor is None:
+            try:
+                cuda_visible_devices = list(
+                    map(
+                        int,
+                        (
+                            s
+                            for s in os.environ.get("CUDA_VISIBLE_DEVICES", "").split(
+                                ","
+                            )
+                            if s
+                        ),
+                    )
+                )
+            except ValueError:
+                warnings.warn(
+                    f"Invalid CUDA_VISIBLE_DEVICES: {os.environ.get('CUDA_VISIBLE_DEVICES')}"
+                )
+                cuda_visible_devices = []
             _policy_worker_for_current_actor = ray.get(
-                self.policy_actor_pool.get_policy_for_actor_id.remote(_current_actor_id)
+                self.policy_actor_pool.get_policy_for_actor_id.remote(
+                    _current_actor_id,
+                    cuda_visible_devices[0] if len(cuda_visible_devices) else None,
+                )
             )
         return _policy_worker_for_current_actor
 

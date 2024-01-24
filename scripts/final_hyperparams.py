@@ -9,7 +9,7 @@ if __name__ == "__main__":
     parser.add_argument("-e", "--env-id", type=str)
     parser.add_argument("-a", "--algo", default="appo")
     parser.set_defaults(
-        env_id="LuxAI_S2-v0-j1024env16-80m-ent5-lr3c-mgn2-2o3m4h-nga-async-a100"
+        env_id="LuxAI_S2-v0-j256env64-80m-ent1-lr01-mgn2-base1lc-ga4-tkl5cl-4rw-2a100"
     )
     args = parser.parse_args()
 
