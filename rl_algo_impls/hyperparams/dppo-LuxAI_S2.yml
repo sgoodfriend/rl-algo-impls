@@ -280,6 +280,14 @@ LuxAI_S2-v0-j256env64-80m-ent1-lr01-mgn2-base1lc-ga2-tkl5-2lw-8rw-4a100:
     n_rollout_workers: 8
     rollout_gpu_indexes: [2, 3]
 
+LuxAI_S2-v0-j256env64-4a100-debug: &lux-j256env64-4a100-debug
+  <<: *lux-j256env64-80m-ent1-lr01-mgn2-base1lc-ga4-tkl5cl-4rw-2a100
+  checkpoints_kwargs:
+    history_size: 1
+  rollout_hyperparams:
+    <<: *lux-j256env64-80m-ent1-lr01-mgn2-base1lc-ga4-tkl5cl-4rw-2a100-rollout
+    prepare_steps: 0
+
 LuxAI_S2-v0-j1024env32-a100-debug: &lux-j1024env32-a100-debug
   additional_keys_to_log:
     - results
