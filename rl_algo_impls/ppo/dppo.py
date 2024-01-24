@@ -10,6 +10,7 @@ from torch.optim import Adam
 
 from rl_algo_impls.loss.teacher_kl_loss import TeacherKLLoss
 from rl_algo_impls.ppo.dppo_train_stats import DPPOTrainStats, DPPOTrainStepStats
+from rl_algo_impls.rollout.rollout_dataloader import RolloutDataLoader
 from rl_algo_impls.runner.config import Config
 from rl_algo_impls.shared.algorithm import Algorithm
 from rl_algo_impls.shared.callbacks.callback import Callback
@@ -214,7 +215,7 @@ class DPPO(Algorithm):
                     rollout_steps_iteration += r.total_steps
 
                     dataset = r.dataset(self.device)
-                    dataloader = torch.utils.data.DataLoader(
+                    dataloader = RolloutDataLoader(
                         dataset, batch_size=self.batch_size, shuffle=shuffle_minibatches
                     )
                     dataloader = accelerator.prepare(dataloader)

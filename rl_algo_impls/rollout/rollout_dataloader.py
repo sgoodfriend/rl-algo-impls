@@ -22,12 +22,17 @@ class RolloutDataset(Dataset):
 
         return self.batch.__class__(*(by_indices_fn(t) for t in self.batch))
 
+    def __getitems__(self, indices: Union[int, List[int], torch.Tensor]) -> BatchTuple:
+        return self.__getitem__(indices)
+
     def __len__(self):
         return self.batch.obs.shape[0]  # type: ignore
 
 
 class RolloutDataLoader(DataLoader):
-    def __iter__(self):
-        assert self.batch_sampler is not None
-        for batch_indices in self.batch_sampler:
-            yield self.dataset[batch_indices]
+    def __init__(self, dataset: RolloutDataset, **kwargs) -> None:
+        super().__init__(
+            dataset,
+            collate_fn=lambda x: x,  # Handled by RolloutDataset.__getitems__
+            **kwargs,
+        )

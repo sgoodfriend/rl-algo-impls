@@ -37,7 +37,7 @@ def train() -> None:
         "--virtual-display", action="store_true", help="Use headless virtual display"
     )
     parser.set_defaults(
-        algo=["appo"],
+        algo=["dppo"],
         # env=["CartPole-v1"],
         env=["LunarLander-v2"],
         # env=["LunarLander-v2-lr-by-kl"],
