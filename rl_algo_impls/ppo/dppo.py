@@ -391,6 +391,7 @@ class DPPO(Algorithm):
                 if rollout_iteration_cnt == 1:
                     rollout_steps_elapsed = rollout_steps_iteration
 
+            accelerator._dataloaders.clear()
             if (
                 self.freeze_policy_head
                 or self.freeze_value_head
