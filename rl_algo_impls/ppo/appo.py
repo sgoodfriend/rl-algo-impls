@@ -201,17 +201,18 @@ class APPO(Algorithm):
                     )
 
                     mb_idx = 0
-                    for (
-                        mb_obs,
-                        mb_actions,
-                        mb_action_masks,
-                        mb_logprobs,
-                        mb_values,
-                        mb_adv,
-                        mb_returns,
-                        mb_teacher_logprobs,
-                    ) in dataloader:
+                    for mb in dataloader:
                         mb_idx += 1
+                        (
+                            mb_obs,
+                            mb_actions,
+                            mb_action_masks,
+                            mb_logprobs,
+                            mb_values,
+                            mb_adv,
+                            mb_returns,
+                            mb_teacher_logprobs,
+                        ) = mb.to(self.device)
                         self.policy.reset_noise(self.batch_size)
 
                         if self.normalize_advantages_after_scaling:
