@@ -11,7 +11,6 @@ from torch.optim import Adam
 from rl_algo_impls.loss.teacher_kl_loss import TeacherKLLoss
 from rl_algo_impls.ppo.dppo_train_stats import DPPOTrainStats, DPPOTrainStepStats
 from rl_algo_impls.rollout.rollout_dataloader import RolloutDataLoader
-from rl_algo_impls.runner.config import Config
 from rl_algo_impls.shared.algorithm import Algorithm
 from rl_algo_impls.shared.callbacks.callback import Callback
 from rl_algo_impls.shared.data_store.data_store_data import LearnerDataStoreViewUpdate
