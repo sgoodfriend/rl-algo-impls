@@ -15,7 +15,7 @@ from torch.utils.data import DataLoader
 logging.basicConfig(level=logging.INFO, handlers=[])
 
 
-def worker(rank, world_size, model_serialized, optimizer, train_dataset):
+def worker(rank, world_size, model_serialized, from_optimizer, train_dataset):
     os.environ["MASTER_ADDR"] = "localhost"
     os.environ["MASTER_PORT"] = "12355"
     os.environ["LOCAL_RANK"] = str(rank)
@@ -43,6 +43,8 @@ def worker(rank, world_size, model_serialized, optimizer, train_dataset):
         f"{rank}: model_serialized sha: {hashlib.sha256(model_serialized.get_obj()).hexdigest()}"
     )
     model = torch.load(io.BytesIO(model_serialized.get_obj()))
+    optimizer = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.5)
+    optimizer.load_state_dict(from_optimizer.state_dict())
     model, optimizer, train_loader = accelerator.prepare(model, optimizer, train_loader)
 
     for epoch in range(5):
@@ -149,4 +151,5 @@ if __name__ == "__main__":
         f"model_serialized sha: {hashlib.sha256(model_serialized.get_obj()).hexdigest()}"
     )
     out_model = torch.load(io.BytesIO(model_serialized.get_obj()))
+    logging.info("out_model device: {out_model.device}")
     evaluate(out_model, eval_loader)
