@@ -17,7 +17,7 @@ import wandb
 from rl_algo_impls.a2c.a2c import A2C
 from rl_algo_impls.acbc.acbc import ACBC
 from rl_algo_impls.ppo.appo import APPO
-from rl_algo_impls.ppo.dpppo import DPPPO
+from rl_algo_impls.ppo.dppo import DPPO
 from rl_algo_impls.ppo.ppo import PPO
 from rl_algo_impls.runner.config import Config, Hyperparams
 from rl_algo_impls.runner.wandb_load import load_player
@@ -44,7 +44,7 @@ ALGOS: Dict[str, Type[Algorithm]] = {
     "a2c": A2C,
     "acbc": ACBC,
     "appo": APPO,
-    "dpppo": DPPPO,
+    "dppo": DPPO,
 }
 POLICIES: Dict[str, Type[Policy]] = {
     # "dqn": DQNPolicy,
@@ -52,7 +52,7 @@ POLICIES: Dict[str, Type[Policy]] = {
     "a2c": ActorCritic,
     "acbc": ActorCritic,
     "appo": ActorCritic,
-    "dpppo": ActorCritic,
+    "dppo": ActorCritic,
 }
 HYPERPARAMS_PATH = "hyperparams"
 

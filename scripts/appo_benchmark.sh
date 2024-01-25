@@ -12,7 +12,7 @@ do
     shift
 done
 
-algos="${algos:-dpppo appo}"
+algos="${algos:-dppo appo}"
 n_jobs="${n_jobs:-1}"
 project_name="${project_name:-rl-algo-impls-benchmarks}"
 seeds="${seeds:-1}"
