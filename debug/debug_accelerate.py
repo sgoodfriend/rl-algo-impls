@@ -31,7 +31,7 @@ def worker(rank, world_size, model_serialized, optimizer, train_dataset):
         logging.info("Failed to initialize Process Group")
 
     accelerator = Accelerator()
-    logging.info(f"accelerator.state: {accelerator.state}")
+    # logging.info(f"accelerator.state: {accelerator.state}")
     logging.info(f"accelerator.device: {accelerator.device}")
 
     train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
