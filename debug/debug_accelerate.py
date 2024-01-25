@@ -44,7 +44,7 @@ def worker(rank, world_size, model_serialized, from_optimizer, train_dataset):
     )
     model = torch.load(io.BytesIO(model_serialized.get_obj()))
     optimizer = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.5)
-    optimizer.load_state_dict(from_optimizer.state_dict())
+    # optimizer.load_state_dict(from_optimizer.state_dict())
     model, optimizer, train_loader = accelerator.prepare(model, optimizer, train_loader)
 
     for epoch in range(5):
