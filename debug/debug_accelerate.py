@@ -5,10 +5,12 @@ import os
 
 import torch
 import torch.multiprocessing as mp
+import torch.nn as nn
+import torch.nn.functional as F
 import torchvision
 import torchvision.transforms as transforms
 from accelerate import Accelerator
-from torch.utils.data import DataLoader, DistributedSampler
+from torch.utils.data import DataLoader
 
 logging.basicConfig(level=logging.INFO, handlers=[])
 
@@ -46,13 +48,15 @@ def worker(rank, world_size, model_serialized, optimizer, train_dataset):
     for epoch in range(5):
         logging.info(f"{rank}: Epoch {epoch}, train_loader length: {len(train_loader)}")
         model.train()
+        losses = []
         for data, target in train_loader:
             optimizer.zero_grad()
             output = model(data.view(data.size(0), -1))
             loss = loss_fn(output, target)
-            logging.info(f"{rank}: loss: {loss.item()}")
+            losses.append(loss.item())
             accelerator.backward(loss)
             optimizer.step()
+        logging.info(f"{rank}: Epoch {epoch}, loss: {sum(losses)/len(losses)}")
 
     if accelerator.is_main_process:
         logging.info(f"{rank}: Saving model...")
@@ -81,6 +85,31 @@ def evaluate(model, eval_loader):
     logging.info(f"Accuracy: {accuracy}%")
 
 
+class SimpleCNN(nn.Module):
+    def __init__(self):
+        super(SimpleCNN, self).__init__()
+        # Convolutional layers
+        self.conv1 = nn.Conv2d(1, 32, kernel_size=3, padding=1)
+        self.conv2 = nn.Conv2d(32, 64, kernel_size=3, padding=1)
+        # Max pooling
+        self.pool = nn.MaxPool2d(kernel_size=2, stride=2)
+        # Fully connected layers
+        self.fc1 = nn.Linear(64 * 7 * 7, 128)
+        self.fc2 = nn.Linear(128, 10)
+
+    def forward(self, x):
+        # Convolutional layers with ReLU and pooling
+        x = F.relu(self.conv1(x))
+        x = self.pool(F.relu(self.conv2(x)))
+        # Flatten the output for the fully connected layers
+        x = x.view(-1, 64 * 7 * 7)
+        # Fully connected layers with ReLU
+        x = F.relu(self.fc1(x))
+        # Output layer
+        x = self.fc2(x)
+        return x
+
+
 if __name__ == "__main__":
     transform = transforms.Compose(
         [transforms.ToTensor(), transforms.Normalize((0.5,), (0.5,))]
@@ -95,7 +124,7 @@ if __name__ == "__main__":
     )
     eval_loader = DataLoader(eval_dataset, batch_size=64, shuffle=False)
 
-    model = torch.nn.Linear(784, 10)
+    model = SimpleCNN()
 
     evaluate(model, eval_loader)
 
