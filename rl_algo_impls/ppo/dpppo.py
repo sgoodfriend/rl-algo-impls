@@ -9,7 +9,7 @@ import torch.nn.functional as F
 from torch.optim import Adam
 
 from rl_algo_impls.loss.teacher_kl_loss import TeacherKLLoss
-from rl_algo_impls.ppo.dppo_train_stats import DPPOTrainStats, DPPOTrainStepStats
+from rl_algo_impls.ppo.dpppo_train_stats import DPPPOTrainStats, DPPPOTrainStepStats
 from rl_algo_impls.rollout.rollout_dataloader import RolloutDataLoader
 from rl_algo_impls.shared.algorithm import Algorithm
 from rl_algo_impls.shared.callbacks.callback import Callback
@@ -23,10 +23,10 @@ from rl_algo_impls.shared.summary_wrapper.abstract_summary_wrapper import (
 )
 from rl_algo_impls.shared.tensor_utils import NumOrList, num_or_array
 
-DPPOSelf = TypeVar("DPPOSelf", bound="DPPO")
+DPPPOSelf = TypeVar("DPPPOSelf", bound="DPPPO")
 
 
-class DPPO(Algorithm):
+class DPPPO(Algorithm):
     def __init__(
         self,
         policy: ActorCritic,
@@ -107,11 +107,11 @@ class DPPO(Algorithm):
         self.max_n_epochs = max_n_epochs
 
     def learn(
-        self: DPPOSelf,
+        self: DPPPOSelf,
         learner_data_store_view: LearnerDataStoreView,
         train_timesteps: int,
         callbacks: Optional[List[Callback]] = None,
-    ) -> DPPOSelf:
+    ) -> DPPPOSelf:
         from accelerate import Accelerator
 
         timesteps_elapsed = 0
@@ -149,7 +149,8 @@ class DPPO(Algorithm):
             f"Accelerator num_processed: {accelerator.num_processes}; "
             f"distributed_type: {accelerator.distributed_type}; "
             f"mixed_precision: {accelerator.mixed_precision}; "
-            f"use_distributed: {accelerator.use_distributed}"
+            f"use_distributed: {accelerator.use_distributed}; "
+            f"device_placement: {accelerator.device_placement}"
         )
         policy, optimizer, lr_scheduler = accelerator.prepare(
             self.policy, self.optimizer, lr_scheduler
@@ -358,7 +359,7 @@ class DPPO(Algorithm):
 
                         step_stats.append(
                             accelerator.gather_for_metrics(
-                                DPPOTrainStepStats(
+                                DPPPOTrainStepStats(
                                     loss.item(),
                                     pi_loss.item(),
                                     v_loss.detach().float().cpu().numpy(),
@@ -413,7 +414,7 @@ class DPPO(Algorithm):
                 np.nan if var_y == 0 else 1 - np.var(y_true - y_pred).item() / var_y
             )
 
-            train_stats = DPPOTrainStats(
+            train_stats = DPPPOTrainStats(
                 step_stats,
                 explained_var,
                 n_epochs,

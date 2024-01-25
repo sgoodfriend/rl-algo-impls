@@ -7,7 +7,7 @@ from rl_algo_impls.ppo.appo_train_stats import APPOTrainStats
 from rl_algo_impls.ppo.ppo import TrainStats
 
 
-class DPPOTrainStepStats(NamedTuple):
+class DPPPOTrainStepStats(NamedTuple):
     loss: float
     pi_loss: float
     v_loss: np.ndarray
@@ -20,10 +20,10 @@ class DPPOTrainStepStats(NamedTuple):
 
 
 @dataclass
-class DPPOTrainStats(APPOTrainStats):
+class DPPPOTrainStats(APPOTrainStats):
     def __init__(
         self,
-        step_stats: List[DPPOTrainStepStats],
+        step_stats: List[DPPPOTrainStepStats],
         explained_var: float,
         n_epochs: float,
     ) -> None:
