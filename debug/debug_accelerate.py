@@ -37,7 +37,8 @@ def worker(rank, world_size, model, optimizer, train_dataset):
 
     model, optimizer, train_loader = accelerator.prepare(model, optimizer, train_loader)
 
-    for epoch in range(10):
+    for epoch in range(5):
+        logging.info(f"{rank}: Epoch {epoch}, train_loader length: {len(train_loader)}")
         model.train()
         for data, target in train_loader:
             optimizer.zero_grad()
@@ -56,6 +57,7 @@ if __name__ == "__main__":
     train_dataset = torchvision.datasets.MNIST(
         root="./data", train=True, download=True, transform=transform
     )
+    logging.info(f"train_dataset length: {len(train_dataset)}")
 
     model = torch.nn.Linear(784, 10)
     optimizer = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.5)
