@@ -25,5 +25,5 @@ logging.info(f"accelerator.device: {accelerator.device}")
 
 import GPUtil
 
-gpu_ids = GPUtil.getGPUs()
-logging.info(f"gpu_ids: {gpu_ids}")
+gpus = GPUtil.getGPUs()
+logging.info(f"gpu_ids: {[gpu.id for gpu in gpus]}")
