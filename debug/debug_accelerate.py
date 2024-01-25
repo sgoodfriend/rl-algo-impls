@@ -25,6 +25,7 @@ def worker(rank, world_size):
 
     accelerator = Accelerator()
     logging.info(f"accelerator.state: {accelerator.state}")
+    logging.info(f"accelerator.device: {accelerator.device}")
 
     torch.distributed.destroy_process_group()
 
