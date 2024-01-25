@@ -124,9 +124,9 @@ if __name__ == "__main__":
     eval_dataset = torchvision.datasets.MNIST(
         root="./data", train=False, download=True, transform=transform
     )
-    eval_loader = DataLoader(eval_dataset, batch_size=64, shuffle=False)
+    eval_loader = DataLoader(eval_dataset, batch_size=1024, shuffle=False)
 
-    model = SimpleCNN()
+    model = SimpleCNN().to("cuda")
 
     evaluate(model, eval_loader)
 
