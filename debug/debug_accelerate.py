@@ -53,7 +53,7 @@ def worker(rank, world_size, model_serialized, optimizer, train_dataset):
         out_model = accelerator.unwrap_model(model).to("cpu")
         model_buffer = io.BytesIO()
         torch.save(out_model, model_buffer)
-        model_serialized.set_obj(model_buffer.getvalue())
+        model_serialized.get_obj()[:] = model_buffer.getvalue()
 
     torch.distributed.destroy_process_group()
 
