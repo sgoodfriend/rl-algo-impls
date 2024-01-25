@@ -50,6 +50,7 @@ def worker(rank, world_size, model_serialized, optimizer, train_dataset):
             optimizer.zero_grad()
             output = model(data.view(data.size(0), -1))
             loss = loss_fn(output, target)
+            logging.info(f"{rank}: loss: {loss.item()}")
             accelerator.backward(loss)
             optimizer.step()
 
