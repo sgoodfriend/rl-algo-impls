@@ -37,7 +37,7 @@ def worker(rank, world_size, model_serialized, optimizer, train_dataset):
     logging.info(f"accelerator.device: {accelerator.device}")
 
     train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
-    loss_fn = torch.nn.CrossEntropyLoss()
+    loss_fn = torch.nn.NLLLoss()
 
     logging.info(
         f"{rank}: model_serialized sha: {hashlib.sha256(model_serialized.get_obj()).hexdigest()}"
