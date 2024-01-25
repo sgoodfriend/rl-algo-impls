@@ -11,6 +11,7 @@ logging.basicConfig(level=logging.INFO, handlers=[])
 def worker(rank, world_size):
     os.environ["MASTER_ADDR"] = "localhost"
     os.environ["MASTER_PORT"] = "12355"
+    os.environ["LOCAL_RANK"] = str(rank)
     torch.distributed.init_process_group(
         backend="nccl", rank=rank, world_size=world_size
     )
@@ -18,7 +19,7 @@ def worker(rank, world_size):
     # Check if the process group is initialized correctly
     if torch.distributed.is_initialized():
         logging.info(
-            f"Process Group Initialized: Rank {rank}, World Size {world_size}, GPUs: {torch.cuda.device_count()}"
+            f"Process Group Initialized: Rank {torch.distributed.get_rank()}, World Size {torch.distributed.get_world_size()}, GPUs: {torch.cuda.device_count()}"
         )
     else:
         logging.info("Failed to initialize Process Group")
