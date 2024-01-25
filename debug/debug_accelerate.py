@@ -123,7 +123,7 @@ class SimpleCNN(nn.Module):
         x = F.relu(self.fc1(x))
         # Output layer
         x = self.fc2(x)
-        return F.log_softmax(x)
+        return F.log_softmax(x, dim=1)
 
 
 if __name__ == "__main__":
