@@ -151,5 +151,5 @@ if __name__ == "__main__":
         f"model_serialized sha: {hashlib.sha256(model_serialized.get_obj()).hexdigest()}"
     )
     out_model = torch.load(io.BytesIO(model_serialized.get_obj()))
-    logging.info("out_model device: {out_model.device}")
+    logging.info(f"out_model device: {out_model.device}")
     evaluate(out_model, eval_loader)
