@@ -58,6 +58,20 @@ def worker(rank, world_size, model_serialized, optimizer, train_dataset):
     torch.distributed.destroy_process_group()
 
 
+def evaluate(model, eval_loader):
+    out_model.eval()
+    with torch.no_grad():
+        correct = 0
+        total = 0
+        for images, labels in eval_loader:
+            output = out_model(images.view(images.size(0), -1))
+            _, predicted = torch.max(output.data, 1)
+            total += labels.size(0)
+            correct += (predicted == labels).sum().item()
+    accuracy = 100 * correct / total
+    logging.info(f"Accuracy: {accuracy}%")
+
+
 if __name__ == "__main__":
     transform = transforms.Compose(
         [transforms.ToTensor(), transforms.Normalize((0.5,), (0.5,))]
@@ -67,7 +81,15 @@ if __name__ == "__main__":
     )
     logging.info(f"train_dataset length: {len(train_dataset)}")
 
+    eval_dataset = torchvision.datasets.MNIST(
+        root="./data", train=False, download=True, transform=transform
+    )
+    eval_loader = DataLoader(eval_dataset, batch_size=64, shuffle=False)
+
     model = torch.nn.Linear(784, 10)
+
+    evaluate(model, eval_loader)
+
     model_buffer = io.BytesIO()
     torch.save(model, model_buffer)
     model_serialized = mp.Array("b", model_buffer.getvalue())
@@ -83,18 +105,4 @@ if __name__ == "__main__":
     )
 
     out_model = torch.load(io.BytesIO(model_serialized.get_obj()))
-    eval_dataset = torchvision.datasets.MNIST(
-        root="./data", train=False, download=True, transform=transform
-    )
-    eval_loader = DataLoader(eval_dataset, batch_size=64, shuffle=False)
-    out_model.eval()
-    with torch.no_grad():
-        correct = 0
-        total = 0
-        for images, labels in eval_loader:
-            output = out_model(images.view(images.size(0), -1))
-            _, predicted = torch.max(output.data, 1)
-            total += labels.size(0)
-            correct += (predicted == labels).sum().item()
-    accuracy = 100 * correct / total
-    logging.info(f"Accuracy: {accuracy}%")
+    evaluate(out_model, eval_loader)
