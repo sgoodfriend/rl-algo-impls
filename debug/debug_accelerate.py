@@ -49,16 +49,26 @@ def worker(rank, world_size, model_serialized, from_optimizer, train_dataset):
     model, optimizer, train_loader = accelerator.prepare(model, optimizer, train_loader)
 
     for epoch in range(5):
-        logging.info(f"{rank}: Epoch {epoch}, train_loader length: {len(train_loader)}")
         model.train()
         losses = []
         for data, target in train_loader:
             optimizer.zero_grad()
             output = model(data)
             loss = loss_fn(output, target)
+            if torch.isnan(loss):
+                logging.error("NaN detected in loss")
+                break
             losses.append(loss.item())
             accelerator.backward(loss)
             optimizer.step()
+            # Check for NaNs in model parameters and gradients
+            for param in model.parameters():
+                if param.grad is not None and torch.isnan(param.grad).any():
+                    logging.error("NaN detected in gradients")
+                    break
+                if torch.isnan(param).any():
+                    logging.error("NaN detected in model parameters")
+                    break
         logging.info(f"{rank}: Epoch {epoch}, loss: {sum(losses)/len(losses)}")
 
     if accelerator.is_main_process:
@@ -155,5 +165,4 @@ if __name__ == "__main__":
         f"model_serialized sha: {hashlib.sha256(model_serialized.get_obj()).hexdigest()}"
     )
     out_model = torch.load(io.BytesIO(model_serialized.get_obj()))
-    logging.info(f"out_model device: {out_model.device}")
     evaluate(out_model, eval_loader)
