@@ -17,7 +17,9 @@ def worker(rank, world_size):
 
     # Check if the process group is initialized correctly
     if torch.distributed.is_initialized():
-        logging.info(f"Process Group Initialized: Rank {rank}, World Size {world_size}")
+        logging.info(
+            f"Process Group Initialized: Rank {rank}, World Size {world_size}, GPUs: {torch.cuda.device_count()}"
+        )
     else:
         logging.info("Failed to initialize Process Group")
 
