@@ -1,3 +1,4 @@
+import io
 import logging
 import os
 
@@ -11,7 +12,7 @@ from torch.utils.data import DataLoader, DistributedSampler
 logging.basicConfig(level=logging.INFO, handlers=[])
 
 
-def worker(rank, world_size, model, optimizer, train_dataset):
+def worker(rank, world_size, model_serialized, optimizer, train_dataset):
     os.environ["MASTER_ADDR"] = "localhost"
     os.environ["MASTER_PORT"] = "12355"
     os.environ["LOCAL_RANK"] = str(rank)
@@ -35,6 +36,7 @@ def worker(rank, world_size, model, optimizer, train_dataset):
     train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
     loss_fn = torch.nn.CrossEntropyLoss()
 
+    model = torch.load(io.BytesIO(model_serialized))
     model, optimizer, train_loader = accelerator.prepare(model, optimizer, train_loader)
 
     for epoch in range(5):
@@ -60,13 +62,17 @@ if __name__ == "__main__":
     logging.info(f"train_dataset length: {len(train_dataset)}")
 
     model = torch.nn.Linear(784, 10)
+    model_buffer = io.BytesIO()
+    torch.save(model, model_buffer)
+    model_serialized = torch.ByteStorage.from_buffer(model_buffer.getvalue())
+    model_serialized.share_memory_()
     optimizer = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.5)
 
     world_size = torch.cuda.device_count()
     logging.info(f"Spawning {world_size} processes...")
     mp.spawn(
         worker,
-        args=(world_size, model, optimizer, train_dataset),
+        args=(world_size, model_serialized, optimizer, train_dataset),
         nprocs=world_size,
         join=True,
     )
