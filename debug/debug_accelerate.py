@@ -79,8 +79,8 @@ def evaluate(model, eval_loader):
         correct = 0
         total = 0
         for images, labels in eval_loader:
-            images = images.to(model.device)
-            labels = labels.to(model.device)
+            images = images.to("cuda")
+            labels = labels.to("cuda")
             output = model(images)
             _, predicted = torch.max(output.data, 1)
             total += labels.size(0)
