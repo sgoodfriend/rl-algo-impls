@@ -59,12 +59,12 @@ def worker(rank, world_size, model_serialized, optimizer, train_dataset):
 
 
 def evaluate(model, eval_loader):
-    out_model.eval()
+    model.eval()
     with torch.no_grad():
         correct = 0
         total = 0
         for images, labels in eval_loader:
-            output = out_model(images.view(images.size(0), -1))
+            output = model(images.view(images.size(0), -1))
             _, predicted = torch.max(output.data, 1)
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
