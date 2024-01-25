@@ -60,14 +60,16 @@ class APPO(Algorithm):
         teacher_loss_batch_size: Optional[int] = None,
         max_n_epochs: Optional[int] = 10,
     ) -> None:
+        optimizer = Adam(policy.parameters(), lr=learning_rate, eps=1e-7)
+        if torch.cuda.device_count() > 1:
+            policy = nn.DataParallel(policy)
         super().__init__(
             policy,
             device,
             tb_writer,
             learning_rate,
-            Adam(policy.parameters(), lr=learning_rate, eps=1e-7),
+            optimizer,
         )
-        self.policy = policy
 
         self.max_grad_norm = max_grad_norm
         self.clip_range = clip_range

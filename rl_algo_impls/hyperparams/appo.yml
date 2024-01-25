@@ -34,7 +34,7 @@ CartPole-v1: &cartpole
 LunarLander-v2: &lunarlander
   <<: *defaults
   n_timesteps: !!float 5e6
-  worker_hyperparams:
+  worker_hyperparams: &lunarlander-worker
     n_rollout_workers: 4
     n_inference_workers: 2
   env_hyperparams: &lunarlander-env
@@ -61,6 +61,15 @@ LunarLander-v2: &lunarlander
   eval_hyperparams:
     <<: *eval
     step_freq: !!float 5e5
+
+LunarLander-v2-data-parallel: &lunarlander-data-parallel
+  <<: *lunarlander
+  worker_hyperparams:
+    <<: *lunarlander-worker
+    learner_gpu_indexes: [0, 1]
+    rollout_gpu_indexes: [2, 3]
+    eval_gpu_index: 2
+    inference_gpu_index: [2, 3]
 
 BipedalWalker-v3:
   <<: *defaults
