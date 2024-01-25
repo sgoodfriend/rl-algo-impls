@@ -3,6 +3,7 @@ import os
 
 import torch
 import torch.multiprocessing as mp
+from accelerate import Accelerator
 
 logging.basicConfig(level=logging.INFO, handlers=[])
 
@@ -13,10 +14,14 @@ def worker(rank, world_size):
     torch.distributed.init_process_group(
         backend="nccl", rank=rank, world_size=world_size
     )
-    from accelerate import Accelerator
+
+    # Check if the process group is initialized correctly
+    if torch.distributed.is_initialized():
+        logging.info(f"Process Group Initialized: Rank {rank}, World Size {world_size}")
+    else:
+        logging.info("Failed to initialize Process Group")
 
     accelerator = Accelerator()
-
     logging.info(f"accelerator.state: {accelerator.state}")
 
     torch.distributed.destroy_process_group()
@@ -24,4 +29,5 @@ def worker(rank, world_size):
 
 if __name__ == "__main__":
     world_size = torch.cuda.device_count()
+    logging.info(f"Spawning {world_size} processes...")
     mp.spawn(worker, args=(world_size,), nprocs=world_size, join=True)
