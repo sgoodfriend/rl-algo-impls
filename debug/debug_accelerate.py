@@ -2,6 +2,7 @@ import hashlib
 import io
 import logging
 import os
+from copy import deepcopy
 
 import torch
 import torch.multiprocessing as mp
@@ -74,6 +75,7 @@ def worker(rank, world_size, model_serialized, from_optimizer, train_dataset):
 
 
 def evaluate(model, eval_loader):
+    model = deepcopy(model).to("cuda")
     model.eval()
     with torch.no_grad():
         correct = 0
@@ -128,7 +130,7 @@ if __name__ == "__main__":
     )
     eval_loader = DataLoader(eval_dataset, batch_size=1024, shuffle=False)
 
-    model = SimpleCNN().to("cuda")
+    model = SimpleCNN()
 
     evaluate(model, eval_loader)
 
