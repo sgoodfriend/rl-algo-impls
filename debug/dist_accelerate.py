@@ -6,6 +6,7 @@ from accelerate import Accelerator
 logging.basicConfig(level=logging.INFO)
 
 accelerator = Accelerator()
+logging.info(f"accelerator.use_distributed: {accelerator.use_distributed}")
 logging.info(f"accelerator.state: {accelerator.state}")
 
 logging.info(f"torch.distributed.is_available(): {torch.distributed.is_available()}")
