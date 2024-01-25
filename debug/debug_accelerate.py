@@ -1,15 +1,24 @@
 import logging
-import os
-
-os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2,3"
 
 import torch
-from accelerate import Accelerator
+import torch.multiprocessing as mp
 
 logging.basicConfig(level=logging.INFO, handlers=[])
 
-logging.info(f"torch.cuda.device_count(): {torch.cuda.device_count()}")
 
-accelerator = Accelerator()
+def worker(rank, world_size):
+    torch.distributed.init_process_group(
+        backend="nccl", rank=rank, world_size=world_size
+    )
+    from accelerate import Accelerator
 
-logging.info(f"accelerator.state: {accelerator.state}")
+    accelerator = Accelerator()
+
+    logging.info(f"accelerator.state: {accelerator.state}")
+
+    torch.distributed.destroy_process_group()
+
+
+if __name__ == "__main__":
+    world_size = torch.cuda.device_count()
+    mp.spawn(worker, args=(world_size,), nprocs=world_size, join=True)
