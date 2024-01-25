@@ -22,3 +22,8 @@ if torch.distributed.is_initialized():
 
 logging.info(f"torch.cuda.device_count(): {torch.cuda.device_count()}")
 logging.info(f"accelerator.device: {accelerator.device}")
+
+import GPUtil
+
+gpu_ids = GPUtil.getGPUs()
+logging.info(f"gpu_ids: {gpu_ids}")
