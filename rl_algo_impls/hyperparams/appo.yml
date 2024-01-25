@@ -64,6 +64,7 @@ LunarLander-v2: &lunarlander
 
 LunarLander-v2-data-parallel: &lunarlander-data-parallel
   <<: *lunarlander
+  env_id: LunarLander-v2
   worker_hyperparams:
     <<: *lunarlander-worker
     learner_gpu_indexes: [0, 1]
