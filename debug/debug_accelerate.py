@@ -51,7 +51,7 @@ def worker(rank, world_size, model_serialized, optimizer, train_dataset):
         losses = []
         for data, target in train_loader:
             optimizer.zero_grad()
-            output = model(data.view(data.size(0), -1))
+            output = model(data)
             loss = loss_fn(output, target)
             losses.append(loss.item())
             accelerator.backward(loss)
@@ -77,7 +77,7 @@ def evaluate(model, eval_loader):
         correct = 0
         total = 0
         for images, labels in eval_loader:
-            output = model(images.view(images.size(0), -1))
+            output = model(images)
             _, predicted = torch.max(output.data, 1)
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
@@ -112,7 +112,7 @@ class SimpleCNN(nn.Module):
 
 if __name__ == "__main__":
     transform = transforms.Compose(
-        [transforms.ToTensor(), transforms.Normalize((0.5,), (0.5,))]
+        [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]
     )
     train_dataset = torchvision.datasets.MNIST(
         root="./data", train=True, download=True, transform=transform
