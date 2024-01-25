@@ -36,7 +36,7 @@ def worker(rank, world_size, model_serialized, optimizer, train_dataset):
     train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
     loss_fn = torch.nn.CrossEntropyLoss()
 
-    model = torch.load(io.BytesIO(model_serialized))
+    model = torch.load(io.BytesIO(model_serialized.get_obj()))
     model, optimizer, train_loader = accelerator.prepare(model, optimizer, train_loader)
 
     for epoch in range(5):
@@ -48,6 +48,12 @@ def worker(rank, world_size, model_serialized, optimizer, train_dataset):
             loss = loss_fn(output, target)
             accelerator.backward(loss)
             optimizer.step()
+
+    if accelerator.is_main_process:
+        out_model = accelerator.unwrap_model(model).to("cpu")
+        model_buffer = io.BytesIO()
+        torch.save(out_model, model_buffer)
+        model_serialized.set_obj(model_buffer.getvalue())
 
     torch.distributed.destroy_process_group()
 
@@ -64,8 +70,7 @@ if __name__ == "__main__":
     model = torch.nn.Linear(784, 10)
     model_buffer = io.BytesIO()
     torch.save(model, model_buffer)
-    model_serialized = torch.ByteStorage.from_buffer(model_buffer.getvalue())
-    model_serialized.share_memory_()
+    model_serialized = mp.Array("b", model_buffer.getvalue())
     optimizer = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.5)
 
     world_size = torch.cuda.device_count()
@@ -76,3 +81,20 @@ if __name__ == "__main__":
         nprocs=world_size,
         join=True,
     )
+
+    out_model = torch.load(io.BytesIO(model_serialized.get_obj()))
+    eval_dataset = torchvision.datasets.MNIST(
+        root="./data", train=False, download=True, transform=transform
+    )
+    eval_loader = DataLoader(eval_dataset, batch_size=64, shuffle=False)
+    out_model.eval()
+    with torch.no_grad():
+        correct = 0
+        total = 0
+        for images, labels in eval_loader:
+            output = out_model(images.view(images.size(0), -1))
+            _, predicted = torch.max(output.data, 1)
+            total += labels.size(0)
+            correct += (predicted == labels).sum().item()
+    accuracy = 100 * correct / total
+    logging.info(f"Accuracy: {accuracy}%")
