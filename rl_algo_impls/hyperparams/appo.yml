@@ -69,7 +69,7 @@ LunarLander-v2-data-parallel: &lunarlander-data-parallel
     learner_gpu_indexes: [0, 1]
     rollout_gpu_indexes: [2, 3]
     evaluator_gpu_index: 2
-    inference_gpu_index: [2, 3]
+    inference_gpu_indexes: [2, 3]
 
 BipedalWalker-v3:
   <<: *defaults
