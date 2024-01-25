@@ -1,3 +1,4 @@
+import hashlib
 import io
 import logging
 import os
@@ -36,6 +37,9 @@ def worker(rank, world_size, model_serialized, optimizer, train_dataset):
     train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
     loss_fn = torch.nn.CrossEntropyLoss()
 
+    logging.info(
+        f"{rank}: model_serialized sha: {hashlib.sha256(model_serialized.get_obj()).hexdigest()}"
+    )
     model = torch.load(io.BytesIO(model_serialized.get_obj()))
     model, optimizer, train_loader = accelerator.prepare(model, optimizer, train_loader)
 
@@ -50,10 +54,14 @@ def worker(rank, world_size, model_serialized, optimizer, train_dataset):
             optimizer.step()
 
     if accelerator.is_main_process:
+        logging.info(f"{rank}: Saving model...")
         out_model = accelerator.unwrap_model(model).to("cpu")
         model_buffer = io.BytesIO()
         torch.save(out_model, model_buffer)
         model_serialized.get_obj()[:] = model_buffer.getvalue()
+        logging.info(
+            f"{rank}: model_serialized sha: {hashlib.sha256(model_serialized.get_obj()).hexdigest()}"
+        )
 
     torch.distributed.destroy_process_group()
 
@@ -93,6 +101,9 @@ if __name__ == "__main__":
     model_buffer = io.BytesIO()
     torch.save(model, model_buffer)
     model_serialized = mp.Array("b", model_buffer.getvalue())
+    logging.info(
+        f"model_serialized sha: {hashlib.sha256(model_serialized.get_obj()).hexdigest()}"
+    )
     optimizer = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.5)
 
     world_size = torch.cuda.device_count()
@@ -104,5 +115,8 @@ if __name__ == "__main__":
         join=True,
     )
 
+    logging.info(
+        f"model_serialized sha: {hashlib.sha256(model_serialized.get_obj()).hexdigest()}"
+    )
     out_model = torch.load(io.BytesIO(model_serialized.get_obj()))
     evaluate(out_model, eval_loader)
