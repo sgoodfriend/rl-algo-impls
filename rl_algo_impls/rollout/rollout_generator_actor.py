@@ -62,6 +62,7 @@ class RolloutGeneratorActor:
             if rollout is None:
                 return
             self.generator.data_store_view.submit_rollout_update(rollout)
+            del rollout
 
     def env_spaces(self):
         return self.generator.env_spaces
