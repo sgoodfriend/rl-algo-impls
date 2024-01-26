@@ -1664,7 +1664,7 @@ Microrts-agent: &microrts-agent
         #   use_paper_obs: true
 
 Microrts-debug: &microrts-debug-defaults
-  <<: *microrts-squnet-d16-128-map64-half-guided
+  <<: *microrts-squnet-d16-128-map64-bc-finetune-a10
   n_timesteps: !!float 1e6
   device: mps
   eval_hyperparams:

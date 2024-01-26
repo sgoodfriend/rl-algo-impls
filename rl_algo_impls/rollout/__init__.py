@@ -23,6 +23,7 @@ DEFAULT_IN_PROCESS_ROLLOUT_GENERATORS: Dict[str, Type[SynchronousRolloutGenerato
     "a2c": SyncStepRolloutGenerator,
     "acbc": SyncStepRolloutGenerator,
     "appo": SyncStepRolloutGenerator,
+    "dppo": SyncStepRolloutGenerator,
 }
 
 ROLLOUT_CLASS_BY_ALGO: Dict[str, Type[Rollout]] = {
@@ -30,6 +31,7 @@ ROLLOUT_CLASS_BY_ALGO: Dict[str, Type[Rollout]] = {
     "a2c": A2CRollout,
     "acbc": ACBCRollout,
     "appo": PPORollout,
+    "dppo": PPORollout,
 }
 
 

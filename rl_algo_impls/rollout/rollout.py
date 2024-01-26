@@ -1,16 +1,13 @@
 from abc import ABC, abstractmethod
-from typing import Callable, Dict, Iterator, NamedTuple, Optional, Tuple, TypeVar
+from typing import Dict, Iterator, Optional, TypeVar
 
 import numpy as np
 import torch
 from gymnasium.spaces import MultiDiscrete
 
+from rl_algo_impls.rollout.rollout_dataloader import RolloutDataset
 from rl_algo_impls.shared.actor.gridnet import ValueDependentMask
-from rl_algo_impls.shared.tensor_utils import NumpyOrDict, TensorOrDict
-
-TDN = TypeVar("TDN", torch.Tensor, Dict[str, torch.Tensor], None)
-
-BatchTuple = Tuple[TDN, ...]
+from rl_algo_impls.shared.tensor_utils import BatchTuple, NumpyOrDict, TensorOrDict
 
 
 class Rollout(ABC):
@@ -37,6 +34,10 @@ class Rollout(ABC):
     def minibatches(
         self, batch_size: int, device: torch.device, shuffle: bool = True
     ) -> Iterator[BatchTuple]:
+        ...
+
+    @abstractmethod
+    def dataset(self, device: torch.device) -> RolloutDataset:
         ...
 
 

@@ -1,4 +1,7 @@
+import os
 import uuid
+import warnings
+from copy import deepcopy
 from typing import TYPE_CHECKING, Any, Generic, Optional, TypeVar
 
 import numpy as np
@@ -40,6 +43,7 @@ class RemoteInferencePolicy(AbstractPolicy, Generic[ObsType]):
             assert (
                 policy_actor_pool._actor_id == _clone_origin.policy_actor_pool._actor_id
             ), f"Cannot clone policy from different PolicyWorkerPool"
+            self.requires_to_cpu = _clone_origin.requires_to_cpu
             ray.get(
                 [
                     actor.clone_policy.remote(_clone_origin.policy_id, self.policy_id)
@@ -48,6 +52,11 @@ class RemoteInferencePolicy(AbstractPolicy, Generic[ObsType]):
             )
         # Public policy path
         else:
+            self.requires_to_cpu = bool(policy.device.index)
+            if self.requires_to_cpu:
+                import torch
+
+                policy = deepcopy(policy).to(torch.device("cpu"))
             ray.get(
                 [
                     actor.add_policy.remote(self.policy_id, policy)
@@ -65,8 +74,29 @@ class RemoteInferencePolicy(AbstractPolicy, Generic[ObsType]):
         if _current_actor_id is None:
             _current_actor_id = ray.get_runtime_context().get_actor_id()
         if _policy_worker_for_current_actor is None:
+            try:
+                cuda_visible_devices = list(
+                    map(
+                        int,
+                        (
+                            s
+                            for s in os.environ.get("CUDA_VISIBLE_DEVICES", "").split(
+                                ","
+                            )
+                            if s
+                        ),
+                    )
+                )
+            except ValueError:
+                warnings.warn(
+                    f"Invalid CUDA_VISIBLE_DEVICES: {os.environ.get('CUDA_VISIBLE_DEVICES')}"
+                )
+                cuda_visible_devices = []
             _policy_worker_for_current_actor = ray.get(
-                self.policy_actor_pool.get_policy_for_actor_id.remote(_current_actor_id)
+                self.policy_actor_pool.get_policy_for_actor_id.remote(
+                    _current_actor_id,
+                    cuda_visible_devices[0] if len(cuda_visible_devices) else None,
+                )
             )
         return _policy_worker_for_current_actor
 
@@ -90,6 +120,8 @@ class RemoteInferencePolicy(AbstractPolicy, Generic[ObsType]):
         return self.assigned_policy_actor.save.remote(self.policy_id, path)
 
     def set_state(self, state: Any) -> None:
+        if self.requires_to_cpu:
+            state = {k: v.cpu() for k, v in state.items()}
         for actor in self.all_actors:
             actor.set_state.remote(self.policy_id, state)
 

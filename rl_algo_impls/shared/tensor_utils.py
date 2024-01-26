@@ -3,6 +3,9 @@ from typing import Dict, List, Optional, Tuple, TypeVar, Union
 import numpy as np
 import torch
 
+TDN = TypeVar("TDN", torch.Tensor, Dict[str, torch.Tensor], None)
+BatchTuple = Tuple[TDN, ...]
+
 
 def expand_dims_to_match(a: np.ndarray, shape: Tuple[int, ...]) -> np.ndarray:
     assert (

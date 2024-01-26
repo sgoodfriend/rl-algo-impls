@@ -1,8 +1,8 @@
 import logging
-import os
 import warnings
 from typing import List
 
+import accelerate
 import torch
 import torch.backends
 from gymnasium.spaces import Box, Discrete
@@ -36,13 +36,27 @@ def get_device(config: Config, env_spaces: EnvSpaces) -> torch.device:
             if is_microrts(config):
                 device = "cpu"
 
+    device = torch.device(device, config.learner_cuda_index)  # type: ignore
     logging.info(f"Device: {device}")
-    return torch.device(device)
+    return device
 
 
 def initialize_cuda_devices(args: RunArgs, hyperparams: Hyperparams) -> List[int]:
     worker_hyperparams = WorkerHyperparams(**hyperparams.worker_hyperparams)
-    if args.device_indexes is not None:
+    partial_state = accelerate.state.PartialState()
+    if partial_state.use_distributed:
+        import torch
+
+        num_local_processes = (
+            torch.cuda.device_count() // worker_hyperparams.desired_num_accelerators
+        )
+        gpu_ids = [
+            partial_state.local_process_index + i * num_local_processes
+            for i in range(worker_hyperparams.desired_num_accelerators)
+        ]
+        if args.seed is not None:
+            args.seed += partial_state.process_index
+    elif args.device_indexes is not None:
         gpu_ids = args.device_indexes
     else:
         import GPUtil
@@ -59,12 +73,8 @@ def initialize_cuda_devices(args: RunArgs, hyperparams: Hyperparams) -> List[int
             warnings.warn(
                 f"Desired {worker_hyperparams.desired_num_accelerators} GPUs but only found {len(gpu_ids)} GPUs"
             )
-        os.environ["CUDA_VISIBLE_DEVICES"] = ",".join(map(str, gpu_ids))
         import torch
 
-        assert torch.cuda.device_count() == len(
-            gpu_ids
-        ), f"GPU count mismatch: {torch.cuda.device_count()} vs expected {len(gpu_ids)}"
         torch.set_num_threads(get_max_num_threads())
     elif worker_hyperparams.desired_num_accelerators > 1:
         warnings.warn(

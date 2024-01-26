@@ -8,9 +8,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-e", "--env-id", type=str)
     parser.add_argument("-a", "--algo", default="appo")
-    parser.set_defaults(
-        env_id="LuxAI_S2-v0-j1024env16-80m-ent5-lr3c-mgn2-2o3m4h-nga-async-a100"
-    )
+    parser.set_defaults(env_id="LuxAI_S2-v0-j1024env32-a100-debug")
     args = parser.parse_args()
 
     hyperparam_dict = load_hyperparam_dict(args.algo, args.env_id)

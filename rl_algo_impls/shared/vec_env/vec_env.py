@@ -28,7 +28,7 @@ from rl_algo_impls.wrappers.action_mask_wrapper import SingleActionMaskWrapper
 from rl_algo_impls.wrappers.atari_wrappers import (
     ClipRewardEnv,
     EpisodicLifeEnv,
-    FireOnLifeStarttEnv,
+    FireOnLifeStartEnv,
 )
 from rl_algo_impls.wrappers.episode_stats_writer import EpisodeStatsWriter
 from rl_algo_impls.wrappers.hwc_to_chw_observation import HwcToChwObservation
@@ -117,7 +117,7 @@ def make_vec_env(
                 env = EpisodicLifeEnv(env, training=training)
                 action_meanings = env.unwrapped.get_action_meanings()
                 if "FIRE" in action_meanings:  # type: ignore
-                    env = FireOnLifeStarttEnv(env, action_meanings.index("FIRE"))
+                    env = FireOnLifeStartEnv(env, action_meanings.index("FIRE"))
                 if clip_atari_rewards:
                     env = ClipRewardEnv(env, training=training)
                 env = ResizeObservation(env, (84, 84))
@@ -175,7 +175,6 @@ def make_vec_env(
 
     if training:
         assert tb_writer
-        envs = MaskResettableEpisodeStatistics(envs)
         envs = EpisodeStatsWriter(
             envs, tb_writer, training=training, rolling_length=rolling_length
         )

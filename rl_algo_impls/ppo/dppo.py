@@ -5,31 +5,28 @@ from typing import List, Optional, TypeVar, Union
 
 import numpy as np
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
 from torch.optim import Adam
 
 from rl_algo_impls.loss.teacher_kl_loss import TeacherKLLoss
-from rl_algo_impls.ppo.appo_train_stats import APPOTrainStats
-from rl_algo_impls.ppo.ppo import TrainStepStats
+from rl_algo_impls.ppo.dppo_train_stats import DPPOTrainStats, DPPOTrainStepStats
 from rl_algo_impls.rollout.rollout_dataloader import RolloutDataLoader
 from rl_algo_impls.shared.algorithm import Algorithm
-from rl_algo_impls.shared.autocast import maybe_autocast
 from rl_algo_impls.shared.callbacks.callback import Callback
 from rl_algo_impls.shared.data_store.data_store_data import LearnerDataStoreViewUpdate
 from rl_algo_impls.shared.data_store.data_store_view import LearnerDataStoreView
 from rl_algo_impls.shared.policy.actor_critic import ActorCritic
-from rl_algo_impls.shared.schedule import update_learning_rate
+from rl_algo_impls.shared.schedule import SetLRScheduler
 from rl_algo_impls.shared.stats import log_scalars
 from rl_algo_impls.shared.summary_wrapper.abstract_summary_wrapper import (
     AbstractSummaryWrapper,
 )
 from rl_algo_impls.shared.tensor_utils import NumOrList, num_or_array
 
-APPOSelf = TypeVar("APPOSelf", bound="APPO")
+DPPOSelf = TypeVar("DPPOSelf", bound="DPPO")
 
 
-class APPO(Algorithm):
+class DPPO(Algorithm):
     def __init__(
         self,
         policy: ActorCritic,
@@ -48,11 +45,7 @@ class APPO(Algorithm):
         multi_reward_weights: Optional[List[int]] = None,
         gradient_accumulation: Union[bool, int] = False,
         kl_cutoff: Optional[float] = None,
-        freeze_policy_head: bool = False,
-        freeze_value_head: bool = False,
-        freeze_backbone: bool = False,
         normalize_advantages_after_scaling: bool = False,
-        autocast_loss: bool = False,
         vf_loss_fn: str = "mse_loss",
         vf_weights: Optional[List[int]] = None,
         teacher_kl_loss_coef: Optional[float] = None,
@@ -92,13 +85,7 @@ class APPO(Algorithm):
         self.gradient_accumulation = gradient_accumulation
         self.kl_cutoff = kl_cutoff
 
-        self.freeze_policy_head = freeze_policy_head
-        self.freeze_value_head = freeze_value_head
-        self.freeze_backbone = freeze_backbone
-
         self.normalize_advantages_after_scaling = normalize_advantages_after_scaling
-
-        self.autocast_loss = autocast_loss
 
         self.vf_loss_fn = getattr(F, vf_loss_fn)
 
@@ -110,23 +97,53 @@ class APPO(Algorithm):
         self.max_n_epochs = max_n_epochs
 
     def learn(
-        self: APPOSelf,
+        self: DPPOSelf,
         learner_data_store_view: LearnerDataStoreView,
         train_timesteps: int,
         callbacks: Optional[List[Callback]] = None,
-    ) -> APPOSelf:
+    ) -> DPPOSelf:
+        from accelerate import Accelerator
+
         timesteps_elapsed = 0
         learner_data_store_view.submit_learner_update(
             LearnerDataStoreViewUpdate(self.policy, self, timesteps_elapsed)
         )
         (rollouts,) = learner_data_store_view.get_learner_view(wait=True)
+
+        shuffle_minibatches = True
+        if self.gradient_accumulation:
+            if self.gradient_accumulation is True:
+                minibatches_per_step = rollouts[0].num_minibatches(self.batch_size)
+                shuffle_minibatches = False
+            else:
+                minibatches_per_step = self.gradient_accumulation
+        else:
+            minibatches_per_step = 1
+
+        lr_scheduler = SetLRScheduler(self.optimizer)
+
+        accelerator = Accelerator(
+            gradient_accumulation_steps=minibatches_per_step,
+            device_placement=self.device.type != "cpu",
+            cpu=self.device.type == "cpu",
+        )
+        logging.info(
+            f"Accelerator num_processes: {accelerator.num_processes}; "
+            f"distributed_type: {accelerator.distributed_type}; "
+            f"mixed_precision: {accelerator.mixed_precision}; "
+            f"use_distributed: {accelerator.use_distributed}"
+        )
+        policy, optimizer, lr_scheduler = accelerator.prepare(
+            self.policy, self.optimizer, lr_scheduler
+        )
+
         while timesteps_elapsed < train_timesteps:
             start_time = perf_counter()
 
-            update_learning_rate(self.optimizer, self.learning_rate)
+            lr_scheduler.step(self.learning_rate)
             pi_clip = self.clip_range
             chart_scalars = {
-                "learning_rate": self.optimizer.param_groups[0]["lr"],
+                "learning_rate": self.learning_rate,
                 "ent_coef": self.ent_coef,
                 "pi_clip": pi_clip,
                 "vf_coef": self.vf_coef,
@@ -144,17 +161,6 @@ class APPO(Algorithm):
                 chart_scalars["teacher_kl_loss_coef"] = self.teacher_kl_loss_coef
             log_scalars(self.tb_writer, "charts", chart_scalars)
 
-            if (
-                self.freeze_policy_head
-                or self.freeze_value_head
-                or self.freeze_backbone
-            ):
-                self.policy.freeze(
-                    self.freeze_policy_head,
-                    self.freeze_value_head,
-                    self.freeze_backbone,
-                )
-
             multi_reward_weights = (
                 torch.Tensor(self.multi_reward_weights).to(self.device)
                 if self.multi_reward_weights is not None
@@ -167,15 +173,6 @@ class APPO(Algorithm):
                 else None
             )
             pi_coef = 1
-            shuffle_minibatches = True
-            if self.gradient_accumulation:
-                if self.gradient_accumulation is True:
-                    minibatches_per_step = r.num_minibatches(self.batch_size)
-                    shuffle_minibatches = False
-                else:
-                    minibatches_per_step = self.gradient_accumulation
-            else:
-                minibatches_per_step = 1
 
             next_rollouts = tuple()
             total_rollout_steps = sum(r.total_steps for r in rollouts)
@@ -184,14 +181,12 @@ class APPO(Algorithm):
             rollout_steps_iteration = 0
             n_epochs = 0
             step_stats = []
-            grad_norms = []
             y_true_list = []
             y_pred_list = []
             while not next_rollouts:
                 rollout_iteration_cnt += 1
                 rollout_steps_iteration = 0
                 step_stats.clear()
-                grad_norms.clear()
                 for r in reversed(rollouts):
                     rollout_steps_iteration += r.total_steps
 
@@ -200,9 +195,7 @@ class APPO(Algorithm):
                         dataset, batch_size=self.batch_size, shuffle=shuffle_minibatches
                     )
 
-                    mb_idx = 0
                     for mb in dataloader:
-                        mb_idx += 1
                         (
                             mb_obs,
                             mb_actions,
@@ -213,7 +206,8 @@ class APPO(Algorithm):
                             mb_returns,
                             mb_teacher_logprobs,
                         ) = mb.to(self.device)
-                        self.policy.reset_noise(self.batch_size)
+                        # reset_noise supported with accelerator wrapped policy
+                        # policy.reset_noise(self.batch_size)
 
                         if self.normalize_advantages_after_scaling:
                             if multi_reward_weights is not None:
@@ -231,8 +225,10 @@ class APPO(Algorithm):
                                 mb_adv = mb_adv @ multi_reward_weights
 
                         additional_losses = {}
-                        with maybe_autocast(self.autocast_loss, self.device):
-                            new_logprobs, entropy, new_values = self.policy(
+
+                        with accelerator.accumulate(policy):
+                            optimizer.zero_grad()
+                            new_logprobs, entropy, new_values = policy(
                                 mb_obs, mb_actions, action_masks=mb_action_masks
                             )
 
@@ -301,49 +297,57 @@ class APPO(Algorithm):
                                 ] = teacher_kl_loss.item()
                                 loss += self.teacher_kl_loss_coef * teacher_kl_loss
 
-                                loss /= minibatches_per_step
-                            loss.backward()
-                            if mb_idx % minibatches_per_step == 0:
-                                grad_norms.append(self.optimizer_step())
+                            loss /= minibatches_per_step
 
-                            with torch.no_grad():
-                                clipped_frac = (
-                                    ((ratio - 1).abs() > pi_clip)
-                                    .float()
-                                    .mean()
-                                    .cpu()
-                                    .numpy()
-                                    .item()
-                                )
-                                val_clipped_frac = (
-                                    ((new_values - mb_values).abs() > v_clip)
-                                    .float()
-                                    .mean(0)
-                                    .cpu()
-                                    .numpy()
-                                    if v_clip is not None
-                                    else np.zeros(v_loss.shape)
-                                )
-
-                            step_stats.append(
-                                TrainStepStats(
-                                    loss.item(),
-                                    pi_loss.item(),
-                                    v_loss.detach().float().cpu().numpy(),
-                                    entropy_loss.item(),
-                                    approx_kl,
-                                    clipped_frac,
-                                    val_clipped_frac,
-                                    additional_losses,
-                                )
+                            accelerator.backward(loss)
+                            grad_norm = (
+                                accelerator.clip_grad_norm_(
+                                    policy.parameters(), self.max_grad_norm
+                                ).item()
+                                if accelerator.sync_gradients
+                                else None
                             )
-                    if mb_idx % minibatches_per_step != 0:
-                        grad_norms.append(self.optimizer_step())
+                            optimizer.step()
+
+                        with torch.no_grad():
+                            clipped_frac = (
+                                ((ratio - 1).abs() > pi_clip)
+                                .float()
+                                .mean()
+                                .cpu()
+                                .numpy()
+                                .item()
+                            )
+                            val_clipped_frac = (
+                                ((new_values - mb_values).abs() > v_clip)
+                                .float()
+                                .mean(0)
+                                .cpu()
+                                .numpy()
+                                if v_clip is not None
+                                else np.zeros(v_loss.shape)
+                            )
+
+                        step_stats.append(
+                            DPPOTrainStepStats(
+                                loss.item(),
+                                pi_loss.item(),
+                                v_loss.detach().float().cpu().numpy(),
+                                entropy_loss.item(),
+                                approx_kl,
+                                clipped_frac,
+                                val_clipped_frac,
+                                additional_losses,
+                                grad_norm,
+                            )
+                        )
 
                     if rollout_iteration_cnt == 1:
                         y_true_list.append(r.y_true)
                         y_pred_list.append(r.y_pred)
-                        timesteps_elapsed += r.total_steps
+                    timesteps_elapsed += r.total_steps
+                    self.policy = accelerator.unwrap_model(policy)
+                    self.optimizer = optimizer
                     learner_data_store_view.submit_learner_update(
                         LearnerDataStoreViewUpdate(self.policy, self, timesteps_elapsed)
                     )
@@ -360,15 +364,7 @@ class APPO(Algorithm):
                     )
                     if next_rollouts:
                         break
-                if rollout_iteration_cnt == 1:
-                    rollout_steps_elapsed = rollout_steps_iteration
-
-            if (
-                self.freeze_policy_head
-                or self.freeze_value_head
-                or self.freeze_backbone
-            ):
-                self.policy.unfreeze()
+                rollout_steps_elapsed += rollout_steps_iteration
 
             self.tb_writer.on_timesteps_elapsed(timesteps_elapsed)
 
@@ -379,10 +375,9 @@ class APPO(Algorithm):
                 np.nan if var_y == 0 else 1 - np.var(y_true - y_pred).item() / var_y
             )
 
-            train_stats = APPOTrainStats(
+            train_stats = DPPOTrainStats(
                 step_stats,
                 explained_var,
-                grad_norms,
                 n_epochs,
             )
             train_stats.write_to_tensorboard(self.tb_writer)
@@ -407,11 +402,3 @@ class APPO(Algorithm):
             rollouts = next_rollouts
             gc.collect()
         return self
-
-    def optimizer_step(self) -> float:
-        grad_norm = nn.utils.clip_grad_norm_(
-            self.policy.parameters(), self.max_grad_norm
-        ).item()
-        self.optimizer.step()
-        self.optimizer.zero_grad(set_to_none=True)
-        return grad_norm

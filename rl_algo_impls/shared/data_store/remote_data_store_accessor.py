@@ -51,6 +51,7 @@ class RemoteDataStoreAccessor(AbstractDataStoreAccessor):
             algo.load(load_path)
         policy_actor_pool = PolicyActorPool.remote(
             self.config.worker_hyperparams.n_inference_workers,
+            policy.device.type,
             self.config.inference_cuda_indexes,
         )
         self.latest_policy = RemoteInferencePolicy(policy_actor_pool, policy)

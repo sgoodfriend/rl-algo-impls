@@ -1,15 +1,16 @@
-from dataclasses import dataclass
-from typing import Iterator, NamedTuple, Optional, TypeVar
+from typing import Iterator, List, NamedTuple, Optional, TypeVar, Union
 
 import numpy as np
 import torch
 
 from rl_algo_impls.loss.teacher_kl_loss import teacher_kl_loss_enabled
-from rl_algo_impls.rollout.rollout import TDN, Rollout, flatten_batch_step
+from rl_algo_impls.rollout.rollout import Rollout, flatten_batch_step
+from rl_algo_impls.rollout.rollout_dataloader import RolloutDataset
 from rl_algo_impls.runner.config import Config
 from rl_algo_impls.shared.data_store.data_store_data import RolloutView
 from rl_algo_impls.shared.gae import compute_advantages
 from rl_algo_impls.shared.tensor_utils import (
+    TDN,
     NumOrArray,
     NumpyOrDict,
     TensorOrDict,
@@ -45,7 +46,9 @@ class PPOBatch(NamedTuple):
 
         return self.__class__(*(to_device(t) for t in self))
 
-    def __getitem__(self: PPOBatchSelf, indices: torch.Tensor) -> PPOBatchSelf:
+    def __getitem__(
+        self: PPOBatchSelf, indices: Union[int, List[int], torch.Tensor]
+    ) -> PPOBatchSelf:
         def by_indices_fn(_t: TDN) -> TDN:
             if _t is None:
                 return _t
@@ -166,3 +169,7 @@ class PPORollout(Rollout):
         for i in range(0, self.total_steps, batch_size):
             mb_idxs = b_idxs[i : i + batch_size]
             yield batch[mb_idxs].to(device)
+
+    def dataset(self, device: torch.device) -> RolloutDataset:
+        device = torch.device("cpu") if self.full_batch_off_accelerator else device
+        return RolloutDataset(self.batch(device))

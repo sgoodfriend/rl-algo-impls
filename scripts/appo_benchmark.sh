@@ -12,7 +12,7 @@ do
     shift
 done
 
-algos="${algos:-appo}"
+algos="${algos:-dppo appo}"
 n_jobs="${n_jobs:-1}"
 project_name="${project_name:-rl-algo-impls-benchmarks}"
 seeds="${seeds:-1}"
@@ -35,7 +35,7 @@ BOX_ENVS=(
     # "MountainCarContinuous-v0"
     "BipedalWalker-v3"
     # CarRacing
-    "CarRacing-v2"
+    # "CarRacing-v2"
 )
 MUJOCO_ENVS=(
     "HalfCheetah-v4"
@@ -47,12 +47,10 @@ MUJOCO_ENVS=(
 train_jobs=""
 for algo in $(echo $algos); do
     if [ -z "$envs" ]; then
-        if [ "$algo" = "appo" ]; then
-            if [ "$mujoco_only" = "t" ]; then
-                BENCHMARK_ENVS="${MUJOCO_ENVS[*]}"
-            else
-                BENCHMARK_ENVS="${BASIC_ENVS[*]} ${MUJOCO_ENVS[*]} ${ATARI_ENVS[*]} ${BOX_ENVS[*]}"
-            fi
+        if [ "$mujoco_only" = "t" ]; then
+            BENCHMARK_ENVS="${MUJOCO_ENVS[*]}"
+        else
+            BENCHMARK_ENVS="${BASIC_ENVS[*]} ${MUJOCO_ENVS[*]} ${ATARI_ENVS[*]} ${BOX_ENVS[*]}"
         fi
         algo_envs=${BENCHMARK_ENVS[*]}
     else
