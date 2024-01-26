@@ -130,6 +130,8 @@ class DataStoreActor:
 
     def submit_rollout_update(self, rollout_update: RolloutUpdate) -> None:
         (rollout, env_update) = rollout_update
+        while self.rollouts.qsize() >= self.config.worker_hyperparams.n_rollout_workers:
+            self.rollouts.get_nowait()
         self.rollouts.put_nowait(rollout)
         for k, tracker in self.env_trackers.items():
             tracker.apply_update(env_update[k])
