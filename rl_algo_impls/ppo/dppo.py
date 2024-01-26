@@ -45,9 +45,6 @@ class DPPO(Algorithm):
         multi_reward_weights: Optional[List[int]] = None,
         gradient_accumulation: Union[bool, int] = False,
         kl_cutoff: Optional[float] = None,
-        freeze_policy_head: bool = False,
-        freeze_value_head: bool = False,
-        freeze_backbone: bool = False,
         normalize_advantages_after_scaling: bool = False,
         vf_loss_fn: str = "mse_loss",
         vf_weights: Optional[List[int]] = None,
@@ -87,10 +84,6 @@ class DPPO(Algorithm):
         )
         self.gradient_accumulation = gradient_accumulation
         self.kl_cutoff = kl_cutoff
-
-        self.freeze_policy_head = freeze_policy_head
-        self.freeze_value_head = freeze_value_head
-        self.freeze_backbone = freeze_backbone
 
         self.normalize_advantages_after_scaling = normalize_advantages_after_scaling
 
@@ -171,17 +164,6 @@ class DPPO(Algorithm):
                 chart_scalars["teacher_kl_loss_coef"] = self.teacher_kl_loss_coef
             log_scalars(self.tb_writer, "charts", chart_scalars)
 
-            if (
-                self.freeze_policy_head
-                or self.freeze_value_head
-                or self.freeze_backbone
-            ):
-                policy.freeze(
-                    self.freeze_policy_head,
-                    self.freeze_value_head,
-                    self.freeze_backbone,
-                )
-
             multi_reward_weights = (
                 torch.Tensor(self.multi_reward_weights).to(self.device)
                 if self.multi_reward_weights is not None
@@ -227,7 +209,8 @@ class DPPO(Algorithm):
                             mb_returns,
                             mb_teacher_logprobs,
                         ) = mb.to(self.device)
-                        policy.reset_noise(self.batch_size)
+                        # reset_noise supported with accelerator wrapped policy
+                        # policy.reset_noise(self.batch_size)
 
                         if self.normalize_advantages_after_scaling:
                             if multi_reward_weights is not None:
@@ -387,13 +370,6 @@ class DPPO(Algorithm):
                     if next_rollouts:
                         break
                 rollout_steps_elapsed += rollout_steps_iteration
-
-            if (
-                self.freeze_policy_head
-                or self.freeze_value_head
-                or self.freeze_backbone
-            ):
-                policy.unfreeze()
 
             self.tb_writer.on_timesteps_elapsed(timesteps_elapsed)
 
