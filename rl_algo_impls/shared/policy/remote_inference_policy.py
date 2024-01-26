@@ -43,6 +43,7 @@ class RemoteInferencePolicy(AbstractPolicy, Generic[ObsType]):
             assert (
                 policy_actor_pool._actor_id == _clone_origin.policy_actor_pool._actor_id
             ), f"Cannot clone policy from different PolicyWorkerPool"
+            self.requires_to_cpu = _clone_origin.requires_to_cpu
             ray.get(
                 [
                     actor.clone_policy.remote(_clone_origin.policy_id, self.policy_id)
@@ -51,7 +52,8 @@ class RemoteInferencePolicy(AbstractPolicy, Generic[ObsType]):
             )
         # Public policy path
         else:
-            if policy.device.index:
+            self.requires_to_cpu = bool(policy.device.index)
+            if self.requires_to_cpu:
                 import torch
 
                 policy = deepcopy(policy).to(torch.device("cpu"))
@@ -118,6 +120,8 @@ class RemoteInferencePolicy(AbstractPolicy, Generic[ObsType]):
         return self.assigned_policy_actor.save.remote(self.policy_id, path)
 
     def set_state(self, state: Any) -> None:
+        if self.requires_to_cpu:
+            state = {k: v.cpu() for k, v in state.items()}
         for actor in self.all_actors:
             actor.set_state.remote(self.policy_id, state)
 

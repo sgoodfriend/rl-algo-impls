@@ -141,7 +141,7 @@ class DPPO(Algorithm):
             cpu=self.device.type == "cpu",
         )
         logging.info(
-            f"Accelerator num_processed: {accelerator.num_processes}; "
+            f"Accelerator num_processes: {accelerator.num_processes}; "
             f"distributed_type: {accelerator.distributed_type}; "
             f"mixed_precision: {accelerator.mixed_precision}; "
             f"use_distributed: {accelerator.use_distributed}"
@@ -371,7 +371,7 @@ class DPPO(Algorithm):
                         y_true_list.append(r.y_true)
                         y_pred_list.append(r.y_pred)
                     timesteps_elapsed += r.total_steps
-                    self.policy = accelerator.unwrap_model(policy).to("cpu")
+                    self.policy = accelerator.unwrap_model(policy)
                     self.optimizer = optimizer
                     learner_data_store_view.submit_learner_update(
                         LearnerDataStoreViewUpdate(self.policy, self, timesteps_elapsed)
