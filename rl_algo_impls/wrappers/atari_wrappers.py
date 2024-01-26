@@ -37,7 +37,7 @@ class EpisodicLifeEnv(gymnasium.Wrapper):
         return obs, info
 
 
-class FireOnLifeStarttEnv(gymnasium.Wrapper):
+class FireOnLifeStartEnv(gymnasium.Wrapper):
     def __init__(self, env: gymnasium.Env, fire_act: int = 1) -> None:
         super().__init__(env)
         self.fire_act = fire_act
