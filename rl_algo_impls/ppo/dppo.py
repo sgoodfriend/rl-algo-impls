@@ -219,16 +219,17 @@ class DPPO(Algorithm):
                         dataset, batch_size=self.batch_size, shuffle=shuffle_minibatches
                     )
 
-                    for (
-                        mb_obs,
-                        mb_actions,
-                        mb_action_masks,
-                        mb_logprobs,
-                        mb_values,
-                        mb_adv,
-                        mb_returns,
-                        mb_teacher_logprobs,
-                    ) in dataloader:
+                    for mb in dataloader:
+                        (
+                            mb_obs,
+                            mb_actions,
+                            mb_action_masks,
+                            mb_logprobs,
+                            mb_values,
+                            mb_adv,
+                            mb_returns,
+                            mb_teacher_logprobs,
+                        ) = mb.to(self.device)
                         policy.reset_noise(self.batch_size)
 
                         if self.normalize_advantages_after_scaling:
