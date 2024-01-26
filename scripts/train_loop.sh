@@ -18,7 +18,12 @@ train_jobs=""
 job_idx=0
 for env in $(echo $envs); do
     for seed in $seeds; do
-        cmd="poetry run python train.py --algo $algo --env $env --seed $seed --pool-size 1 --wandb-tags $WANDB_TAGS --wandb-project-name $project_name --virtual-display"
+        if [ "$algo" = "dppo" ]; then
+            launch="accelerate launch"
+        else
+            launch="python"
+        fi
+        cmd="poetry run &launch train.py --algo $algo --env $env --seed $seed --pool-size 1 --wandb-tags $WANDB_TAGS --wandb-project-name $project_name --virtual-display"
         if [ "$devices" -gt 1 ] && [ "$job_idx" -lt "$devices" ]; then
             cmd+=" --device-index $job_idx"
         fi
