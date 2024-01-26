@@ -480,13 +480,13 @@ LuxAI_S2-v0-j256env64-80m-ent1-lr01-mgn2-base1lc-ga4-tkl5c-4rw-h100:
   <<: *lux-j256env64-80m-ent1-lr01-mgn2-base1lc-ga4-tkl5cl-4rw-2a100
   worker_hyperparams:
     &lux-j256env64-80m-ent1-lr01-mgn2-base1lc-ga4-tkl5c-4rw-h100-worker
-    <<: *lux-j256env64-80m-ent1-lr01-mgn2-base1lc-ga4-tkl5cl-4rw-2a100-worker
+    <<: *lux-j256env64-80m-ent1-lr01-mgn2-base1lc-nga-tkl5cl-4r-2a100-worker
     rollout_gpu_indexes: [0]
     evaluator_gpu_index: 0
     inference_gpu_indexes: [0]
 
 LuxAI_S2-v0-debug:
-  <<: *lux-j256env64-80m-ent1-lr01-mgn2-base1lc-ga2-tkl5cl-4r-2a100
+  <<: *lux-j256env64-80m-ent1-lr01-mgn2-base1lc-ga4-tkl5c-4rw-h100
   n_timesteps: !!float 10e6
   device: mps
   env_hyperparams:
