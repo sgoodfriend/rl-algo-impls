@@ -35,7 +35,7 @@ BOX_ENVS=(
     # "MountainCarContinuous-v0"
     "BipedalWalker-v3"
     # CarRacing
-    "CarRacing-v2"
+    # "CarRacing-v2"
 )
 MUJOCO_ENVS=(
     "HalfCheetah-v4"
