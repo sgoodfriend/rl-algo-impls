@@ -113,10 +113,7 @@ class DPPO(Algorithm):
         shuffle_minibatches = True
         if self.gradient_accumulation:
             if self.gradient_accumulation is True:
-                n_learners = torch.cuda.device_count() or 1
-                minibatches_per_step = (
-                    rollouts[0].num_minibatches(self.batch_size) // n_learners
-                )
+                minibatches_per_step = rollouts[0].num_minibatches(self.batch_size)
                 shuffle_minibatches = False
             else:
                 minibatches_per_step = self.gradient_accumulation
