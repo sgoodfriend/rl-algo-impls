@@ -261,6 +261,7 @@ LuxAI_S2-v0-j256env64-80m-ent1-lr01-mgn2-base1lc-ga4-tkl5cl-4rw-2a100:
     n_rollout_workers: 4
     rollout_gpu_indexes:
       - 1
+
 LuxAI_S2-v0-j256env64-2a100-debug: &lux-j256env64-2a100-debug
   <<: *lux-j256env64-80m-ent1-lr01-mgn2-base1lc-ga4-tkl5cl-4rw-2a100
   checkpoints_kwargs:
@@ -538,7 +539,7 @@ LuxAI_S2-v0-j512env64-80m-ent1-lr01-mgn2-base1lc-nga-tkl5cl-3r-2a100:
     - stats
     - relative_stats
   algo_hyperparams:
-    autocast_loss: true
+    &lux-j512env64-80m-ent1-lr01-mgn2-base1lc-nga-tkl5cl-3r-2a100-algo
     batch_size: 256
     clip_range: 0.1
     clip_range_vf: null
@@ -792,6 +793,14 @@ LuxAI_S2-v0-j512env64-80m-ent1-lr01-mgn2-base1lc-nga-tkl5cl-3r-2a100:
     n_rollout_workers: 3
     rollout_gpu_indexes:
       - 1
+
+LuxAI_S2-v0-j512env64-80m-ent1-lr01-mgn2-base1lc-ga8-tkl5c-3rw-2a100:
+  &lux-j512env64-80m-ent1-lr01-mgn2-base1lc-ga8-tkl5c-3rw-2a100
+  <<: *lux-j512env64-80m-ent1-lr01-mgn2-base1lc-nga-tkl5cl-3r-2a100
+  algo_hyperparams:
+    &lux-j512env64-80m-ent1-lr01-mgn2-base1lc-ga8-tkl5c-3rw-2a100-algo
+    <<: *lux-j512env64-80m-ent1-lr01-mgn2-base1lc-nga-tkl5cl-3r-2a100-algo
+    gradient_accumulation: 8
 
 LuxAI_S2-v0-debug:
   <<: *lux-j512env64-80m-ent1-lr01-mgn2-base1lc-nga-tkl5cl-3r-2a100
