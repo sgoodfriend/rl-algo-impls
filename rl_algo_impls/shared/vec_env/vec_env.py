@@ -175,7 +175,6 @@ def make_vec_env(
 
     if training:
         assert tb_writer
-        envs = MaskResettableEpisodeStatistics(envs)
         envs = EpisodeStatsWriter(
             envs, tb_writer, training=training, rolling_length=rolling_length
         )
