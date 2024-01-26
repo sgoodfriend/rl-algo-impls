@@ -137,11 +137,6 @@ class DPPO(Algorithm):
 
         accelerator = Accelerator(
             gradient_accumulation_steps=minibatches_per_step,
-            mixed_precision="bf16"
-            if self.autocast_loss
-            and self.device.type == "cuda"
-            and torch.cuda.is_bf16_supported()
-            else None,
             device_placement=self.device.type != "cpu",
             cpu=self.device.type == "cpu",
         )
@@ -223,7 +218,6 @@ class DPPO(Algorithm):
                     dataloader = RolloutDataLoader(
                         dataset, batch_size=self.batch_size, shuffle=shuffle_minibatches
                     )
-                    dataloader = accelerator.prepare(dataloader)
 
                     for (
                         mb_obs,
@@ -375,8 +369,9 @@ class DPPO(Algorithm):
                     if rollout_iteration_cnt == 1:
                         y_true_list.append(r.y_true)
                         y_pred_list.append(r.y_pred)
-                        timesteps_elapsed += r.total_steps
-                    self.policy = accelerator.unwrap_model(policy)
+                    timesteps_elapsed += r.total_steps
+                    self.policy = accelerator.unwrap_model(policy).to("cpu")
+                    self.optimizer = optimizer
                     learner_data_store_view.submit_learner_update(
                         LearnerDataStoreViewUpdate(self.policy, self, timesteps_elapsed)
                     )
@@ -393,10 +388,8 @@ class DPPO(Algorithm):
                     )
                     if next_rollouts:
                         break
-                if rollout_iteration_cnt == 1:
-                    rollout_steps_elapsed = rollout_steps_iteration
+                rollout_steps_elapsed += rollout_steps_iteration
 
-            accelerator._dataloaders.clear()
             if (
                 self.freeze_policy_head
                 or self.freeze_value_head

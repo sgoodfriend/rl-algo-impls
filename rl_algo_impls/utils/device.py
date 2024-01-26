@@ -3,6 +3,7 @@ import os
 import warnings
 from typing import List
 
+import accelerate
 import torch
 import torch.backends
 from gymnasium.spaces import Box, Discrete
@@ -37,12 +38,25 @@ def get_device(config: Config, env_spaces: EnvSpaces) -> torch.device:
                 device = "cpu"
 
     logging.info(f"Device: {device}")
-    return torch.device(device)
+    return torch.device(device, config.learner_cuda_index)  # type: ignore
 
 
 def initialize_cuda_devices(args: RunArgs, hyperparams: Hyperparams) -> List[int]:
     worker_hyperparams = WorkerHyperparams(**hyperparams.worker_hyperparams)
-    if args.device_indexes is not None:
+    partial_state = accelerate.state.PartialState()
+    if partial_state.use_distributed:
+        import torch
+
+        num_local_processes = (
+            torch.cuda.device_count() // worker_hyperparams.desired_num_accelerators
+        )
+        gpu_ids = [
+            partial_state.local_process_index + i * num_local_processes
+            for i in range(worker_hyperparams.desired_num_accelerators)
+        ]
+        if args.seed is not None:
+            args.seed += partial_state.process_index
+    elif args.device_indexes is not None:
         gpu_ids = args.device_indexes
     else:
         import GPUtil
@@ -59,17 +73,8 @@ def initialize_cuda_devices(args: RunArgs, hyperparams: Hyperparams) -> List[int
             warnings.warn(
                 f"Desired {worker_hyperparams.desired_num_accelerators} GPUs but only found {len(gpu_ids)} GPUs"
             )
-        learner_gpu_indexes = worker_hyperparams.learner_gpu_indexes or [0]
-        learner_cuda_indexes = [
-            gpu_ids[gpu_idx % len(gpu_ids)] for gpu_idx in learner_gpu_indexes
-        ]
-        logging.info(f"Learner using GPUs: {learner_cuda_indexes}")
-        os.environ["CUDA_VISIBLE_DEVICES"] = ",".join(map(str, learner_cuda_indexes))
         import torch
 
-        assert torch.cuda.device_count() == len(
-            learner_cuda_indexes
-        ), f"GPU count mismatch: {torch.cuda.device_count()} vs expected {len(learner_cuda_indexes)}"
         torch.set_num_threads(get_max_num_threads())
     elif worker_hyperparams.desired_num_accelerators > 1:
         warnings.warn(

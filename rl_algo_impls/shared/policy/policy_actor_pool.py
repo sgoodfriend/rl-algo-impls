@@ -9,7 +9,10 @@ from rl_algo_impls.shared.policy.policy_actor import PolicyActor
 @ray.remote
 class PolicyActorPool:
     def __init__(
-        self, num_policy_workers: int, cuda_indexes: Union[int, List[int], None]
+        self,
+        num_policy_workers: int,
+        device_type: str,
+        cuda_indexes: Union[int, List[int], None],
     ) -> None:
         if isinstance(cuda_indexes, (int, type(None))):
             _cuda_indexes = [cuda_indexes] * num_policy_workers
@@ -22,7 +25,7 @@ class PolicyActorPool:
         assert len(_cuda_indexes) == num_policy_workers
 
         self.policy_actors = [
-            PolicyActor.remote(cuda_idx) for cuda_idx in _cuda_indexes
+            PolicyActor.remote(device_type, cuda_idx) for cuda_idx in _cuda_indexes
         ]
         self.policy_actors_by_cuda_index = {}
         for cuda_index, policy_actor in zip(_cuda_indexes, self.policy_actors):

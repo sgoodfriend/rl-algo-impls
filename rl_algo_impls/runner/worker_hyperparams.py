@@ -10,13 +10,9 @@ class WorkerHyperparams:
     n_inference_workers: int = 1
     inference_gpu_indexes: Optional[List[int]] = None
     different_seeds_for_rollout_workers: bool = True
-    learner_gpu_indexes: Optional[List[int]] = None
 
     @property
     def desired_num_accelerators(self) -> int:
-        max_learner_gpu_index = (
-            max(self.learner_gpu_indexes) if self.learner_gpu_indexes else 0
-        )
         max_rollout_gpu_index = (
             max(self.rollout_gpu_indexes) if self.rollout_gpu_indexes else 0
         )
@@ -25,7 +21,6 @@ class WorkerHyperparams:
         )
         return (
             max(
-                max_learner_gpu_index,
                 max_rollout_gpu_index,
                 self.evaluator_gpu_index,
                 max_inference_gpu_index,

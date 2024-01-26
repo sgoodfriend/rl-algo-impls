@@ -255,5 +255,9 @@ class Config:
         return None
 
     @property
+    def learner_cuda_index(self) -> Optional[int]:
+        return self.gpu_ids[0] if self.gpu_ids else None
+
+    @property
     def checkpoint_history_size(self) -> int:
         return self.hyperparams.checkpoints_kwargs.get("history_size", 0)

@@ -1,6 +1,7 @@
 import os
 import uuid
 import warnings
+from copy import deepcopy
 from typing import TYPE_CHECKING, Any, Generic, Optional, TypeVar
 
 import numpy as np
@@ -50,6 +51,10 @@ class RemoteInferencePolicy(AbstractPolicy, Generic[ObsType]):
             )
         # Public policy path
         else:
+            if policy.device.index:
+                import torch
+
+                policy = deepcopy(policy).to(torch.device("cpu"))
             ray.get(
                 [
                     actor.add_policy.remote(self.policy_id, policy)

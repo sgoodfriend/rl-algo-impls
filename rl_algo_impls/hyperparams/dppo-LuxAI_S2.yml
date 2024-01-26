@@ -275,7 +275,6 @@ LuxAI_S2-v0-j256env64-80m-ent1-lr01-mgn2-base1lc-ga2-tkl5-2lw-8rw-4a100:
     <<: *lux-j256env64-80m-ent1-lr01-mgn2-base1lc-ga4-tkl5cl-4rw-2a100-worker
     evaluator_gpu_index: 2
     inference_gpu_indexes: [2, 3]
-    learner_gpu_indexes: [0, 1]
     n_inference_workers: 4
     n_rollout_workers: 8
     rollout_gpu_indexes: [2, 3]
@@ -577,6 +576,5 @@ LuxAI_S2-v0-debug:
   worker_hyperparams:
     <<: *lux-j256env64-80m-ent1-lr01-mgn2-base1lc-ga4-tkl5cl-4rw-2a100-worker
     evaluator_gpu_index: 0
-    learner_gpu_indexes: []
     inference_gpu_indexes: []
     rollout_gpu_indexes: []

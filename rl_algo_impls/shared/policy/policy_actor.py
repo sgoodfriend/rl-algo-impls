@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 @ray.remote
 class PolicyActor:
-    def __init__(self, cuda_index: Optional[int]) -> None:
+    def __init__(self, device_type: str, cuda_index: Optional[int]) -> None:
         from rl_algo_impls.utils.ray import init_ray_actor
 
         init_ray_actor(
@@ -23,11 +23,15 @@ class PolicyActor:
 
         self.policies_by_id: Dict[str, "Policy"] = {}
 
+        import torch
+
+        self.device = torch.device(device_type)
+
     def add_policy(self, policy_id: str, policy: "Policy") -> None:
         assert (
             policy_id not in self.policies_by_id
         ), f"Policy with id {policy_id} exists"
-        self.policies_by_id[policy_id] = policy
+        self.policies_by_id[policy_id] = policy.to(self.device)
 
     def clone_policy(self, origin_policy_id: str, destination_policy_id: str) -> None:
         assert (
@@ -78,6 +82,7 @@ class PolicyActor:
 
     def set_state(self, policy_id: str, state: Any) -> None:
         assert policy_id in self.policies_by_id, f"No policy with id {policy_id}"
+        state = {k: v.to(self.device) for k, v in state.items()}
         self.policies_by_id[policy_id].set_state(state)
 
     def eval(self, policy_id: str) -> None:
