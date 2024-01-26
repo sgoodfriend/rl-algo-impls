@@ -23,7 +23,7 @@ for env in $(echo $envs); do
         else
             launch="python"
         fi
-        cmd="poetry run &launch train.py --algo $algo --env $env --seed $seed --pool-size 1 --wandb-tags $WANDB_TAGS --wandb-project-name $project_name --virtual-display"
+        cmd="poetry run $launch train.py --algo $algo --env $env --seed $seed --pool-size 1 --wandb-tags $WANDB_TAGS --wandb-project-name $project_name --virtual-display"
         if [ "$devices" -gt 1 ] && [ "$job_idx" -lt "$devices" ]; then
             cmd+=" --device-index $job_idx"
         fi
