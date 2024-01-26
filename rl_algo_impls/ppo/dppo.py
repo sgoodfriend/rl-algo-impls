@@ -332,18 +332,16 @@ class DPPO(Algorithm):
                             )
 
                         step_stats.append(
-                            accelerator.gather_for_metrics(
-                                DPPOTrainStepStats(
-                                    loss.item(),
-                                    pi_loss.item(),
-                                    v_loss.detach().float().cpu().numpy(),
-                                    entropy_loss.item(),
-                                    approx_kl,
-                                    clipped_frac,
-                                    val_clipped_frac,
-                                    additional_losses,
-                                    grad_norm,
-                                )
+                            DPPOTrainStepStats(
+                                loss.item(),
+                                pi_loss.item(),
+                                v_loss.detach().float().cpu().numpy(),
+                                entropy_loss.item(),
+                                approx_kl,
+                                clipped_frac,
+                                val_clipped_frac,
+                                additional_losses,
+                                grad_norm,
                             )
                         )
 
