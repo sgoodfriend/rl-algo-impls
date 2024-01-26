@@ -36,8 +36,9 @@ def get_device(config: Config, env_spaces: EnvSpaces) -> torch.device:
             if is_microrts(config):
                 device = "cpu"
 
+    device = torch.device(device, config.learner_cuda_index)  # type: ignore
     logging.info(f"Device: {device}")
-    return torch.device(device, config.learner_cuda_index)  # type: ignore
+    return device
 
 
 def initialize_cuda_devices(args: RunArgs, hyperparams: Hyperparams) -> List[int]:
