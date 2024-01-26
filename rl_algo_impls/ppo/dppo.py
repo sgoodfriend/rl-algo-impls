@@ -49,7 +49,6 @@ class DPPO(Algorithm):
         freeze_value_head: bool = False,
         freeze_backbone: bool = False,
         normalize_advantages_after_scaling: bool = False,
-        autocast_loss: bool = False,
         vf_loss_fn: str = "mse_loss",
         vf_weights: Optional[List[int]] = None,
         teacher_kl_loss_coef: Optional[float] = None,
@@ -94,8 +93,6 @@ class DPPO(Algorithm):
         self.freeze_backbone = freeze_backbone
 
         self.normalize_advantages_after_scaling = normalize_advantages_after_scaling
-
-        self.autocast_loss = autocast_loss
 
         self.vf_loss_fn = getattr(F, vf_loss_fn)
 
