@@ -14,7 +14,6 @@ Microrts-env16-80m-ent5-lr3c-mgn2-shaped-rew-nga-a100:
     gradient_accumulation: false
     learning_rate: !!float 3e-4
     max_grad_norm: 2
-    n_epochs: 2
     ppo2_vf_coef_halving: true
     vf_coef: 0.5
   checkpoints_kwargs:
