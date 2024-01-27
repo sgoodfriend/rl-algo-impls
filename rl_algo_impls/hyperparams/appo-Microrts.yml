@@ -7,7 +7,7 @@ Microrts-env16-80m-ent5-lr3c-mgn2-shaped-rew-nga-a100:
     - action_mask_stats
   algo_hyperparams:
     autocast_loss: true
-    batch_size: 3072
+    batch_size: 4608
     clip_range: 0.1
     clip_range_vf: null
     ent_coef: 0.005
