@@ -147,3 +147,8 @@ Microrts-env16-80m-ent5-lr3c-mgn2-shaped-rew-nga-a100:
   worker_hyperparams:
     n_rollout_workers: 4
     n_inference_workers: 2
+
+Microrts-env16-240m-ent5-lr3c-mgn2-shaped-rew-nga-a100:
+  &microrts-env16-240m-ent5-lr3c-mgn2-shaped-rew-nga-a100
+  <<: *microrts-env16-80m-ent5-lr3c-mgn2-shaped-rew-nga-a100
+  n_timesteps: !!float 240e6
