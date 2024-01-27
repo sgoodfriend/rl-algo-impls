@@ -140,7 +140,6 @@ class DPPO(Algorithm):
         while timesteps_elapsed < train_timesteps:
             start_time = perf_counter()
 
-            lr_scheduler.step(self.learning_rate)
             pi_clip = self.clip_range
             chart_scalars = {
                 "learning_rate": self.learning_rate,
@@ -308,6 +307,7 @@ class DPPO(Algorithm):
                                 else None
                             )
                             self.optimizer.step()
+                            lr_scheduler.step(self.learning_rate)
 
                         with torch.no_grad():
                             clipped_frac = (
