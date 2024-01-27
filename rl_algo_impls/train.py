@@ -37,7 +37,7 @@ def train() -> None:
         "--virtual-display", action="store_true", help="Use headless virtual display"
     )
     parser.set_defaults(
-        algo=["dppo"],
+        algo=["ppo"],
         # env=["CartPole-v1"],
         # env=["LunarLander-v2"],
         # env=["LunarLander-v2-lr-by-kl"],
@@ -51,8 +51,8 @@ def train() -> None:
         # env=["BipedalWalker-v3"],
         # env=["PongNoFrameskip-v4"],
         # env=["BreakoutNoFrameskip-v4"],
-        # env=["Microrts-debug"],
-        env=["LuxAI_S2-v0-debug"],
+        env=["Microrts-debug"],
+        # env=["LuxAI_S2-v0-debug"],
         seed=[1],
         pool_size=3,
         # wandb_project_name=None,
