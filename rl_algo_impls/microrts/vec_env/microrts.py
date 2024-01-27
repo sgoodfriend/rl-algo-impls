@@ -13,8 +13,8 @@ from rl_algo_impls.microrts.vec_env.microrts_space_transform import (
 from rl_algo_impls.microrts.wrappers.microrts_stats_recorder import (
     MicrortsStatsRecorder,
 )
-from rl_algo_impls.runner.env_hyperparams import EnvHyperparams
 from rl_algo_impls.runner.config import Config
+from rl_algo_impls.runner.env_hyperparams import EnvHyperparams
 from rl_algo_impls.shared.data_store.data_store_view import VectorEnvDataStoreView
 from rl_algo_impls.shared.summary_wrapper.abstract_summary_wrapper import (
     AbstractSummaryWrapper,
@@ -27,6 +27,7 @@ from rl_algo_impls.wrappers.additional_win_loss_reward import (
 from rl_algo_impls.wrappers.episode_stats_writer import EpisodeStatsWriter
 from rl_algo_impls.wrappers.hwc_to_chw_observation import HwcToChwVectorObservation
 from rl_algo_impls.wrappers.is_vector_env import IsVectorEnv
+from rl_algo_impls.wrappers.play_checkpoints_wrapper import PlayCheckpointsWrapper
 from rl_algo_impls.wrappers.score_reward_wrapper import ScoreRewardWrapper
 from rl_algo_impls.wrappers.self_play_wrapper import SelfPlayWrapper
 from rl_algo_impls.wrappers.vector_wrapper import VectorEnv
@@ -71,7 +72,7 @@ def make_microrts_env(
         time_budget_ms,
         video_frames_per_second,
         _,  # reference_bot,
-        _,  # play_checkpoints_kwargs,
+        play_checkpoints_kwargs,
         _,  # additional_win_loss_smoothing_factor,
         _,  # info_rewards,
     ) = astuple(hparams)
@@ -85,7 +86,16 @@ def make_microrts_env(
         )
 
         make_kwargs = make_kwargs or {}
+
         self_play_kwargs = self_play_kwargs or {}
+        play_checkpoints_kwargs = play_checkpoints_kwargs or {}
+        assert not (
+            bool(self_play_kwargs) and bool(play_checkpoints_kwargs)
+        ), "Cannot have both self_play_kwargs and play_checkpoints_kwargs"
+        num_checkpoint_envs = self_play_kwargs.get(
+            "num_old_policies", 0
+        ) or play_checkpoints_kwargs.get("n_envs_against_checkpoints", 0)
+
         if "num_selfplay_envs" not in make_kwargs:
             make_kwargs["num_selfplay_envs"] = 0
         if "num_bot_envs" not in make_kwargs:
@@ -94,7 +104,7 @@ def make_microrts_env(
                 num_bot_envs = (
                     n_envs
                     - make_kwargs["num_selfplay_envs"]
-                    + self_play_kwargs.get("num_old_policies", 0)
+                    + num_checkpoint_envs
                     + (len(selfplay_bots) if selfplay_bots else 0)
                 )
             else:
@@ -125,11 +135,11 @@ def make_microrts_env(
             ai2s = [microrts_ai.randomAI for _ in range(make_kwargs["num_bot_envs"])]
         if map_paths:
             _map_paths = []
-            n_selfplay_historical_envs = self_play_kwargs.get("num_old_policies", 0) * 2
+            n_selfplay_historical_envs = num_checkpoint_envs * 2
             assert n_selfplay_historical_envs % (4 * len(map_paths)) == 0, (
-                "Expect num_old_policies %d to be a multiple of 2 len(map_paths) (2*%d)"
+                "Expect num_checkpoint_envs %d to be a multiple of 2 len(map_paths) (2*%d)"
                 % (
-                    self_play_kwargs.get("num_old_policies", 0),
+                    num_checkpoint_envs,
                     len(map_paths),
                 )
             )
@@ -192,7 +202,9 @@ def make_microrts_env(
         if selfplay_bots:
             self_play_kwargs["selfplay_bots"] = selfplay_bots
         envs = SelfPlayWrapper(envs, config, **self_play_kwargs)
-
+    if play_checkpoints_kwargs:
+        envs = PlayCheckpointsWrapper(envs, **play_checkpoints_kwargs)
+        data_store_view.add_checkpoint_policy_delegate(envs)
     if seed is not None:
         envs.action_space.seed(seed)
         envs.observation_space.seed(seed)

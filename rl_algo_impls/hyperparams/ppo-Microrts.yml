@@ -1501,6 +1501,8 @@ Microrts-env16-80m-ent5-lr3c-mgn2-shaped-rew-nga-a100:
     n_epochs: 2
     ppo2_vf_coef_halving: true
     vf_coef: 0.5
+  checkpoints_kwargs:
+    history_size: 2
   device_hyperparams:
     set_float32_matmul_precision: high
     use_deterministic_algorithms: false
@@ -1517,7 +1519,7 @@ Microrts-env16-80m-ent5-lr3c-mgn2-shaped-rew-nga-a100:
       map_paths:
         - maps/16x16/basesWorkers16x16.xml
       max_steps: 4000
-      num_selfplay_envs: 48
+      num_selfplay_envs: 72
       render_theme: 2
       reward_weight:
         - 10.0 # RAIWinLossRewardFunction
@@ -1537,6 +1539,8 @@ Microrts-env16-80m-ent5-lr3c-mgn2-shaped-rew-nga-a100:
       - maps/NoWhereToRun9x8.xml
       - maps/16x16/EightBasesWorkers16x16.xml
     n_envs: 72
+    play_checkpoints_kwargs:
+      n_envs_against_checkpoints: 24
     score_reward_kwargs: null
     self_play_kwargs: null
     valid_sizes:
@@ -1580,6 +1584,7 @@ Microrts-env16-80m-ent5-lr3c-mgn2-shaped-rew-nga-a100:
           - 0
       map_paths: []
       n_envs: 28
+      play_checkpoints_kwargs: null
       score_reward_kwargs: {}
       self_play_kwargs: {}
     max_video_length: 4000
