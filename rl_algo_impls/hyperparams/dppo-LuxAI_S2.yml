@@ -775,6 +775,7 @@ LuxAI_S2-v0-j512env64-80m-ent1-lr01-mgn2-base1lc-nga-tkl5cl-3r-2a100:
         5: 2
   process_mode: async
   rollout_hyperparams:
+    &lux-j512env64-80m-ent1-lr01-mgn2-base1lc-nga-tkl5cl-3r-2a100-rollout
     full_batch_off_accelerator: true
     gae_lambda: 0.95
     gamma: 1.0
@@ -801,6 +802,14 @@ LuxAI_S2-v0-j512env64-80m-ent1-lr01-mgn2-base1lc-ga8-tkl5c-3rw-2a100:
     &lux-j512env64-80m-ent1-lr01-mgn2-base1lc-ga8-tkl5c-3rw-2a100-algo
     <<: *lux-j512env64-80m-ent1-lr01-mgn2-base1lc-nga-tkl5cl-3r-2a100-algo
     gradient_accumulation: 8
+
+LuxAI_S2-v0-j512env64-2a100-debug: &lux-j512env64-2a100-debug
+  <<: *lux-j512env64-80m-ent1-lr01-mgn2-base1lc-ga8-tkl5c-3rw-2a100
+  checkpoints_kwargs:
+    history_size: 1
+  rollout_hyperparams:
+    <<: *lux-j512env64-80m-ent1-lr01-mgn2-base1lc-nga-tkl5cl-3r-2a100-rollout
+    prepare_steps: 0
 
 LuxAI_S2-v0-debug:
   <<: *lux-j512env64-80m-ent1-lr01-mgn2-base1lc-nga-tkl5cl-3r-2a100

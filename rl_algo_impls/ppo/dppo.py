@@ -133,7 +133,7 @@ class DPPO(Algorithm):
             f"mixed_precision: {accelerator.mixed_precision}; "
             f"use_distributed: {accelerator.use_distributed}"
         )
-        policy, optimizer, lr_scheduler = accelerator.prepare(
+        self.policy, self.optimizer, lr_scheduler = accelerator.prepare(
             self.policy, self.optimizer, lr_scheduler
         )
 
@@ -226,9 +226,9 @@ class DPPO(Algorithm):
 
                         additional_losses = {}
 
-                        with accelerator.accumulate(policy):
-                            optimizer.zero_grad()
-                            new_logprobs, entropy, new_values = policy(
+                        with accelerator.accumulate(self.policy):
+                            self.optimizer.zero_grad()
+                            new_logprobs, entropy, new_values = self.policy(
                                 mb_obs, mb_actions, action_masks=mb_action_masks
                             )
 
@@ -302,12 +302,12 @@ class DPPO(Algorithm):
                             accelerator.backward(loss)
                             grad_norm = (
                                 accelerator.clip_grad_norm_(
-                                    policy.parameters(), self.max_grad_norm
+                                    self.policy.parameters(), self.max_grad_norm
                                 ).item()
                                 if accelerator.sync_gradients
                                 else None
                             )
-                            optimizer.step()
+                            self.optimizer.step()
 
                         with torch.no_grad():
                             clipped_frac = (
@@ -346,10 +346,12 @@ class DPPO(Algorithm):
                         y_true_list.append(r.y_true)
                         y_pred_list.append(r.y_pred)
                     timesteps_elapsed += r.total_steps
-                    self.policy = accelerator.unwrap_model(policy)
-                    self.optimizer = optimizer
                     learner_data_store_view.submit_learner_update(
-                        LearnerDataStoreViewUpdate(self.policy, self, timesteps_elapsed)
+                        LearnerDataStoreViewUpdate(
+                            accelerator.unwrap_model(self.policy),
+                            self,
+                            timesteps_elapsed,
+                        )
                     )
                     n_epochs = (
                         rollout_iteration_cnt
@@ -401,4 +403,6 @@ class DPPO(Algorithm):
                     break
             rollouts = next_rollouts
             gc.collect()
+
+        self.policy = accelerator.unwrap_model(self.policy)
         return self
