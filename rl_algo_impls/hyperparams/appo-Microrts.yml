@@ -103,7 +103,6 @@ Microrts-env16-80m-ent5-lr3c-mgn2-shaped-rew-nga-a100:
     max_video_length: 4000
     n_episodes: 28
     score_function: mean
-    skip_evaluate_at_start: true
     step_freq: !!float 2.5e6
   n_timesteps: !!float 80e6
   policy_hyperparams:
