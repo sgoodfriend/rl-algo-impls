@@ -141,10 +141,28 @@ Microrts-env16-80m-ent5-lr3c-mgn2-shaped-rew-nga-a100:
         6: 5
   process_mode: async
   rollout_hyperparams:
+    &microrts-env16-80m-ent5-lr3c-mgn2-shaped-rew-nga-a100-rollout
     full_batch_off_accelerator: true
     gae_lambda: 0.95
     gamma: 0.999
     n_steps: 512
   worker_hyperparams:
+    &microrts-env16-80m-ent5-lr3c-mgn2-shaped-rew-nga-a100-worker
     n_rollout_workers: 8
     n_inference_workers: 3
+
+Microrts-env16-80m-ent5-lr3c-mgn2-shaped-rew-nga-a10:
+  &microrts-env16-80m-ent5-lr3c-mgn2-shaped-rew-nga-a10
+  <<: *microrts-env16-80m-ent5-lr3c-mgn2-shaped-rew-nga-a100
+  algo_hyperparams: &microrts-env16-80m-ent5-lr3c-mgn2-shaped-rew-nga-a10-algo
+    <<: *microrts-env16-80m-ent5-lr3c-mgn2-shaped-rew-nga-a100-algo
+    batch_size: 2304
+  rollout_hyperparams:
+    &microrts-env16-80m-ent5-lr3c-mgn2-shaped-rew-nga-a10-rollout
+    <<: *microrts-env16-80m-ent5-lr3c-mgn2-shaped-rew-nga-a100-rollout
+    full_batch_off_accelerator: false
+  worker_hyperparams:
+    &microrts-env16-80m-ent5-lr3c-mgn2-shaped-rew-nga-a10-worker
+    <<: *microrts-env16-80m-ent5-lr3c-mgn2-shaped-rew-nga-a100-worker
+    n_rollout_workers: 4
+    n_inference_workers: 2
