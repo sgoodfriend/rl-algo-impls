@@ -164,7 +164,7 @@ _atari: &atari
   n_timesteps: !!float 50e6
   worker_hyperparams:
     n_rollout_workers: 8
-    n_inference_workers: 2
+    n_inference_workers: 4
   env_hyperparams: &atari-env
     n_envs: 8
     frame_stack: 4
