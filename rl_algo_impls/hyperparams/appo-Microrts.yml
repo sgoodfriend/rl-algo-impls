@@ -157,10 +157,6 @@ Microrts-env16-80m-ent5-lr3c-mgn2-shaped-rew-nga-a10:
   algo_hyperparams: &microrts-env16-80m-ent5-lr3c-mgn2-shaped-rew-nga-a10-algo
     <<: *microrts-env16-80m-ent5-lr3c-mgn2-shaped-rew-nga-a100-algo
     batch_size: 2304
-  rollout_hyperparams:
-    &microrts-env16-80m-ent5-lr3c-mgn2-shaped-rew-nga-a10-rollout
-    <<: *microrts-env16-80m-ent5-lr3c-mgn2-shaped-rew-nga-a100-rollout
-    full_batch_off_accelerator: false
   worker_hyperparams:
     &microrts-env16-80m-ent5-lr3c-mgn2-shaped-rew-nga-a10-worker
     <<: *microrts-env16-80m-ent5-lr3c-mgn2-shaped-rew-nga-a100-worker
