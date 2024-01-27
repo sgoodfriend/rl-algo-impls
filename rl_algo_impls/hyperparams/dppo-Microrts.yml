@@ -140,5 +140,5 @@ Microrts-env16-80m-ent5-lr3c-mgn2-shaped-rew-nga-a100:
     gamma: 0.999
     n_steps: 512
   worker_hyperparams:
-    n_rollout_workers: 8
-    n_inference_workers: 3
+    n_rollout_workers: 4
+    n_inference_workers: 2
