@@ -193,6 +193,7 @@ Microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf24-nga-a100:
     n_epochs: 2
     ppo2_vf_coef_halving: true
     vf_coef: 0.24
+    vf_loss_fn: huber_loss
     vf_weights:
       - 1.0
       - 0.5
