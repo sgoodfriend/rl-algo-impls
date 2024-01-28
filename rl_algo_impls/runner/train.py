@@ -163,11 +163,11 @@ def train(args: TrainArgs):
     )
 
     (best_eval_stats,) = data_store_accessor.close()
-    evaluator.save(algo.policy, config.model_dir_path(best=False))
 
     eval_stats = evaluator.evaluate_latest_policy(
         algo, n_episodes=10, print_returns=True
     )
+    evaluator.save(algo.policy, config.model_dir_path(best=False))
 
     log_dict: Dict[str, Any] = {
         "eval": eval_stats._asdict(),
