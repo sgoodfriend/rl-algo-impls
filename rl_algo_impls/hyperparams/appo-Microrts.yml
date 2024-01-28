@@ -365,6 +365,7 @@ Microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf24-nga-a100:
         4: 4
         5: 4
         6: 5
+  process_mode: async
   rollout_hyperparams:
     full_batch_off_accelerator: true
     gae_lambda: 0.95
