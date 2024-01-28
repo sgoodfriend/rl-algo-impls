@@ -261,6 +261,14 @@ Microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf24-nga-a100:
       - maps/NoWhereToRun9x8.xml
       - maps/16x16/EightBasesWorkers16x16.xml
     n_envs: 72
+    normalize: true
+    normalize_kwargs:
+      clip_reward: 1
+      emv_window_size: !!float 5e6
+      exponential_moving_mean_var_reward: true
+      gamma_reward: 1
+      norm_obs: false
+      norm_reward: true
     play_checkpoints_kwargs:
       n_envs_against_checkpoints: 24
     score_reward_kwargs: null
@@ -311,6 +319,7 @@ Microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf24-nga-a100:
       score_reward_kwargs: {}
       self_play_kwargs: {}
     max_video_length: 4000
+    only_checkpoint_best_policies: true
     n_episodes: 28
     score_function: mean
     skip_evaluate_at_start: true
@@ -344,7 +353,7 @@ Microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf24-nga-a100:
       - 2
       - 4
     normalization: layer
-    output_activation_fn: tanh
+    output_activation_fn: identity
     shared_critic_head: true
     strides_per_level:
       - 4

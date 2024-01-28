@@ -28,6 +28,7 @@ from rl_algo_impls.wrappers.episode_stats_writer import EpisodeStatsWriter
 from rl_algo_impls.wrappers.hwc_to_chw_observation import HwcToChwVectorObservation
 from rl_algo_impls.wrappers.info_rewards_wrapper import InfoRewardsWrapper
 from rl_algo_impls.wrappers.is_vector_env import IsVectorEnv
+from rl_algo_impls.wrappers.normalize import NormalizeObservation, NormalizeReward
 from rl_algo_impls.wrappers.play_checkpoints_wrapper import PlayCheckpointsWrapper
 from rl_algo_impls.wrappers.score_reward_wrapper import ScoreRewardWrapper
 from rl_algo_impls.wrappers.self_play_wrapper import SelfPlayWrapper
@@ -51,13 +52,13 @@ def make_microrts_env(
         _,  # no_reward_timeout_steps
         _,  # no_reward_fire_steps
         _,  # vec_env_class
-        _,  # normalize
-        _,  # normalize_kwargs,
+        normalize,
+        normalize_kwargs,
         rolling_length,
         _,  # video_step_interval
         _,  # initial_steps_to_truncate
         _,  # clip_atari_rewards
-        _,  # normalize_type
+        normalize_type,
         _,  # mask_actions
         bots,
         self_play_kwargs,
@@ -233,5 +234,39 @@ def make_microrts_env(
         envs = ScoreRewardWrapper(envs, **score_reward_kwargs)
     if info_rewards:
         envs = InfoRewardsWrapper(envs, **info_rewards, flatten_info=True)
+    if normalize:
+        if normalize_type is None:
+            normalize_type = "gymlike"
+        if normalize_type == "gymlike":
+            if normalize_kwargs.get("norm_obs", True):
+                envs = NormalizeObservation(
+                    envs,
+                    data_store_view,
+                    training=training,
+                    clip=normalize_kwargs.get("clip_obs", 10.0),
+                )
+            if training and normalize_kwargs.get("norm_reward", True):
+                rew_shape = (
+                    1
+                    + (1 if additional_win_loss_reward else 0)
+                    + (1 if score_reward_kwargs else 0)
+                    + (len(info_rewards["info_paths"]) if info_rewards else 0),
+                )
+                if rew_shape == (1,):
+                    rew_shape = ()
+                envs = NormalizeReward(
+                    envs,
+                    data_store_view,
+                    training=training,
+                    gamma=normalize_kwargs.get("gamma_reward", 0.99),
+                    clip=normalize_kwargs.get("clip_reward", 10.0),
+                    shape=rew_shape,
+                    exponential_moving_mean_var=normalize_kwargs.get(
+                        "exponential_moving_mean_var_reward", False
+                    ),
+                    emv_window_size=normalize_kwargs.get("emv_window_size", 5e6),
+                )
+        else:
+            raise ValueError(f"normalize_type {normalize_type} not supported (gymlike)")
 
     return envs

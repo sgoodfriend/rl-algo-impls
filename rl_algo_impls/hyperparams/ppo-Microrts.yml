@@ -1674,11 +1674,20 @@ Microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf24-nga-a100:
     make_kwargs: &env16-info-rew-env-make-kwargs
       <<: *env16-env-make-kwargs
       reward_weight: [1.0, 0, 0, 0, 0, 0, 0, 0, 0]
+    normalize: true
+    normalize_kwargs:
+      clip_reward: 1
+      emv_window_size: !!float 5e6
+      exponential_moving_mean_var_reward: true
+      gamma_reward: 1
+      norm_obs: false
+      norm_reward: true
   eval_hyperparams: &env16-info-rew-eval
     <<: *env16-eval
     env_overrides: &env16-info-rew-eval-env-overrides
       <<: *env16-eval-env-overrides
       info_rewards: null
+    only_checkpoint_best_policies: true
   policy_hyperparams: &env16-info-rew-policy
     <<: *env16-policy
     additional_critic_activation_functions:
@@ -1690,7 +1699,7 @@ Microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf24-nga-a100:
       - identity # ProduceHeavyUnitRewardFunction
       - identity # ProduceRangedUnitRewardFunction
       - identity # ScoreRewardFunction
-    output_activation_fn: tanh
+    output_activation_fn: identity
     shared_critic_head: true
 
 Microrts-agent: &microrts-agent
