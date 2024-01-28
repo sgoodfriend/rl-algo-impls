@@ -1,4 +1,5 @@
-from typing import Any, Dict, List, Optional
+from collections import defaultdict
+from typing import Any, DefaultDict, Dict, List, Optional
 
 import numpy as np
 
@@ -40,16 +41,15 @@ class MicrortsStatsRecorder(VectorWrapper):
             self.raw_rewards[idx].append(raw_rewards)
         for idx, done in enumerate(dones):
             if done:
-                raw_rewards = np.array(self.raw_rewards[idx]).sum(0)
-                raw_names = [str(rf) for rf in self.env.unwrapped.rfs]
-                # ScoreRewardFunction makes no sense to accumulate
-                microrts_stats = dict(
-                    (n, r)
-                    for n, r in zip(raw_names, raw_rewards)
-                    if n != "ScoreRewardFunction"
-                )
+                microrts_stats: DefaultDict[str, float] = defaultdict(float)
+                for r_step in self.raw_rewards[idx]:
+                    for n, r in r_step.items():
+                        # ScoreRewardFunction makes no sense to accumulate
+                        if n == "ScoreRewardFunction":
+                            continue
+                        microrts_stats[n] += r
 
-                winloss = raw_rewards[raw_names.index("RAIWinLossRewardFunction")]
+                winloss = microrts_stats["RAIWinLossRewardFunction"]
                 microrts_results = {
                     "win": int(winloss == 1),
                     "draw": int(winloss == 0),

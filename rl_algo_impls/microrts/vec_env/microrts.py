@@ -26,6 +26,7 @@ from rl_algo_impls.wrappers.additional_win_loss_reward import (
 )
 from rl_algo_impls.wrappers.episode_stats_writer import EpisodeStatsWriter
 from rl_algo_impls.wrappers.hwc_to_chw_observation import HwcToChwVectorObservation
+from rl_algo_impls.wrappers.info_rewards_wrapper import InfoRewardsWrapper
 from rl_algo_impls.wrappers.is_vector_env import IsVectorEnv
 from rl_algo_impls.wrappers.play_checkpoints_wrapper import PlayCheckpointsWrapper
 from rl_algo_impls.wrappers.score_reward_wrapper import ScoreRewardWrapper
@@ -74,7 +75,7 @@ def make_microrts_env(
         _,  # reference_bot,
         play_checkpoints_kwargs,
         _,  # additional_win_loss_smoothing_factor,
-        _,  # info_rewards,
+        info_rewards,
     ) = astuple(hparams)
 
     seed = config.seed(training=training)
@@ -230,5 +231,7 @@ def make_microrts_env(
         envs = AdditionalWinLossRewardWrapper(envs)
     if score_reward_kwargs:
         envs = ScoreRewardWrapper(envs, **score_reward_kwargs)
+    if info_rewards:
+        envs = InfoRewardsWrapper(envs, **info_rewards, flatten_info=True)
 
     return envs

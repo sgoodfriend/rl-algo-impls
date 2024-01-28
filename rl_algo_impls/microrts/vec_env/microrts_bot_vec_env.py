@@ -205,7 +205,7 @@ class MicroRTSBotGridVecEnv(MicroRTSInterface):
             score_reward = rewards[self.raw_names.index("ScoreRewardFunction")]
             delta_reward = score_reward - self.delta_rewards[idx]
             info = {
-                "raw_rewards": rewards,
+                "raw_rewards": {name: r for r, name in zip(rewards, self.raw_names)},
                 "score_reward": {
                     "reward": score_reward,
                     "delta_reward": delta_reward,

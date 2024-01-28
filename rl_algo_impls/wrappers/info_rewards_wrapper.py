@@ -17,6 +17,7 @@ class InfoRewardsWrapper(VectorWrapper):
         info_paths: List[List[str]],
         episode_end: Union[bool, List[bool]] = True,
         multiplier: Union[None, float, List[float]] = None,
+        flatten_info: bool = False,
     ):
         super().__init__(env)
         self.info_paths = info_paths
@@ -34,11 +35,16 @@ class InfoRewardsWrapper(VectorWrapper):
             )
         else:
             self.multiplier = None
+        self.flatten_info = flatten_info
 
     def step(self, action) -> VecEnvStepReturn:
         o, r, terminations, truncations, infos = super().step(action)
         r_to_add = np.stack(
-            [get_by_path(infos, i_path) for i_path in self.info_paths], axis=-1
+            [
+                get_by_path(infos, i_path, self.flatten_info)
+                for i_path in self.info_paths
+            ],
+            axis=-1,
         )
         if self.episode_end.any():
             r_to_add = np.where(
@@ -71,8 +77,15 @@ class InfoRewardsWrapper(VectorWrapper):
 
 
 def get_by_path(
-    info: Dict[str, Union[Dict, np.ndarray]], path: List[str]
+    info: Dict[str, Union[Dict, np.ndarray]], path: List[str], flatten: bool = False
 ) -> np.ndarray:
     if len(path) == 0:
         return info
-    return get_by_path(info[path[0]], path[1:])
+    _info = info[path[0]]
+    if flatten:
+        _info_dict: DefaultDict[str, List[float]] = collections.defaultdict(list)
+        for ind_info in _info:
+            for k, v in ind_info.items():
+                _info_dict[k].append(v)
+        _info = {k: np.array(v, dtype=np.float32) for k, v in _info_dict.items()}
+    return get_by_path(_info, path[1:])
