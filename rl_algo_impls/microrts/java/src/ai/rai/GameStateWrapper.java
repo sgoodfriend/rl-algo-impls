@@ -65,7 +65,7 @@ public class GameStateWrapper {
      * heavy, ranged
      * |10 | Relative Attack Position | 6 | -, north, east, south, west, ranged
      * |11 | ETA | -128 - +127 | ETA can be up to 200, so offset by -128 to fit
-     * |12 | Terrain | 2 | empty, wall
+     * |12 | Terrain | 2 | wall, empty
      * 
      * @param player
      * @return a vector observation for the specified player
@@ -164,7 +164,7 @@ public class GameStateWrapper {
         // Terrain
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
-                vectorObservation[player][12][y][x] = pgs.getTerrain(x, y);
+                vectorObservation[player][12][y][x] = 1 - pgs.getTerrain(x, y);
             }
         }
 
@@ -183,13 +183,13 @@ public class GameStateWrapper {
         int height = pgs.getHeight();
         int width = pgs.getWidth();
 
-        byte walls[] = new byte[height * width];
+        byte notWalls[] = new byte[height * width];
         for (int y = 0; y < height; ++y) {
             for (int x = 0; x < width; ++x) {
-                walls[y * width + x] = (byte) pgs.getTerrain(x, y);
+                notWalls[y * width + x] = (byte) (1 - pgs.getTerrain(x, y));
             }
         }
-        return walls;
+        return notWalls;
     }
 
     /**
