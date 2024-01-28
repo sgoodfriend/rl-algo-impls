@@ -372,7 +372,7 @@ Microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf24-nga-a100:
     gamma: 0.999
     n_steps: 512
   worker_hyperparams:
-    &microrts-env16-80m-ent5-lr3c-mgn2-shaped-rew-nga-a100-worker
+    &microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf24-nga-a100-worker
     n_rollout_workers: 8
     n_inference_workers: 3
 
@@ -383,7 +383,8 @@ Microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf24-nga-a10:
     &microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf24-nga-a10-algo
     <<: *microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf24-nga-a100-algo
     batch_size: 2304
-  worker_hyperparams: &microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf24-nga-a10-worker
+  worker_hyperparams:
+    &microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf24-nga-a10-worker
     <<: *microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf24-nga-a100-worker
     n_rollout_workers: 4
     n_inference_workers: 2
