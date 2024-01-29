@@ -309,7 +309,7 @@ Microrts-env16-240m-ent5-lr3c-mgn2-info-rew-vf50-nga-a100:
     only_checkpoint_best_policies: true
     score_function: mean
     skip_evaluate_at_start: true
-    step_freq: !!float 5e6
+    step_freq: !!float 10e6
   n_timesteps: !!float 240e6
   policy_hyperparams:
     actor_head_style: squeeze_unet
