@@ -208,7 +208,7 @@ Microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf24-nga-a100:
   device_hyperparams:
     set_float32_matmul_precision: high
     use_deterministic_algorithms: false
-  env_hyperparams:
+  env_hyperparams: &microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf24-nga-a100-env
     additional_win_loss_reward: false
     bots:
       coacAI: 6
@@ -428,3 +428,23 @@ Microrts-env16-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-4rw-a10:
   worker_hyperparams:
     &microrts-env16-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-4rw-a10-worker
     <<: *microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf24-nga-a10-worker
+
+Microrts-bw16a-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a100:
+  &microrts-bw16a-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a100
+  <<: *microrts-env16-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a100
+  env_hyperparams: &microrts-bw16a-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a100-env
+    <<: *microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf24-nga-a100-env
+    map_paths:
+      - maps/16x16/basesWorkers16x16A.xml
+
+Microrts-bw16a-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a10:
+  &microrts-bw16a-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a10
+  <<: *microrts-bw16a-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a100
+  algo_hyperparams:
+    &microrts-bw16a-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a10-algo
+    <<: *microrts-env16-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a10-algo
+
+Microrts-debug:
+  <<: *microrts-bw16a-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a10
+  n_timesteps: !!float 1e6
+  device: mps

@@ -1725,6 +1725,14 @@ Microrts-env16-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a100:
       - 0.2 # ProduceRangedUnitRewardFunction
       - 0.0 # ScoreRewardFunction
 
+Microrts-bw16a-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a100:
+  &microrts-bw16a-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a100
+  <<: *microrts-env16-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a100
+  env_hyperparams:
+    <<: *env16-info-rew-env
+    map_paths:
+      - maps/16x16/basesWorkers16x16A.xml
+
 Microrts-agent: &microrts-agent
   <<: *microrts-sp-dc-phases-defaults
   device: cpu
@@ -1758,7 +1766,7 @@ Microrts-agent: &microrts-agent
         #   use_paper_obs: true
 
 Microrts-debug:
-  <<: *microrts-env16-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a100
+  <<: *microrts-bw16a-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a100
   n_timesteps: !!float 1e6
   device: mps
   eval_hyperparams:
