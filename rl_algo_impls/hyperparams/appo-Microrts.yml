@@ -15,7 +15,7 @@ Microrts-env16-80m-ent5-lr3c-mgn2-shaped-rew-nga-a100:
     learning_rate: !!float 3e-4
     max_grad_norm: 2
     ppo2_vf_coef_halving: true
-    vf_coef: 0.5
+    vf_coef: 0.24
   checkpoints_kwargs:
     history_size: 2
   device_hyperparams:
@@ -322,7 +322,7 @@ Microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf24-nga-a100:
     n_episodes: 28
     score_function: mean
     skip_evaluate_at_start: true
-    step_freq: 2500000.0
+    step_freq: !!float 4e6
   n_timesteps: 80000000.0
   policy_hyperparams:
     actor_head_style: squeeze_unet
@@ -388,3 +388,11 @@ Microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf24-nga-a10:
     <<: *microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf24-nga-a100-worker
     n_rollout_workers: 4
     n_inference_workers: 2
+
+Microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf50-nga-a100:
+  &microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf50-nga-a100
+  <<: *microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf24-nga-a100
+  algo_hyperparams:
+    &microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf50-nga-a100-algo
+    <<: *microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf24-nga-a100-algo
+    vf_coef: 0.5

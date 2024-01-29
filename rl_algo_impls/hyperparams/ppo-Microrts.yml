@@ -1702,6 +1702,13 @@ Microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf24-nga-a100:
     output_activation_fn: identity
     shared_critic_head: true
 
+Microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf50-nga-a100:
+  &microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf50-nga-a100
+  <<: *microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf24-nga-a100
+  algo_hyperparams: &env16-info-rew-vf50-algo
+    <<: *env16-info-rew-vf24-algo
+    vf_coef: 0.5
+
 Microrts-agent: &microrts-agent
   <<: *microrts-sp-dc-phases-defaults
   device: cpu
