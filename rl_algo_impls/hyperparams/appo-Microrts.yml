@@ -396,3 +396,28 @@ Microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf50-nga-a100:
     &microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf50-nga-a100-algo
     <<: *microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf24-nga-a100-algo
     vf_coef: 0.5
+
+Microrts-env16-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a100:
+  &microrts-env16-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a100
+  <<: *microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf50-nga-a100
+  algo_hyperparams:
+    &microrts-env16-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a100-algo
+    <<: *microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf50-nga-a100-algo
+    multi_reward_weights:
+      - 1.0 # RAIWinLossRewardFunction
+      - 0.1 # ResourceGatherRewardFunction
+      - 0.05 # ProduceWorkerRewardFunction
+      - 0.05 # ProduceBuildingRewardFunction
+      - 0.1 # AttackRewardFunction
+      - 0.2 # ProduceLightUnitRewardFunction
+      - 0.2 # ProduceHeavyUnitRewardFunction
+      - 0.2 # ProduceRangedUnitRewardFunction
+      - 0.0 # ScoreRewardFunction
+
+Microrts-env16-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a10:
+  &microrts-env16-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a10
+  <<: *microrts-env16-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a100
+  algo_hyperparams:
+    &microrts-env16-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a10-algo
+    <<: *microrts-env16-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a100-algo
+    batch_size: 2304

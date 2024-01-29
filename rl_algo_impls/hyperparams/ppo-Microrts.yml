@@ -1709,6 +1709,22 @@ Microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf50-nga-a100:
     <<: *env16-info-rew-vf24-algo
     vf_coef: 0.5
 
+Microrts-env16-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a100:
+  &microrts-env16-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a100
+  <<: *microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf50-nga-a100
+  algo_hyperparams: &env16-05wb2lwr-vf50-algo
+    <<: *env16-info-rew-vf50-algo
+    multi_reward_weights:
+      - 1.0 # RAIWinLossRewardFunction
+      - 0.1 # ResourceGatherRewardFunction
+      - 0.05 # ProduceWorkerRewardFunction
+      - 0.05 # ProduceBuildingRewardFunction
+      - 0.1 # AttackRewardFunction
+      - 0.2 # ProduceLightUnitRewardFunction
+      - 0.2 # ProduceHeavyUnitRewardFunction
+      - 0.2 # ProduceRangedUnitRewardFunction
+      - 0.0 # ScoreRewardFunction
+
 Microrts-agent: &microrts-agent
   <<: *microrts-sp-dc-phases-defaults
   device: cpu
@@ -1742,7 +1758,7 @@ Microrts-agent: &microrts-agent
         #   use_paper_obs: true
 
 Microrts-debug:
-  <<: *microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf24-nga-a100
+  <<: *microrts-env16-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a100
   n_timesteps: !!float 1e6
   device: mps
   eval_hyperparams:
