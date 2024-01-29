@@ -421,3 +421,10 @@ Microrts-env16-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a10:
     &microrts-env16-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a10-algo
     <<: *microrts-env16-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a100-algo
     batch_size: 2304
+
+Microrts-env16-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-4rw-a10:
+  &microrts-env16-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-4rw-a10
+  <<: *microrts-env16-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a10
+  worker_hyperparams:
+    &microrts-env16-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-4rw-a10-worker
+    <<: *microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf24-nga-a10-worker
