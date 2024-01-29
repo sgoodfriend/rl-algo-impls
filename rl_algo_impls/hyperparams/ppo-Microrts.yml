@@ -1679,7 +1679,7 @@ Microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf24-nga-a100:
       clip_reward: 1
       emv_window_size: !!float 5e6
       exponential_moving_mean_var_reward: true
-      gamma_reward: 1
+      gamma_reward: 0.999
       norm_obs: false
       norm_reward: true
   eval_hyperparams: &env16-info-rew-eval
