@@ -575,4 +575,3 @@ Microrts-small-net-bw8a-40m-ent5-lr3c-05wb2lwr-vf50-nga-a10:
 
 Microrts-debug:
   <<: *microrts-small-net-bw8a-40m-ent5-lr3c-05wb2lwr-vf50-nga-a100
-  device: mps
