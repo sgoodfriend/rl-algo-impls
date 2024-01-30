@@ -10,7 +10,7 @@ class WorkerHyperparams:
     n_inference_workers: int = 1
     inference_gpu_indexes: Optional[List[int]] = None
     different_seeds_for_rollout_workers: bool = True
-    rollout_incremental_start_delay_seconds: float = 3.0
+    rollout_incremental_start_delay_seconds: float = 5.0
 
     @property
     def desired_num_accelerators(self) -> int:

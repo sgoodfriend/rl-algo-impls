@@ -546,22 +546,22 @@ Microrts-small-net-bw8a-40m-ent5-lr3c-05wb2lwr-vf50-nga-a10:
     &microrts-small-net-bw8a-40m-ent5-lr3c-05wb2lwr-vf50-nga-a10-env
     <<: *microrts-small-net-bw16a-80m-ent5-lr3c-05wb2lwr-vf50-nga-a100-env
     bots:
-      coacAI: 6
-      lightRushAI: 6
-      mayari: 6
-      workerRushAI: 6
+      coacAI: 12
+      lightRushAI: 12
+      mayari: 12
+      workerRushAI: 12
     make_kwargs:
       &microrts-small-net-bw8a-40m-ent5-lr3c-05wb2lwr-vf50-nga-a10-make-kwargs
       <<: *microrts-small-net-bw16a-80m-ent5-lr3c-05wb2lwr-vf50-nga-a100-env-make-kwargs
       map_paths:
         - maps/8x8/basesWorkers8x8A.xml
       max_steps: 3000
-      num_selfplay_envs: 52
+      num_selfplay_envs: 104
     map_paths:
       - maps/8x8/basesWorkers8x8A.xml
-    n_envs: 64
+    n_envs: 128
     play_checkpoints_kwargs:
-      n_envs_against_checkpoints: 12
+      n_envs_against_checkpoints: 24
     valid_sizes:
       - 8
   eval_hyperparams:
