@@ -371,6 +371,7 @@ Microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf24-nga-a100:
         6: 5
   process_mode: async
   rollout_hyperparams:
+    &microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf24-nga-a100-rollout
     full_batch_off_accelerator: true
     gae_lambda: 0.95
     gamma: 0.999
@@ -544,14 +545,23 @@ Microrts-small-net-bw8a-40m-ent5-lr3c-05wb2lwr-vf50-nga-a10:
   env_hyperparams:
     &microrts-small-net-bw8a-40m-ent5-lr3c-05wb2lwr-vf50-nga-a10-env
     <<: *microrts-small-net-bw16a-80m-ent5-lr3c-05wb2lwr-vf50-nga-a100-env
+    bots:
+      coacAI: 6
+      lightRushAI: 6
+      mayari: 6
+      workerRushAI: 6
     make_kwargs:
       &microrts-small-net-bw8a-40m-ent5-lr3c-05wb2lwr-vf50-nga-a10-make-kwargs
       <<: *microrts-small-net-bw16a-80m-ent5-lr3c-05wb2lwr-vf50-nga-a100-env-make-kwargs
       map_paths:
         - maps/8x8/basesWorkers8x8A.xml
       max_steps: 3000
+      num_selfplay_envs: 52
     map_paths:
       - maps/8x8/basesWorkers8x8A.xml
+    n_envs: 64
+    play_checkpoints_kwargs:
+      n_envs_against_checkpoints: 12
     valid_sizes:
       - 8
   eval_hyperparams:
@@ -567,6 +577,11 @@ Microrts-small-net-bw8a-40m-ent5-lr3c-05wb2lwr-vf50-nga-a10:
           - maps/8x8/basesWorkers8x8A.xml
         max_steps: 3000
   n_timesteps: !!float 40e6
+  rollout_hyperparams:
+    &microrts-small-net-bw8a-40m-ent5-lr3c-05wb2lwr-vf50-nga-a10-rollout
+    <<: *microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf24-nga-a100-rollout
+    full_batch_off_accelerator: false
+    n_steps: 256
   worker_hyperparams:
     &microrts-small-net-bw8a-40m-ent5-lr3c-05wb2lwr-vf50-nga-a10-worker
     <<: *microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf24-nga-a100-worker
@@ -588,4 +603,4 @@ Microrts-env16-160m-ent5d1-lr4d1-mgn2-05wb2lwr-vf50-nga-a10:
   n_timesteps: !!float 160e6
 
 Microrts-debug:
-  <<: *microrts-env16-160m-ent5d1-lr4d1-mgn2-05wb2lwr-vf50-nga-a10
+  <<: *microrts-small-net-bw8a-40m-ent5-lr3c-05wb2lwr-vf50-nga-a100
