@@ -1,3 +1,4 @@
+import asyncio
 from dataclasses import replace
 from typing import TYPE_CHECKING
 
@@ -25,20 +26,20 @@ class RolloutGeneratorPool:
         data_store_accessor: "AbstractDataStoreAccessor",
         tb_writer: "AbstractSummaryWrapper",
     ) -> None:
-        worker_hyperparams = config.worker_hyperparams
+        self.worker_hyperparams = config.worker_hyperparams
         seeds = (
             np.random.RandomState(args.seed).randint(
-                0, np.iinfo(np.int32).max, worker_hyperparams.n_rollout_workers
+                0, np.iinfo(np.int32).max, self.worker_hyperparams.n_rollout_workers
             )
             if (
                 args.seed is not None
-                and worker_hyperparams.n_rollout_workers > 1
-                and worker_hyperparams.different_seeds_for_rollout_workers
+                and self.worker_hyperparams.n_rollout_workers > 1
+                and self.worker_hyperparams.different_seeds_for_rollout_workers
             )
             else None
         )
         self.generator_actors = []
-        for rollout_worker_idx in range(worker_hyperparams.n_rollout_workers):
+        for rollout_worker_idx in range(self.worker_hyperparams.n_rollout_workers):
             if seeds is not None:
                 _args = replace(args, seed=seeds[rollout_worker_idx])
                 _config = replace(config, args=args)
@@ -61,6 +62,9 @@ class RolloutGeneratorPool:
         self._is_started = True
         for actor in self.generator_actors:
             actor.start.remote()
+            await asyncio.sleep(
+                self.worker_hyperparams.rollout_incremental_start_delay_seconds
+            )
 
     def env_spaces(self):
         return ray.get(self.generator_actors[0].env_spaces.remote())

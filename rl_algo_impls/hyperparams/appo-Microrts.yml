@@ -570,8 +570,6 @@ Microrts-small-net-bw8a-40m-ent5-lr3c-05wb2lwr-vf50-nga-a10:
   worker_hyperparams:
     &microrts-small-net-bw8a-40m-ent5-lr3c-05wb2lwr-vf50-nga-a10-worker
     <<: *microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf24-nga-a100-worker
-    n_rollout_workers: 12
-    n_inference_workers: 6
 
 Microrts-env16-160m-ent5d1-lr4d1-mgn2-05wb2lwr-vf50-nga-a10:
   &microrts-env16-160m-ent5d1-lr4d1-mgn2-05wb2lwr-vf50-nga-a10
