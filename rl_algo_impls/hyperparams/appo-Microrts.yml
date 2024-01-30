@@ -326,6 +326,7 @@ Microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf24-nga-a100:
     step_freq: !!float 4e6
   n_timesteps: 80000000.0
   policy_hyperparams:
+    &microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf24-nga-a100-policy
     actor_head_style: squeeze_unet
     additional_critic_activation_functions:
       - identity
@@ -484,6 +485,53 @@ Microrts-bw16a-10m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-2t4:
     n_inference_workers: 1
     inference_gpu_indexes: [1]
 
+Microrts-small-net-bw16a-80m-ent5-lr3c-05wb2lwr-vf50-nga-a100:
+  &microrts-small-net-bw16a-80m-ent5-lr3c-05wb2lwr-vf50-nga-a100
+  <<: *microrts-bw16a-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a100
+  algo_hyperparams:
+    &microrts-small-net-bw16a-80m-ent5-lr3c-05wb2lwr-vf50-nga-a100-algo
+    <<: *microrts-env16-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a100-algo
+    batch_size: 4096
+  env_hyperparams:
+    &microrts-small-net-bw16a-80m-ent5-lr3c-05wb2lwr-vf50-nga-a100-env
+    <<: *microrts-bw16a-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a100-env
+    bots:
+      coacAI: 4
+      lightRushAI: 4
+      mayari: 4
+      workerRushAI: 4
+    make_kwargs:
+      &microrts-small-net-bw16a-80m-ent5-lr3c-05wb2lwr-vf50-nga-a100-env-make-kwargs
+      <<: *microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf24-nga-a100-env-make-kwargs
+      num_selfplay_envs: 44
+    n_envs: 48
+    play_checkpoints_kwargs:
+      n_envs_against_checkpoints: 12
+  policy_hyperparams:
+    &microrts-small-net-bw16a-80m-ent5-lr3c-05wb2lwr-vf50-nga-a100-policy
+    <<: *microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf24-nga-a100-policy
+    channels_per_level:
+      - 128
+      - 128
+    decoder_residual_blocks_per_level:
+      - 3
+    deconv_strides_per_level:
+      - - 2
+        - 2
+    encoder_residual_blocks_per_level:
+      - 3
+      - 4
+    strides_per_level:
+      - 4
+
+Microrts-small-net-bw16a-80m-ent5-lr3c-05wb2lwr-vf50-nga-a10:
+  &microrts-small-net-bw16a-80m-ent5-lr3c-05wb2lwr-vf50-nga-a10
+  <<: *microrts-small-net-bw16a-80m-ent5-lr3c-05wb2lwr-vf50-nga-a100
+  algo_hyperparams:
+    &microrts-small-net-bw16a-80m-ent5-lr3c-05wb2lwr-vf50-nga-a10-algo
+    <<: *microrts-small-net-bw16a-80m-ent5-lr3c-05wb2lwr-vf50-nga-a100-algo
+    batch_size: 3072
+
 Microrts-debug:
-  <<: *microrts-bw16a-10m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-2t4
+  <<: *microrts-small-net-bw16a-80m-ent5-lr3c-05wb2lwr-vf50-nga-a10
   device: mps
