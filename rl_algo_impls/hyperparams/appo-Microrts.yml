@@ -280,6 +280,7 @@ Microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf24-nga-a100:
     &microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf24-nga-a100-eval
     deterministic: false
     env_overrides:
+      &microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf24-nga-a100-eval-env
       additional_win_loss_reward: false
       bots:
         coacAI: 2
@@ -298,6 +299,7 @@ Microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf24-nga-a100:
         workerRushAI: 2
       info_rewards: null
       make_kwargs:
+        &microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf24-nga-a100-eval-make-kwargs
         bot_envs_alternate_player: false
         map_paths:
           - maps/16x16/basesWorkers16x16A.xml
@@ -503,10 +505,10 @@ Microrts-small-net-bw16a-80m-ent5-lr3c-05wb2lwr-vf50-nga-a100:
     make_kwargs:
       &microrts-small-net-bw16a-80m-ent5-lr3c-05wb2lwr-vf50-nga-a100-env-make-kwargs
       <<: *microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf24-nga-a100-env-make-kwargs
-      num_selfplay_envs: 44
+      num_selfplay_envs: 40
     n_envs: 48
     play_checkpoints_kwargs:
-      n_envs_against_checkpoints: 12
+      n_envs_against_checkpoints: 8
   policy_hyperparams:
     &microrts-small-net-bw16a-80m-ent5-lr3c-05wb2lwr-vf50-nga-a100-policy
     <<: *microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf24-nga-a100-policy
@@ -532,6 +534,40 @@ Microrts-small-net-bw16a-80m-ent5-lr3c-05wb2lwr-vf50-nga-a10:
     <<: *microrts-small-net-bw16a-80m-ent5-lr3c-05wb2lwr-vf50-nga-a100-algo
     batch_size: 2048
 
+Microrts-small-net-bw8a-40m-ent5-lr3c-05wb2lwr-vf50-nga-a10:
+  &microrts-small-net-bw8a-40m-ent5-lr3c-05wb2lwr-vf50-nga-a100
+  <<: *microrts-small-net-bw16a-80m-ent5-lr3c-05wb2lwr-vf50-nga-a100
+  algo_hyperparams:
+    &microrts-small-net-bw8a-40m-ent5-lr3c-05wb2lwr-vf50-nga-a10-algo
+    <<: *microrts-small-net-bw16a-80m-ent5-lr3c-05wb2lwr-vf50-nga-a100-algo
+    batch_size: 8192
+  env_hyperparams:
+    &microrts-small-net-bw8a-40m-ent5-lr3c-05wb2lwr-vf50-nga-a10-env
+    <<: *microrts-small-net-bw16a-80m-ent5-lr3c-05wb2lwr-vf50-nga-a100-env
+    make_kwargs:
+      &microrts-small-net-bw8a-40m-ent5-lr3c-05wb2lwr-vf50-nga-a10-make-kwargs
+      <<: *microrts-small-net-bw16a-80m-ent5-lr3c-05wb2lwr-vf50-nga-a100-env-make-kwargs
+      map_paths:
+        - maps/8x8/basesWorkers8x8A.xml
+      max_steps: 3000
+    map_paths:
+      - maps/8x8/basesWorkers8x8A.xml
+    valid_sizes:
+      - 8
+  eval_hyperparams:
+    &microrts-small-net-bw8a-40m-ent5-lr3c-05wb2lwr-vf50-nga-a10-eval
+    <<: *microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf24-nga-a100-eval
+    env_overrides:
+      &microrts-small-net-bw8a-40m-ent5-lr3c-05wb2lwr-vf50-nga-a10-eval-env
+      <<: *microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf24-nga-a100-eval-env
+      make_kwargs:
+        &microrts-small-net-bw8a-40m-ent5-lr3c-05wb2lwr-vf50-nga-a10-eval-make-kwargs
+        <<: *microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf24-nga-a100-eval-make-kwargs
+        map_paths:
+          - maps/8x8/basesWorkers8x8A.xml
+        max_steps: 3000
+  n_timesteps: !!float 40e6
+
 Microrts-debug:
-  <<: *microrts-small-net-bw16a-80m-ent5-lr3c-05wb2lwr-vf50-nga-a10
+  <<: *microrts-small-net-bw8a-40m-ent5-lr3c-05wb2lwr-vf50-nga-a100
   device: mps
