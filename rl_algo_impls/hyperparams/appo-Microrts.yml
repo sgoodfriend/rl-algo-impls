@@ -468,5 +468,4 @@ Microrts-bw16a-15m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-2t4:
 
 Microrts-debug:
   <<: *microrts-bw16a-15m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-2t4
-  n_timesteps: !!float 1e6
   device: mps
