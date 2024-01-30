@@ -3,7 +3,7 @@ import logging
 import os
 import shutil
 from dataclasses import asdict
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Set
 
 from torch.utils.tensorboard.writer import SummaryWriter
 
@@ -37,6 +37,7 @@ class InProcessSummaryWrapper(AbstractSummaryWrapper):
 
         self.tb_writer = SummaryWriter(config.tensorboard_summary_path)
         self.timesteps_elapsed = 0
+        self.paths_live_saving: Set[str] = set()
 
     def on_timesteps_elapsed(self, timesteps_elapsed: int) -> None:
         self.timesteps_elapsed = timesteps_elapsed
@@ -69,11 +70,16 @@ class InProcessSummaryWrapper(AbstractSummaryWrapper):
     def make_wandb_archive(self, path: str) -> None:
         if self.wandb_enabled:
             filename = os.path.split(path)[-1]
+            archive_path = os.path.join(wandb.run.dir, filename)  # type: ignore
             shutil.make_archive(
-                os.path.join(wandb.run.dir, filename),  # type: ignore
+                archive_path,  # type: ignore
                 "zip",
                 path,
             )
+            save_path = f"{archive_path}.zip"
+            if not save_path in self.paths_live_saving:
+                self.paths_live_saving.add(save_path)
+                wandb.save(save_path, policy="live")
 
     def log_video(self, video_path: str, fps: int) -> None:
         if self.wandb_enabled:

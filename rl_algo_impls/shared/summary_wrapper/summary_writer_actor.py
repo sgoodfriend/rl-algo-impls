@@ -3,7 +3,7 @@ import logging
 import os
 import shutil
 from dataclasses import asdict
-from typing import Any, Dict
+from typing import Any, Dict, Set
 
 import ray
 from torch.utils.tensorboard.writer import SummaryWriter
@@ -35,6 +35,7 @@ class SummaryWriterActor:
 
         self.tb_writer = SummaryWriter(config.tensorboard_summary_path)
         self.timesteps_elapsed = 0
+        self.paths_live_saving: Set[str] = set()
 
     def close(self) -> None:
         self.tb_writer.close()
@@ -58,11 +59,16 @@ class SummaryWriterActor:
     def make_wandb_archive(self, path: str) -> None:
         if self.wandb_enabled:
             filename = os.path.split(path)[-1]
+            archive_path = os.path.join(wandb.run.dir, filename)  # type: ignore
             shutil.make_archive(
-                os.path.join(wandb.run.dir, filename),  # type: ignore
+                archive_path,
                 "zip",
                 path,
             )
+            save_path = f"{archive_path}.zip"
+            if not save_path in self.paths_live_saving:
+                self.paths_live_saving.add(save_path)
+                wandb.save(save_path, policy="live")
 
     def log_video(self, video_path: str, fps: int, global_step: int) -> None:
         if self.wandb_enabled:

@@ -117,7 +117,7 @@ class RemoteInferencePolicy(AbstractPolicy, Generic[ObsType]):
             actor.reset_noise.remote(self.policy_id)
 
     def save(self, path: str) -> None:
-        return self.assigned_policy_actor.save.remote(self.policy_id, path)
+        ray.get(self.assigned_policy_actor.save.remote(self.policy_id, path))
 
     def set_state(self, state: Any) -> None:
         if self.requires_to_cpu:
