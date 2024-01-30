@@ -573,5 +573,21 @@ Microrts-small-net-bw8a-40m-ent5-lr3c-05wb2lwr-vf50-nga-a10:
     n_rollout_workers: 12
     n_inference_workers: 6
 
+Microrts-env16-160m-ent5d1-lr4d1-mgn2-05wb2lwr-vf50-nga-a10:
+  &microrts-env16-160m-ent5d1-lr4d1-mgn2-05wb2lwr-vf50-nga-a10
+  <<: *microrts-env16-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a10
+  algo_hyperparams:
+    &microrts-env16-160m-ent5d1-lr4d1-mgn2-05wb2lwr-vf50-nga-a10-algo
+    <<: *microrts-env16-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a10-algo
+    learning_rate: !!float 4e-4
+  hyperparam_transitions_kwargs:
+    phases:
+      - ent_coef: !!float 5e-3
+        learning_rate: !!float 4e-4
+      - ent_coef: !!float 1e-3
+        learning_rate: !!float 1e-4
+    durations: [0, 1, 0]
+  n_timesteps: !!float 160e6
+
 Microrts-debug:
-  <<: *microrts-small-net-bw8a-40m-ent5-lr3c-05wb2lwr-vf50-nga-a100
+  <<: *microrts-env16-160m-ent5d1-lr4d1-mgn2-05wb2lwr-vf50-nga-a10
