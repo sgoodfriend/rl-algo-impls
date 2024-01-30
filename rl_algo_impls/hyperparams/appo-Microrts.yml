@@ -444,7 +444,24 @@ Microrts-bw16a-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a10:
     &microrts-bw16a-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a10-algo
     <<: *microrts-env16-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a10-algo
 
-Microrts-debug:
+Microrts-bw16a-15m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-2t4:
+  &microrts-bw16a-15m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-2t4
   <<: *microrts-bw16a-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a10
+  algo_hyperparams:
+    &microrts-bw16a-15m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-2t4-algo
+    <<: *microrts-bw16a-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a10-algo
+    batch_size: 1152
+  n_timesteps: !!float 15e6
+  worker_hyperparams:
+    &microrts-bw16a-15m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-2t4-worker
+    <<: *microrts-env16-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-4rw-a10-worker
+    n_rollout_workers: 2
+    rollout_gpu_indexes: [1]
+    evaluator_gpu_index: 1
+    n_inference_workers: 1
+    inference_gpu_indexes: [1]
+
+Microrts-debug:
+  <<: *microrts-bw16a-15m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-2t4
   n_timesteps: !!float 1e6
   device: mps
