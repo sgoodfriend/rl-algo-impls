@@ -384,7 +384,7 @@ Microrts-bw16a-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a100:
   <<: *microrts-env16-240m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a100
   env_hyperparams:
     &microrts-bw16a-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a100-env
-    <<: *microrts-env16-240m-ent5-lr3c-mgn2-info-rew-vf50-nga-a100env
+    <<: *microrts-env16-240m-ent5-lr3c-mgn2-info-rew-vf50-nga-a100-env
     map_paths:
       - maps/16x16/basesWorkers16x16A.xml
   n_timesteps: !!float 80e6
