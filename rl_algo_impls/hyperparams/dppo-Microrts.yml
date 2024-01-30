@@ -160,7 +160,8 @@ Microrts-env16-240m-ent5-lr3c-mgn2-info-rew-vf50-nga-a100:
     - microrts_results
     - results
     - action_mask_stats
-  algo_hyperparams: &microrts-env16-240m-ent5-lr3c-mgn2-info-rew-vf50-nga-a100-algo
+  algo_hyperparams:
+    &microrts-env16-240m-ent5-lr3c-mgn2-info-rew-vf50-nga-a100-algo
     batch_size: 4608
     clip_range: 0.1
     clip_range_vf: null
@@ -196,7 +197,8 @@ Microrts-env16-240m-ent5-lr3c-mgn2-info-rew-vf50-nga-a100:
   device_hyperparams:
     set_float32_matmul_precision: high
     use_deterministic_algorithms: false
-  env_hyperparams: &microrts-env16-240m-ent5-lr3c-mgn2-info-rew-vf50-nga-a100-env
+  env_hyperparams:
+    &microrts-env16-240m-ent5-lr3c-mgn2-info-rew-vf50-nga-a100-env
     additional_win_loss_reward: false
     bots:
       coacAI: 6
@@ -366,7 +368,8 @@ Microrts-env16-240m-ent5-lr3c-mgn2-info-rew-vf50-nga-a100:
 Microrts-env16-240m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a100:
   &microrts-env16-240m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a100
   <<: *microrts-env16-240m-ent5-lr3c-mgn2-info-rew-vf50-nga-a100
-  algo_hyperparams: &microrts-env16-240m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a100-algo
+  algo_hyperparams:
+    &microrts-env16-240m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a100-algo
     <<: *microrts-env16-240m-ent5-lr3c-mgn2-info-rew-vf50-nga-a100-algo
     multi_reward_weights:
       - 1.0 # RAIWinLossRewardFunction
@@ -382,9 +385,23 @@ Microrts-env16-240m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a100:
 Microrts-bw16a-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a100:
   &microrts-bw16a-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a100
   <<: *microrts-env16-240m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a100
-  env_hyperparams:
-    &microrts-bw16a-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a100-env
+  env_hyperparams: &microrts-bw16a-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a100-env
     <<: *microrts-env16-240m-ent5-lr3c-mgn2-info-rew-vf50-nga-a100-env
     map_paths:
       - maps/16x16/basesWorkers16x16A.xml
   n_timesteps: !!float 80e6
+
+Microrts-env16-240m-ent5d1-lr4d1-mgn2-05wb2lwr-vf50-nga-a100:
+  &microrts-env16-240m-ent5d1-lr4d1-mgn2-05wb2lwr-vf50-nga-a100
+  <<: *microrts-env16-240m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a100
+  algo_hyperparams:
+    &microrts-env16-240m-ent5d1-lr4d1-mgn2-05wb2lwr-vf50-nga-a100-algo
+    <<: *microrts-env16-240m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a100-algo
+    learning_rate: 0.0004
+  hyperparam_transitions_kwargs:
+    phases:
+      - ent_coef: !!float 5e-3
+        learning_rate: !!float 4e-4
+      - ent_coef: !!float 1e-3
+        learning_rate: !!float 1e-4
+    durations: [0, 1, 0]
