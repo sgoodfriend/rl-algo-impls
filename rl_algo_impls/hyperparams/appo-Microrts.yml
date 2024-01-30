@@ -567,6 +567,11 @@ Microrts-small-net-bw8a-40m-ent5-lr3c-05wb2lwr-vf50-nga-a10:
           - maps/8x8/basesWorkers8x8A.xml
         max_steps: 3000
   n_timesteps: !!float 40e6
+  worker_hyperparams:
+    &microrts-small-net-bw8a-40m-ent5-lr3c-05wb2lwr-vf50-nga-a10-worker
+    <<: *microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf24-nga-a100-worker
+    n_rollout_workers: 8
+    n_inference_workers: 4
 
 Microrts-debug:
   <<: *microrts-small-net-bw8a-40m-ent5-lr3c-05wb2lwr-vf50-nga-a100
