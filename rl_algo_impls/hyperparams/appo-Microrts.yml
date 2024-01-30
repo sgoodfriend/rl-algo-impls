@@ -236,6 +236,7 @@ Microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf24-nga-a100:
         - - raw_rewards
           - ScoreRewardFunction
     make_kwargs:
+      &microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf24-nga-a100-env-make-kwargs
       bot_envs_alternate_player: true
       map_paths:
         - maps/16x16/basesWorkers16x16.xml
@@ -444,21 +445,38 @@ Microrts-bw16a-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a10:
     &microrts-bw16a-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a10-algo
     <<: *microrts-env16-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a10-algo
 
-Microrts-bw16a-15m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-2t4:
-  &microrts-bw16a-15m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-2t4
+Microrts-bw16a-10m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-2t4:
+  &microrts-bw16a-10m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-2t4
   <<: *microrts-bw16a-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a10
   algo_hyperparams:
-    &microrts-bw16a-15m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-2t4-algo
+    &microrts-bw16a-10m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-2t4-algo
     <<: *microrts-bw16a-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a10-algo
-    batch_size: 1152
+    batch_size: 1024
+  checkpoints_kwargs:
+    history_size: 1
+  env_hyperparams: &microrts-bw16a-10m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-2t4-env
+    <<: *microrts-bw16a-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a100-env
+    bots:
+      coacAI: 4
+      lightRushAI: 4
+      mayari: 4
+      workerRushAI: 4
+    make_kwargs:
+      &microrts-bw16a-10m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-2t4-env-make-kwargs
+      <<: *microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf24-nga-a100-env-make-kwargs
+      num_selfplay_envs: 44
+    n_envs: 48
+    play_checkpoints_kwargs:
+      n_envs_against_checkpoints: 12
   eval_hyperparams:
-    &microrts-bw16a-15m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-2t4-eval
+    &microrts-bw16a-10m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-2t4-eval
     <<: *microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf24-nga-a100-eval
     skip_evaluate_at_start: true
     step_freq: !!float 5e6
-  n_timesteps: !!float 15e6
+  evaluate_after_training: false
+  n_timesteps: !!float 10e6
   worker_hyperparams:
-    &microrts-bw16a-15m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-2t4-worker
+    &microrts-bw16a-10m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-2t4-worker
     <<: *microrts-env16-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-4rw-a10-worker
     n_rollout_workers: 2
     rollout_gpu_indexes: [1]
@@ -467,5 +485,5 @@ Microrts-bw16a-15m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-2t4:
     inference_gpu_indexes: [1]
 
 Microrts-debug:
-  <<: *microrts-bw16a-15m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-2t4
+  <<: *microrts-bw16a-10m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-2t4
   device: mps

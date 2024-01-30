@@ -65,6 +65,7 @@ class Hyperparams:
     lr_by_kl_kwargs: Dict[str, Any] = dataclasses.field(default_factory=dict)
     checkpoints_kwargs: Dict[str, Any] = dataclasses.field(default_factory=dict)
     worker_hyperparams: Dict[str, Any] = dataclasses.field(default_factory=dict)
+    evaluate_after_training: bool = True
 
     @classmethod
     def from_dict_with_extra_fields(
@@ -105,6 +106,10 @@ class Config:
     @property
     def n_timesteps(self) -> int:
         return int(self.hyperparams.n_timesteps)
+
+    @property
+    def evaluate_after_training(self) -> bool:
+        return self.hyperparams.evaluate_after_training
 
     @property
     def env_hyperparams(self) -> Dict[str, Any]:

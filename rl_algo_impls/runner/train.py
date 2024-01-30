@@ -164,18 +164,21 @@ def train(args: TrainArgs):
 
     (best_eval_stats,) = data_store_accessor.close()
 
-    eval_stats = evaluator.evaluate_latest_policy(
-        algo, n_episodes=10, print_returns=True
-    )
+    log_dict: Dict[str, Any] = {}
+    hparam_metric_dict: Dict[str, float] = {}
+    if config.evaluate_after_training:
+        eval_stats = evaluator.evaluate_latest_policy(
+            algo, n_episodes=10, print_returns=True
+        )
+        log_dict["eval"] = eval_stats._asdict()
+        hparam_metric_dict.update(
+            {
+                "hparam/last_mean": eval_stats.score.mean,
+                "hparam/last_result": eval_stats.score.mean - eval_stats.score.std,
+            }
+        )
     evaluator.save(algo.policy, config.model_dir_path(best=False))
 
-    log_dict: Dict[str, Any] = {
-        "eval": eval_stats._asdict(),
-    }
-    hparam_metric_dict = {
-        "hparam/last_mean": eval_stats.score.mean,
-        "hparam/last_result": eval_stats.score.mean - eval_stats.score.std,
-    }
     if best_eval_stats:
         log_dict["best_eval"] = best_eval_stats._asdict()
         hparam_metric_dict.update(
