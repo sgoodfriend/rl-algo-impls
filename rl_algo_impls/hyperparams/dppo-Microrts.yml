@@ -154,12 +154,13 @@ Microrts-env16-240m-ent5-lr3c-mgn2-shaped-rew-nga-a100:
   n_timesteps: !!float 240e6
 
 Microrts-env16-240m-ent5-lr3c-mgn2-info-rew-vf50-nga-a100:
+  &microrts-env16-240m-ent5-lr3c-mgn2-info-rew-vf50-nga-a100
   additional_keys_to_log:
     - microrts_stats
     - microrts_results
     - results
     - action_mask_stats
-  algo_hyperparams:
+  algo_hyperparams: &microrts-env16-240m-ent5-lr3c-mgn2-info-rew-vf50-nga-a100-algo
     batch_size: 4608
     clip_range: 0.1
     clip_range_vf: null
@@ -195,7 +196,7 @@ Microrts-env16-240m-ent5-lr3c-mgn2-info-rew-vf50-nga-a100:
   device_hyperparams:
     set_float32_matmul_precision: high
     use_deterministic_algorithms: false
-  env_hyperparams:
+  env_hyperparams: &microrts-env16-240m-ent5-lr3c-mgn2-info-rew-vf50-nga-a100-env
     additional_win_loss_reward: false
     bots:
       coacAI: 6
@@ -361,3 +362,29 @@ Microrts-env16-240m-ent5-lr3c-mgn2-info-rew-vf50-nga-a100:
   worker_hyperparams:
     n_inference_workers: 3
     n_rollout_workers: 8
+
+Microrts-env16-240m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a100:
+  &microrts-env16-240m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a100
+  <<: *microrts-env16-240m-ent5-lr3c-mgn2-info-rew-vf50-nga-a100
+  algo_hyperparams: &microrts-env16-240m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a100-algo
+    <<: *microrts-env16-240m-ent5-lr3c-mgn2-info-rew-vf50-nga-a100-algo
+    multi_reward_weights:
+      - 1.0 # RAIWinLossRewardFunction
+      - 0.1 # ResourceGatherRewardFunction
+      - 0.05 # ProduceWorkerRewardFunction
+      - 0.05 # ProduceBuildingRewardFunction
+      - 0.1 # AttackRewardFunction
+      - 0.2 # ProduceLightUnitRewardFunction
+      - 0.2 # ProduceHeavyUnitRewardFunction
+      - 0.2 # ProduceRangedUnitRewardFunction
+      - 0.0 # ScoreRewardFunction
+
+Microrts-bw16a-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a100:
+  &microrts-bw16a-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a100
+  <<: *microrts-env16-240m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a100
+  env_hyperparams:
+    &microrts-bw16a-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a100-env
+    <<: *microrts-env16-240m-ent5-lr3c-mgn2-info-rew-vf50-nga-a100env
+    map_paths:
+      - maps/16x16/basesWorkers16x16A.xml
+  n_timesteps: !!float 80e6
