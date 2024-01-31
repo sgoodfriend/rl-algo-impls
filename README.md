@@ -15,11 +15,35 @@ Implementations of reinforcement learning algorithms.
     - [v0.0.8](https://api.wandb.ai/links/sgoodfriend/jh3cqbon)
     - [v0.0.4](https://api.wandb.ai/links/sgoodfriend/09frjfcs)
   - [procgen (starpilot, hard)](https://api.wandb.ai/links/sgoodfriend/v1p4976e) and [procgen (easy)](https://api.wandb.ai/links/sgoodfriend/f3w1hwyb): *procgen is no longer supported by this library given its dependence on gym 0.21*
-  - [GridNet MicroRTS](https://api.wandb.ai/links/sgoodfriend/zdee7ovm)
-  - [MicroRTS Selfplay](https://api.wandb.ai/links/sgoodfriend/5qjlr8ob)
-  - [Lux AI Season 2 Training](https://api.wandb.ai/links/sgoodfriend/0yrxywnd)
-  - [Lux AI Season 2 NeurIPS Stage 2 Training](https://api.wandb.ai/links/sgoodfriend/ssxupw6m) & [Follow-up](https://api.wandb.ai/links/sgoodfriend/8ozskssn)
+  - microRTS:
+    - [GridNet microRTS](https://api.wandb.ai/links/sgoodfriend/zdee7ovm)
+    - [microRTS Selfplay](https://api.wandb.ai/links/sgoodfriend/5qjlr8ob)
+    - [APPO microRTS env16](https://wandb.ai/sgoodfriend/rl-algo-impls-microrts-2024/reports/APPO-microRTS-env16--Vmlldzo2Njc2NzA2): 2024 training on the public competition maps up to size 16x16 using Asynchronous Proximal Policy Optimization (APPO)
+    - [DPPO microRTS env16](https://wandb.ai/sgoodfriend/rl-algo-impls-microrts-2024/reports/dppo-Microrts-env16-240m-ent5-lr3c-mgn2-info-rew-vf50-nga-a100--Vmlldzo2Njc0ODgy): Training with 4x Nvidia A100 GPUs on public competition maps up to size 16x16 using Distributed Proximal Policy Optimization (DPPO) for less than a day.
+    - [APPO microRTS basesWorkers16x16A](https://wandb.ai/sgoodfriend/rl-algo-impls-microrts-2024/reports/APPO-microRTS-bw16a-A10-OR-2xT4--Vmlldzo2Njc3MTk5): APPO training on a single map basesWorkers16x16A, similar to [Gym-μRTS paper](https://github.com/Farama-Foundation/MicroRTS-Py). Trains in 30 hours on an Nvidia A10.
+    - [APPO microRTS baseWorkers8x8A](https://wandb.ai/sgoodfriend/rl-algo-impls-microrts-2024/reports/APPO-microRTS-basesWorkers8x8A-A10-OR-2xT4--Vmlldzo2Njg4MzU4): APPO training on a single map baseWorkers8x8A. Intended for quick, limited-resource training.
+  - Lux Season 2
+    - [Lux AI Season 2 Training](https://api.wandb.ai/links/sgoodfriend/0yrxywnd)
+    - [Lux AI Season 2 NeurIPS Stage 2 Training](https://api.wandb.ai/links/sgoodfriend/ssxupw6m) & [Follow-up](https://api.wandb.ai/links/sgoodfriend/8ozskssn)
 - [Huggingface models](https://huggingface.co/models?other=rl-algo-impls)
+
+## Features
+Supported algorithms:
+- Proximal Policy Optimization (PPO)
+  - Asynchronous Proximal Policy Optimization (APPO) uses [Ray](https://www.ray.io/) to decouple rollout generation from the learner. Rollout, policy inference, and evaluation are each Ray actors that can be independently scaled depending on the environment. Workers can use the same GPU as the learner or can be assigned to other GPUs to maximize learning throughput.
+  - Distributed Proximal Policy Optimization (DPPO) extends APPO with the [Hugging Face Accelerate](https://huggingface.co/docs/accelerate/index) library to support multi-GPU learning using PyTorch's DistributedDataParallel.
+- Advantage Actor-Critic (A2C)
+- Behavior Cloning (ACBC): While not a reinforcement learning algorithm, it's included as a model pretrainer for the other algorithms.
+
+Supported environments:
+- [microRTS](https://github.com/Farama-Foundation/MicroRTS): small real-time strategy (RTS) game implementation in Java. [MicroRTS-Py](https://github.com/Farama-Foundation/MicroRTS-Py) was used as a started point for its vectorized gym environment and extended.
+- [Lux AI Season 2](https://www.kaggle.com/competitions/lux-ai-season-2-neurips-stage-2/overview): turn-based resource management game on a larger grid-based map (48x48 and later 64x64) than the original Lux AI game.
+- Classic, Box2D, MuJoCo, and Atari envs from [gymnasium](https://gymnasium.farama.org/)
+
+Removed support:
+  - Deep-Q Neural Network (DQN): Removed in v0.2.0 because rollout generation redesign doesn't support a replay buffer yet.
+  - procgen: Removed in [2ee4de7](https://github.com/sgoodfriend/rl-algo-impls/commit/2ee4de7e4583c34359a55d839c6b8e84da6746f6) because of gym 0.21 dependency. v0.1.0 uses gymnasium.
+  - PyBullet: Removed in [2ee4de7](https://github.com/sgoodfriend/rl-algo-impls/commit/2ee4de7e4583c34359a55d839c6b8e84da6746f6) because of gym dependency.
 
 ## Prerequisites: Weights & Biases (WandB)
 
@@ -45,7 +69,7 @@ cost ($0.60/hr).
 git clone https://github.com/sgoodfriend/rl-algo-impls.git
 cd rl-algo-impls
 # git checkout BRANCH_NAME if running on non-main branch
-bash ./scripts/setup.sh # End of script will prompt for WandB API key
+bash ./scripts/setup.sh [--microrts] [--lux] # End of script will prompt for WandB API key
 bash ./scripts/benchmark.sh [-a {"ppo"}] [-e ENVS] [-j {6}] [-p {rl-algo-impls-benchmarks}] [-s {"1 2 3"}]
 ```
 

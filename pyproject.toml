@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "rl_algo_impls"
-version = "0.1.2"
+version = "0.2.0"
 description = "Implementations of reinforcement learning algorithms"
 authors = ["Scott Goodfriend <goodfriend.scott@gmail.com>"]
 license = "MIT"
@@ -63,10 +63,8 @@ flake8-bugbear = "*"
 isort = "*"
 
 [tool.poetry.extras]
-test = ["pytest", "black", "mypy", "flake8", "flake8-bugbear", "isort"]
 extra = ["cmake", "swig", "AutoROM", "pyglet", "scikit-learn", "matplotlib", "huggingface-hub", "pandas", "torchviz", "thop", "onnx", "glfw", "mujoco"]
 microrts = ["JPype1", "peewee", "PettingZoo"]
-all = ["test", "extra", "microrts"]
 
 lux = ["luxai_s2", "ray", "kaggle", "polars", "typing_extensions", "juxai-s2", "batchrenorm"]
 
