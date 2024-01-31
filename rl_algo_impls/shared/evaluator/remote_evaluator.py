@@ -24,22 +24,9 @@ class RemoteEvaluator(AbstractEvaluator):
         data_store_accessor: AbstractDataStoreAccessor,
         tb_writer: AbstractSummaryWrapper,
         self_play_wrapper: Optional[SelfPlayWrapper] = None,
-        best_model_path: Optional[str] = None,
         step_freq: Union[int, float] = 50_000,
-        n_episodes: int = 10,
-        save_best: bool = True,
-        deterministic: bool = True,
-        only_record_video_on_best: bool = True,
-        video_dir: Optional[str] = None,
-        max_video_length: int = 9000,
-        ignore_first_episode: bool = False,
-        additional_keys_to_log: Optional[List[str]] = None,
-        score_function: str = "mean-std",
-        wandb_enabled: bool = False,
-        score_threshold: Optional[float] = None,
         skip_evaluate_at_start: bool = False,
-        only_checkpoint_best_policies: bool = False,
-        latest_model_path: Optional[str] = None,
+        **kwargs,
     ) -> None:
         super().__init__(int(step_freq), skip_evaluate_at_start)
         assert (
@@ -47,23 +34,7 @@ class RemoteEvaluator(AbstractEvaluator):
         ), "SelfPlayWrapper not supported for RemoteEvaluator"
         self.data_store_accessor = data_store_accessor
         self.eval_actor = EvaluatorActor.remote(
-            config,
-            data_store_accessor,
-            tb_writer,
-            best_model_path=best_model_path,
-            n_episodes=n_episodes,
-            save_best=save_best,
-            deterministic=deterministic,
-            only_record_video_on_best=only_record_video_on_best,
-            video_dir=video_dir,
-            max_video_length=max_video_length,
-            ignore_first_episode=ignore_first_episode,
-            additional_keys_to_log=additional_keys_to_log,
-            score_function=score_function,
-            wandb_enabled=wandb_enabled,
-            score_threshold=score_threshold,
-            only_checkpoint_best_policies=only_checkpoint_best_policies,
-            latest_model_path=latest_model_path,
+            config, data_store_accessor, tb_writer, **kwargs
         )
 
     @property

@@ -23,20 +23,7 @@ class EvaluatorActor:
         config: "Config",
         data_store_accessor: "AbstractDataStoreAccessor",
         tb_writer: "AbstractSummaryWrapper",
-        best_model_path: Optional[str] = None,
-        n_episodes: int = 10,
-        save_best: bool = True,
-        deterministic: bool = True,
-        only_record_video_on_best: bool = True,
-        video_dir: Optional[str] = None,
-        max_video_length: int = 9000,
-        ignore_first_episode: bool = False,
-        additional_keys_to_log: Optional[List[str]] = None,
-        score_function: str = "mean-std",
-        wandb_enabled: bool = False,
-        score_threshold: Optional[float] = None,
-        only_checkpoint_best_policies: bool = False,
-        latest_model_path: Optional[str] = None,
+        **kwargs,
     ) -> None:
         from rl_algo_impls.utils.ray import init_ray_actor
 
@@ -51,25 +38,7 @@ class EvaluatorActor:
 
         from rl_algo_impls.shared.evaluator.evaluator import Evaluator
 
-        self.evaluator = Evaluator(
-            config,
-            data_store_accessor,
-            tb_writer,
-            best_model_path=best_model_path,
-            n_episodes=n_episodes,
-            save_best=save_best,
-            deterministic=deterministic,
-            only_record_video_on_best=only_record_video_on_best,
-            video_dir=video_dir,
-            max_video_length=max_video_length,
-            ignore_first_episode=ignore_first_episode,
-            additional_keys_to_log=additional_keys_to_log,
-            score_function=score_function,
-            wandb_enabled=wandb_enabled,
-            score_threshold=score_threshold,
-            only_checkpoint_best_policies=only_checkpoint_best_policies,
-            latest_model_path=latest_model_path,
-        )
+        self.evaluator = Evaluator(config, data_store_accessor, tb_writer, **kwargs)
 
     def best_eval_stats(self) -> Optional["EpisodesStats"]:
         return self.evaluator.best

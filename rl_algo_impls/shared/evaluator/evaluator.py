@@ -151,6 +151,7 @@ class Evaluator:
         score_threshold: Optional[float] = None,
         only_checkpoint_best_policies: bool = False,
         latest_model_path: Optional[str] = None,
+        disable_video_generation: bool = False,
     ) -> None:
         super().__init__()
         self.data_store_view = EvalDataStoreView(data_store_accessor)
@@ -171,7 +172,7 @@ class Evaluator:
         self.only_record_video_on_best = only_record_video_on_best
         self.max_video_length = max_video_length
         self.video_dir = video_dir
-        if video_dir:
+        if video_dir and not disable_video_generation:
             os.makedirs(video_dir, exist_ok=True)
             self.video_env = VecEpisodeRecorder(
                 make_eval_env(

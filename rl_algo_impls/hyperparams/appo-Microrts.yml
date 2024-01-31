@@ -609,6 +609,10 @@ Microrts-env16-160m-ent5d1-lr4d1-mgn2-05wb2lwr-vf50-nga-a100:
     &microrts-env16-160m-ent5d1-lr4d1-mgn2-05wb2lwr-vf50-nga-a100-algo
     <<: *microrts-env16-160m-ent5d1-lr4d1-mgn2-05wb2lwr-vf50-nga-a10-algo
     batch_size: 4608
+  eval_hyperparams:
+    &microrts-env16-160m-ent5d1-lr4d1-mgn2-05wb2lwr-vf50-nga-a100-eval
+    <<: *microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf24-nga-a100-eval
+    disable_video_generation: true
 
 Microrts-small-net-bw8a-20m-ent5-lr3c-05wb2lwr-vf50-nga-2t4:
   &microrts-small-net-bw8a-20m-ent5-lr3c-05wb2lwr-vf50-nga-2t4
