@@ -602,6 +602,14 @@ Microrts-env16-160m-ent5d1-lr4d1-mgn2-05wb2lwr-vf50-nga-a10:
     durations: [0, 1, 0]
   n_timesteps: !!float 160e6
 
+Microrts-env16-160m-ent5d1-lr4d1-mgn2-05wb2lwr-vf50-nga-a100:
+  &microrts-env16-160m-ent5d1-lr4d1-mgn2-05wb2lwr-vf50-nga-a100
+  <<: *microrts-env16-160m-ent5d1-lr4d1-mgn2-05wb2lwr-vf50-nga-a10
+  algo_hyperparams:
+    &microrts-env16-160m-ent5d1-lr4d1-mgn2-05wb2lwr-vf50-nga-a100-algo
+    <<: *microrts-env16-160m-ent5d1-lr4d1-mgn2-05wb2lwr-vf50-nga-a10-algo
+    batch_size: 4608
+
 Microrts-small-net-bw8a-20m-ent5-lr3c-05wb2lwr-vf50-nga-2t4:
   &microrts-small-net-bw8a-20m-ent5-lr3c-05wb2lwr-vf50-nga-2t4
   <<: *microrts-small-net-bw8a-40m-ent5-lr3c-05wb2lwr-vf50-nga-a10
@@ -633,4 +641,4 @@ Microrts-small-net-bw8a-20m-ent5-lr3c-05wb2lwr-vf50-nga-2t4:
     rollout_incremental_start_delay_seconds: 20
 
 Microrts-debug:
-  <<: *microrts-small-net-bw8a-20m-ent5-lr3c-05wb2lwr-vf50-nga-2t4
+  <<: *microrts-env16-160m-ent5d1-lr4d1-mgn2-05wb2lwr-vf50-nga-a100
