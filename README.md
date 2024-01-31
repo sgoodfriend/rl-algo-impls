@@ -19,7 +19,7 @@ Implementations of reinforcement learning algorithms.
     - [GridNet microRTS](https://api.wandb.ai/links/sgoodfriend/zdee7ovm)
     - [microRTS Selfplay](https://api.wandb.ai/links/sgoodfriend/5qjlr8ob)
     - [APPO microRTS env16](https://wandb.ai/sgoodfriend/rl-algo-impls-microrts-2024/reports/APPO-microRTS-env16--Vmlldzo2Njc2NzA2): 2024 training on the public competition maps up to size 16x16 using Asynchronous Proximal Policy Optimization (APPO)
-    - [DPPO microRTS env16](https://wandb.ai/sgoodfriend/rl-algo-impls-microrts-2024/reports/dppo-Microrts-env16-240m-ent5-lr3c-mgn2-info-rew-vf50-nga-a100--Vmlldzo2Njc0ODgy): Training with 4x Nvidia A100 GPUs on public competition maps up to size 16x16 using Distributed Proximal Policy Optimization (DPPO) for less than a day.
+    - [DPPO microRTS env16](https://wandb.ai/sgoodfriend/rl-algo-impls-microrts-2024/reports/dppo-Microrts-env16-240m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a100--Vmlldzo2NjgwNjU3): Training with 4x Nvidia A100 GPUs on public competition maps up to size 16x16 using Distributed Proximal Policy Optimization (DPPO) for less than a day.
     - [APPO microRTS basesWorkers16x16A](https://wandb.ai/sgoodfriend/rl-algo-impls-microrts-2024/reports/APPO-microRTS-bw16a-A10-OR-2xT4--Vmlldzo2Njc3MTk5): APPO training on a single map basesWorkers16x16A, similar to [Gym-μRTS paper](https://github.com/Farama-Foundation/MicroRTS-Py). Trains in 30 hours on an Nvidia A10.
     - [APPO microRTS baseWorkers8x8A](https://wandb.ai/sgoodfriend/rl-algo-impls-microrts-2024/reports/APPO-microRTS-basesWorkers8x8A-A10-OR-2xT4--Vmlldzo2Njg4MzU4): APPO training on a single map baseWorkers8x8A. Intended for quick, limited-resource training.
   - Lux Season 2
