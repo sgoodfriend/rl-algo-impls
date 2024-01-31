@@ -4,17 +4,18 @@
 Training requires an Nvidia GPU with CUDA support. It's fine to develop on a machine without a GPU, but training will likely be so slow as to be impractical.
 
 1. Install Java JDK. Ubuntu 20.04's default JDK is 11, which is fine.
-2. Install [poetry](https://python-poetry.org/docs/#installation)
-3. Install rl_algo_impls with `poetry install -E microrts`
-4. Run `poetry run wandb login` and follow the instructions to add the Weights & Biases API key to the environment.
-5. Train using `./scripts/microrts.sh -a {[ppo], appo, dppo} -e {NAME FROM ENVIRONMENT YAML}`
+2. Install [poetry](https://python-poetry.org/docs/#installation).
+3. Install [git-lfs](https://github.com/git-lfs/git-lfs?tab=readme-ov-file#installing) and `git lfs pull` to download the jar files.
+4. Install rl_algo_impls with `poetry install -E microrts`.
+5. Run `poetry run wandb login` and follow the instructions to add the Weights & Biases API key to the environment.
+6. Train using `./scripts/microrts.sh -a {[ppo], appo, dppo} -e {NAME FROM ENVIRONMENT YAML}`.
 
 For example, my setup for using APPO to train `Microrts-small-net-bw8a-40m-ent5-lr3c-05wb2lwr-vf50-nga-a10` on a Lambda Cloud A10 instance is:
 ```sh
 git clone https://github.com/sgoodfriend/rl-algo-impls.git
 cd rl-algo-impls
 # git checkout BRANCH_NAME if running on non-main branch
-./scripts/setup.sh --microrts # Handles steps 1-4
+./scripts/setup.sh --microrts # Handles steps 1-5
 ./scripts/microrts.sh -a appo -e Microrts-small-net-bw8a-40m-ent5-lr3c-05wb2lwr-vf50-nga-a10
 ```
 
