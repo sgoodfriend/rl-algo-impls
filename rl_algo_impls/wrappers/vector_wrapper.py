@@ -17,7 +17,7 @@ from gymnasium.experimental.vector.vector_env import ArrayType, VectorEnv, Vecto
 
 VecEnvStepReturn = Tuple[ObsType, ArrayType, ArrayType, ArrayType, dict]
 VecEnvResetReturn = Tuple[ObsType, dict]
-VecEnvMaskedResetReturn = Tuple[ObsType, np.ndarray, dict]
+VecEnvMaskedResetReturn = Tuple[ObsType, Optional[np.ndarray], dict]
 
 
 W = TypeVar("W", bound=VectorWrapper)

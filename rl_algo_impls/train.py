@@ -1,7 +1,10 @@
 # Support for PyTorch mps mode (https://pytorch.org/docs/stable/notes/mps.html)
 import os
 
+# Support for PyTorch mps mode (https://pytorch.org/docs/stable/notes/mps.html)
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
+# Don't overwrite CUDA_VISIBLE_DEVICES on ray workers (https://discuss.ray.io/t/how-to-stop-ray-from-managing-cuda-visible-devices/8767/2)
+os.environ["RAY_EXPERIMENTAL_NOSET_CUDA_VISIBLE_DEVICES"] = "1"
 
 from multiprocessing import Pool
 
@@ -38,13 +41,18 @@ def train() -> None:
         # env=["CartPole-v1"],
         # env=["LunarLander-v2"],
         # env=["LunarLander-v2-lr-by-kl"],
-        # env="CarRacing-v2",
+        # env=["CarRacing-v2"],
+        # env=["CarRacing-v2-lr-by-kl"],
         # env=["HalfCheetah-v4"],
+        # env=["HalfCheetah-v4-high-score"],
+        # env=["Ant-v4"],
         # env=["HalfCheetah-v4-lr-by-kl"],
+        # env=["Hopper-v4"],
+        # env=["BipedalWalker-v3"],
         # env=["PongNoFrameskip-v4"],
-        # env=["BreakoutNoFrameskip-v4-lr-by-kl"],
-        # env=["Microrts-debug"],
-        env=["LuxAI_S2-v0-debug"],
+        # env=["BreakoutNoFrameskip-v4"],
+        env=["Microrts-debug"],
+        # env=["LuxAI_S2-v0-debug"],
         seed=[1],
         pool_size=3,
         # wandb_project_name=None,

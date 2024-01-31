@@ -5,9 +5,17 @@ from typing import NamedTuple
 import numpy as np
 import torch
 
-from rl_algo_impls.rollout.rollout import RolloutGenerator
-from rl_algo_impls.shared.policy.policy import Policy
-from rl_algo_impls.wrappers.vector_wrapper import VectorEnv
+from rl_algo_impls.rollout.synchronous_rollout_generator import (
+    SynchronousRolloutGenerator,
+)
+from rl_algo_impls.runner.config import Config
+from rl_algo_impls.shared.data_store.abstract_data_store_accessor import (
+    AbstractDataStoreAccessor,
+)
+from rl_algo_impls.shared.stats import log_scalars
+from rl_algo_impls.shared.summary_wrapper.abstract_summary_wrapper import (
+    AbstractSummaryWrapper,
+)
 
 
 class Batch(NamedTuple):
@@ -26,19 +34,26 @@ class Transition(NamedTuple):
     next_obs: np.ndarray
 
 
-class ReplayBufferRolloutGenerator(RolloutGenerator):
+class ReplayBufferRolloutGenerator(SynchronousRolloutGenerator):
     def __init__(
         self,
-        policy: Policy,
-        vec_env: VectorEnv,
+        config: Config,
+        data_store_accessor: AbstractDataStoreAccessor,
+        tb_writer: AbstractSummaryWrapper,
         buffer_size: int = 1_000_000,
         learning_starts: int = 50_000,
         train_freq: int = 4,
     ) -> None:
-        super().__init__(policy, vec_env)
-        self.policy = policy
-        self.vec_env = vec_env
-        self.next_obs, _ = vec_env.reset()
+        super().__init__(
+            config,
+            data_store_accessor,
+            tb_writer,
+        )
+        self.next_obs = np.zeros(
+            (self.env_spaces.num_envs,)
+            + self.env_spaces.single_observation_space.shape,
+            dtype=self.env_spaces.single_observation_space.dtype,
+        )
 
         self.learning_starts = learning_starts
         self.train_freq = train_freq
@@ -49,13 +64,23 @@ class ReplayBufferRolloutGenerator(RolloutGenerator):
                 int(np.ceil(self.learning_starts / self.vec_env.num_envs)), eps=1
             )
 
+    def prepare(self) -> None:
+        self.next_obs, _ = self.vec_env.reset()
+
     def rollout(self, **kwargs) -> int:
         return self._collect_transitions(self.train_freq, **kwargs)
 
     def _collect_transitions(self, n_steps: int, **kwargs) -> int:
-        self.policy.train(False)
+        rollout_view = self.data_store_view.update_for_rollout_start()
+        if rollout_view is None:
+            return 0
+        (policy, rollout_params, self.tb_writer.timesteps_elapsed, _) = rollout_view
+        self.update_rollout_params(rollout_params)
+        log_scalars(self.tb_writer, "charts", rollout_params)
+
+        policy.train(False)
         for _ in range(n_steps):
-            actions = self.policy.act(self.next_obs, deterministic=False, **kwargs)
+            actions = policy.act(self.next_obs, deterministic=False, **kwargs)
             next_obs, rewards, terminations, truncations, _ = self.vec_env.step(actions)
             dones = terminations | truncations
             assert isinstance(self.next_obs, np.ndarray)

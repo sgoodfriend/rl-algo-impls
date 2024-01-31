@@ -1,5 +1,4 @@
 import logging
-from dataclasses import astuple
 from time import perf_counter
 from typing import Dict, List, Optional, TypeVar, Union
 
@@ -9,15 +8,18 @@ import torch.nn as nn
 from torch.optim import Adam
 
 from rl_algo_impls.acbc.train_stats import TrainStats
-from rl_algo_impls.ppo.ppo import NL
-from rl_algo_impls.rollout.rollout import RolloutGenerator
+from rl_algo_impls.rollout.acbc_rollout import ACBCBatch
 from rl_algo_impls.shared.algorithm import Algorithm
 from rl_algo_impls.shared.callbacks.callback import Callback
-from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
+from rl_algo_impls.shared.data_store.data_store_data import LearnerDataStoreViewUpdate
+from rl_algo_impls.shared.data_store.data_store_view import LearnerDataStoreView
 from rl_algo_impls.shared.policy.actor_critic import ActorCritic
 from rl_algo_impls.shared.schedule import update_learning_rate
 from rl_algo_impls.shared.stats import log_scalars
-from rl_algo_impls.shared.tensor_utils import num_or_array
+from rl_algo_impls.shared.summary_wrapper.abstract_summary_wrapper import (
+    AbstractSummaryWrapper,
+)
+from rl_algo_impls.shared.tensor_utils import NumOrList, num_or_array
 
 """
 Actor-Critic Behavior Cloning with Critic Bootstrapping
@@ -31,13 +33,11 @@ class ACBC(Algorithm):
         self,
         policy: ActorCritic,
         device: torch.device,
-        tb_writer: SummaryWrapper,
+        tb_writer: AbstractSummaryWrapper,
         learning_rate: float = 3e-4,
         batch_size: int = 64,
         n_epochs: int = 10,
-        gamma: NL = 0.99,
-        gae_lambda: NL = 0.95,
-        vf_coef: NL = 0.25,
+        vf_coef: NumOrList = 0.25,
         max_grad_norm: float = 0.5,
         gradient_accumulation: bool = False,
         scale_loss_by_num_actions: bool = False,
@@ -53,8 +53,6 @@ class ACBC(Algorithm):
 
         self.batch_size = batch_size
         self.n_epochs = n_epochs
-        self.gamma = num_or_array(gamma)
-        self.gae_lambda = num_or_array(gae_lambda)
         self.vf_coef = num_or_array(vf_coef)
         self.max_grad_norm = max_grad_norm
         self.gradient_accumulation = gradient_accumulation
@@ -62,18 +60,12 @@ class ACBC(Algorithm):
 
     def learn(
         self: ACBCSelf,
+        learner_data_store_view: LearnerDataStoreView,
         train_timesteps: int,
-        rollout_generator: RolloutGenerator,
         callbacks: Optional[List[Callback]] = None,
-        total_timesteps: Optional[int] = None,
-        start_timesteps: int = 0,
     ) -> ACBCSelf:
-        if total_timesteps is None:
-            total_timesteps = train_timesteps
-        assert start_timesteps + train_timesteps <= total_timesteps
-        timesteps_elapsed = start_timesteps
-
-        while timesteps_elapsed < start_timesteps + train_timesteps:
+        timesteps_elapsed = 0
+        while timesteps_elapsed < train_timesteps:
             start_time = perf_counter()
 
             update_learning_rate(self.optimizer, self.learning_rate)
@@ -82,31 +74,33 @@ class ACBC(Algorithm):
                 "learning_rate": self.optimizer.param_groups[0]["lr"],
                 "vf_coef": self.vf_coef,
             }
-            log_scalars(self.tb_writer, "charts", chart_scalars, timesteps_elapsed)
+            log_scalars(self.tb_writer, "charts", chart_scalars)
 
-            r = rollout_generator.rollout(self.gamma, self.gae_lambda)
+            (rollouts,) = learner_data_store_view.get_learner_view()
+            if len(rollouts) > 1:
+                logging.warning(
+                    f"A2C does not support multiple rollouts ({len(rollouts)}) per epoch. "
+                    "Only the last rollout will be used"
+                )
+            r = rollouts[-1]
             timesteps_elapsed += r.total_steps
 
             step_stats: List[Dict[str, Union[float, np.ndarray]]] = []
             vf_coef = torch.Tensor(np.array(self.vf_coef)).to(self.device)
-            for e in range(self.n_epochs):
+            for _ in range(self.n_epochs):
                 step_stats.clear()
                 for mb in r.minibatches(
-                    self.batch_size, shuffle=not self.gradient_accumulation
+                    self.batch_size, self.device, shuffle=not self.gradient_accumulation
                 ):
                     self.policy.reset_noise(self.batch_size)
-
+                    assert isinstance(mb, ACBCBatch)
                     (
                         mb_obs,
-                        _,
                         mb_actions,
                         mb_action_masks,
-                        mb_num_actions,
-                        _,
-                        _,
                         mb_returns,
-                        _,  # mb_additional,
-                    ) = astuple(mb)
+                        mb_num_actions,
+                    ) = mb
 
                     new_logprobs, _, new_values = self.policy(
                         mb_obs, mb_actions, action_masks=mb_action_masks
@@ -137,6 +131,8 @@ class ACBC(Algorithm):
                 if self.gradient_accumulation:
                     self.optimizer_step()
 
+            self.tb_writer.on_timesteps_elapsed(timesteps_elapsed)
+
             var_y = np.var(r.y_true).item()
             explained_var = (
                 np.nan if var_y == 0 else 1 - np.var(r.y_true - r.y_pred).item() / var_y
@@ -150,7 +146,6 @@ class ACBC(Algorithm):
                 rollout_steps / (end_time - start_time),
             )
 
-            self.tb_writer.on_steps(rollout_steps)
             if callbacks:
                 if not all(
                     c.on_step(timesteps_elapsed=rollout_steps) for c in callbacks
@@ -158,7 +153,14 @@ class ACBC(Algorithm):
                     logging.info(
                         f"Callback terminated training at {timesteps_elapsed} timesteps"
                     )
+                    learner_data_store_view.submit_learner_update(
+                        LearnerDataStoreViewUpdate(self.policy, self, timesteps_elapsed)
+                    )
                     break
+
+            learner_data_store_view.submit_learner_update(
+                LearnerDataStoreViewUpdate(self.policy, self, timesteps_elapsed)
+            )
         return self
 
     def optimizer_step(self) -> None:

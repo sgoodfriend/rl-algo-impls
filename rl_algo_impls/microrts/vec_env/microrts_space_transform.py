@@ -357,7 +357,6 @@ class MicroRTSSpaceTransform(VectorEnv, MicroRTSInterfaceListener):
             return o
 
         obs = np.zeros((self.height, self.width, self.obs_dim), dtype=o.dtype)
-        obs[:, :, -1] = 1
         pad_h = (self.height - env_h) // 2
         pad_w = (self.width - env_w) // 2
         obs[pad_h : pad_h + env_h, pad_w : pad_w + env_w, :] = o

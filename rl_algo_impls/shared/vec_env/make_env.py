@@ -1,9 +1,12 @@
 from dataclasses import asdict
 from typing import Any, Dict, Optional
 
-from rl_algo_impls.checkpoints.checkpoints_manager import PolicyCheckpointsManager
-from rl_algo_impls.runner.config import Config, EnvHyperparams
-from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
+from rl_algo_impls.runner.config import Config
+from rl_algo_impls.runner.env_hyperparams import EnvHyperparams
+from rl_algo_impls.shared.data_store.data_store_view import VectorEnvDataStoreView
+from rl_algo_impls.shared.summary_wrapper.abstract_summary_wrapper import (
+    AbstractSummaryWrapper,
+)
 from rl_algo_impls.shared.vec_env.procgen import make_procgen_env
 from rl_algo_impls.shared.vec_env.vec_env import make_vec_env
 from rl_algo_impls.wrappers.self_play_eval_wrapper import SelfPlayEvalWrapper
@@ -14,10 +17,10 @@ from rl_algo_impls.wrappers.vector_wrapper import VectorEnv, find_wrapper
 def make_env(
     config: Config,
     hparams: EnvHyperparams,
+    data_store_view: VectorEnvDataStoreView,
     training: bool = True,
     render: bool = False,
-    tb_writer: Optional[SummaryWrapper] = None,
-    checkpoints_manager: Optional[PolicyCheckpointsManager] = None,
+    tb_writer: Optional[AbstractSummaryWrapper] = None,
 ) -> VectorEnv:
     if hparams.env_type == "procgen":
         make_env_fn = make_procgen_env
@@ -40,16 +43,17 @@ def make_env(
     return make_env_fn(
         config,
         hparams,
+        data_store_view,
         training=training,
         render=render,
         tb_writer=tb_writer,
-        checkpoints_manager=checkpoints_manager,
     )
 
 
 def make_eval_env(
     config: Config,
     hparams: EnvHyperparams,
+    data_store_view: VectorEnvDataStoreView,
     override_hparams: Optional[Dict[str, Any]] = None,
     self_play_wrapper: Optional[SelfPlayWrapper] = None,
     **kwargs,
@@ -57,7 +61,7 @@ def make_eval_env(
     kwargs = kwargs.copy()
     kwargs["training"] = False
     hparams = get_eval_env_hyperparams(config, hparams, override_hparams)
-    env = make_env(config, hparams, **kwargs)
+    env = make_env(config, hparams, data_store_view, **kwargs)
 
     eval_self_play_wrapper = find_wrapper(env, SelfPlayEvalWrapper)
     if eval_self_play_wrapper:

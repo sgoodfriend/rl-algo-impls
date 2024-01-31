@@ -1,5 +1,5 @@
 import os
-from typing import Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import torch
@@ -23,7 +23,8 @@ from rl_algo_impls.shared.policy.actor_critic_network.network import (
     ACNForward,
     ActorCriticNetwork,
 )
-from rl_algo_impls.shared.policy.policy import ACTIVATION, MODEL_FILENAME
+from rl_algo_impls.shared.policy.policy import ACTIVATION
+from rl_algo_impls.shared.policy.policy import MODEL_FILENAME
 
 CRITIC_FILENAME = "critic.pth"
 
@@ -62,12 +63,10 @@ class BackboneActorCritic(ActorCriticNetwork):
         self.range_size = np.max(observation_space.high) - np.min(observation_space.low)
         self.action_vec = action_plane_space.nvec
         if isinstance(action_space, DictSpace):
-            action_space_per_position = action_space["per_position"]
             pick_position_space = action_space["pick_position"]
             assert isinstance(pick_position_space, MultiDiscrete)
             self.pick_vec = pick_position_space.nvec
         elif isinstance(action_space, MultiDiscrete):
-            action_space_per_position = action_space
             self.pick_vec = None
         else:
             raise ValueError(
@@ -82,13 +81,9 @@ class BackboneActorCritic(ActorCriticNetwork):
             ), "Cannot save critic separate if sharing backbone"
         self.shared_critic_head = shared_critic_head
 
-        assert isinstance(action_space_per_position, MultiDiscrete)
-        self.map_size = len(action_space_per_position.nvec) // len(
-            action_plane_space.nvec
-        )
-
         assert (
-            normalization is None or normalization.upper() in NormalizationMethod.__members__
+            normalization is None
+            or normalization.upper() in NormalizationMethod.__members__
         ), f"Invalid normalization method {normalization}"
 
         self.actor_head = nn.Sequential(
@@ -234,23 +229,6 @@ class BackboneActorCritic(ActorCriticNetwork):
     def reset_noise(self, batch_size: Optional[int] = None) -> None:
         pass
 
-    @property
-    def action_shape(self) -> Union[Tuple[int, ...], Dict[str, Tuple[int, ...]]]:
-        per_position_action_shape = (self.map_size, len(self.action_vec))
-        if self.pick_vec:
-            return {
-                "per_position": per_position_action_shape,
-                "pick_position": (len(self.pick_vec),),
-            }
-        return per_position_action_shape
-
-    @property
-    def value_shape(self) -> Tuple[int, ...]:
-        if self._critic_features > 1:
-            return (self._critic_features,)
-        else:
-            return ()
-
     def freeze(
         self,
         freeze_policy_head: bool,
@@ -268,24 +246,40 @@ class BackboneActorCritic(ActorCriticNetwork):
         assert (
             not self.critic_shares_backbone
         ), "Should not be called if sharing backbone"
+        state = self.get_state()
         torch.save(
-            {
-                "actor_head": self.actor_head.state_dict(),
-                "backbone": self.backbone.state_dict(),
-            },
+            {k: v for k, v in state.items() if k in {"actor_head", "backbone"}},
             os.path.join(path, MODEL_FILENAME),
         )
-        torch.save(self.critic_heads.state_dict(), os.path.join(path, CRITIC_FILENAME))
+        torch.save(state["critic_heads"], os.path.join(path, CRITIC_FILENAME))
 
     def load(self, path: str, device: Optional[torch.device]) -> None:
         assert (
             not self.critic_shares_backbone
         ), "Should not be called if sharing backbone"
-        policy_weights = torch.load(
-            os.path.join(path, MODEL_FILENAME), map_location=device
+        self.set_state(
+            {
+                **torch.load(os.path.join(path, MODEL_FILENAME), map_location=device),
+                "critic_heads": torch.load(
+                    os.path.join(path, CRITIC_FILENAME), map_location=device
+                ),
+            }
         )
-        self.backbone.load_state_dict(policy_weights["backbone"])
-        self.actor_head.load_state_dict(policy_weights["actor_head"])
-        self.critic_heads.load_state_dict(
-            torch.load(os.path.join(path, CRITIC_FILENAME), map_location=device)
-        )
+
+    def get_state(self) -> Dict[str, Any]:
+        assert (
+            not self.critic_shares_backbone
+        ), "Should not be called if sharing backbone"
+        return {
+            "actor_head": self.actor_head.state_dict(),
+            "backbone": self.backbone.state_dict(),
+            "critic_heads": self.critic_heads.state_dict(),
+        }
+
+    def set_state(self, state: Dict[str, Any]) -> None:
+        assert (
+            not self.critic_shares_backbone
+        ), "Should not be called if sharing backbone"
+        self.actor_head.load_state_dict(state["actor_head"])
+        self.backbone.load_state_dict(state["backbone"])
+        self.critic_heads.load_state_dict(state["critic_heads"])

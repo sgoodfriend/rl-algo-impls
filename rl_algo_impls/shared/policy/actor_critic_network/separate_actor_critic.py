@@ -108,10 +108,6 @@ class SeparateActorCriticNetwork(ActorCriticNetwork):
     def reset_noise(self, batch_size: int) -> None:
         self._pi.sample_weights(batch_size=batch_size)
 
-    @property
-    def action_shape(self) -> Tuple[int, ...]:
-        return self._pi.action_shape
-
     def freeze(
         self,
         freeze_policy_head: bool,

@@ -1,5 +1,4 @@
 import logging
-from dataclasses import astuple
 from time import perf_counter
 from typing import List, Optional, TypeVar
 
@@ -8,14 +7,18 @@ import torch
 import torch.nn as nn
 
 from rl_algo_impls.a2c.train_stats import TrainStats, TrainStepStats
-from rl_algo_impls.rollout.rollout import RolloutGenerator
+from rl_algo_impls.rollout.a2c_rollout import A2CBatch
 from rl_algo_impls.shared.algorithm import Algorithm
 from rl_algo_impls.shared.autocast import maybe_autocast
 from rl_algo_impls.shared.callbacks import Callback
-from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
+from rl_algo_impls.shared.data_store.data_store_data import LearnerDataStoreViewUpdate
+from rl_algo_impls.shared.data_store.data_store_view import LearnerDataStoreView
 from rl_algo_impls.shared.policy.actor_critic import ActorCritic
 from rl_algo_impls.shared.schedule import update_learning_rate
 from rl_algo_impls.shared.stats import log_scalars
+from rl_algo_impls.shared.summary_wrapper.abstract_summary_wrapper import (
+    AbstractSummaryWrapper,
+)
 from rl_algo_impls.shared.tensor_utils import NumOrList, num_or_array
 
 A2CSelf = TypeVar("A2CSelf", bound="A2C")
@@ -26,10 +29,8 @@ class A2C(Algorithm):
         self,
         policy: ActorCritic,
         device: torch.device,
-        tb_writer: SummaryWrapper,
+        tb_writer: AbstractSummaryWrapper,
         learning_rate: float = 7e-4,
-        gamma: NumOrList = 0.99,
-        gae_lambda: NumOrList = 1.0,
         ent_coef: float = 0.0,
         vf_coef: NumOrList = 0.5,
         max_grad_norm: float = 0.5,
@@ -50,9 +51,6 @@ class A2C(Algorithm):
             optimizer = torch.optim.Adam(policy.parameters(), lr=learning_rate)
         super().__init__(policy, device, tb_writer, learning_rate, optimizer)
         self.policy = policy
-
-        self.gamma = num_or_array(gamma)
-        self.gae_lambda = num_or_array(gae_lambda)
 
         self.vf_coef = num_or_array(vf_coef)
         self.ent_coef = ent_coef
@@ -75,34 +73,32 @@ class A2C(Algorithm):
 
     def learn(
         self: A2CSelf,
+        learner_data_store_view: LearnerDataStoreView,
         train_timesteps: int,
-        rollout_generator: RolloutGenerator,
         callbacks: Optional[List[Callback]] = None,
-        total_timesteps: Optional[int] = None,
-        start_timesteps: int = 0,
     ) -> A2CSelf:
-        if total_timesteps is None:
-            total_timesteps = train_timesteps
-        assert start_timesteps + train_timesteps <= total_timesteps
-
-        timesteps_elapsed = start_timesteps
-        while timesteps_elapsed < start_timesteps + train_timesteps:
+        timesteps_elapsed = 0
+        while timesteps_elapsed < train_timesteps:
             start_time = perf_counter()
 
             update_learning_rate(self.optimizer, self.learning_rate)
             chart_scalars = {
                 "ent_coef": self.ent_coef,
                 "learning_rate": self.learning_rate,
-                "gamma": self.gamma,
-                "gae_lambda": self.gae_lambda,
                 "vf_coef": self.vf_coef,
             }
 
             if self.multi_reward_weights is not None:
                 chart_scalars["reward_weights"] = self.multi_reward_weights
-            log_scalars(self.tb_writer, "charts", chart_scalars, timesteps_elapsed)
+            log_scalars(self.tb_writer, "charts", chart_scalars)
 
-            r = rollout_generator.rollout(gamma=self.gamma, gae_lambda=self.gae_lambda)
+            (rollouts,) = learner_data_store_view.get_learner_view()
+            if len(rollouts) > 1:
+                logging.warning(
+                    f"A2C does not support multiple rollouts ({len(rollouts)}) per epoch. "
+                    "Only the last rollout will be used"
+                )
+            r = rollouts[-1]
             timesteps_elapsed += r.total_steps
 
             vf_coef = torch.Tensor(np.array(self.vf_coef)).to(self.device)
@@ -115,19 +111,18 @@ class A2C(Algorithm):
             )
             for mb in r.minibatches(
                 r.total_steps // self.num_minibatches,
+                self.device,
                 shuffle=not self.gradient_accumulation,
             ):
+                assert isinstance(mb, A2CBatch)
                 (
                     mb_obs,
-                    _,
                     mb_actions,
                     mb_action_masks,
-                    mb_num_actions,
-                    _,
                     mb_advantages,
                     mb_returns,
-                    _,  # mb_additional,
-                ) = astuple(mb)
+                    mb_num_actions,
+                ) = mb
 
                 if self.normalize_advantage:
                     mb_advantages = (mb_advantages - mb_advantages.mean(0)) / (
@@ -173,6 +168,8 @@ class A2C(Algorithm):
             if self.gradient_accumulation:
                 self.optimizer_step()
 
+            self.tb_writer.on_timesteps_elapsed(timesteps_elapsed)
+
             var_y = np.var(r.y_true).item()
             explained_var = (
                 np.nan if var_y == 0 else 1 - np.var(r.y_true - r.y_pred).item() / var_y
@@ -187,7 +184,6 @@ class A2C(Algorithm):
 
             TrainStats(step_stats, explained_var).write_to_tensorboard(self.tb_writer)
 
-            self.tb_writer.on_steps(rollout_steps)
             if callbacks:
                 if not all(
                     c.on_step(timesteps_elapsed=rollout_steps) for c in callbacks
@@ -195,7 +191,14 @@ class A2C(Algorithm):
                     logging.info(
                         f"Callback terminated training at {timesteps_elapsed} timesteps"
                     )
+                    learner_data_store_view.submit_learner_update(
+                        LearnerDataStoreViewUpdate(self.policy, self, timesteps_elapsed)
+                    )
                     break
+
+            learner_data_store_view.submit_learner_update(
+                LearnerDataStoreViewUpdate(self.policy, self, timesteps_elapsed)
+            )
 
         return self
 

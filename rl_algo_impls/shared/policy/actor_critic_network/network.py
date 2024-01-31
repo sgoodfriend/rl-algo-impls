@@ -48,15 +48,6 @@ class ActorCriticNetwork(nn.Module, ABC):
     def reset_noise(self, batch_size: Optional[int] = None) -> None:
         ...
 
-    @property
-    @abstractmethod
-    def action_shape(self) -> Tuple[int, ...]:
-        ...
-
-    @property
-    def value_shape(self) -> Tuple[int, ...]:
-        return ()
-
     @abstractmethod
     def freeze(
         self,

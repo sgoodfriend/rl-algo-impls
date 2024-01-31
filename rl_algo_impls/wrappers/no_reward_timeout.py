@@ -1,3 +1,4 @@
+import logging
 from typing import Optional, SupportsFloat, Tuple, Union
 
 import gymnasium
@@ -59,7 +60,7 @@ class NoRewardTimeout(gymnasium.Wrapper):
         self.episode_step_idx = 0
 
     def print_intervention(self, tag: str) -> None:
-        print(
+        logging.info(
             f"{self.__class__.__name__}: {tag} | "
             f"Score: {self.episode_score} | "
             f"Length: {self.episode_step_idx}"

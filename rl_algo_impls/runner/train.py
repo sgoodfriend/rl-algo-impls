@@ -1,61 +1,52 @@
-# Support for PyTorch mps mode (https://pytorch.org/docs/stable/notes/mps.html)
-import logging
 import os
-import platform
-import sys
 
-from rl_algo_impls.checkpoints.checkpoints_manager import PolicyCheckpointsManager
-from rl_algo_impls.lux.jux_verify import jux_verify_enabled
-from rl_algo_impls.ppo.learning_rate_by_kl_divergence import LearningRateByKLDivergence
-from rl_algo_impls.ppo.ppo import PPO
-from rl_algo_impls.rollout.guided_learner_rollout import GuidedLearnerRolloutGenerator
-from rl_algo_impls.rollout.random_guided_learner_rollout import (
-    RandomGuidedLearnerRolloutGenerator,
-)
-from rl_algo_impls.rollout.reference_ai_rollout import ReferenceAIRolloutGenerator
-from rl_algo_impls.rollout.sync_step_rollout import SyncStepRolloutGenerator
-from rl_algo_impls.shared.callbacks.self_play_callback import SelfPlayCallback
-from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
-
+# Support for PyTorch mps mode (https://pytorch.org/docs/stable/notes/mps.html)
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
+# Don't overwrite CUDA_VISIBLE_DEVICES on ray workers (https://discuss.ray.io/t/how-to-stop-ray-from-managing-cuda-visible-devices/8767/2)
+os.environ["RAY_EXPERIMENTAL_NOSET_CUDA_VISIBLE_DEVICES"] = "1"
 
-import dataclasses
-import shutil
-from dataclasses import asdict, dataclass
-from typing import Any, Dict, List, Optional, Sequence
+import logging
+import sys
+from dataclasses import asdict
+from typing import Any, Dict, List
 
 import yaml
-from torch.utils.tensorboard.writer import SummaryWriter
 
-import wandb
-from rl_algo_impls.runner.config import Config, EnvHyperparams, RunArgs
+from rl_algo_impls.ppo.learning_rate_by_kl_divergence import (
+    SUPPORTED_ALGORITHMS as LR_BY_KL_SUPPORTED_ALGORITHMS,
+)
+from rl_algo_impls.ppo.learning_rate_by_kl_divergence import LearningRateByKLDivergence
+from rl_algo_impls.rollout.in_process_rollout_generator import InProcessRolloutGenerator
+from rl_algo_impls.rollout.remote_rollout_generator import RemoteRolloutGenerator
+from rl_algo_impls.runner.config import Config, TrainArgs
 from rl_algo_impls.runner.running_utils import (
-    ALGOS,
-    DEFAULT_ROLLOUT_GENERATORS,
-    get_device,
     hparam_dict,
+    initialize_policy_algo_data_store_view,
     load_hyperparams,
-    make_policy,
-    plot_eval_callback,
     set_device_optimizations,
     set_seeds,
 )
 from rl_algo_impls.shared.callbacks.callback import Callback
-from rl_algo_impls.shared.callbacks.eval_callback import EvalCallback
 from rl_algo_impls.shared.callbacks.hyperparam_transitions import HyperparamTransitions
-from rl_algo_impls.shared.callbacks.reward_decay_callback import RewardDecayCallback
-from rl_algo_impls.shared.stats import EpisodesStats
-from rl_algo_impls.shared.vec_env import make_env, make_eval_env
+from rl_algo_impls.shared.callbacks.self_play_callback import SelfPlayCallback
+from rl_algo_impls.shared.data_store.in_process_data_store_accessor import (
+    InProcessDataStoreAccessor,
+)
+from rl_algo_impls.shared.data_store.remote_data_store_accessor import (
+    RemoteDataStoreAccessor,
+)
+from rl_algo_impls.shared.evaluator.in_process_evaluator import InProcessEvaluator
+from rl_algo_impls.shared.evaluator.remote_evaluator import RemoteEvaluator
+from rl_algo_impls.shared.summary_wrapper.in_process_summary_wrapper import (
+    InProcessSummaryWrapper,
+)
+from rl_algo_impls.shared.summary_wrapper.remote_summary_wrapper import (
+    RemoteSummaryWrapper,
+)
+from rl_algo_impls.utils.device import get_device, initialize_cuda_devices
+from rl_algo_impls.utils.ray import maybe_init_ray
 from rl_algo_impls.wrappers.self_play_wrapper import SelfPlayWrapper
 from rl_algo_impls.wrappers.vector_wrapper import find_wrapper
-
-
-@dataclass
-class TrainArgs(RunArgs):
-    wandb_project_name: Optional[str] = None
-    wandb_entity: Optional[str] = None
-    wandb_tags: Sequence[str] = dataclasses.field(default_factory=list)
-    wandb_group: Optional[str] = None
 
 
 def train(args: TrainArgs):
@@ -63,138 +54,91 @@ def train(args: TrainArgs):
     logging.info(args)
     hyperparams = load_hyperparams(args.algo, args.env)
     logging.info(hyperparams)
-    config = Config(args, hyperparams, os.getcwd())
+    gpu_ids = initialize_cuda_devices(args, hyperparams)
+    config = Config(args, hyperparams, os.getcwd(), gpu_ids=gpu_ids)
+    maybe_init_ray(config)
 
-    wandb_enabled = bool(args.wandb_project_name)
-    if wandb_enabled:
-        wandb.tensorboard.patch(
-            root_logdir=config.tensorboard_summary_path, pytorch=True
+    if config.process_mode == "sync":
+        tb_writer = InProcessSummaryWrapper(config, args)
+    elif config.process_mode == "async":
+        tb_writer = RemoteSummaryWrapper(config, args)
+    else:
+        raise ValueError(
+            f"process_mode {config.process_mode} not recognized (Expect: sync or async)"
         )
-        wandb.init(
-            project=args.wandb_project_name,
-            entity=args.wandb_entity,
-            config=asdict(hyperparams),
-            name=config.run_name(),
-            monitor_gym=True,
-            save_code=True,
-            tags=args.wandb_tags,
-            group=args.wandb_group,
-        )
-        wandb.config.update(args)
-
-    tb_writer = SummaryWrapper(SummaryWriter(config.tensorboard_summary_path))
 
     set_seeds(args.seed)
 
-    checkpoints_manager = (
-        PolicyCheckpointsManager(**config.hyperparams.checkpoints_kwargs)
-        if config.hyperparams.checkpoints_kwargs
+    if config.process_mode == "async":
+        data_store_accessor = RemoteDataStoreAccessor(config)
+        rollout_generator = RemoteRolloutGenerator(
+            args, config, data_store_accessor, tb_writer
+        )
+    elif config.process_mode == "sync":
+        data_store_accessor = InProcessDataStoreAccessor(
+            **(config.hyperparams.checkpoints_kwargs or {})
+        )
+        rollout_generator = InProcessRolloutGenerator(
+            args, config, data_store_accessor, tb_writer
+        )
+    else:
+        raise ValueError(
+            f"process_mode {config.process_mode} not recognized (Expect: sync or async)"
+        )
+
+    device = get_device(config, rollout_generator.env_spaces)
+    set_device_optimizations(device, **config.device_hyperparams)
+    policy, algo, learner_data_store_view = initialize_policy_algo_data_store_view(
+        config,
+        rollout_generator.env_spaces,
+        device,
+        data_store_accessor,
+        tb_writer,
+    )
+
+    self_play_wrapper = (
+        find_wrapper(rollout_generator.generator.vec_env, SelfPlayWrapper)
+        if isinstance(rollout_generator, InProcessRolloutGenerator)
         else None
     )
-
-    env = make_env(
-        config,
-        EnvHyperparams(**config.env_hyperparams),
-        tb_writer=tb_writer,
-        checkpoints_manager=checkpoints_manager,
-    )
-    device = get_device(config, env)
-    set_device_optimizations(device, **config.device_hyperparams)
-    policy = make_policy(config, env, device, **config.policy_hyperparams)
-    algo = ALGOS[args.algo](
-        policy, device, tb_writer, **config.algo_hyperparams(checkpoints_manager)
-    )
-    if policy.load_path:
-        algo.load(policy.load_path)
-
-    num_parameters = policy.num_parameters()
-    num_trainable_parameters = policy.num_trainable_parameters()
-    if wandb_enabled:
-        wandb.run.summary["num_parameters"] = num_parameters  # type: ignore
-        wandb.run.summary["num_trainable_parameters"] = num_trainable_parameters  # type: ignore
+    if config.process_mode == "async":
+        assert self_play_wrapper is None, f"SelfPlayWrapper not supported in async mode"
+        evaluator = RemoteEvaluator(
+            config,
+            data_store_accessor,
+            tb_writer,
+            best_model_path=config.model_dir_path(best=True),
+            **config.eval_callback_params(),
+            video_dir=config.videos_path,
+            additional_keys_to_log=config.additional_keys_to_log,
+            latest_model_path=config.model_dir_path(best=False),
+        )
+    elif config.process_mode == "sync":
+        evaluator = InProcessEvaluator(
+            config,
+            data_store_accessor,
+            tb_writer,
+            self_play_wrapper=self_play_wrapper,
+            best_model_path=config.model_dir_path(best=True),
+            **config.eval_callback_params(),
+            video_dir=config.videos_path,
+            additional_keys_to_log=config.additional_keys_to_log,
+            latest_model_path=config.model_dir_path(best=False),
+        )
     else:
-        print(
-            f"num_parameters = {num_parameters} ; "
-            f"num_trainable_parameters = {num_trainable_parameters}"
+        raise ValueError(
+            f"process_mode {config.process_mode} not recognized (Expect: sync or async)"
         )
-
-    self_play_wrapper = find_wrapper(env, SelfPlayWrapper)
-    eval_env = make_eval_env(
-        config,
-        EnvHyperparams(**config.env_hyperparams),
-        self_play_wrapper=self_play_wrapper,
-        checkpoints_manager=checkpoints_manager,
-    )
-    video_env = make_eval_env(
-        config,
-        EnvHyperparams(**config.env_hyperparams),
-        override_hparams={"n_envs": 1},
-        self_play_wrapper=self_play_wrapper,
-        checkpoints_manager=checkpoints_manager,
-    )
-    eval_callback = EvalCallback(
-        policy,
-        algo,
-        eval_env,
-        tb_writer,
-        best_model_path=config.model_dir_path(best=True),
-        **config.eval_callback_params(),
-        video_env=video_env,
-        video_dir=config.videos_path,
-        additional_keys_to_log=config.additional_keys_to_log,
-        wandb_enabled=wandb_enabled,
-        latest_model_path=config.model_dir_path(best=False),
-        checkpoints_manager=checkpoints_manager,
-    )
-    callbacks: List[Callback] = [eval_callback]
-    if config.hyperparams.reward_decay_callback:
-        callbacks.append(
-            RewardDecayCallback(
-                config, env, **(config.hyperparams.reward_decay_callback_kwargs or {})
-            )
-        )
+    learner_data_store_view.initialize_evaluator(evaluator)
+    callbacks: List[Callback] = []
     if self_play_wrapper:
         callbacks.append(SelfPlayCallback(policy, self_play_wrapper))
 
-    rollout_hyperparams = {**config.rollout_hyperparams}
-    subaction_mask = config.policy_hyperparams.get("subaction_mask", None)
-    if subaction_mask is not None:
-        rollout_hyperparams["subaction_mask"] = subaction_mask
-    if config.rollout_type:
-        if config.rollout_type == "sync":
-            rollout_generator_cls = SyncStepRolloutGenerator
-        elif config.rollout_type == "reference":
-            rollout_generator_cls = ReferenceAIRolloutGenerator
-        elif config.rollout_type in {"guided", "guided_random"}:
-            if config.rollout_type == "guided_random":
-                rollout_generator_cls = RandomGuidedLearnerRolloutGenerator
-            elif config.rollout_type == "guided":
-                rollout_generator_cls = GuidedLearnerRolloutGenerator
-            else:
-                raise ValueError(f"{config.rollout_type} not recognized rollout_type")
-            guide_policy_hyperparams = {
-                **config.policy_hyperparams,
-                **rollout_hyperparams.get("guide_policy", {}),
-            }
-            rollout_hyperparams["guide_policy"] = make_policy(
-                config, env, device, **guide_policy_hyperparams
-            )
-        else:
-            raise ValueError(f"{config.rollout_type} not recognized rollout_type")
-    else:
-        rollout_generator_cls = DEFAULT_ROLLOUT_GENERATORS[args.algo]
-
-    rollout_generator = rollout_generator_cls(
-        policy,  # type: ignore
-        env,
-        **rollout_hyperparams,
-    )
-    rollout_generator.prepare()
     lr_by_kl_callback = None
     if config.hyperparams.lr_by_kl_kwargs:
         assert isinstance(
-            algo, PPO
-        ), f"lr_by_kl_kwargs only supported for PPO, not {algo.__class__.__name__}"
+            algo, LR_BY_KL_SUPPORTED_ALGORITHMS
+        ), f"lr_by_kl_kwargs only supported for {(c.__name__ for c in LR_BY_KL_SUPPORTED_ALGORITHMS)}, not {algo.__class__.__name__}"
         lr_by_kl_callback = LearningRateByKLDivergence(
             algo,
             **config.hyperparams.lr_by_kl_kwargs,
@@ -204,33 +148,38 @@ def train(args: TrainArgs):
         callbacks.append(
             HyperparamTransitions(
                 config,
-                env,
                 algo,
-                rollout_generator,
+                learner_data_store_view,
                 **config.hyperparams.hyperparam_transitions_kwargs,
                 lr_by_kl_callback=lr_by_kl_callback,
             )
         )
 
-    if jux_verify_enabled(eval_env):
-        eval_callback.generate_video()
-    algo.learn(config.n_timesteps, rollout_generator, callbacks=callbacks)
+    rollout_generator.prepare()
+    algo.learn(
+        learner_data_store_view,
+        config.n_timesteps,
+        callbacks=callbacks,
+    )
 
-    policy.save(config.model_dir_path(best=False))
+    (best_eval_stats,) = data_store_accessor.close()
 
-    eval_stats = eval_callback.evaluate(n_episodes=10, print_returns=True)
+    log_dict: Dict[str, Any] = {}
+    hparam_metric_dict: Dict[str, float] = {}
+    if config.evaluate_after_training:
+        eval_stats = evaluator.evaluate_latest_policy(
+            algo, n_episodes=10, print_returns=True
+        )
+        log_dict["eval"] = eval_stats._asdict()
+        hparam_metric_dict.update(
+            {
+                "hparam/last_mean": eval_stats.score.mean,
+                "hparam/last_result": eval_stats.score.mean - eval_stats.score.std,
+            }
+        )
+    evaluator.save(algo.policy, config.model_dir_path(best=False))
 
-    plot_eval_callback(eval_callback, tb_writer, config.run_name())
-
-    log_dict: Dict[str, Any] = {
-        "eval": eval_stats._asdict(),
-    }
-    hparam_metric_dict = {
-        "hparam/last_mean": eval_stats.score.mean,
-        "hparam/last_result": eval_stats.score.mean - eval_stats.score.std,
-    }
-    if eval_callback.best:
-        best_eval_stats: EpisodesStats = eval_callback.best
+    if best_eval_stats:
         log_dict["best_eval"] = best_eval_stats._asdict()
         hparam_metric_dict.update(
             {
@@ -252,11 +201,3 @@ def train(args: TrainArgs):
     )
 
     tb_writer.close()
-
-    if wandb_enabled:
-        shutil.make_archive(
-            os.path.join(wandb.run.dir, config.model_dir_name()),  # type: ignore
-            "zip",
-            config.model_dir_path(),
-        )
-        wandb.finish()

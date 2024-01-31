@@ -1,11 +1,14 @@
 from dataclasses import astuple
 from typing import Optional
 
-from rl_algo_impls.checkpoints.checkpoints_manager import PolicyCheckpointsManager
 from rl_algo_impls.lux.vec_env.vec_lux_env import VecLuxEnv
 from rl_algo_impls.lux.vec_env.vec_lux_replay_env import VecLuxReplayEnv
-from rl_algo_impls.runner.config import Config, EnvHyperparams
-from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
+from rl_algo_impls.runner.env_hyperparams import EnvHyperparams
+from rl_algo_impls.runner.config import Config
+from rl_algo_impls.shared.data_store.data_store_view import VectorEnvDataStoreView
+from rl_algo_impls.shared.summary_wrapper.abstract_summary_wrapper import (
+    AbstractSummaryWrapper,
+)
 from rl_algo_impls.wrappers.additional_win_loss_reward import (
     AdditionalWinLossRewardWrapper,
 )
@@ -27,10 +30,10 @@ from rl_algo_impls.wrappers.vector_wrapper import VectorEnv
 def make_lux_env(
     config: Config,
     hparams: EnvHyperparams,
+    data_store_view: VectorEnvDataStoreView,
     training: bool = True,
     render: bool = False,
-    tb_writer: Optional[SummaryWrapper] = None,
-    checkpoints_manager: Optional[PolicyCheckpointsManager] = None,
+    tb_writer: Optional[AbstractSummaryWrapper] = None,
 ) -> VectorEnv:
     (
         _,  # env_type,
@@ -88,7 +91,7 @@ def make_lux_env(
     if vec_env_class == "sync":
         envs = VecLuxEnv(num_envs, **make_kwargs)
     elif vec_env_class == "replay":
-        envs = VecLuxReplayEnv(num_envs, **make_kwargs)
+        envs = VecLuxReplayEnv(num_envs, tb_writer, **make_kwargs)
         envs = HwcToChwVectorObservation(envs)
     elif vec_env_class == "ray":
         from rl_algo_impls.lux.vec_env.lux_ray_vector_env import LuxRayVectorEnv
@@ -107,12 +110,8 @@ def make_lux_env(
     envs = VectorEnvRenderCompat(envs)
 
     if play_checkpoints_kwargs:
-        assert (
-            checkpoints_manager
-        ), f"play_checkpoints_kwargs requires checkpoints_manager"
-        envs = PlayCheckpointsWrapper(
-            envs, checkpoints_manager, **play_checkpoints_kwargs
-        )
+        envs = PlayCheckpointsWrapper(envs, **play_checkpoints_kwargs)
+        data_store_view.add_checkpoint_policy_delegate(envs)
     if self_play_kwargs:
         if not training and self_play_kwargs.get("eval_use_training_cache", False):
             envs = SelfPlayEvalWrapper(envs)
@@ -150,7 +149,10 @@ def make_lux_env(
         if normalize_type == "gymlike":
             if normalize_kwargs.get("norm_obs", True):
                 envs = NormalizeObservation(
-                    envs, training=training, clip=normalize_kwargs.get("clip_obs", 10.0)
+                    envs,
+                    data_store_view,
+                    training=training,
+                    clip=normalize_kwargs.get("clip_obs", 10.0),
                 )
             if training and normalize_kwargs.get("norm_reward", True):
                 rew_shape = (
@@ -163,6 +165,7 @@ def make_lux_env(
                     rew_shape = ()
                 envs = NormalizeReward(
                     envs,
+                    data_store_view,
                     training=training,
                     gamma=normalize_kwargs.get("gamma_reward", 0.99),
                     clip=normalize_kwargs.get("clip_reward", 10.0),

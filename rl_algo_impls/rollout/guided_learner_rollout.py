@@ -2,41 +2,51 @@ import logging
 from typing import Dict, List, Optional, Sequence, TypeVar
 
 import numpy as np
-import torch
 
-from rl_algo_impls.rollout.rollout import RolloutGenerator
+from rl_algo_impls.rollout.synchronous_rollout_generator import (
+    SynchronousRolloutGenerator,
+)
 from rl_algo_impls.rollout.trajectory import TrajectoryBuilder
 from rl_algo_impls.rollout.trajectory_rollout import TrajectoryRollout
+from rl_algo_impls.runner.config import Config
+from rl_algo_impls.shared.data_store.abstract_data_store_accessor import (
+    AbstractDataStoreAccessor,
+)
 from rl_algo_impls.shared.policy.actor_critic import ActorCritic
-from rl_algo_impls.shared.tensor_utils import NumOrArray, batch_dict_keys
+from rl_algo_impls.shared.stats import log_scalars
+from rl_algo_impls.shared.summary_wrapper.abstract_summary_wrapper import (
+    AbstractSummaryWrapper,
+)
+from rl_algo_impls.shared.tensor_utils import NumOrList, batch_dict_keys, num_or_array
 from rl_algo_impls.wrappers.episode_stats_writer import EpisodeStatsWriter
-from rl_algo_impls.wrappers.vector_wrapper import VectorEnv, find_wrapper
+from rl_algo_impls.wrappers.vector_wrapper import find_wrapper
 
 
-class GuidedLearnerRolloutGenerator(RolloutGenerator):
+class GuidedLearnerRolloutGenerator(SynchronousRolloutGenerator):
     def __init__(
         self,
-        learning_policy: ActorCritic,
-        vec_env: VectorEnv,
+        config: Config,
+        data_store_accessor: AbstractDataStoreAccessor,
+        tb_writer: AbstractSummaryWrapper,
         guide_policy: ActorCritic,
         switch_range: int,
+        gamma: NumOrList = 0.99,
+        gae_lambda: NumOrList = 0.95,
         n_steps: int = 2048,
         sde_sample_freq: int = -1,
-        scale_advantage_by_values_accuracy: bool = False,
         full_batch_off_accelerator: bool = True,  # Unused, assumed True
         include_logp: bool = True,
         subaction_mask: Optional[Dict[int, Dict[int, int]]] = None,
     ) -> None:
-        super().__init__(learning_policy, vec_env)
-        self.learning_policy = learning_policy
+        super().__init__(config, data_store_accessor, tb_writer)
+        self.gamma = num_or_array(gamma)
+        self.gae_lambda = num_or_array(gae_lambda)
         self.guide_policy = guide_policy
         self.guide_policy.eval()
 
-        self.vec_env = vec_env
         self.switch_range = switch_range
         self.n_steps = n_steps
         self.sde_sample_freq = sde_sample_freq
-        self.scale_advantage_by_values_accuracy = scale_advantage_by_values_accuracy
         if not full_batch_off_accelerator:
             logging.warn(
                 f"{self.__class__.__name__} doesn't support full_batch_off_accelerator=False"
@@ -47,7 +57,7 @@ class GuidedLearnerRolloutGenerator(RolloutGenerator):
             )
         self.subaction_mask = subaction_mask
 
-        self.get_action_mask = getattr(vec_env, "get_action_mask", None)
+        self.get_action_mask = getattr(self.vec_env, "get_action_mask", None)
 
         self.traj_step_by_index = np.zeros(self.vec_env.num_envs, dtype=np.int32)
         self.switch_step_by_index = np.random.randint(
@@ -58,16 +68,35 @@ class GuidedLearnerRolloutGenerator(RolloutGenerator):
             for switch_step in self.switch_step_by_index
         ]
 
-        self.next_obs, _ = vec_env.reset()
+        self.next_obs = np.zeros(
+            (self.env_spaces.num_envs,)
+            + self.env_spaces.single_observation_space.shape,
+            dtype=self.env_spaces.single_observation_space.dtype,
+        )
+
+        self.episode_stats_writer = find_wrapper(self.vec_env, EpisodeStatsWriter)
+
+    def prepare(self) -> None:
+        self.next_obs, _ = self.vec_env.reset()
         self.next_action_masks = (
             self.get_action_mask() if self.get_action_mask else None
         )
 
-        self.episode_stats_writer = find_wrapper(vec_env, EpisodeStatsWriter)
+    def rollout(self) -> Optional[TrajectoryRollout]:
+        rollout_view = self.data_store_view.update_for_rollout_start()
+        if rollout_view is None:
+            return None
+        (
+            learning_policy,
+            rollout_params,
+            self.tb_writer.timesteps_elapsed,
+            _,
+        ) = rollout_view
+        self.update_rollout_params(rollout_params)
+        log_scalars(self.tb_writer, "charts", rollout_params)
 
-    def rollout(self, gamma: NumOrArray, gae_lambda: NumOrArray) -> TrajectoryRollout:
-        self.learning_policy.eval()
-        self.learning_policy.reset_noise()
+        learning_policy.eval()
+        learning_policy.reset_noise()
         self.guide_policy.reset_noise()
 
         traj_builders = [TrajectoryBuilder() for _ in range(self.vec_env.num_envs)]
@@ -80,7 +109,7 @@ class GuidedLearnerRolloutGenerator(RolloutGenerator):
             # FIXME: sde_sample_freq implementation isn't correct because it assumes the
             # transition from guide to learning policy uses the same noise.
             if self.sde_sample_freq > 0 and s > 0 and s % self.sde_sample_freq == 0:
-                self.learning_policy.reset_noise()
+                learning_policy.reset_noise()
                 self.guide_policy.reset_noise()
             s += 1
 
@@ -119,7 +148,7 @@ class GuidedLearnerRolloutGenerator(RolloutGenerator):
 
             if self.episode_stats_writer:
                 self.episode_stats_writer.steps_per_step = self.policies_by_index.count(
-                    self.learning_policy
+                    learning_policy
                 )
             self.next_obs, rewards, terminations, truncations, _ = self.vec_env.step(
                 np.array(clamped_actions)
@@ -145,7 +174,7 @@ class GuidedLearnerRolloutGenerator(RolloutGenerator):
                             self.switch_range
                         )
                     elif traj_step == switch_step:
-                        self.policies_by_index[idx] = self.learning_policy
+                        self.policies_by_index[idx] = learning_policy
                     continue
                 traj_builder.add(
                     obs=obs[idx],
@@ -162,27 +191,26 @@ class GuidedLearnerRolloutGenerator(RolloutGenerator):
                     switch_step = np.random.randint(self.switch_range)
                     self.switch_step_by_index[idx] = switch_step
                     self.policies_by_index[idx] = (
-                        self.guide_policy if switch_step > 0 else self.learning_policy
+                        self.guide_policy if switch_step > 0 else learning_policy
                     )
                     completed_trajectories.append(
-                        traj_builder.trajectory(gamma, gae_lambda)
+                        traj_builder.trajectory(self.gamma, self.gae_lambda)
                     )
                     traj_builder.reset()
 
-        next_values = self.learning_policy.value(self.next_obs)
-        self.learning_policy.train()
+        next_values = learning_policy.value(self.next_obs)
+        learning_policy.train()
 
         trajectories = completed_trajectories + [
-            traj_builder.trajectory(gamma, gae_lambda, next_values=next_value)
+            traj_builder.trajectory(self.gamma, self.gae_lambda, next_values=next_value)
             for traj_builder, next_value in zip(traj_builders, next_values)
             if len(traj_builder) > 0
         ]
         # Release TrajectoryBuilders because they can be holding a lot of memory.
         traj_builders = None
         return TrajectoryRollout(
-            self.learning_policy.device,
+            learning_policy.device,
             trajectories,
-            scale_advantage_by_values_accuracy=self.scale_advantage_by_values_accuracy,
             subaction_mask=self.subaction_mask,
             action_plane_space=getattr(self.vec_env, "action_plane_space", None),
         )

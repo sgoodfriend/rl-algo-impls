@@ -112,10 +112,8 @@ def assert_feature_mirroring(obs: jax.Array) -> None:
 
 
 def assert_actions_get_enqueued(
-    state: JuxState,
     per_position_actions: jax.Array,  # int[B, P, W, H, A6]
     per_position_action_mask: jax.Array,  # int[B*P, W*H, AM28]
-    resulting_obs: jax.Array,  # float[B*P, OBS, W, H]
 ) -> None:
     # bool[B, P, W, H, AM28]
     actions_mask = per_position_action_mask.reshape(
@@ -136,31 +134,18 @@ def assert_actions_get_enqueued(
     mask_invalid_actions = jnp.logical_and(
         any_unit_action_allowed, ~action_allowed_by_mask
     )
-    assert (
-        ~mask_invalid_actions.any()
-    ), f"Invalid actions: {mask_invalid_actions.nonzero()}"
-
-    # bool[B, P, W, H, AM24]
-    enqueued_actions = (
-        resulting_obs[
-            :,
-            SimpleObservationFeature.ENQUEUED_ACTION : SimpleObservationFeature.ENQUEUED_ACTION
-            + SIMPLE_UNIT_ACTION_ENCODED_SIZE,
+    if mask_invalid_actions.any():
+        invalid_action_locs = mask_invalid_actions.nonzero()
+        logging.error(f"Invalid actions at {invalid_action_locs}")
+        invalid_actions = per_position_actions[invalid_action_locs]
+        logging.error(f"Invalid actions: {invalid_actions}")
+        invalid_action_masks = unit_actions_mask[..., : SIMPLE_UNIT_ACTION_SIZES[0]][
+            invalid_action_locs
         ]
-        .astype(jnp.bool_)
-        .transpose((0, 2, 3, 1))
-        .reshape(per_position_actions.shape[:-1] + (-1,))
-    )
-    # bool[B, P, W, H]
-    action_in_enqueued_actions = jnp.take_along_axis(
-        enqueued_actions, per_position_actions[..., 1][..., None], axis=-1
-    ).squeeze(-1)
-    # bool[B, P, W, H]
-    action_enqueue_failures = jnp.logical_and(
-        any_unit_action_allowed, ~action_in_enqueued_actions
-    )
-    # if action_enqueue_failures.any():
-    #     logging.warn(f"Not all actions enqueued: {action_enqueue_failures.nonzero()}")
+        logging.error(f"Invalid action masks: {invalid_action_masks}")
+        raise AssertionError(
+            f"Invalid actions {invalid_actions} at {invalid_action_locs} with masks {invalid_action_masks}"
+        )
 
 
 def assert_reward_only_on_done(rewards: jax.Array, dones: jax.Array) -> None:

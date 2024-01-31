@@ -95,7 +95,3 @@ class MultiDiscreteActorHead(Actor):
         logits = self._fc(obs)
         pi = MultiCategorical(self.nvec, logits=logits, masks=action_masks)
         return pi_forward(pi, actions)
-
-    @property
-    def action_shape(self) -> Tuple[int, ...]:
-        return (len(self.nvec),)

@@ -5,55 +5,55 @@ import os
 import random
 from dataclasses import asdict
 from pathlib import Path
-from typing import Any, Dict, Optional, Type, Union
+from typing import Any, Dict, Optional, Tuple, Type, Union
 
 import gymnasium
-import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import torch.backends.cudnn
 import yaml
-from gymnasium.spaces import Box, Discrete
 
+import wandb
 from rl_algo_impls.a2c.a2c import A2C
 from rl_algo_impls.acbc.acbc import ACBC
-from rl_algo_impls.dqn.dqn import DQN
-from rl_algo_impls.dqn.policy import DQNPolicy
+from rl_algo_impls.ppo.appo import APPO
+from rl_algo_impls.ppo.dppo import DPPO
 from rl_algo_impls.ppo.ppo import PPO
-from rl_algo_impls.rollout.replay_buffer_rollout_generator import (
-    ReplayBufferRolloutGenerator,
-)
-from rl_algo_impls.rollout.rollout import RolloutGenerator
-from rl_algo_impls.rollout.sync_step_rollout import SyncStepRolloutGenerator
 from rl_algo_impls.runner.config import Config, Hyperparams
 from rl_algo_impls.runner.wandb_load import load_player
 from rl_algo_impls.shared.algorithm import Algorithm
-from rl_algo_impls.shared.callbacks.eval_callback import EvalCallback
-from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
+from rl_algo_impls.shared.data_store.abstract_data_store_accessor import (
+    AbstractDataStoreAccessor,
+)
+from rl_algo_impls.shared.data_store.data_store_data import LearnerInitializeData
+from rl_algo_impls.shared.data_store.data_store_view import LearnerDataStoreView
+from rl_algo_impls.shared.data_store.in_process_data_store_accessor import (
+    InProcessDataStoreAccessor,
+)
 from rl_algo_impls.shared.policy.actor_critic import ActorCritic
 from rl_algo_impls.shared.policy.policy import Policy
-from rl_algo_impls.shared.vec_env.utils import import_for_env_id, is_microrts
-from rl_algo_impls.wrappers.vector_wrapper import VectorEnv
+from rl_algo_impls.shared.summary_wrapper.abstract_summary_wrapper import (
+    AbstractSummaryWrapper,
+)
+from rl_algo_impls.shared.vec_env.env_spaces import EnvSpaces
+from rl_algo_impls.shared.vec_env.utils import import_for_env_id
 
 ALGOS: Dict[str, Type[Algorithm]] = {
-    "dqn": DQN,
+    # "dqn": DQN,
     "ppo": PPO,
     "a2c": A2C,
     "acbc": ACBC,
+    "appo": APPO,
+    "dppo": DPPO,
 }
 POLICIES: Dict[str, Type[Policy]] = {
-    "dqn": DQNPolicy,
+    # "dqn": DQNPolicy,
     "ppo": ActorCritic,
     "a2c": ActorCritic,
     "acbc": ActorCritic,
+    "appo": ActorCritic,
+    "dppo": ActorCritic,
 }
-DEFAULT_ROLLOUT_GENERATORS: Dict[str, Type[RolloutGenerator]] = {
-    "dqn": ReplayBufferRolloutGenerator,
-    "ppo": SyncStepRolloutGenerator,
-    "a2c": SyncStepRolloutGenerator,
-    "acbc": SyncStepRolloutGenerator,
-}
-
 HYPERPARAMS_PATH = "hyperparams"
 
 
@@ -80,6 +80,12 @@ def base_parser(multiple: bool = True) -> argparse.ArgumentParser:
         type=int,
         nargs="*" if multiple else "?",
         help="Seeds to run experiment. Unset will do one run with no set seed",
+    )
+    parser.add_argument(
+        "--device-indexes",
+        type=int,
+        nargs="*" if multiple else "?",
+        help="GPU device indexes to use. Unset will pick free GPU",
     )
     return parser
 
@@ -133,31 +139,6 @@ def load_hyperparam_dict_by_env_id(algo: str, env_id: str) -> Optional[Dict[str,
     return None
 
 
-def get_device(config: Config, env: VectorEnv) -> torch.device:
-    device = config.device
-    # cuda by default
-    if device == "auto":
-        device = "cuda"
-        # Apple MPS is a second choice (sometimes)
-        if device == "cuda" and not torch.cuda.is_available():
-            device = "mps"
-        # If no MPS, fallback to cpu
-        if device == "mps" and not torch.backends.mps.is_available():
-            device = "cpu"
-        # Simple environments like Discreet and 1-D Boxes might also be better
-        # served with the CPU.
-        if device == "mps":
-            obs_space = env.single_observation_space
-            if isinstance(obs_space, Discrete):
-                device = "cpu"
-            elif isinstance(obs_space, Box) and len(obs_space.shape) == 1:
-                device = "cpu"
-            if is_microrts(config):
-                device = "cpu"
-    logging.info(f"Device: {device}")
-    return torch.device(device)
-
-
 def set_device_optimizations(
     device: torch.device,
     set_float32_matmul_precision: Optional[str] = None,
@@ -184,63 +165,72 @@ def set_seeds(seed: Optional[int]) -> None:
     os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
 
 
-def make_policy(
+def make_eval_policy(
     config: Config,
-    env: VectorEnv,
+    env_spaces: EnvSpaces,
     device: torch.device,
+    data_store_accessor: InProcessDataStoreAccessor,
     load_path: Optional[str] = None,
     load_run_path: Optional[str] = None,
     load_run_path_best: bool = True,
-    load_norm_rms_count_override: Optional[int] = None,
     **kwargs,
 ) -> Policy:
-    policy = POLICIES[config.algo](env, **kwargs).to(device)
+    policy = POLICIES[config.algo](
+        env_spaces,
+        **kwargs,
+    ).to(device)
+    data_store_accessor._data_store.policy = policy
     if not load_path and load_run_path:
-        import wandb
-
         api = wandb.Api()
         _, _, load_path = load_player(
             api, load_run_path, config.args, config.root_dir, load_run_path_best
         )
         assert load_path
     if load_path:
-        policy.load(
-            load_path, load_norm_rms_count_override=load_norm_rms_count_override
-        )
+        data_store_accessor.load(load_path)
     return policy
 
 
-def plot_eval_callback(
-    callback: EvalCallback, tb_writer: SummaryWrapper, run_name: str
-):
-    figure = plt.figure()
-    cumulative_steps = [
-        (idx + 1) * callback.step_freq for idx in range(len(callback.stats))
-    ]
-    plt.plot(
-        cumulative_steps,
-        [s.score.mean for s in callback.stats],
-        "b-",
-        label="mean",
+def initialize_policy_algo_data_store_view(
+    config: Config,
+    env_spaces: EnvSpaces,
+    device: torch.device,
+    data_store_accessor: AbstractDataStoreAccessor,
+    tb_writer: AbstractSummaryWrapper,
+) -> Tuple[Policy, Algorithm, LearnerDataStoreView]:
+    policy_kwargs = dict(config.policy_hyperparams)
+
+    load_path = policy_kwargs.pop("load_path", None)
+    load_run_path = policy_kwargs.pop("load_run_path", None)
+    load_run_path_best = policy_kwargs.pop("load_run_path_best", True)
+    if not load_path and load_run_path:
+        api = wandb.Api()
+        _, _, load_path = load_player(
+            api, load_run_path, config.args, config.root_dir, load_run_path_best
+        )
+        assert load_path
+
+    policy = POLICIES[config.algo](env_spaces, **policy_kwargs).to(device)
+
+    num_parameters = policy.num_parameters()
+    num_trainable_parameters = policy.num_trainable_parameters()
+    tb_writer.update_summary(
+        {
+            "num_parameters": num_parameters,
+            "num_trainable_parameters": num_trainable_parameters,
+        }
     )
-    plt.plot(
-        cumulative_steps,
-        [s.score.mean - s.score.std for s in callback.stats],
-        "g--",
-        label="mean-std",
+
+    algo = ALGOS[config.algo](
+        policy,
+        device,
+        tb_writer,
+        **config.algo_hyperparams,
     )
-    plt.fill_between(
-        cumulative_steps,
-        [s.score.min for s in callback.stats],  # type: ignore
-        [s.score.max for s in callback.stats],  # type: ignore
-        facecolor="cyan",
-        label="range",
+    data_store_accessor.initialize_learner(
+        LearnerInitializeData(policy=policy, algo=algo, load_path=load_path)
     )
-    plt.xlabel("Steps")
-    plt.ylabel("Score")
-    plt.legend()
-    plt.title(f"Eval {run_name}")
-    tb_writer.add_figure("eval", figure)
+    return policy, algo, LearnerDataStoreView(data_store_accessor)
 
 
 Scalar = Union[bool, str, float, int, None]

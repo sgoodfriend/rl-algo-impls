@@ -85,6 +85,8 @@ LuxAI_S2-v0: &lux-defaults
   rollout_hyperparams: &lux-rollout-defaults
     n_steps: 384
     full_batch_off_accelerator: true
+    gamma: [0.99, 0.999, 0.999]
+    gae_lambda: [0.95, 0.99, 0.99]
   algo_hyperparams: &lux-algo-defaults
     batch_size: 2304
     n_epochs: 4
@@ -94,8 +96,6 @@ LuxAI_S2-v0: &lux-defaults
     clip_range_vf: 0.1
     ppo2_vf_coef_halving: true
     multi_reward_weights: [0.99, 0.01]
-    gamma: [0.99, 0.999, 0.999]
-    gae_lambda: [0.95, 0.99, 0.99]
     vf_coef: [0.5, 0.1, 0.1]
 
 LuxAI_S2-v0-double-cone: &lux-dc-defaults
@@ -292,11 +292,13 @@ LuxAI_S2-v0-squnet-iDeimos: &lux-squnet-ideimos
     additional_critic_activation_functions: [tanh]
     output_activation_fn: tanh
     load_run_path: sgoodfriend/rl-algo-impls-lux-nips1/qil1np82
+  rollout_hyperparams: &lux-squnet-ideimos-rollout
+    <<: *lux-squnet-rollout
+    gamma: [0.9997, 0.9997]
+    gae_lambda: [0.99, 0.99]
   algo_hyperparams: &lux-squnet-ideimos-algo
     <<: *lux-squnet-algo
     multi_reward_weights: [0.1, 0.9]
-    gamma: [0.9997, 0.9997]
-    gae_lambda: [0.99, 0.99]
     vf_coef: [0.1, 0.4]
     learning_rate: !!float 1e-4
     ent_coef: 0.01
@@ -338,14 +340,13 @@ LuxAI_S2-v0-squnet-Deimos-jumpstart: &lux-squnet-deimos-jumpstart
   <<: *lux-squnet-ideimos
   rollout_type: guided
   rollout_hyperparams:
-    <<: *lux-squnet-rollout
+    <<: *lux-squnet-ideimos-rollout
     switch_range: 1
   checkpoints_kwargs:
-    history_size: 1
+    history_size: 4
   eval_hyperparams: &lux-squnet-deimos-jumpstart-eval
     <<: *lux-squnet-ideimos-eval
     score_threshold: null
-    only_checkpoint_initial_policy: true
     env_overrides: &lux-squnet-deimos-jumpstart-eval-env-overrides
       <<: *lux-squnet-ideimos-eval-env-overrides
       play_checkpoints_kwargs:
@@ -393,7 +394,7 @@ LuxAI_S2-v0-squnet-Deimos-guided-random: &lux-squnet-guided-random
   <<: *lux-squnet-ideimos
   rollout_type: guided_random
   rollout_hyperparams: &lux-squnet-guided-random-rollout
-    <<: *lux-squnet-rollout
+    <<: *lux-squnet-ideimos-rollout
     guide_probability: 0
   eval_hyperparams:
     <<: *lux-squnet-deimos-jumpstart-eval
@@ -514,11 +515,13 @@ LuxAI_S2-v0-split-short-squnet-acbc-robot: &lux-split-short-squnet-acbc-robot
     output_activation_fn: identity
     load_run_path: sgoodfriend/rl-algo-impls-lux-nips1/oupuah7y
     save_critic_separate: true
+  rollout_hyperparams: &lux-split-short-squnet-acbc-robot-rollout
+    <<: *lux-squnet-ideimos-rollout
+    gamma: [0.9997, 0.9997, 0.9997]
+    gae_lambda: [0.95, 0.95, 0.95]
   algo_hyperparams: &lux-split-short-squnet-acbc-robot-algo
     <<: *lux-squnet-adv-norm-gfast-algo
     multi_reward_weights: [0.1, 0.8, 0.1]
-    gamma: [0.9997, 0.9997, 0.9997]
-    gae_lambda: [0.95, 0.95, 0.95]
     vf_coef: [0.33, 0.33, 0.33]
 
 LuxAI_S2-v0-ss-squnet-acbc-robot-rollout-reset:
@@ -778,15 +781,15 @@ LuxAI_S2-v0-sSqunet-78env-deimos-constant-robots-3:
 
 LuxAI_S2-v0-sSqunet-78env-deimos-gamma-1: &lux-ssqunet-78envs-deimos-gamma-1
   <<: *lux-ssqunet-78envs-deimos-constant-robots-3
-  algo_hyperparams: &lux-ssqunet-78envs-deimos-gamma-1-algo
-    <<: *lux-ssqunet-78envs-deimos-constant-robots-3-algo
+  rollout_hyperparams: &lux-ssqunet-78envs-deimos-gamma-1-rollout
+    <<: *lux-short-squnet-78-envs-rollout
     gamma: [1, 1, 1]
 
 LuxAI_S2-v0-sSqunet-78env-deimos-constant-robots-25:
   &lux-ssqunet-78envs-deimos-constant-robots-25
   <<: *lux-ssqunet-78envs-deimos-gamma-1
   algo_hyperparams: &lux-ssqunet-78envs-deimos-constant-robots-25-algo
-    <<: *lux-ssqunet-78envs-deimos-gamma-1-algo
+    <<: *lux-ssqunet-78envs-deimos-constant-robots-3-algo
     multi_reward_weights: [0.25, 0.65, 0.1]
 
 LuxAI_S2-v0-sSqunet-78env-deimos-lr2: &lux-ssqunet-78envs-deimos-high-lr2
@@ -950,7 +953,7 @@ LuxAI_S2-v0-sSqunet-78env-deimos-lr2-no-guide:
   <<: *lux-ssqunet-78envs-deimos-high-lr2
   rollout_type: sync
   rollout_hyperparams: &lux-ssqunet-78envs-deimos-lr2-no-guide-rollout
-    <<: *lux-squnet-rollout
+    <<: *lux-squnet-ideimos-rollout
     num_envs_reset_every_rollout: 12
   hyperparam_transitions_kwargs:
     interpolate_method: cosine
@@ -991,7 +994,7 @@ LuxAI_S2-v0-sSqunet-78env-multi-fine-tune: &lux-ssqunet-78envs-multi-fine-tune
   <<: *lux-ssqunet-78envs-deimos-gamma-1
   rollout_type: sync
   rollout_hyperparams:
-    <<: *lux-squnet-rollout
+    <<: *lux-squnet-ideimos-rollout
     num_envs_reset_every_rollout: 12
   policy_hyperparams:
     <<: *lux-short-squnet-78-envs-deimos-policy
@@ -1194,7 +1197,6 @@ LuxAI_S2-v0-sSqunet-j256env16-80m: &lux-ssqnet-j256env16-80m
       play_checkpoints_kwargs:
         n_envs_against_checkpoints: null
       info_rewards: null
-    only_checkpoint_initial_policy: false
     only_checkpoint_best_policies: true
     score_threshold: 0.14
   policy_hyperparams: &lux-ssqnet-j256env16-policy
@@ -1220,23 +1222,6 @@ LuxAI_S2-v0-sSqunet-j256env16-80m: &lux-ssqnet-j256env16-80m
     <<: *lux-ssqnet-78env16-deimos-lr4d-hbots-50m-rollout
     n_steps: 32
     num_envs_reset_every_rollout: 32
-  algo_hyperparams: &lux-ssqnet-j256env16-80m-algo
-    <<: *lux-ssqnet-78env16-deimos-lr4d-hbots-50m-algo
-    batch_size: 8192
-    multi_reward_weights:
-      - 1 # WinLoss
-      - 0.1 # score reward
-      - 0.1 # generation ice
-      - 0.1 # generation ore
-      - 0.1 # generation water
-      - 0.1 # generation metal
-      - 0.1 # generation power
-      - 0.1 # generation light bots
-      - 0.1 # generation heavy bots
-      - 0 # generation opponent kills
-      - 0.1 # resources lichen
-      - 0.1 # resources factory
-      - 0 # resources water in factories
     gamma:
       - 1 # WinLoss
       - 1 # score reward
@@ -1265,6 +1250,23 @@ LuxAI_S2-v0-sSqunet-j256env16-80m: &lux-ssqnet-j256env16-80m
       - 0.95 # resources lichen
       - 0.95 # resources factory
       - 0.95 # resources water in factories
+  algo_hyperparams: &lux-ssqnet-j256env16-80m-algo
+    <<: *lux-ssqnet-78env16-deimos-lr4d-hbots-50m-algo
+    batch_size: 8192
+    multi_reward_weights:
+      - 1 # WinLoss
+      - 0.1 # score reward
+      - 0.1 # generation ice
+      - 0.1 # generation ore
+      - 0.1 # generation water
+      - 0.1 # generation metal
+      - 0.1 # generation power
+      - 0.1 # generation light bots
+      - 0.1 # generation heavy bots
+      - 0 # generation opponent kills
+      - 0.1 # resources lichen
+      - 0.1 # resources factory
+      - 0 # resources water in factories
     vf_coef:
       - 0.2 # WinLoss
       - 0.1 # score reward
@@ -1660,7 +1662,6 @@ LuxAI_S2-v0-sSqnet-j1024env16-80m-checkpoints:
       n_envs: 128
       play_checkpoints_kwargs:
         n_envs_against_checkpoints: null
-    only_checkpoint_initial_policy: false
     only_checkpoint_best_policies: true
     score_threshold: 0.14
     step_freq: !!float 2.5e6
@@ -1682,7 +1683,6 @@ LuxAI_S2-v0-sSqnet-j1024env16-80m-checkpoints-old-reward:
       n_envs: 128
       play_checkpoints_kwargs:
         n_envs_against_checkpoints: null
-    only_checkpoint_initial_policy: false
     only_checkpoint_best_policies: true
     score_threshold: 0.14
     step_freq: !!float 2.5e6
@@ -1795,8 +1795,8 @@ LuxAI_S2-v0-sSqnet-j1024env16-80m-no-score-reward:
       - identity # resources lichen
       - identity # resources factory
       - identity # resources water in factories
-  algo_hyperparams: &lux-ssqnet-j1024env16-80m-no-score-reward-algo
-    <<: *lux-ssqnet-j1024env16-80m-okills-old-reward-algo
+  rollout_hyperparams: &lux-ssqnet-j1024env16-80m-no-score-reward-rollout
+    <<: *lux-ssqnet-j1024env16-r32-80m-rollout
     gamma:
       - 1 # WinLoss
       - 1 # generation ice
@@ -1823,6 +1823,8 @@ LuxAI_S2-v0-sSqnet-j1024env16-80m-no-score-reward:
       - 0.95 # resources lichen
       - 0.95 # resources factory
       - 0.95 # resources water in factories
+  algo_hyperparams: &lux-ssqnet-j1024env16-80m-no-score-reward-algo
+    <<: *lux-ssqnet-j1024env16-80m-okills-old-reward-algo
     multi_reward_weights:
       - 1 # WinLoss
       - 0.1 # generation ice
@@ -2039,8 +2041,8 @@ LuxAI_S2-v0-sSqnet-j1024env16-80m-game-length:
       - identity # resources factory
       - identity # resources water in factories
       - identity # game length
-  algo_hyperparams: &lux-ssqnet-j1024env16-80m-game-length-algo
-    <<: *lux-ssqnet-j1024env16-80m-322res-algo
+  rollout_hyperparams: &lux-ssqnet-j1024env16-80m-game-length-rollout
+    <<: *lux-ssqnet-j1024env16-80m-no-score-reward-rollout
     gamma:
       - 1 # WinLoss
       - 1 # generation ice
@@ -2069,6 +2071,8 @@ LuxAI_S2-v0-sSqnet-j1024env16-80m-game-length:
       - 0.95 # resources factory
       - 0.95 # resources water in factories
       - 0.95 # game length
+  algo_hyperparams: &lux-ssqnet-j1024env16-80m-game-length-algo
+    <<: *lux-ssqnet-j1024env16-80m-322res-algo
     multi_reward_weights:
       - 1 # WinLoss
       - 0.1 # generation ice
@@ -2709,12 +2713,14 @@ LuxAI_S2-v0-j1024env16-80m-stats-rewards: &lux-j1024env16-80m-stats-rewards
       - identity # resources lichen
       - identity # resources factory
       - identity # game length
+  rollout_hyperparams: &lux-j1024env16-80m-stats-rewards-rollout
+    <<: *lux-ssqnet-j1024env16-80m-game-length-rollout
+    gamma: 1.0
+    gae_lambda: 0.95
   algo_hyperparams: &lux-j1024env16-80m-stats-rewards-algo
     <<: *lux-j1024env16-80m-std-norm-algo
     normalize_advantage: true
     standardize_advantage: false
-    gamma: 1.0
-    gae_lambda: 0.95
     multi_reward_weights:
       - 1 # WinLoss
       - 0.1 # ice
@@ -3070,6 +3076,8 @@ LuxAI_S2-v0-j512env64-80m-lr20-opp-resources:
         MAX_GLOBAL_ID: 512
   rollout_hyperparams: &lux-j512env64-80m-lr20-opp-resources-rollout
     <<: *lux-j512env64-close-ore-ice2-rollout
+    gamma: 1.0
+    gae_lambda: 0.95
   algo_hyperparams: &lux-j512env64-80m-lr20-opp-resources-algo
     <<: *lux-j1024env32-80m-lr20-opp-resources-algo
     batch_size: 128
@@ -3230,17 +3238,6 @@ LuxAI_S2-v0-j1024env32-80m-lr10-finetune: &lux-j1024env32-80m-lr10-finetune
   hyperparam_transitions_kwargs:
     &lux-j1024env32-80m-lr10-finetune-hyperparam-transitions
     <<: *lux-j512env64-80m-a100-lr10-finetune-hyperparam-transitions
-
-LuxAI_S2-v0-j1024env32-80m-lr10-finetune-rms:
-  &lux-j1024env32-80m-lr10-finetune-rms
-  <<: *lux-j1024env32-80m-lr10-finetune
-  env_hyperparams: &lux-j1024env32-80m-lr10-finetune-rms-env
-    <<: *lux-j1024env32-80m-lr20-opp-resources-rms-env
-  policy_hyperparams: &lux-j1024env32-80m-lr10-finetune-rms-policy
-    <<: *lux-j1024env32-80m-a100-lr20-finetune-policy
-    load_norm_rms_count_override: !!float 1e6
-  hyperparam_transitions_kwargs:
-    <<: *lux-j1024env32-80m-lr10-finetune-hyperparam-transitions
 
 LuxAI_S2-v0-j1024env32-80m-lr5-finetune: &lux-j1024env32-80m-lr5-finetune
   <<: *lux-j1024env32-80m-lr10-finetune
@@ -3537,6 +3534,8 @@ LuxAI_S2-v0-j1024env32-80m-lr10-rolling-reset:
     n_steps: 32
     num_envs_reset_every_rollout: 0
     rolling_num_envs_reset_every_rollout: 4
+    gamma: 1.0
+    gae_lambda: 0.95
   hyperparam_transitions_kwargs:
     &lux-j1024env32-80m-lr10-rolling-reset-hyperparam-transitions
     interpolate_method: cosine
@@ -5473,6 +5472,177 @@ LuxAI_S2-v0-j1024env64-80m-ent1-lr100-ln-baserew-tkl5c-ft-a100:
     &lux-j1024env64-80m-ent1-lr100-ln-baserew-tkl5c-ft-a100-hyperparam-transitions
     <<: *lux-j1024env32-80m-ent1-lr50-ln-mgn4-2omh-tkl5c-prep-ft-hyperparam-transitions
 
+LuxAI_S2-v0-j1024env16-80m-ent5-lr100-mgn2-2o3m4h-a100:
+  &lux-j1024env16-80m-ent5-lr100-mgn2-2o3m4h-a100
+  <<: *lux-j1024env16-80m-vfc024-ent1-lr100-ln-mgn2-2o3m4h-tkl5c-ft
+  policy_hyperparams: &lux-j1024env16-80m-ent5-lr100-mgn2-2o3m4h-a100-policy
+    <<: *lux-j1024env16-80m-vfc024-ln-mgn2-2o2m2h-ft-teacher5-policy
+    load_run_path: null
+  rollout_hyperparams: &lux-j1024env16-80m-ent5-lr100-mgn2-2o3m4h-a100-rollout
+    <<: *lux-j1024env32-80m-ent1-lr50-ln-mgn4-2omh-tkl5c-prep-ft-rollout
+  algo_hyperparams: &lux-j1024env16-80m-ent5-lr100-mgn2-2o3m4h-a100-algo
+    <<: *lux-j1024env16-80m-vfc024-ent1-lr100-ln-mgn2-2o3m4h-tkl5c-ft-algo
+    teacher_kl_loss_coef: null
+    ent_coef: !!float 5e-3
+    batch_size: 4096
+  hyperparam_transitions_kwargs: null
+
+LuxAI_S2-v0-j1024env16-80m-ent5-lr100-mgn2-2o3m4h-no-gradient-accumulation:
+  &lux-j1024env16-80m-ent5-lr100-mgn2-2o3m4h-no-gradient-accumulation
+  <<: *lux-j1024env16-80m-ent5-lr100-mgn2-2o3m4h-a100
+  algo_hyperparams:
+    &lux-j1024env16-80m-ent5-lr100-mgn2-2o3m4h-no-gradient-accumulation-algo
+    <<: *lux-j1024env16-80m-ent5-lr100-mgn2-2o3m4h-a100-algo
+    gradient_accumulation: false
+    batch_size: 2048
+
+LuxAI_S2-v0-j1024env32-80m-ent5d1-lr50-mgn4-2omh-tkl5c-ft-a100:
+  &lux-j1024env32-80m-ent5d1-lr50-mgn4-2omh-tkl5c-ft-a100
+  <<: *lux-j1024env32-80m-ent1-lr50-ln-mgn4-2omh-tkl5c-prep-ft
+  policy_hyperparams:
+    &lux-j1024env32-80m-ent5d1-lr50-mgn4-2omh-tkl5c-ft-a100-policy
+    <<: *lux-j1024env16-80m-ent5-lr100-mgn2-2o3m4h-a100-policy
+    load_run_path: sgoodfriend/rl-algo-impls-lux-nips1/wzhrkq28
+    load_run_path_best: true
+  algo_hyperparams: &lux-j1024env32-80m-ent5d1-lr50-mgn4-2omh-tkl5c-ft-a100-algo
+    <<: *lux-j1024env32-80m-ent1-lr50-ln-mgn4-2omh-tkl5c-prep-ft-algo
+    batch_size: 1024
+
+LuxAI_S2-v0-j1024env64-80m-ent1-lr10-mgn2-base1lc-tkl5c-ft-a100:
+  &lux-j1024env64-80m-ent1-lr10-mgn2-base1lc-tkl5c-ft-a100
+  <<: *lux-j1024env-80m-ent1-lr100-ln-baserew-tkl5c-ft-a100
+  policy_hyperparams:
+    &lux-j1024env64-80m-ent1-lr10-mgn2-base1lc-tkl5c-ft-a100-policy
+    <<: *lux-j1024env64-80m-ent1-lr100-ln-baserew-tkl5c-ft-a100-policy
+    load_run_path: sgoodfriend/rl-algo-impls-lux-nips1/on7vjom1
+    load_run_path_best: true
+  algo_hyperparams:
+    &lux-j1024env64-80m-ent1-lr10-mgn2-base1lc-tkl5c-ft-a100-algo
+    <<: *lux-j1024env64-80m-ent1-lr100-ln-baserew-tkl5c-ft-a100-algo
+    ent_coef: !!float 1e-3
+    learning_rate: !!float 5e-5
+    multi_reward_weights:
+      - 1 # WinLoss
+      - 0.1 # ice
+      - 0.1 # ore
+      - 0.1 # water
+      - 0.1 # metal
+      - 0 # power
+      - 0.1 # light bots
+      - 0.1 # heavy bots
+      - 0.1 # opponent kills
+      - 0.1 # resources lichen
+      - 0.1 # resources factory
+      - 0 # game length
+      - -0.1 # opponent resources lichen
+      - 0 # opponent resources factory
+  lr_by_kl_kwargs:
+    &lux-j1024env64-80m-ent1-lr10-mgn2-base1lc-tkl5c-ft-a100-lr-by-kl-kwargs
+    <<: *lux-j1024env64-80m-ent1-lr100-ln-baserew-tkl5c-ft-a100-lr-by-kl-kwargs
+    max_lr: !!float 1e-3
+  hyperparam_transitions_kwargs: null
+
+LuxAI_S2-v0-j1024env32-80m-ent5d1-lr50-mgn4-2omh1lc-tkl5c-ft:
+  &lux-j1024env32-80m-ent5d1-lr50-mgn4-2omh1lc-tkl5c-ft
+  <<: *lux-j1024env32-80m-ent5d1-lr50-mgn4-2omh-tkl5c-ft-a100
+  algo_hyperparams: &lux-j1024env32-80m-ent5d1-lr50-mgn4-2omh1lc-tkl5c-ft-algo
+    <<: *lux-j1024env32-80m-ent5d1-lr50-mgn4-2omh-tkl5c-ft-a100-algo
+    batch_size: 512
+    multi_reward_weights:
+      - 1 # WinLoss
+      - 0.1 # ice
+      - 0.2 # ore
+      - 0.1 # water
+      - 0.2 # metal
+      - 0 # power
+      - 0.1 # light bots
+      - 0.2 # heavy bots
+      - 0.1 # opponent kills
+      - 0.1 # resources lichen
+      - 0.1 # resources factory
+      - 0 # game length
+      - -0.1 # opponent resources lichen
+      - 0 # opponent resources factory
+
+LuxAI_S2-v0-j1024env32-80m-ent5d1-lr50-mgn4-2omh1lc-tkl5c-ft-no-gradient-accumulation:
+  &lux-j1024env32-80m-ent5d1-lr50-mgn4-2omh1lc-tkl5c-ft-no-gradient-accumulation
+  <<: *lux-j1024env32-80m-ent5d1-lr50-mgn4-2omh1lc-tkl5c-ft
+  policy_hyperparams:
+    &lux-j1024env32-80m-ent5d1-lr50-mgn4-2omh1lc-tkl5c-ft-no-gradient-accumulation-policy
+    <<: *lux-j1024env32-80m-ent5d1-lr50-mgn4-2omh-tkl5c-ft-a100-policy
+    load_run_path: sgoodfriend/rl-algo-impls-lux-nips1/v01v9dq2
+    load_run_path_best: true
+  algo_hyperparams:
+    &lux-j1024env32-80m-ent5d1-lr50-mgn4-2omh1lc-tkl5c-ft-no-gradient-accumulation-algo
+    <<: *lux-j1024env32-80m-ent5d1-lr50-mgn4-2omh1lc-tkl5c-ft-algo
+    gradient_accumulation: false
+
+LuxAI_S2-v0-j1024env32-80m-ent5d1-lr01-mgn4-2omh1lc-tkl5c-ft-no-grad-accum-a100:
+  &lux-j1024env32-80m-ent5d1-lr01-mgn4-2omh1lc-tkl5c-ft-no-grad-accum-a100
+  <<: *lux-j1024env32-80m-ent5d1-lr50-mgn4-2omh1lc-tkl5c-ft-no-gradient-accumulation
+  algo_hyperparams:
+    &lux-j1024env32-80m-ent5d1-lr01-mgn4-2omh1lc-tkl5c-ft-no-grad-accum-a100-algo
+    <<: *lux-j1024env32-80m-ent5d1-lr50-mgn4-2omh1lc-tkl5c-ft-no-gradient-accumulation-algo
+    learning_rate: !!float 1e-5
+    batch_size: 1024
+  lr_by_kl_kwargs:
+    &lux-j1024env32-80m-ent5d1-lr01-mgn4-2omh1lc-tkl5c-ft-no-grad-accum-a100-lr-by-kl-kwargs
+    <<: *lux-j1024env32-80m-ent1-lr50-ln-mgn4-baserew-tkl5c-ft-lr-by-kl-kwargs
+    min_lr: !!float 5e-6
+
+LuxAI_S2-v0-j1024env64-80m-ent1-lr01-mgn2-base1lc-tkl5c-ft-no-grad-accum-a100:
+  &lux-j1024env64-80m-ent1-lr01-mgn2-base1lc-tkl5c-ft-no-grad-accum-a100
+  <<: *lux-j1024env64-80m-ent1-lr10-mgn2-base1lc-tkl5c-ft-a100
+  policy_hyperparams:
+    &lux-j1024env64-80m-ent1-lr01-mgn2-base1lc-tkl5c-ft-no-grad-accum-a100-policy
+    <<: *lux-j1024env64-80m-ent1-lr10-mgn2-base1lc-tkl5c-ft-a100-policy
+    load_run_path: sgoodfriend/rl-algo-impls-lux-nips1/9362qhqx
+    load_run_path_best: true
+  algo_hyperparams:
+    &lux-j1024env64-80m-ent1-lr01-mgn2-base1lc-tkl5c-ft-no-grad-accum-a100-algo
+    <<: *lux-j1024env64-80m-ent1-lr10-mgn2-base1lc-tkl5c-ft-a100-algo
+    learning_rate: !!float 1e-6
+    gradient_accumulation: false
+  lr_by_kl_kwargs:
+    &lux-j1024env64-80m-ent1-lr01-mgn2-base1lc-tkl5c-ft-no-grad-accum-a100-lr-by-kl-kwargs
+    <<: *lux-j1024env64-80m-ent1-lr10-mgn2-base1lc-tkl5c-ft-a100-lr-by-kl-kwargs
+    min_lr: !!float 1e-6
+
+LuxAI_S2-v0-j1024env64-80m-ent1-lr01-mgn2-base1lc-tkl5c-ft-grac8-a100:
+  &lux-j1024env64-80m-ent1-lr01-mgn2-base1lc-tkl5c-ft-grac8-a100
+  <<: *lux-j1024env64-80m-ent1-lr01-mgn2-base1lc-tkl5c-ft-no-grad-accum-a100
+  algo_hyperparams:
+    &lux-j1024env64-80m-ent1-lr01-mgn2-base1lc-tkl5c-ft-grac8-a100-algo
+    <<: *lux-j1024env64-80m-ent1-lr01-mgn2-base1lc-tkl5c-ft-no-grad-accum-a100-algo
+    gradient_accumulation: 8
+
+LuxAI_S2-v0-j1024env64-80m-ent1-lr10-mgn2-base1lc-tkl5c-ft-grad-accum-a100:
+  &lux-j1024env64-80m-ent1-lr10-mgn2-base1lc-tkl5c-ft-grad-accum-a100
+  <<: *lux-j1024env64-80m-ent1-lr10-mgn2-base1lc-tkl5c-ft-a100
+  policy_hyperparams:
+    &lux-j1024env64-80m-ent1-lr10-mgn2-base1lc-tkl5c-ft-grad-accum-a100-policy
+    <<: *lux-j1024env64-80m-ent1-lr01-mgn2-base1lc-tkl5c-ft-no-grad-accum-a100-policy
+
+LuxAI_S2-v0-j1024env16-80m-ent5-lr100-mgn2-2o3m4h-no-grad-accum-a100:
+  &lux-j1024env16-80m-ent5-lr100-mgn2-2o3m4h-no-grad-accum-a100
+  <<: *lux-j1024env16-80m-ent5-lr100-mgn2-2o3m4h-no-gradient-accumulation
+  algo_hyperparams:
+    &lux-j1024env16-80m-ent5-lr100-mgn2-2o3m4h-no-grad-accum-a100-algo
+    <<: *lux-j1024env16-80m-ent5-lr100-mgn2-2o3m4h-no-gradient-accumulation-algo
+    batch_size: 4096
+
+LuxAI_S2-v0-j1024env16-80m-ent5-lr3c-mgn2-2o3m4h-nga-async-a100:
+  &lux-j1024env16-80m-ent5-lr3c-mgn2-2o3m4h-nga-async-a100
+  <<: *lux-j1024env16-80m-ent5-lr100-mgn2-2o3m4h-no-grad-accum-a100
+  process_mode: async
+  algo_hyperparams:
+    &lux-j1024env16-80m-ent5-lr3c-mgn2-2o3m4h-nga-async-a100-algo
+    <<: *lux-j1024env16-80m-ent5-lr100-mgn2-2o3m4h-no-grad-accum-a100-algo
+    learning_rate: !!float 3e-4
+    batch_size: 2048
+  lr_by_kl_kwargs: null
+  hyperparam_transitions_kwargs: null
+
 LuxAI_S2-agent: &lux-agent
   <<: *lux-j1024env64-80m-vfc006-ln-mgn4-2o3m4h-ft-a100
   device: cpu
@@ -5489,36 +5659,36 @@ LuxAI_S2-agent: &lux-agent
       play_checkpoints_kwargs: null
 
 LuxAI_S2-v0-debug:
-  <<: *lux-j1024env32-80m-ent1-lr50-ln-mgn4-2omh-tkl5c-prep-ft
+  <<: *lux-j1024env16-80m-ent5-lr3c-mgn2-2o3m4h-nga-async-a100
   n_timesteps: !!float 10e6
   device: mps
   env_hyperparams:
-    # <<: *lux-j1024env16-clip-reward-1-env
-    <<: *lux-j1024env32-opp-resources-env
+    <<: *lux-j1024env16-clip-reward-1-env
+    # <<: *lux-j1024env32-opp-resources-env
     # <<: *lux-j1024env64-a100-env
     n_envs: 64
     play_checkpoints_kwargs:
       n_envs_against_checkpoints: 8
     make_kwargs:
-      # <<: *lux-j1024env16-power-diggers-env-make-kwargs
-      <<: *lux-j1024env32-opp-resources-env-make-kwargs
+      <<: *lux-j1024env16-power-diggers-env-make-kwargs
+      # <<: *lux-j1024env32-opp-resources-env-make-kwargs
       # <<: *lux-j1024env64-a100-env-make-kwargs
       verbose: 3
       verify: true
     # vec_env_class: sync
   eval_hyperparams:
-    # <<: *lux-j1024env16-eval
-    <<: *lux-j1024env32-opp-resources-eval
+    <<: *lux-j1024env16-eval
+    # <<: *lux-j1024env32-opp-resources-eval
     # <<: *lux-j1024env64-a100-eval
     env_overrides:
-      # <<: *lux-j1024env16-power-diggers-eval-env-overrides
-      <<: *lux-j1024env32-80m-a100-std-norm-retrain-env-overrides
+      <<: *lux-j1024env16-power-diggers-eval-env-overrides
+      # <<: *lux-j1024env32-80m-a100-std-norm-retrain-env-overrides
       # <<: *lux-j1024env64-a100-eval-env-overrides
       n_envs: 8
       # vec_env_class: sync
       make_kwargs:
-        # <<: *lux-j1024env16-power-diggers-eval-env-overrides-make-kwargs
-        <<: *lux-j1024env32-80m-a100-std-norm-retrain-env-overrides-make-kwargs
+        <<: *lux-j1024env16-power-diggers-eval-env-overrides-make-kwargs
+        # <<: *lux-j1024env32-80m-a100-std-norm-retrain-env-overrides-make-kwargs
         # <<: *lux-j1024env64-a100-eval-env-overrides-make-kwargs
         verbose: 3
         verify: true

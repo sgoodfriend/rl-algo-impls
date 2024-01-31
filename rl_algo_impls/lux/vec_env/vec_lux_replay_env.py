@@ -8,6 +8,9 @@ from rl_algo_impls.lux.rewards import LuxRewardWeights
 from rl_algo_impls.lux.vec_env.lux_npz_replay_env import LuxNpzReplayEnv
 from rl_algo_impls.lux.vec_env.lux_replay_env import LuxReplayEnv
 from rl_algo_impls.lux.vec_env.lux_replay_state import ReplayPath
+from rl_algo_impls.shared.summary_wrapper.abstract_summary_wrapper import (
+    AbstractSummaryWrapper,
+)
 from rl_algo_impls.shared.vec_env.base_vector_env import BaseVectorEnv
 from rl_algo_impls.wrappers.vector_wrapper import (
     VecEnvResetReturn,
@@ -25,6 +28,7 @@ class VecLuxReplayEnv(BaseVectorEnv):
     def __init__(
         self,
         num_envs: int,
+        tb_writer: Optional[AbstractSummaryWrapper],
         replay_dirs: List[Dict[str, str]],
         reward_weights: Optional[Dict[str, float]] = None,
         offset_env_starts: bool = False,
@@ -62,13 +66,8 @@ class VecLuxReplayEnv(BaseVectorEnv):
         self.next_replay_idx = 0
         self.replay_idx_permutation = np.random.permutation(len(self.replay_paths))
 
-        try:
-            import wandb
-
-            if wandb.run:
-                wandb.run.summary["num_replays"] = len(self.replay_paths)
-        except ImportError:
-            logging.warn("No wandb package. Not recording num_replays")
+        if tb_writer:
+            tb_writer.update_summary({"num_replays": len(self.replay_paths)})
 
         if self.is_npz_dir:
             import ray

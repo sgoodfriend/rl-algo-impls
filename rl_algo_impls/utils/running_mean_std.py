@@ -1,52 +1,166 @@
-import logging
-from typing import Optional, Tuple, TypeVar, Union
+import os
+from dataclasses import asdict, dataclass
+from typing import Any, Dict, Optional, Tuple, Type, TypeVar, Union
 
 import numpy as np
 from numpy.typing import NDArray
 
+from rl_algo_impls.shared.trackable import TrackableState, UpdateTrackable
+
 RunningMeanStdSelf = TypeVar("RunningMeanStdSelf", bound="RunningMeanStd")
 
+RMSSelf = TypeVar("RMSSelf", bound="RMS")
 
-class RunningMeanStd:
-    def __init__(self, epsilon: float = 1e-4, shape: Tuple[int, ...] = ()) -> None:
-        self.mean = np.zeros(shape, np.float64)
-        self.var = np.ones(shape, np.float64)
-        self.count = epsilon
 
-    def update(self, x: NDArray) -> None:
-        batch_mean = np.mean(x, axis=0)
-        batch_var = np.var(x, axis=0)
-        batch_count = x.shape[0]
+@dataclass
+class RMS:
+    mean: NDArray
+    var: NDArray
+    count: float
 
-        delta = batch_mean - self.mean
-        total_count = self.count + batch_count
+    @classmethod
+    def empty(cls: Type[RMSSelf], shape: Tuple[int, ...], epsilon: float) -> RMSSelf:
+        return cls(
+            np.zeros(shape, np.float64),
+            np.ones(shape, np.float64),
+            epsilon,
+        )
 
-        self.mean += delta * batch_count / total_count
+    def update(self, x: np.ndarray) -> None:
+        batch_rms = self.__class__(np.mean(x, axis=0), np.var(x, axis=0), x.shape[0])
+        self.update_from_batch(batch_rms)
+
+    def update_from_batch(self: RMSSelf, batch: RMSSelf) -> None:
+        delta = batch.mean - self.mean
+        total_count = self.count + batch.count
+
+        self.mean = self.mean + delta * batch.count / total_count
 
         m_a = self.var * self.count
-        m_b = batch_var * batch_count
-        M2 = m_a + m_b + np.square(delta) * self.count * batch_count / total_count
+        m_b = batch.var * batch.count
+        M2 = m_a + m_b + np.square(delta) * self.count * batch.count / total_count
         self.var = M2 / total_count
         self.count = total_count
 
+
+@dataclass
+class TrackableRMS(TrackableState):
+    filename: str
+    rms: RMS
+
     def save(self, path: str) -> None:
+        os.makedirs(path, exist_ok=True)
         np.savez_compressed(
-            path,
-            mean=self.mean,
-            var=self.var,
-            count=self.count,
+            os.path.join(path, self.filename),
+            **asdict(self.rms),
         )
 
-    def load(self, path: str, count_override: Optional[int] = None) -> None:
-        data = np.load(path)
-        self.mean = data["mean"]
-        self.var = data["var"]
-        self.count = data.get("count") if count_override is None else count_override
+    def load(self, path: str) -> None:
+        data = np.load(os.path.join(path, self.filename))
+        for k, v in data.items():
+            assert hasattr(
+                self.rms, k
+            ), f"Unknown key {k} in {self.rms.__class__.__name__}"
+            setattr(self.rms, k, v)
 
-    def load_from(self: RunningMeanStdSelf, existing: RunningMeanStdSelf) -> None:
-        self.mean = np.copy(existing.mean)
-        self.var = np.copy(existing.var)
-        self.count = np.copy(existing.count)
+
+class RunningMeanStd(UpdateTrackable):
+    def __init__(
+        self, filename: str, epsilon: float = 1e-4, shape: Tuple[int, ...] = ()
+    ) -> None:
+        super().__init__(filename)
+        self.filename = filename
+        self.epsilon = epsilon
+        self.rms = RMS.empty(shape, epsilon)
+        self.running = RMS.empty(shape, epsilon)
+
+    @property
+    def mean(self) -> NDArray:
+        return self.rms.mean
+
+    @property
+    def var(self) -> NDArray:
+        return self.rms.var
+
+    @property
+    def count(self) -> float:
+        return self.rms.count
+
+    def update(self, x: NDArray) -> None:
+        self.rms.update(x)
+        self.running.update(x)
+
+    def get_state(self) -> TrackableRMS:
+        return TrackableRMS(self.filename, self.rms)
+
+    def set_state(self, state: TrackableRMS) -> None:
+        self.rms = state.rms
+
+    def get_update(self) -> RMS:
+        running = self.running
+        self.running = RMS.empty(self.running.mean.shape, self.epsilon)
+        return running
+
+    def apply_update(self, update: RMS) -> None:
+        self.rms.update_from_batch(update)
+
+
+EMMVSelf = TypeVar("EMMVSelf", bound="EMMV")
+
+
+@dataclass
+class EMMV:
+    mean: NDArray
+    squared_mean: NDArray
+    var: NDArray
+    initialized: bool
+
+    @classmethod
+    def empty(cls: Type[EMMVSelf], shape: Tuple[int, ...]) -> EMMVSelf:
+        return cls(
+            np.zeros(shape, np.float64),
+            np.zeros(shape, np.float64),
+            np.ones(shape, np.float64),
+            False,
+        )
+
+    def update(self, x: NDArray, alpha: float) -> None:
+        if not self.initialized:
+            self.mean = np.mean(x, axis=0, dtype=np.float64)
+            self.squared_mean = np.mean(x**2, axis=0, dtype=np.float64)
+            self.var = np.var(x, axis=0, dtype=np.float64)
+            self.initialized = True
+            return
+
+        weights = (alpha * ((1 - alpha) ** np.arange(x.shape[0] - 1, -1, -1)))[:, None]
+        self.mean = np.sum(weights * x, axis=0) + (1 - np.sum(weights)) * self.mean
+        self.squared_mean = (
+            np.sum(weights * (x**2), axis=0)
+            + (1 - np.sum(weights)) * self.squared_mean
+        )
+
+        self.var = self.squared_mean - self.mean**2
+
+
+@dataclass
+class TrackableEMMV(TrackableState):
+    filename: str
+    emmv: EMMV
+
+    def save(self, path: str) -> None:
+        os.makedirs(path, exist_ok=True)
+        np.savez_compressed(
+            os.path.join(path, self.filename),
+            **asdict(self.emmv),
+        )
+
+    def load(self, path: str) -> None:
+        data = np.load(os.path.join(path, self.filename))
+        for k, v in data.items():
+            assert hasattr(
+                self.emmv, k
+            ), f"Unknown key {k} in {self.emmv.__class__.__name__}"
+            setattr(self.emmv, k, v)
 
 
 ExponentialMovingMeanVarSelf = TypeVar(
@@ -54,13 +168,16 @@ ExponentialMovingMeanVarSelf = TypeVar(
 )
 
 
-class ExponentialMovingMeanVar:
+class ExponentialMovingMeanVar(UpdateTrackable):
     def __init__(
         self,
+        filename: str,
         alpha: Optional[float] = None,
         window_size: Optional[Union[int, float]] = None,
         shape: Tuple[int, ...] = (),
     ) -> None:
+        super().__init__(filename)
+        self.filename = filename
         assert (
             alpha is None or window_size is None
         ), f"Only one of alpha ({alpha}) or window_size ({window_size}) can be specified"
@@ -71,51 +188,50 @@ class ExponentialMovingMeanVar:
         self.alpha = alpha
         self.window_size = window_size if window_size is not None else (2 / alpha - 1)
 
-        self.mean = np.zeros(shape, np.float64)
-        self.squared_mean = np.zeros(shape, np.float64)
-        self.var = np.ones(shape, np.float64)
-        self.initialized = False
+        self.emmv = EMMV.empty(shape)
+
+        self.running = []
+
+    @property
+    def mean(self) -> NDArray:
+        return self.emmv.mean
+
+    @property
+    def var(self) -> NDArray:
+        return self.emmv.var
 
     def update(self, x: NDArray) -> None:
-        if not self.initialized:
-            self.mean = np.mean(x, axis=0, dtype=np.float64)
-            self.squared_mean = np.mean(x**2, axis=0, dtype=np.float64)
-            self.var = np.var(x, axis=0, dtype=np.float64)
-            self.initialized = True
-            return
+        self.running.append(x)
+        self.emmv.update(x, self.alpha)
 
-        weights = (
-            self.alpha * ((1 - self.alpha) ** np.arange(x.shape[0] - 1, -1, -1))
-        )[:, None]
-        self.mean = np.sum(weights * x, axis=0) + (1 - np.sum(weights)) * self.mean
-        self.squared_mean = (
-            np.sum(weights * (x**2), axis=0)
-            + (1 - np.sum(weights)) * self.squared_mean
-        )
+    def get_state(self) -> TrackableEMMV:
+        return TrackableEMMV(self.filename, self.emmv)
 
-        self.var = self.squared_mean - self.mean**2
+    def set_state(self, state: TrackableEMMV) -> None:
+        self.emmv = state.emmv
+
+    def get_update(self) -> NDArray:
+        running = np.concatenate(self.running)
+        self.running = []
+        return running
+
+    def apply_update(self, update: NDArray) -> None:
+        self.emmv.update(update, self.alpha)
+
+
+@dataclass
+class TrackableHybridMMV(TrackableState):
+    rms: TrackableRMS
+    emmv: TrackableEMMV
 
     def save(self, path: str) -> None:
-        np.savez_compressed(
-            path,
-            mean=self.mean,
-            var=self.var,
-            initialized=self.initialized,
-        )
+        os.makedirs(path, exist_ok=True)
+        self.rms.save(path)
+        self.emmv.save(path)
 
-    def load(self, path: str, count_override: Optional[int] = None) -> None:
-        data = np.load(path)
-        self.mean = data["mean"]
-        self.var = data["var"]
-        self.squared_mean = self.var + self.mean**2
-        self.initialized = data["initialized"].item()
-
-    def load_from(
-        self: ExponentialMovingMeanVarSelf, existing: ExponentialMovingMeanVarSelf
-    ) -> None:
-        self.mean = np.copy(existing.mean)
-        self.var = np.copy(existing.var)
-        self.initialized = np.copy(existing.initialized)
+    def load(self, path: str) -> None:
+        self.rms.load(path)
+        self.emmv.load(path)
 
 
 HybridMovingMeanVarSelf = TypeVar(
@@ -123,16 +239,21 @@ HybridMovingMeanVarSelf = TypeVar(
 )
 
 
-class HybridMovingMeanVar:
+class HybridMovingMeanVar(UpdateTrackable):
     def __init__(
         self,
+        filename: str,
         alpha: Optional[float] = None,
         window_size: Optional[Union[int, float]] = None,
         shape: Tuple[int, ...] = (),
     ) -> None:
-        self.rms = RunningMeanStd(shape=shape)
+        super().__init__(filename)
+        self.rms = RunningMeanStd(filename + "-rms.npz", shape=shape)
         self.emmv = ExponentialMovingMeanVar(
-            alpha=alpha, window_size=window_size, shape=shape
+            filename + "-emmv.npz",
+            alpha=alpha,
+            window_size=window_size,
+            shape=shape,
         )
 
     @property
@@ -155,16 +276,19 @@ class HybridMovingMeanVar:
         self.rms.update(x)
         self.emmv.update(x)
 
-    def save(self, path: str) -> None:
-        self.rms.save(path + "-rms.npz")
-        self.emmv.save(path + "-emmv.npz")
+    def get_state(self) -> TrackableHybridMMV:
+        return TrackableHybridMMV(self.rms.get_state(), self.emmv.get_state())
 
-    def load(self, path: str, count_override: Optional[int] = None) -> None:
-        self.rms.load(path + "-rms.npz", count_override=count_override)
-        self.emmv.load(path + "-emmv.npz", count_override=count_override)
+    def set_state(self, state: TrackableHybridMMV) -> None:
+        self.rms.set_state(state.rms)
+        self.emmv.set_state(state.emmv)
 
-    def load_from(
-        self: HybridMovingMeanVarSelf, existing: HybridMovingMeanVarSelf
-    ) -> None:
-        self.rms.load_from(existing.rms)
-        self.emmv.load_from(existing.emmv)
+    def get_update(self) -> Dict[str, Any]:
+        return {
+            "rms": self.rms.get_update(),
+            "emmv": self.emmv.get_update(),
+        }
+
+    def apply_update(self, update: Dict[str, Any]) -> None:
+        self.rms.apply_update(update["rms"])
+        self.emmv.apply_update(update["emmv"])

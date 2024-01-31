@@ -11,8 +11,12 @@ from gymnasium.wrappers.record_episode_statistics import RecordEpisodeStatistics
 from gymnasium.wrappers.resize_observation import ResizeObservation
 from stable_baselines3.common.atari_wrappers import MaxAndSkipEnv, NoopResetEnv
 
-from rl_algo_impls.runner.config import Config, EnvHyperparams
-from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
+from rl_algo_impls.runner.config import Config
+from rl_algo_impls.runner.env_hyperparams import EnvHyperparams
+from rl_algo_impls.shared.data_store.data_store_view import VectorEnvDataStoreView
+from rl_algo_impls.shared.summary_wrapper.abstract_summary_wrapper import (
+    AbstractSummaryWrapper,
+)
 from rl_algo_impls.shared.vec_env.utils import (
     import_for_env_id,
     is_atari,
@@ -24,12 +28,16 @@ from rl_algo_impls.wrappers.action_mask_wrapper import SingleActionMaskWrapper
 from rl_algo_impls.wrappers.atari_wrappers import (
     ClipRewardEnv,
     EpisodicLifeEnv,
-    FireOnLifeStarttEnv,
+    FireOnLifeStartEnv,
 )
 from rl_algo_impls.wrappers.episode_stats_writer import EpisodeStatsWriter
 from rl_algo_impls.wrappers.hwc_to_chw_observation import HwcToChwObservation
 from rl_algo_impls.wrappers.initial_step_truncate_wrapper import (
     InitialStepTruncateWrapper,
+)
+from rl_algo_impls.wrappers.mask_reset_wrapper import MaskResetWrapper
+from rl_algo_impls.wrappers.mask_resettable_episode_statistics import (
+    MaskResettableEpisodeStatistics,
 )
 from rl_algo_impls.wrappers.no_reward_timeout import NoRewardTimeout
 from rl_algo_impls.wrappers.noop_env_seed import NoopEnvSeed
@@ -43,9 +51,10 @@ from rl_algo_impls.wrappers.video_compat_wrapper import VideoCompatWrapper
 def make_vec_env(
     config: Config,
     hparams: EnvHyperparams,
+    data_store_view: VectorEnvDataStoreView,
     training: bool = True,
     render: bool = False,
-    tb_writer: Optional[SummaryWrapper] = None,
+    tb_writer: Optional[AbstractSummaryWrapper] = None,
     **kwargs,
 ) -> VectorEnv:
     (
@@ -108,7 +117,7 @@ def make_vec_env(
                 env = EpisodicLifeEnv(env, training=training)
                 action_meanings = env.unwrapped.get_action_meanings()
                 if "FIRE" in action_meanings:  # type: ignore
-                    env = FireOnLifeStarttEnv(env, action_meanings.index("FIRE"))
+                    env = FireOnLifeStartEnv(env, action_meanings.index("FIRE"))
                 if clip_atari_rewards:
                     env = ClipRewardEnv(env, training=training)
                 env = ResizeObservation(env, (84, 84))
@@ -148,6 +157,14 @@ def make_vec_env(
         raise ValueError(f"env_type {env_type} unsupported")
     envs = VecEnvClass([make(i) for i in range(n_envs)])
     envs = VectorEnvRenderCompat(envs)
+
+    is_mask_resettable = (
+        config.rollout_hyperparams.get("rolling_num_envs_reset_every_prepare_step", 0)
+        > 0
+    )
+    if is_mask_resettable:
+        envs = MaskResetWrapper(envs)
+
     if mask_actions:
         envs = SingleActionMaskWrapper(envs)
 
@@ -168,11 +185,15 @@ def make_vec_env(
         if normalize_type == "gymlike":
             if normalize_kwargs.get("norm_obs", True):
                 envs = NormalizeObservation(
-                    envs, training=training, clip=normalize_kwargs.get("clip_obs", 10.0)
+                    envs,
+                    data_store_view,
+                    training=training,
+                    clip=normalize_kwargs.get("clip_obs", 10.0),
                 )
             if training and normalize_kwargs.get("norm_reward", True):
                 envs = NormalizeReward(
                     envs,
+                    data_store_view,
                     training=training,
                     gamma=normalize_kwargs.get("gamma_reward", 0.99),
                     clip=normalize_kwargs.get("clip_reward", 10.0),

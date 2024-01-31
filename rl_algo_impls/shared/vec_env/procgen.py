@@ -1,26 +1,30 @@
 from dataclasses import astuple
 from typing import Optional
 
-import gymnasium
-import numpy as np
 from gymnasium.experimental.wrappers.vector.record_episode_statistics import (
     RecordEpisodeStatisticsV0,
 )
 
-from rl_algo_impls.runner.config import Config, EnvHyperparams
-from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
+from rl_algo_impls.runner.config import Config
+from rl_algo_impls.runner.env_hyperparams import EnvHyperparams
+from rl_algo_impls.shared.data_store.data_store_view import VectorEnvDataStoreView
+from rl_algo_impls.shared.summary_wrapper.abstract_summary_wrapper import (
+    AbstractSummaryWrapper,
+)
 from rl_algo_impls.wrappers.episode_stats_writer import EpisodeStatsWriter
 from rl_algo_impls.wrappers.hwc_to_chw_observation import HwcToChwVectorObservation
 from rl_algo_impls.wrappers.is_vector_env import IsVectorEnv
+from rl_algo_impls.wrappers.normalize import NormalizeReward
 from rl_algo_impls.wrappers.vector_wrapper import VectorEnv
 
 
 def make_procgen_env(
     config: Config,
     hparams: EnvHyperparams,
+    data_store_view: VectorEnvDataStoreView,
     training: bool = True,
     render: bool = False,
-    tb_writer: Optional[SummaryWrapper] = None,
+    tb_writer: Optional[AbstractSummaryWrapper] = None,
     **kwargs,
 ) -> VectorEnv:
     from gym3 import ExtractDictObWrapper, ViewerWrapper
@@ -90,11 +94,11 @@ def make_procgen_env(
             envs, tb_writer, training=training, rolling_length=rolling_length
         )
     if normalize and training:
-        normalize_kwargs = normalize_kwargs or {}
-        envs = gymnasium.wrappers.NormalizeReward(envs)
-        clip_obs = normalize_kwargs.get("clip_reward", 10.0)
-        envs = gymnasium.wrappers.TransformReward(
-            envs, lambda r: np.clip(r, -clip_obs, clip_obs)
+        envs = NormalizeReward(
+            envs,
+            data_store_view,
+            training=training,
+            clip=normalize_kwargs.get("clip_reward", 10.0),
         )
 
     return envs  # type: ignore

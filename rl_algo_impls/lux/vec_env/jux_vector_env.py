@@ -212,10 +212,8 @@ class JuxVectorEnv(BaseVectorEnv):
             assert_reward_only_on_done(rew, done)
             assert_winner_has_factories(new_jnp_obs, rew)
             assert_actions_get_enqueued(
-                self.state,
                 jax_actions["per_position"],
                 self._jnp_action_mask["per_position"],
-                new_jnp_obs,
             )
         self.state = new_state
         self._jnp_obs = new_jnp_obs

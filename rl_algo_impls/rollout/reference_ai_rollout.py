@@ -1,24 +1,29 @@
-from typing import Dict, Optional
+from typing import Optional
 
 import numpy as np
-import torch
 
-from rl_algo_impls.rollout.sync_step_rollout import SyncStepRolloutGenerator, fold_in
-from rl_algo_impls.rollout.vec_rollout import VecRollout
-from rl_algo_impls.shared.policy.actor_critic import ActorCritic
-from rl_algo_impls.shared.tensor_utils import (
-    NumOrArray,
-    NumpyOrDict,
-    TensorOrDict,
-    batch_dict_keys,
-    tensor_to_numpy,
+from rl_algo_impls.rollout.rollout import Rollout
+from rl_algo_impls.rollout.sync_step_rollout import SyncStepRolloutGenerator
+from rl_algo_impls.runner.config import Config
+from rl_algo_impls.shared.data_store.abstract_data_store_accessor import (
+    AbstractDataStoreAccessor,
 )
-from rl_algo_impls.wrappers.vector_wrapper import VectorEnv
+from rl_algo_impls.shared.stats import log_scalars
+from rl_algo_impls.shared.summary_wrapper.abstract_summary_wrapper import (
+    AbstractSummaryWrapper,
+)
+from rl_algo_impls.shared.tensor_utils import batch_dict_keys, set_items
 
 
 class ReferenceAIRolloutGenerator(SyncStepRolloutGenerator):
-    def __init__(self, policy: ActorCritic, vec_env: VectorEnv, **kwargs) -> None:
-        super().__init__(policy, vec_env, **kwargs)
+    def __init__(
+        self,
+        config: Config,
+        data_store_accessor: AbstractDataStoreAccessor,
+        tb_writer: AbstractSummaryWrapper,
+        **kwargs
+    ) -> None:
+        super().__init__(config, data_store_accessor, tb_writer, **kwargs)
         if not self.include_logp:
             if isinstance(self.actions, dict):
                 self.zero_action = np.array(
@@ -27,27 +32,34 @@ class ReferenceAIRolloutGenerator(SyncStepRolloutGenerator):
                             k: np.zeros(v.shape[2:], dtype=v.dtype)
                             for k, v in self.actions.items()
                         }
-                        for _ in range(vec_env.num_envs)
+                        for _ in range(self.vec_env.num_envs)
                     ]
                 )
             else:
                 self.zero_action = np.zeros(
-                    (vec_env.num_envs,) + self.actions.shape[2:],
+                    (self.vec_env.num_envs,) + self.actions.shape[2:],
                     dtype=self.actions.dtype,
                 )
 
-    def rollout(self, gamma: NumOrArray, gae_lambda: NumOrArray) -> VecRollout:
-        self.policy.eval()
-        self.policy.reset_noise()
+    def rollout(self) -> Optional[Rollout]:
+        rollout_view = self.data_store_view.update_for_rollout_start()
+        if rollout_view is None:
+            return None
+        (policy, rollout_params, self.tb_writer.timesteps_elapsed, _) = rollout_view
+        self.update_rollout_params(rollout_params)
+        log_scalars(self.tb_writer, rollout_params, self.tb_writer.timesteps_elapsed)
+
+        policy.eval()
+        policy.reset_noise()
 
         for s in range(self.n_steps):
             if self.sde_sample_freq > 0 and s > 0 and s % self.sde_sample_freq == 0:
-                self.policy.reset_noise()
+                policy.reset_noise()
 
             self.obs[s] = self.next_obs
             self.episode_starts[s] = self.next_episode_starts
             if self.action_masks is not None:
-                fold_in(self.action_masks, self.next_action_masks, s)
+                set_items(self.action_masks, self.next_action_masks, s)
 
             if self.include_logp:
                 (
@@ -55,9 +67,9 @@ class ReferenceAIRolloutGenerator(SyncStepRolloutGenerator):
                     self.values[s],
                     self.logprobs,
                     step_actions,
-                ) = self.policy.step(self.next_obs, action_masks=self.next_action_masks)
+                ) = policy.step(self.next_obs, action_masks=self.next_action_masks)
             else:
-                self.values[s] = self.policy.value(self.next_obs)
+                self.values[s] = policy.value(self.next_obs)
                 step_actions = self.zero_action
 
             (
@@ -67,18 +79,19 @@ class ReferenceAIRolloutGenerator(SyncStepRolloutGenerator):
                 _,
             ) = self.vec_env.step(step_actions)
             actions = batch_dict_keys(getattr(self.vec_env, "last_action"))
-            fold_in(self.actions, actions, s)
+            set_items(self.actions, actions, s)
 
             self.next_action_masks = (
                 self.get_action_mask() if self.get_action_mask else None
             )
 
-        next_values = self.policy.value(self.next_obs)
+        next_values = policy.value(self.next_obs)
 
-        self.policy.train()
+        policy.train()
         assert isinstance(self.next_obs, np.ndarray)
-        return VecRollout(
-            self.policy.device,
+        return self.rollout_cls(
+            config=self.config,
+            rollout_view=rollout_view,
             next_episode_starts=self.next_episode_starts,
             next_values=next_values,
             obs=self.obs,
@@ -88,15 +101,9 @@ class ReferenceAIRolloutGenerator(SyncStepRolloutGenerator):
             values=self.values,
             logprobs=self.logprobs,
             action_masks=self.action_masks,
-            gamma=gamma,
-            gae_lambda=gae_lambda,
-            scale_advantage_by_values_accuracy=self.scale_advantage_by_values_accuracy,
+            gamma=self.gamma,
+            gae_lambda=self.gae_lambda,
             full_batch_off_accelerator=self.full_batch_off_accelerator,
             subaction_mask=self.subaction_mask,
             action_plane_space=getattr(self.vec_env, "action_plane_space", None),
         )
-
-    def actions_to_tensor(self, a: NumpyOrDict) -> TensorOrDict:
-        if isinstance(a, dict):
-            return {k: torch.as_tensor(v).to(self.policy.device) for k, v in a.items()}
-        return torch.as_tensor(a).to(self.policy.device)

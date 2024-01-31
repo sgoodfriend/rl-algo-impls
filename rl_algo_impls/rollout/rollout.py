@@ -1,78 +1,13 @@
-import dataclasses
 from abc import ABC, abstractmethod
-from dataclasses import astuple, dataclass
-from typing import Callable, Dict, Iterator, Optional, TypeVar
+from typing import Dict, Iterator, Optional, TypeVar
 
 import numpy as np
 import torch
 from gymnasium.spaces import MultiDiscrete
 
+from rl_algo_impls.rollout.rollout_dataloader import RolloutDataset
 from rl_algo_impls.shared.actor.gridnet import ValueDependentMask
-from rl_algo_impls.shared.policy.policy import Policy
-from rl_algo_impls.shared.tensor_utils import (
-    NumpyOrDict,
-    TensorOrDict,
-    tensor_by_indicies,
-)
-from rl_algo_impls.wrappers.vector_wrapper import VectorEnv
-
-BatchSelf = TypeVar("BatchSelf", bound="Batch")
-TDN = TypeVar("TDN", torch.Tensor, Dict[str, torch.Tensor], None)
-
-
-@dataclass
-class Batch:
-    obs: torch.Tensor
-    logprobs: Optional[torch.Tensor]
-
-    actions: TensorOrDict
-    action_masks: Optional[TensorOrDict]
-    num_actions: Optional[torch.Tensor]
-
-    values: torch.Tensor
-
-    advantages: torch.Tensor
-    returns: torch.Tensor
-    additional: Dict[str, torch.Tensor] = dataclasses.field(default_factory=dict)
-
-    @property
-    def device(self) -> torch.device:
-        return self.obs.device
-
-    def to(self: BatchSelf, device: torch.device) -> BatchSelf:
-        if self.device == device:
-            return self
-
-        def to_device(t: TDN) -> TDN:
-            if t is None:
-                return t
-            elif isinstance(t, dict):
-                return {k: v.to(device) for k, v in t.items()}  # type: ignore
-            else:
-                return t.to(device)
-
-        return self.__class__(*(to_device(t) for t in astuple(self)))
-
-    def __getitem__(self: BatchSelf, indices: torch.Tensor) -> BatchSelf:
-        return self.__class__(
-            self.obs[indices],
-            self.logprobs[indices] if self.logprobs is not None else None,
-            tensor_by_indicies(self.actions, indices),
-            tensor_by_indicies(self.action_masks, indices)
-            if self.action_masks is not None
-            else None,
-            self.num_actions[indices] if self.num_actions is not None else None,
-            self.values[indices],
-            self.advantages[indices],
-            self.returns[indices],
-            {k: v[indices] for k, v in self.additional.items()},
-        )
-
-    def __len__(self) -> int:
-        return self.obs.shape[0]
-
-
-BatchMapFn = Callable[[Batch], Dict[str, torch.Tensor]]
+from rl_algo_impls.shared.tensor_utils import BatchTuple, NumpyOrDict, TensorOrDict
 
 
 class Rollout(ABC):
@@ -96,25 +31,26 @@ class Rollout(ABC):
         ...
 
     @abstractmethod
-    def minibatches(self, batch_size: int, shuffle: bool = True) -> Iterator[Batch]:
+    def minibatches(
+        self, batch_size: int, device: torch.device, shuffle: bool = True
+    ) -> Iterator[BatchTuple]:
         ...
-
-    def add_to_batch(self, map_fn: BatchMapFn, batch_size: int) -> None:
-        ...
-
-
-class RolloutGenerator(ABC):
-    def __init__(self, policy: Policy, vec_env: VectorEnv, **kwargs) -> None:
-        super().__init__()
-        self.policy = policy
-        self.vec_env = vec_env
-
-    def prepare(self) -> None:
-        pass
 
     @abstractmethod
-    def rollout(self, **kwargs) -> Rollout:
+    def dataset(self, device: torch.device) -> RolloutDataset:
         ...
+
+
+ND = TypeVar("ND", np.ndarray, Dict[str, np.ndarray])
+
+
+def flatten_batch_step(a: ND) -> ND:
+    def flatten_array_fn(_a: np.ndarray) -> np.ndarray:
+        return _a.reshape((-1,) + _a.shape[2:])
+
+    if isinstance(a, dict):
+        return {k: flatten_array_fn(v) for k, v in a.items()}
+    return flatten_array_fn(a)
 
 
 def flatten_to_tensor(a: np.ndarray, device: torch.device) -> torch.Tensor:

@@ -238,38 +238,9 @@ Microrts-selfplay-unet-winloss: &microrts-selfplay-winloss-defaults
     make_kwargs:
       <<: *microrts-selfplay-env-make-kwargs-defaults
       reward_weight: [1.0, 0, 0, 0, 0, 0, 0, 0, 0]
-  algo_hyperparams: &microrts-selfplay-winloss-algo-defaults
-    <<: *microrts-unet-algo-defaults
+  rollout_hyperparams: &microrts-selfplay-winloss-rollout-defaults
+    <<: *microrts-ai-rollout-defaults
     gamma: 0.999
-
-Microrts-selfplay-unet-decay: &microrts-selfplay-decay-defaults
-  <<: *microrts-selfplay-defaults
-  reward_decay_callback: true
-  algo_hyperparams:
-    <<: *microrts-unet-algo-defaults
-  hyperparam_transitions_kwargs:
-    durations: [0, 1, 0]
-    phases:
-      - gamma: 0.99
-      - gamma: 0.999
-
-Microrts-selfplay-unet-debug: &microrts-selfplay-debug-defaults
-  <<: *microrts-selfplay-decay-defaults
-  eval_hyperparams:
-    <<: *microrts-selfplay-eval-defaults
-    step_freq: !!float 1e5
-    env_overrides:
-      <<: *microrts-selfplay-eval-env-overrides
-      n_envs: 24
-      bots:
-        coacAI: 12
-        randomBiasedAI: 4
-        workerRushAI: 4
-        lightRushAI: 4
-
-Microrts-selfplay-unet-debug-mps:
-  <<: *microrts-selfplay-debug-defaults
-  device: mps
 
 _Microrts-squnet: &microrts-squnet
   <<: *microrts-selfplay-defaults
@@ -290,11 +261,13 @@ _Microrts-squnet: &microrts-squnet
     <<: *microrts-ai-policy-defaults
     actor_head_style: squeeze_unet
     additional_critic_activation_functions: [tanh, identity]
+  rollout_hyperparams: &microrts-squnet-rollout-defaults
+    <<: *microrts-ai-rollout-defaults
+    gamma: [0.99, 0.999, 0.999]
+    gae_lambda: [0.95, 0.99, 0.99]
   algo_hyperparams: &microrts-squnet-algo-defaults
     <<: *microrts-ai-algo-defaults
     n_epochs: 2
-    gamma: [0.99, 0.999, 0.999]
-    gae_lambda: [0.95, 0.99, 0.99]
     clip_range_vf: null
 
 _Microrts-squnet-map8: &microrts-squnet-map8
@@ -751,11 +724,13 @@ Microrts-selfplay-dc-phases: &microrts-sp-dc-phases-defaults
     pooled_channels: 128
     additional_critic_activation_functions: [tanh, identity]
     gelu_pool_conv: false # Bug with prior model, but was trained with this
+  rollout_hyperparams: &microrts-sp-dc-phases-rollout-defaults
+    <<: *microrts-ai-rollout-defaults
+    gamma: [0.99, 0.999, 0.999]
+    gae_lambda: [0.95, 0.99, 0.99]
   algo_hyperparams: &microrts-sp-dc-phases-algo-defaults
     <<: *microrts-ai-algo-defaults
     n_epochs: 2
-    gamma: [0.99, 0.999, 0.999]
-    gae_lambda: [0.95, 0.99, 0.99]
   hyperparam_transitions_kwargs: &microrts-sp-dc-phases-transitions-defaults
     phases:
       - multi_reward_weights: [0.8, 0.01, 0.19] # Initial shaped rewards (mostly)
@@ -800,8 +775,8 @@ _Microrts-tweaks-base: &microrts-tweaks-base
     load_run_path: sgoodfriend/rl-algo-impls-benchmarks/1ilo9yae
     load_run_path_best: true
     gelu_pool_conv: true
-  algo_hyperparams: &microrts-tweaks-base-algo-defaults
-    <<: *microrts-sp-dc-phases-a6000-algo-defaults
+  rollout_hyperparams: &microrts-tweaks-base-rollout-defaults
+    <<: *microrts-sp-dc-phases-rollout-defaults
     gamma: [0.99, 0.999, 0.999]
     gae_lambda: [0.95, 0.99, 0.99]
 
@@ -979,7 +954,7 @@ Microrts-finetuned-DoubleGame24x24: &microrts-finetuned-doublegame
         <<: *microrts-a6000-finetuned-coac-mayari-eval-env-make-kwargs-overrides
         map_paths: [maps/DoubleGame24x24.xml]
   algo_hyperparams:
-    <<: *microrts-tweaks-base-algo-defaults
+    <<: *microrts-sp-dc-phases-a6000-algo-defaults
     batch_size: 2048
 
 Microrts-finetuned-DoubleGame-shaped: &microrts-finetuned-doublegame-shaped
@@ -1062,7 +1037,7 @@ Microrts-finetuned-DistantResources: &microrts-finetuned-distantresources
         <<: *microrts-a6000-finetuned-coac-mayari-eval-env-make-kwargs-overrides
         map_paths: [maps/BWDistantResources32x32.xml]
   algo_hyperparams:
-    <<: *microrts-tweaks-base-algo-defaults
+    <<: *microrts-sp-dc-phases-a6000-algo-defaults
     batch_size: 1024
 
 Microrts-finetuned-DistantResources-shaped:
@@ -1109,7 +1084,7 @@ Microrts-finetuned-BloodBath: &microrts-finetuned-bloodbath
     <<: *microrts-ai-rollout-defaults
     n_steps: 256
   algo_hyperparams:
-    <<: *microrts-tweaks-base-algo-defaults
+    <<: *microrts-sp-dc-phases-a6000-algo-defaults
     batch_size: 192
 
 Microrts-finetuned-BloodBath-shaped: &microrts-finetuned-bloodbath-shaped
@@ -1328,7 +1303,9 @@ Microrts-squnet-d16-128-iMayari: &microrts-squnet-d16-128-imayari
     score_reward_kwargs: null
   rollout_hyperparams:
     <<: *microrts-ai-rollout-defaults
-    scale_advantage_by_values_accuracy: true
+    # scale_advantage_by_values_accuracy: true
+    gamma: 0.999
+    gae_lambda: 0.99
   policy_hyperparams: &microrts-squnet-d16-128-imayari-policy
     <<: *microrts-squnet-deep16-128-policy-defaults
     additional_critic_activation_functions: []
@@ -1338,8 +1315,6 @@ Microrts-squnet-d16-128-iMayari: &microrts-squnet-d16-128-imayari
     batch_size: 3072
     n_epochs: 1
     gradient_accumulation: true
-    gamma: 0.999
-    gae_lambda: 0.99
     learning_rate: !!float 1e-5
     vf_coef: 0.5
     ent_coef: 0.0001
@@ -1373,11 +1348,11 @@ Microrts-squnet-d16-128-BC-finetune: &microrts-squnet-d16-128-bc-finetune
     score_reward_kwargs: null
   rollout_hyperparams: &microrts-squnet-d16-128-bc-finetune-rollout
     <<: *microrts-ai-rollout-defaults
+    gamma: 0.999
+    gae_lambda: 0.99
   algo_hyperparams: &microrts-squnet-d16-128-bc-finetune-algo
     <<: *microrts-squnet-deep16-128-algo-defaults
     batch_size: 3072
-    gamma: 0.999
-    gae_lambda: 0.99
     vf_coef: 0.5
     ent_coef: 0.0001
   hyperparam_transitions_kwargs:
@@ -1417,6 +1392,8 @@ Microrts-squnet-d16-128-map32-BC-finetune:
   rollout_hyperparams: &microrts-squnet-d16-128-map32-bc-finetune-rollout
     <<: *microrts-squnet-d16-128-bc-finetune-rollout
     full_batch_off_accelerator: true
+    gamma: 0.9996
+    gae_lambda: 0.99
   policy_hyperparams: &microrts-squnet-d16-128-map32-bc-finetune-policy
     <<: *microrts-squnet-d16-128-imayari-policy
     load_path: downloaded_models/acbc-Microrts-squnet-d16-128-iMayari-map32-S1-best
@@ -1425,8 +1402,6 @@ Microrts-squnet-d16-128-map32-BC-finetune:
   algo_hyperparams: &microrts-squnet-d16-128-map32-bc-finetune-algo
     <<: *microrts-squnet-d16-128-bc-finetune-algo
     batch_size: 1536
-    gamma: 0.9996
-    gae_lambda: 0.99
 
 Microrts-squnet-d16-128-map32-BC-finetune-A10:
   &microrts-squnet-d16-128-map32-bc-finetune-a10
@@ -1463,12 +1438,14 @@ Microrts-squnet-d16-128-map64-BC-finetune:
     load_run_path: sgoodfriend/rl-algo-impls-microrts-2023/uksp6znl
   eval_hyperparams: &microrts-squnet-d16-128-map64-bc-finetune-eval
     <<: *microrts-squnet-map64-eval-defaults
+  rollout_hyperparams: &microrts-squnet-d16-128-map64-bc-finetune-rollout
+    <<: *microrts-squnet-d16-128-map32-bc-finetune-rollout
+    gamma: 0.9999
+    gae_lambda: 0.99
   algo_hyperparams: &microrts-squnet-d16-128-map64-bc-finetune-algo
     <<: *microrts-squnet-d16-128-map32-bc-finetune-algo
     batch_size: 384
     gradient_accumulation: true
-    gamma: 0.9999
-    gae_lambda: 0.99
     vf_coef: 0.2
   hyperparam_transitions_kwargs:
     interpolate_method: cosine
@@ -1505,154 +1482,256 @@ Microrts-squnet-d16-128-map64-BC-finetune-A10:
     <<: *microrts-squnet-d16-128-map64-bc-finetune-algo
     batch_size: 192
 
-Microrts-squnet-d16-128-map64-guided-finetune:
-  &microrts-squnet-d16-128-map64-guided-finetune
-  <<: *microrts-squnet-d16-128-map64-bc-finetune-a10
-  rollout_type: guided
+Microrts-env16-80m-ent5-lr3c-mgn2-shaped-rew-nga-a100:
+  &microrts-env16-80m-ent5-lr3c-mgn2-shaped-rew-nga-a100
+  additional_keys_to_log:
+    - microrts_stats
+    - microrts_results
+    - results
+    - action_mask_stats
+  algo_hyperparams: &env16-algo
+    autocast_loss: true
+    batch_size: 4608
+    clip_range: 0.1
+    clip_range_vf: null
+    ent_coef: 0.005
+    gradient_accumulation: false
+    learning_rate: !!float 3e-4
+    max_grad_norm: 2
+    n_epochs: 2
+    ppo2_vf_coef_halving: true
+    vf_coef: 0.5
+  checkpoints_kwargs:
+    history_size: 2
+  device_hyperparams:
+    set_float32_matmul_precision: high
+    use_deterministic_algorithms: false
+  env_hyperparams: &env16-env
+    additional_win_loss_reward: false
+    bots:
+      workerRushAI: 6
+      lightRushAI: 6
+      coacAI: 6
+      mayari: 6
+    env_type: microrts
+    make_kwargs: &env16-env-make-kwargs
+      bot_envs_alternate_player: true
+      map_paths:
+        - maps/16x16/basesWorkers16x16.xml
+      max_steps: 4000
+      num_selfplay_envs: 72
+      render_theme: 2
+      reward_weight:
+        - 10.0 # RAIWinLossRewardFunction
+        - 1.0 # ResourceGatherRewardFunction
+        - 1.0 # ProduceWorkerRewardFunction
+        - 0.2 # ProduceBuildingRewardFunction
+        - 1.0 # AttackRewardFunction
+        - 4.0 # ProduceLightUnitRewardFunction
+        - 5.25 # ProduceHeavyUnitRewardFunction
+        - 6.0 # ProduceRangedUnitRewardFunction
+        - 0.0 # ScoreRewardFunction
+    map_paths:
+      - maps/16x16/basesWorkers16x16A.xml
+      - maps/16x16/TwoBasesBarracks16x16.xml
+      - maps/8x8/basesWorkers8x8A.xml
+      - maps/8x8/FourBasesWorkers8x8.xml
+      - maps/NoWhereToRun9x8.xml
+      - maps/16x16/EightBasesWorkers16x16.xml
+    n_envs: 72
+    play_checkpoints_kwargs:
+      n_envs_against_checkpoints: 24
+    score_reward_kwargs: null
+    self_play_kwargs: null
+    valid_sizes:
+      - 16
+  env_id: Microrts-squnet-map16
+  eval_hyperparams: &env16-eval
+    deterministic: false
+    env_overrides: &env16-eval-env-overrides
+      additional_win_loss_reward: false
+      bots:
+        coacAI: 2
+        droplet: 2
+        guidedRojoA3N: 2
+        izanagi: 2
+        lightRushAI: 2
+        mayari: 2
+        mixedBot: 2
+        naiveMCTSAI: 2
+        passiveAI: 2
+        randomAI: 2
+        randomBiasedAI: 2
+        rojo: 2
+        tiamat: 2
+        workerRushAI: 2
+      make_kwargs:
+        bot_envs_alternate_player: false
+        map_paths:
+          - maps/16x16/basesWorkers16x16A.xml
+        max_steps: 4000
+        num_selfplay_envs: 0
+        render_theme: 2
+        reward_weight:
+          - 1.0
+          - 0
+          - 0
+          - 0
+          - 0
+          - 0
+          - 0
+          - 0
+          - 0
+      map_paths: []
+      n_envs: 28
+      play_checkpoints_kwargs: null
+      score_reward_kwargs: {}
+      self_play_kwargs: {}
+    max_video_length: 4000
+    n_episodes: 28
+    score_function: mean
+    skip_evaluate_at_start: true
+    step_freq: !!float 2.5e6
+  n_timesteps: !!float 80e6
+  policy_hyperparams: &env16-policy
+    actor_head_style: squeeze_unet
+    additional_critic_activation_functions: []
+    channels_per_level:
+      - 128
+      - 128
+      - 128
+    decoder_residual_blocks_per_level:
+      - 2
+      - 3
+    deconv_strides_per_level:
+      - - 2
+        - 2
+      - - 2
+        - 2
+    encoder_residual_blocks_per_level:
+      - 3
+      - 2
+      - 4
+    normalization: layer
+    output_activation_fn: identity
+    strides_per_level:
+      - 4
+      - 4
+    subaction_mask:
+      0:
+        1: 1
+        2: 2
+        3: 3
+        4: 4
+        5: 4
+        6: 5
   rollout_hyperparams:
-    <<: *microrts-squnet-d16-128-map32-bc-finetune-rollout
-    switch_range: 1
-  hyperparam_transitions_kwargs:
-    interpolate_method: cosine
-    phases:
-      - learning_rate: !!float 5e-5
-        ent_coef: 0
-        freeze_policy_head: true
-        freeze_backbone: true
-        switch_range: 1
-      - learning_rate: !!float 1e-6
-        ent_coef: 0.001
-        freeze_policy_head: false
-        freeze_backbone: false
-        switch_range: 4000
-      - learning_rate: !!float 2.5e-5
-        ent_coef: 0.001
-        freeze_policy_head: false
-        freeze_backbone: false
-        switch_range: 3000
-      - learning_rate: !!float 2.5e-5
-        ent_coef: 0.001
-        freeze_policy_head: false
-        freeze_backbone: false
-        switch_range: 1
-      - learning_rate: !!float 1e-6
-        ent_coef: 0.0001
-        freeze_policy_head: false
-        freeze_backbone: false
-        switch_range: 1
-    durations:
-      - 0.01
-      - 0
-      - 0
-      - 0.24
-      - 0
-      - 0.4
-      - 0.1
-      - 0.23
-      - 0.02
+    full_batch_off_accelerator: true
+    gae_lambda: 0.95
+    gamma: 0.999
+    n_steps: 512
 
-Microrts-squnet-d16-128-map64-guided-random:
-  &microrts-squnet-d16-128-map64-guided-random
-  <<: *microrts-squnet-d16-128-map64-bc-finetune-a10
-  rollout_type: guided_random
-  rollout_hyperparams: &microrts-squnet-d16-128-map64-guided-random-rollout
-    <<: *microrts-squnet-d16-128-map32-bc-finetune-rollout
-    guide_probability: 0
-    skip_no_action_steps: true
-  hyperparam_transitions_kwargs:
-    interpolate_method: cosine
-    phases:
-      - learning_rate: !!float 5e-5
-        ent_coef: 0
-        freeze_policy_head: true
-        freeze_backbone: true
-        guide_probability: 0
-      - learning_rate: !!float 1e-6
-        ent_coef: 0.001
-        freeze_policy_head: false
-        freeze_backbone: false
-        guide_probability: 0.9
-      - learning_rate: !!float 2.5e-5
-        ent_coef: 0.001
-        freeze_policy_head: false
-        freeze_backbone: false
-        guide_probability: 0.6
-      - learning_rate: !!float 2.5e-5
-        ent_coef: 0.001
-        freeze_policy_head: false
-        freeze_backbone: false
-        guide_probability: 0
-      - learning_rate: !!float 1e-6
-        ent_coef: 0.0001
-        freeze_policy_head: false
-        freeze_backbone: false
-        guide_probability: 0
-    durations:
-      - 0.01
-      - 0
-      - 0
-      - 0.24
-      - 0
-      - 0.3
-      - 0.2
-      - 0.23
-      - 0.02
+Microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf24-nga-a100:
+  &microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf24-nga-a100
+  <<: *microrts-env16-80m-ent5-lr3c-mgn2-shaped-rew-nga-a100
+  algo_hyperparams: &env16-info-rew-vf24-algo
+    <<: *env16-algo
+    multi_reward_weights:
+      - 1.0 # RAIWinLossRewardFunction
+      - 0.1 # ResourceGatherRewardFunction
+      - 0.1 # ProduceWorkerRewardFunction
+      - 0.1 # ProduceBuildingRewardFunction
+      - 0.1 # AttackRewardFunction
+      - 0.1 # ProduceLightUnitRewardFunction
+      - 0.1 # ProduceHeavyUnitRewardFunction
+      - 0.1 # ProduceRangedUnitRewardFunction
+      - 0.0 # ScoreRewardFunction
+    vf_coef: 0.24
+    vf_loss_fn: huber_loss
+    vf_weights:
+      - 1.0 # RAIWinLossRewardFunction
+      - 0.5 # ResourceGatherRewardFunction
+      - 0.5 # ProduceWorkerRewardFunction
+      - 0.5 # ProduceBuildingRewardFunction
+      - 0.5 # AttackRewardFunction
+      - 0.5 # ProduceLightUnitRewardFunction
+      - 0.5 # ProduceHeavyUnitRewardFunction
+      - 0.5 # ProduceRangedUnitRewardFunction
+      - 0.5 # ScoreRewardFunction
+  env_hyperparams: &env16-info-rew-env
+    <<: *env16-env
+    info_rewards:
+      info_paths:
+        - [raw_rewards, ResourceGatherRewardFunction]
+        - [raw_rewards, ProduceWorkerRewardFunction]
+        - [raw_rewards, ProduceBuildingRewardFunction]
+        - [raw_rewards, AttackRewardFunction]
+        - [raw_rewards, ProduceLightUnitRewardFunction]
+        - [raw_rewards, ProduceHeavyUnitRewardFunction]
+        - [raw_rewards, ProduceRangedUnitRewardFunction]
+        - [raw_rewards, ScoreRewardFunction]
+      episode_end: false
+    make_kwargs: &env16-info-rew-env-make-kwargs
+      <<: *env16-env-make-kwargs
+      reward_weight: [1.0, 0, 0, 0, 0, 0, 0, 0, 0]
+    normalize: true
+    normalize_kwargs:
+      clip_reward: 1
+      emv_window_size: !!float 5e6
+      exponential_moving_mean_var_reward: true
+      gamma_reward: 0.999
+      norm_obs: false
+      norm_reward: true
+  eval_hyperparams: &env16-info-rew-eval
+    <<: *env16-eval
+    env_overrides: &env16-info-rew-eval-env-overrides
+      <<: *env16-eval-env-overrides
+      info_rewards: null
+    only_checkpoint_best_policies: true
+  policy_hyperparams: &env16-info-rew-policy
+    <<: *env16-policy
+    additional_critic_activation_functions:
+      - identity # ResourceGatherRewardFunction
+      - identity # ProduceWorkerRewardFunction
+      - identity # ProduceBuildingRewardFunction
+      - identity # AttackRewardFunction
+      - identity # ProduceLightUnitRewardFunction
+      - identity # ProduceHeavyUnitRewardFunction
+      - identity # ProduceRangedUnitRewardFunction
+      - identity # ScoreRewardFunction
+    output_activation_fn: identity
+    shared_critic_head: true
 
-Microrts-squnet-d16-128-map64-guided-random-fast:
-  &microrts-squnet-d16-128-map64-guided-random-fast
-  <<: *microrts-squnet-d16-128-map64-guided-random
-  rollout_hyperparams:
-    <<: *microrts-squnet-d16-128-map64-guided-random-rollout
-    guide_probability: 0.9
-  hyperparam_transitions_kwargs:
-    interpolate_method: cosine
-    phases:
-      - learning_rate: !!float 1e-6
-        ent_coef: 0.001
-        freeze_policy_head: false
-        freeze_backbone: false
-        guide_probability: 0.9
-      - learning_rate: !!float 2.5e-5
-        ent_coef: 0.001
-        freeze_policy_head: false
-        freeze_backbone: false
-        guide_probability: 0
-      - learning_rate: !!float 1e-6
-        ent_coef: 0.0001
-        freeze_policy_head: false
-        freeze_backbone: false
-        guide_probability: 0
-    durations:
-      - 0
-      - 0.05
-      - 0.6
-      - 0.3
-      - 0.05
+Microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf50-nga-a100:
+  &microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf50-nga-a100
+  <<: *microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf24-nga-a100
+  algo_hyperparams: &env16-info-rew-vf50-algo
+    <<: *env16-info-rew-vf24-algo
+    vf_coef: 0.5
 
-Microrts-squnet-d16-128-map64-half-guided:
-  &microrts-squnet-d16-128-map64-half-guided
-  <<: *microrts-squnet-d16-128-map64-guided-random
-  rollout_hyperparams:
-    <<: *microrts-squnet-d16-128-map64-guided-random-rollout
-    guide_probability: 0
-  hyperparam_transitions_kwargs:
-    interpolate_method: cosine
-    phases:
-      - learning_rate: !!float 2.5e-5
-        ent_coef: 0.001
-        guide_probability: 0.5
-      - learning_rate: !!float 2.5e-5
-        ent_coef: 0.001
-        guide_probability: 0
-      - learning_rate: !!float 1e-6
-        ent_coef: 0.0001
-        guide_probability: 0
-    durations:
-      - 0.1
-      - 0.1
-      - 0.65
-      - 0.1
-      - 0.05
+Microrts-env16-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a100:
+  &microrts-env16-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a100
+  <<: *microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf50-nga-a100
+  algo_hyperparams: &env16-05wb2lwr-vf50-algo
+    <<: *env16-info-rew-vf50-algo
+    multi_reward_weights:
+      - 1.0 # RAIWinLossRewardFunction
+      - 0.1 # ResourceGatherRewardFunction
+      - 0.05 # ProduceWorkerRewardFunction
+      - 0.05 # ProduceBuildingRewardFunction
+      - 0.1 # AttackRewardFunction
+      - 0.2 # ProduceLightUnitRewardFunction
+      - 0.2 # ProduceHeavyUnitRewardFunction
+      - 0.2 # ProduceRangedUnitRewardFunction
+      - 0.0 # ScoreRewardFunction
+
+Microrts-bw16a-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a100:
+  &microrts-bw16a-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a100
+  <<: *microrts-env16-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a100
+  env_hyperparams:
+    <<: *env16-info-rew-env
+    map_paths:
+      - maps/16x16/basesWorkers16x16A.xml
 
 Microrts-agent: &microrts-agent
   <<: *microrts-sp-dc-phases-defaults
@@ -1686,27 +1765,9 @@ Microrts-agent: &microrts-agent
         #   size: 64
         #   use_paper_obs: true
 
-Microrts-debug: &microrts-debug-defaults
-  <<: *microrts-squnet-d16-128-map64-half-guided
+Microrts-debug:
+  <<: *microrts-bw16a-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a100
   n_timesteps: !!float 1e6
-  device: mps
   eval_hyperparams:
-    <<: *microrts-squnet-d16-128-map64-bc-finetune-eval
+    <<: *env16-info-rew-eval
     skip_evaluate_at_start: true
-  # hyperparam_transitions_kwargs:
-  #   interpolate_method: cosine
-  #   phases:
-  #     - learning_rate: !!float 1e-6
-  #       ent_coef: 0.001
-  #       freeze_policy_head: false
-  #       freeze_backbone: false
-  #       guide_probability: 0.5
-  #     - learning_rate: !!float 3e-5
-  #       ent_coef: 0.001
-  #       freeze_policy_head: false
-  #       freeze_backbone: false
-  #       guide_probability: 0.5
-  #   durations:
-  #     - 0
-  #     - 0.2
-  #     - 0.8

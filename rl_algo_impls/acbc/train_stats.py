@@ -2,7 +2,9 @@ from typing import Dict, List, Union
 
 import numpy as np
 
-from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
+from rl_algo_impls.shared.summary_wrapper.abstract_summary_wrapper import (
+    AbstractSummaryWrapper,
+)
 
 
 class TrainStats:
@@ -19,7 +21,7 @@ class TrainStats:
                 self.step_stats[k] = np.mean([s[k] for s in step_stats]).item()
         self.explained_var = explained_var
 
-    def write_to_tensorboard(self, tb_writer: SummaryWrapper) -> None:
+    def write_to_tensorboard(self, tb_writer: AbstractSummaryWrapper) -> None:
         stats = {**self.step_stats, **{"explained_var": self.explained_var}}
         for name, value in stats.items():
             if isinstance(value, np.ndarray):

@@ -6,8 +6,13 @@ import numpy as np
 from gymnasium.experimental.vector.utils import batch_space
 
 from rl_algo_impls.runner.config import Config
+from rl_algo_impls.utils.device import get_device
+from rl_algo_impls.shared.data_store.in_process_data_store_accessor import (
+    InProcessDataStoreAccessor,
+)
 from rl_algo_impls.shared.policy.policy import Policy
 from rl_algo_impls.shared.tensor_utils import batch_dict_keys
+from rl_algo_impls.shared.vec_env.env_spaces import EnvSpaces
 from rl_algo_impls.wrappers.vector_wrapper import (
     ObsType,
     VecEnvMaskedResetReturn,
@@ -100,16 +105,17 @@ class SelfPlayWrapper(VectorWrapper, Generic[ObsType]):
     def initialize_selfplay_bots(self) -> None:
         if not self.selfplay_bots:
             return
-        from rl_algo_impls.runner.running_utils import get_device, make_policy
+        from rl_algo_impls.runner.running_utils import make_eval_policy
 
         env = self.env  # Type: ignore
-        device = get_device(self.config, env)
+        device = get_device(self.config, EnvSpaces.from_vec_env(env))
         start_idx = 2 * self.num_old_policies
         for model_path, n in self.selfplay_bots.items():
-            policy = make_policy(
+            policy = make_eval_policy(
                 self.config,
-                env,
+                EnvSpaces.from_vec_env(env),
                 device,
+                InProcessDataStoreAccessor(),
                 load_path=model_path,
                 **self.config.policy_hyperparams,
             ).eval()

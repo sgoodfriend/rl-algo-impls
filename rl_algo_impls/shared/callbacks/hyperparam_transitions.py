@@ -1,39 +1,32 @@
+import logging
 from typing import Any, Dict, List, Optional
 
 import numpy as np
 
 from rl_algo_impls.ppo.learning_rate_by_kl_divergence import LearningRateByKLDivergence
-from rl_algo_impls.rollout.rollout import RolloutGenerator
 from rl_algo_impls.runner.config import Config
 from rl_algo_impls.shared.algorithm import Algorithm
 from rl_algo_impls.shared.callbacks.callback import Callback
+from rl_algo_impls.shared.data_store.data_store_view import LearnerDataStoreView
 from rl_algo_impls.shared.tensor_utils import num_or_array
 from rl_algo_impls.utils.interpolate import InterpolateMethod, interpolate
-from rl_algo_impls.wrappers.vector_wrapper import VectorEnv
-
-try:
-    from rl_algo_impls.lux.rewards import LuxRewardWeights
-except ImportError:
-    pass
 
 ALGO_SET_NAMES = {
-    "gae_lambda",
     "multi_reward_weights",
     "vf_coef",
-    "switch_range",
-    "guide_probability",
     "learning_rate",
     "clip_range",
     "clip_range_vf",
     "ent_coef",
-    "gamma",
     "teacher_kl_loss_coef",
 }
 ALGO_BOOL_NAMES = {"freeze_policy_head", "freeze_value_head", "freeze_backbone"}
 
-LUX_REWARD_WEIGHTS_NAME = "reward_weights"
-
 ROLLOUT_GENERATOR_NAMES = {
+    "gamma",
+    "gae_lambda",
+    "switch_range",
+    "guide_probability",
     "rolling_num_envs_reset_every_rollout",
     "random_num_envs_reset_every_rollout",
 }
@@ -47,9 +40,8 @@ class HyperparamTransitions(Callback):
     def __init__(
         self,
         config: Config,
-        env: VectorEnv,
         algo: Algorithm,
-        rollout_generator: RolloutGenerator,
+        learner_data_store_view: LearnerDataStoreView,
         phases: List[Dict[str, Any]],
         durations: List[float],
         start_timesteps: int = 0,
@@ -57,9 +49,8 @@ class HyperparamTransitions(Callback):
         lr_by_kl_callback: Optional[LearningRateByKLDivergence] = None,
     ) -> None:
         super().__init__()
-        self.env = env
         self.algo = algo
-        self.rollout_generator = rollout_generator
+        self.learner_data_store_view = learner_data_store_view
         self.lr_by_kl_callback = lr_by_kl_callback
 
         self.phases = phases
@@ -107,7 +98,7 @@ class HyperparamTransitions(Callback):
         self.current_phase_idx = phase_idx
 
         phase = self.phases[phase_idx]
-        print(f"{self.timesteps_elapsed}: Entering phase {phase_idx}: {phase}")
+        logging.info(f"{self.timesteps_elapsed}: Entering phase {phase_idx}: {phase}")
         for k, v in phase.items():
             if k in ALGO_SET_NAMES:
                 assert hasattr(self.algo, k)
@@ -115,12 +106,8 @@ class HyperparamTransitions(Callback):
             elif k in ALGO_BOOL_NAMES:
                 assert hasattr(self.algo, k)
                 setattr(self.algo, k, v)
-            elif k == LUX_REWARD_WEIGHTS_NAME:
-                assert hasattr(self.env, k)
-                setattr(self.env.unwrapped, k, LuxRewardWeights(**v))
             elif k in ROLLOUT_GENERATOR_NAMES:
-                assert hasattr(self.rollout_generator, k)
-                setattr(self.rollout_generator, k, v)
+                self.learner_data_store_view.update_rollout_param(k, v)
             elif k in LEARNING_RATE_BY_KL_DIVERGENCE_NAMES:
                 assert self.lr_by_kl_callback is not None
                 assert hasattr(self.lr_by_kl_callback, k)
@@ -132,7 +119,9 @@ class HyperparamTransitions(Callback):
         self, prior_phase_idx: int, transition_progress: float
     ) -> None:
         if self.current_phase_idx is not None:
-            print(f"{self.timesteps_elapsed}: Exiting phase {self.current_phase_idx}")
+            logging.info(
+                f"{self.timesteps_elapsed}: Exiting phase {self.current_phase_idx}"
+            )
         self.current_phase_idx = None
         prior_phase = self.phases[prior_phase_idx]
         next_phase = self.phases[prior_phase_idx + 1]
@@ -156,28 +145,14 @@ class HyperparamTransitions(Callback):
             elif k in ALGO_BOOL_NAMES:
                 assert hasattr(self.algo, k)
                 setattr(self.algo, k, old_v)
-            elif k == LUX_REWARD_WEIGHTS_NAME:
-                assert hasattr(self.env, k)
-                setattr(
-                    self.env.unwrapped,
-                    k,
-                    LuxRewardWeights.interpolate(
-                        old_v, next_v, transition_progress, self.interpolate_method
-                    ),
-                )
             elif k in ROLLOUT_GENERATOR_NAMES:
-                assert hasattr(self.rollout_generator, k)
-                v_type = type(getattr(self.rollout_generator, k))
-                setattr(
-                    self.rollout_generator,
+                self.learner_data_store_view.update_rollout_param(
                     k,
-                    v_type(
-                        interpolate(
-                            old_v,
-                            next_v,
-                            transition_progress,
-                            self.interpolate_method,
-                        )
+                    interpolate(
+                        old_v,
+                        next_v,
+                        transition_progress,
+                        self.interpolate_method,
                     ),
                 )
             elif k in LEARNING_RATE_BY_KL_DIVERGENCE_NAMES:

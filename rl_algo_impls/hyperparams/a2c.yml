@@ -47,8 +47,6 @@ LunarLander-v2:
     n_envs: 4
     normalize: true
   algo_hyperparams:
-    gamma: 0.9955517404308908
-    gae_lambda: 0.9875340918797773
     learning_rate: 0.0013814130817068916
     ent_coef: !!float 3.388369146384422e-7
     max_grad_norm: 3.33982095073364
@@ -56,6 +54,8 @@ LunarLander-v2:
     vf_coef: 0.1667838310548184
   rollout_hyperparams:
     <<: *default-rollout
+    gamma: 0.9955517404308908
+    gae_lambda: 0.9875340918797773
     n_steps: 2
   hyperparam_transitions_kwargs:
     durations: [0, 1, 0]
@@ -72,16 +72,16 @@ BipedalWalker-v3:
     use_sde: true
     log_std_init: -2
     init_layers_orthogonal: false
-  algo_hyperparams:
-    ent_coef: 0
-    max_grad_norm: 0.5
-    gae_lambda: 0.9
-    vf_coef: 0.4
-    gamma: 0.99
-    learning_rate: !!float 9.6e-4
   rollout_hyperparams:
     <<: *default-rollout
     n_steps: 8
+    gamma: 0.99
+    gae_lambda: 0.9
+  algo_hyperparams:
+    ent_coef: 0
+    max_grad_norm: 0.5
+    vf_coef: 0.4
+    learning_rate: !!float 9.6e-4
   hyperparam_transitions_kwargs:
     durations: [0, 1, 0]
     phases:
@@ -99,12 +99,12 @@ HalfCheetah-v4: &mujoco-defaults
     init_layers_orthogonal: false
   rollout_hyperparams: &mujoco-rollout-defaults
     n_steps: 8
+    gamma: 0.99
+    gae_lambda: 0.9
   algo_hyperparams: &mujoco-algo-defaults
     ent_coef: 0.0
     max_grad_norm: 0.5
-    gae_lambda: 0.9
     vf_coef: 0.4
-    gamma: 0.99
     learning_rate: 0.00096
   hyperparam_transitions_kwargs:
     durations: [0, 1, 0]
@@ -141,8 +141,6 @@ CarRacing-v2:
     hidden_sizes: [256]
   algo_hyperparams:
     learning_rate: 0.000018971962220405576
-    gamma: 0.9942776405534832
-    gae_lambda: 0.9549244758833236
     ent_coef: 0.0000015666550584860516
     vf_coef: 0.12164696385898476
     max_grad_norm: 2.2574480552177127
@@ -157,6 +155,8 @@ CarRacing-v2:
     <<: *default-rollout
     n_steps: 64
     sde_sample_freq: 16
+    gamma: 0.9942776405534832
+    gae_lambda: 0.9549244758833236
 
 _atari: &atari-defaults
   n_timesteps: !!float 1e7

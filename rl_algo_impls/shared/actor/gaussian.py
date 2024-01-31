@@ -55,7 +55,3 @@ class GaussianActorHead(Actor):
         ), f"{self.__class__.__name__} does not support action_masks"
         pi = self._distribution(obs)
         return pi_forward(pi, actions)
-
-    @property
-    def action_shape(self) -> Tuple[int, ...]:
-        return (self.act_dim,)

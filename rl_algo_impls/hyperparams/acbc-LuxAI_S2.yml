@@ -21,6 +21,8 @@ LuxAI_S2-v0-squnet-iDeimos: &lux-squnet-ideimos
     n_steps: 512
     full_batch_off_accelerator: true
     include_logp: false
+    gamma: [0.9997, 0.9997]
+    gae_lambda: [0.99, 0.99]
   checkpoints_kwargs:
     history_size: 32
   eval_hyperparams: &lux-eval-defaults
@@ -60,8 +62,6 @@ LuxAI_S2-v0-squnet-iDeimos: &lux-squnet-ideimos
     learning_rate: !!float 1e-3
     batch_size: 384
     n_epochs: 2
-    gamma: [0.9997, 0.9997]
-    gae_lambda: [0.99, 0.99]
     vf_coef: [0.25, 0.25]
     max_grad_norm: 0.5
     gradient_accumulation: true
@@ -162,11 +162,13 @@ LuxAI_S2-v0-split-short-squnet-acbc-robot: &lux-split-short-squnet-acbc-robot
     additional_critic_activation_functions: [tanh, tanh]
     output_activation_fn: identity
     save_critic_separate: true
+  rollout_hyperparams:
+    <<: *lux-squnet-ideimos-rollout
+    gamma: [0.9997, 0.9997, 0.9997]
+    gae_lambda: [0.95, 0.95, 0.95]
   algo_hyperparams:
     <<: *lux-squnet-ideimos-algo
     n_epochs: 1
-    gamma: [0.9997, 0.9997, 0.9997]
-    gae_lambda: [0.95, 0.95, 0.95]
     vf_coef: [0.33, 0.33, 0.33]
 
 LuxAI_S2-v0-short-squnet-rl-robot: &lux-short-squnet-rl-robot

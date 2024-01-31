@@ -7,19 +7,25 @@ import numpy as np
 from torch.utils.tensorboard.writer import SummaryWriter
 
 from rl_algo_impls.rollout.rollout import flatten_actions_to_tensor, flatten_to_tensor
-from rl_algo_impls.runner.config import Config, EnvHyperparams, Hyperparams, RunArgs
+from rl_algo_impls.runner.env_hyperparams import EnvHyperparams
+from rl_algo_impls.runner.config import Config, Hyperparams, RunArgs
+from rl_algo_impls.utils.device import get_device
 from rl_algo_impls.runner.running_utils import (
-    get_device,
     load_hyperparams,
-    make_policy,
+    make_eval_policy,
     set_device_optimizations,
     set_seeds,
 )
-from rl_algo_impls.shared.callbacks.eval_callback import evaluate
+from rl_algo_impls.shared.data_store.data_store_view import EvalDataStoreView
+from rl_algo_impls.shared.data_store.in_process_data_store_accessor import (
+    InProcessDataStoreAccessor,
+)
+from rl_algo_impls.shared.evaluator.evaluator import evaluate
 from rl_algo_impls.shared.policy.policy import Policy
 from rl_algo_impls.shared.stats import EpisodesStats
 from rl_algo_impls.shared.tensor_utils import batch_dict_keys
-from rl_algo_impls.shared.vec_env import make_eval_env
+from rl_algo_impls.shared.vec_env.env_spaces import EnvSpaces
+from rl_algo_impls.shared.vec_env.make_env import make_eval_env
 from rl_algo_impls.wrappers.vec_episode_recorder import VecEpisodeRecorder
 
 
@@ -43,6 +49,7 @@ class Evaluation(NamedTuple):
     policy: Policy
     stats: EpisodesStats
     config: Config
+    data_store_accessor: InProcessDataStoreAccessor
 
 
 def evaluate_model(args: EvalArgs, root_dir: str) -> Evaluation:
@@ -76,12 +83,17 @@ def evaluate_model(args: EvalArgs, root_dir: str) -> Evaluation:
 
     set_seeds(args.seed)
 
+    data_store_accessor = InProcessDataStoreAccessor(
+        **(config.hyperparams.checkpoints_kwargs or {})
+    )
+
     override_hparams = args.override_hparams or {}
     if args.n_envs:
         override_hparams["n_envs"] = args.n_envs
     env = make_eval_env(
         config,
         EnvHyperparams(**config.env_hyperparams),
+        EvalDataStoreView(data_store_accessor, is_eval_job=True),
         override_hparams=override_hparams,
         render=args.render,
     )
@@ -89,12 +101,13 @@ def evaluate_model(args: EvalArgs, root_dir: str) -> Evaluation:
         env = VecEpisodeRecorder(
             env, args.video_path, max_video_length=18000, num_episodes=args.n_episodes
         )
-    device = get_device(config, env)
+    device = get_device(config, EnvSpaces.from_vec_env(env))
     set_device_optimizations(device, **config.device_hyperparams)
-    policy = make_policy(
+    policy = make_eval_policy(
         config,
-        env,
+        EnvSpaces.from_vec_env(env),
         device,
+        data_store_accessor,
         load_path=model_path,
         **config.policy_hyperparams,
     ).eval()
@@ -151,4 +164,5 @@ def evaluate_model(args: EvalArgs, root_dir: str) -> Evaluation:
             print_returns=not args.no_print_returns,
         ),
         config,
+        data_store_accessor,
     )

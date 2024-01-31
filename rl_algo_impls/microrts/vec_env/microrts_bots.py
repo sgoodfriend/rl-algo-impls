@@ -12,8 +12,12 @@ from rl_algo_impls.microrts.vec_env.microrts_space_transform import (
 from rl_algo_impls.microrts.wrappers.microrts_stats_recorder import (
     MicrortsStatsRecorder,
 )
-from rl_algo_impls.runner.config import Config, EnvHyperparams
-from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
+from rl_algo_impls.runner.env_hyperparams import EnvHyperparams
+from rl_algo_impls.runner.config import Config
+from rl_algo_impls.shared.data_store.data_store_view import VectorEnvDataStoreView
+from rl_algo_impls.shared.summary_wrapper.abstract_summary_wrapper import (
+    AbstractSummaryWrapper,
+)
 from rl_algo_impls.wrappers.action_mask_stats_recorder import ActionMaskStatsRecorder
 from rl_algo_impls.wrappers.action_mask_wrapper import MicrortsMaskWrapper
 from rl_algo_impls.wrappers.additional_win_loss_reward import (
@@ -29,9 +33,10 @@ from rl_algo_impls.wrappers.vector_wrapper import VectorEnv
 def make_microrts_bots_env(
     config: Config,
     hparams: EnvHyperparams,
+    data_store_view: VectorEnvDataStoreView,
     training: bool = True,
     render: bool = False,
-    tb_writer: Optional[SummaryWrapper] = None,
+    tb_writer: Optional[AbstractSummaryWrapper] = None,
     **kwargs,
 ) -> VectorEnv:
     (

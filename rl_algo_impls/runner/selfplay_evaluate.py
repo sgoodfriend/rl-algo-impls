@@ -5,18 +5,24 @@ from typing import List, Optional
 import numpy as np
 
 import wandb
-from rl_algo_impls.runner.config import Config, EnvHyperparams, RunArgs
+from rl_algo_impls.runner.env_hyperparams import EnvHyperparams
+from rl_algo_impls.runner.config import Config, RunArgs
 from rl_algo_impls.runner.evaluate import Evaluation
+from rl_algo_impls.utils.device import get_device
 from rl_algo_impls.runner.running_utils import (
-    get_device,
     load_hyperparams,
-    make_policy,
+    make_eval_policy,
     set_device_optimizations,
     set_seeds,
 )
 from rl_algo_impls.runner.wandb_load import load_player
-from rl_algo_impls.shared.callbacks.eval_callback import evaluate
+from rl_algo_impls.shared.data_store.data_store_view import EvalDataStoreView
+from rl_algo_impls.shared.data_store.in_process_data_store_accessor import (
+    InProcessDataStoreAccessor,
+)
+from rl_algo_impls.shared.evaluator.evaluator import evaluate
 from rl_algo_impls.shared.vec_env import make_eval_env
+from rl_algo_impls.shared.vec_env.env_spaces import EnvSpaces
 from rl_algo_impls.wrappers.vec_episode_recorder import VecEpisodeRecorder
 
 
@@ -55,6 +61,10 @@ def selfplay_evaluate(args: SelfplayEvalArgs, root_dir: str) -> Evaluation:
 
     set_seeds(args.seed)
 
+    data_store_accessor = InProcessDataStoreAccessor(
+        **(config.hyperparams.checkpoints_kwargs or {})
+    )
+
     env_make_kwargs = (
         config.eval_hyperparams.get("env_overrides", {}).get("make_kwargs", {}).copy()
     )
@@ -62,6 +72,7 @@ def selfplay_evaluate(args: SelfplayEvalArgs, root_dir: str) -> Evaluation:
     env = make_eval_env(
         config,
         EnvHyperparams(**config.env_hyperparams),
+        EvalDataStoreView(data_store_accessor, is_eval_job=True),
         override_hparams={
             "n_envs": args.n_envs,
             "selfplay_bots": {
@@ -82,12 +93,13 @@ def selfplay_evaluate(args: SelfplayEvalArgs, root_dir: str) -> Evaluation:
         env = VecEpisodeRecorder(
             env, args.video_path, max_video_length=18000, num_episodes=args.n_episodes
         )
-    device = get_device(config, env)
+    device = get_device(config, EnvSpaces.from_vec_env(env))
     set_device_optimizations(device, **config.device_hyperparams)
-    policy = make_policy(
+    policy = make_eval_policy(
         config,
-        env,
+        EnvSpaces.from_vec_env(env),
         device,
+        data_store_accessor,
         load_path=player_1_model_path,
         **config.policy_hyperparams,
     ).eval()

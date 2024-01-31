@@ -1,5 +1,6 @@
 from abc import abstractmethod
 from typing import (
+    Any,
     Dict,
     Generic,
     List,
@@ -17,6 +18,7 @@ import torch
 from gymnasium.spaces import Box
 from gymnasium.spaces import Dict as DictSpace
 
+from rl_algo_impls.shared.policy.abstract_policy import Step
 from rl_algo_impls.shared.policy.actor_critic_network import (
     ConnectedTrioActorCriticNetwork,
     SeparateActorCriticNetwork,
@@ -36,14 +38,9 @@ from rl_algo_impls.shared.policy.actor_critic_network.squeeze_unet import (
 )
 from rl_algo_impls.shared.policy.policy import Policy
 from rl_algo_impls.shared.tensor_utils import NumpyOrDict, tensor_to_numpy
-from rl_algo_impls.wrappers.vector_wrapper import ObsType, VectorEnv
-
-
-class Step(NamedTuple):
-    a: NumpyOrDict
-    v: np.ndarray
-    logp_a: np.ndarray
-    clamped_a: np.ndarray
+from rl_algo_impls.shared.vec_env.action_shape import ActionShape
+from rl_algo_impls.shared.vec_env.env_spaces import EnvSpaces
+from rl_algo_impls.wrappers.vector_wrapper import ObsType
 
 
 class ACForward(NamedTuple):
@@ -88,17 +85,9 @@ def clamp_actions(
 
 
 class OnPolicy(Policy, Generic[ObsType]):
-    @abstractmethod
-    def value(self, obs: ObsType) -> np.ndarray:
-        ...
-
-    @abstractmethod
-    def step(self, obs: ObsType, action_masks: Optional[NumpyOrDict] = None) -> Step:
-        ...
-
     @property
     @abstractmethod
-    def action_shape(self) -> Tuple[int, ...]:
+    def action_shape(self) -> ActionShape:
         ...
 
     @property
@@ -109,7 +98,7 @@ class OnPolicy(Policy, Generic[ObsType]):
 class ActorCritic(OnPolicy, Generic[ObsType]):
     def __init__(
         self,
-        env: VectorEnv,
+        env_spaces: EnvSpaces,
         pi_hidden_sizes: Optional[Sequence[int]] = None,
         v_hidden_sizes: Optional[Sequence[int]] = None,
         init_layers_orthogonal: bool = True,
@@ -149,20 +138,23 @@ class ActorCritic(OnPolicy, Generic[ObsType]):
         normalization: Optional[str] = None,
         **kwargs,
     ) -> None:
-        super().__init__(env, **kwargs)
+        super().__init__(env_spaces, **kwargs)
+        (
+            single_observation_space,
+            single_action_space,
+            action_plane_space,
+            _,  # action_shape,
+            _,  # num_envs,
+            _,  # reward_shape,
+        ) = env_spaces
 
-        observation_space = env.single_observation_space
-        action_space = env.single_action_space
-        action_plane_space = getattr(env, "action_plane_space", None)
-
-        self.action_space = action_space
         self.squash_output = squash_output
 
         if actor_head_style == "unet":
             assert action_plane_space is not None
             self.network = UNetActorCriticNetwork(
-                observation_space,
-                action_space,
+                single_observation_space,
+                single_action_space,
                 action_plane_space,
                 v_hidden_sizes=v_hidden_sizes,
                 init_layers_orthogonal=init_layers_orthogonal,
@@ -173,8 +165,8 @@ class ActorCritic(OnPolicy, Generic[ObsType]):
         elif actor_head_style == "double_cone":
             assert action_plane_space is not None
             self.network = DoubleConeActorCritic(
-                observation_space,
-                action_space,
+                single_observation_space,
+                single_action_space,
                 action_plane_space,
                 init_layers_orthogonal=init_layers_orthogonal,
                 cnn_layers_init_orthogonal=cnn_layers_init_orthogonal,
@@ -193,8 +185,8 @@ class ActorCritic(OnPolicy, Generic[ObsType]):
         elif actor_head_style == "squeeze_unet":
             assert action_plane_space is not None
             self.network = SqueezeUnetActorCriticNetwork(
-                observation_space,
-                action_space,
+                single_observation_space,
+                single_action_space,
                 action_plane_space,
                 init_layers_orthogonal=init_layers_orthogonal,
                 cnn_layers_init_orthogonal=cnn_layers_init_orthogonal,
@@ -223,8 +215,8 @@ class ActorCritic(OnPolicy, Generic[ObsType]):
         elif actor_head_style == "sacus":
             assert action_plane_space is not None
             self.network = SplitActorCriticUShapedNetwork(
-                observation_space,
-                action_space,
+                single_observation_space,
+                single_action_space,
                 action_plane_space,
                 init_layers_orthogonal=init_layers_orthogonal,
                 cnn_layers_init_orthogonal=cnn_layers_init_orthogonal,
@@ -246,8 +238,8 @@ class ActorCritic(OnPolicy, Generic[ObsType]):
             )
         elif share_features_extractor:
             self.network = ConnectedTrioActorCriticNetwork(
-                observation_space,
-                action_space,
+                single_observation_space,
+                single_action_space,
                 pi_hidden_sizes=pi_hidden_sizes,
                 v_hidden_sizes=v_hidden_sizes,
                 init_layers_orthogonal=init_layers_orthogonal,
@@ -265,8 +257,8 @@ class ActorCritic(OnPolicy, Generic[ObsType]):
             )
         else:
             self.network = SeparateActorCriticNetwork(
-                observation_space,
-                action_space,
+                single_observation_space,
+                single_action_space,
                 pi_hidden_sizes=pi_hidden_sizes,
                 v_hidden_sizes=v_hidden_sizes,
                 init_layers_orthogonal=init_layers_orthogonal,
@@ -314,8 +306,23 @@ class ActorCritic(OnPolicy, Generic[ObsType]):
             logp_a = pi.log_prob(a)
 
         a_np = tensor_to_numpy(a)
-        clamped_a_np = clamp_actions(a_np, self.action_space, self.squash_output)
+        clamped_a_np = clamp_actions(
+            a_np, self.env_spaces.single_action_space, self.squash_output
+        )
         return Step(a_np, v.cpu().numpy(), logp_a.cpu().numpy(), clamped_a_np)
+
+    def logprobs(
+        self,
+        obs: np.ndarray,
+        actions: NumpyOrDict,
+        action_masks: Optional[NumpyOrDict] = None,
+    ) -> np.ndarray:
+        o = self._as_tensor(obs)
+        a = self._as_tensor(actions)
+        a_masks = self._as_tensor(action_masks) if action_masks is not None else None
+        with torch.no_grad():
+            (_, logp_a, _), _ = self.network(o, a, action_masks=a_masks)
+        return logp_a.cpu().numpy()
 
     def act(
         self,
@@ -336,50 +343,61 @@ class ActorCritic(OnPolicy, Generic[ObsType]):
                 )
                 a = pi.mode
             return clamp_actions(
-                tensor_to_numpy(a), self.action_space, self.squash_output
+                tensor_to_numpy(a),
+                self.env_spaces.single_action_space,
+                self.squash_output,
             )
 
-    def save_weights(self, path: str) -> None:
+    def get_state(self) -> Any:
+        if (
+            isinstance(self.network, BackboneActorCritic)
+            and self.network.save_critic_separate
+        ):
+            return self.network.get_state()
+        else:
+            return super().get_state()
+
+    def load_state(self, state: Any) -> None:
+        if (
+            isinstance(self.network, BackboneActorCritic)
+            and self.network.save_critic_separate
+        ):
+            self.network.set_state(state)
+        else:
+            super().load_state(state)
+        self.reset_noise()
+
+    def save(self, path: str) -> None:
         if (
             isinstance(self.network, BackboneActorCritic)
             and self.network.save_critic_separate
         ):
             self.network.save(path)
         else:
-            super().save_weights(path)
+            super().save(path)
 
-    def load_weights(self, path: str) -> None:
+    def load(self, path: str) -> None:
         if (
             isinstance(self.network, BackboneActorCritic)
             and self.network.save_critic_separate
         ):
             self.network.load(path, self.device)
         else:
-            super().load_weights(path)
-
-    def load(
-        self, path: str, load_norm_rms_count_override: Optional[int] = None
-    ) -> None:
-        super().load(path, load_norm_rms_count_override=load_norm_rms_count_override)
+            super().load(path)
         self.reset_noise()
-
-    def load_from(self: ActorCriticSelf, policy: ActorCriticSelf) -> ActorCriticSelf:
-        super().load_from(policy)
-        self.reset_noise()
-        return self
 
     def reset_noise(self, batch_size: Optional[int] = None) -> None:
         self.network.reset_noise(
-            batch_size=batch_size if batch_size else self.env.num_envs
+            batch_size=batch_size if batch_size else self.env_spaces.num_envs
         )
 
     @property
-    def action_shape(self) -> Tuple[int, ...]:
-        return self.network.action_shape
+    def action_shape(self) -> ActionShape:
+        return self.env_spaces.action_shape
 
     @property
     def value_shape(self) -> Tuple[int, ...]:
-        return self.network.value_shape
+        return self.env_spaces.reward_shape
 
     def freeze(
         self,

@@ -6,10 +6,12 @@ from typing import List, Optional, TypeVar
 import torch
 from torch.optim import Optimizer
 
-from rl_algo_impls.rollout.rollout import RolloutGenerator
 from rl_algo_impls.shared.callbacks import Callback
-from rl_algo_impls.shared.callbacks.summary_wrapper import SummaryWrapper
+from rl_algo_impls.shared.data_store.data_store_view import LearnerDataStoreView
 from rl_algo_impls.shared.policy.policy import Policy
+from rl_algo_impls.shared.summary_wrapper.abstract_summary_wrapper import (
+    AbstractSummaryWrapper,
+)
 
 OPTIMIZER_FILENAME = "optimizer.pt"
 
@@ -22,7 +24,7 @@ class Algorithm(ABC):
         self,
         policy: Policy,
         device: torch.device,
-        tb_writer: SummaryWrapper,
+        tb_writer: AbstractSummaryWrapper,
         learning_rate: float,
         optimizer: Optimizer,
         **kwargs,
@@ -37,11 +39,9 @@ class Algorithm(ABC):
     @abstractmethod
     def learn(
         self: AlgorithmSelf,
+        learner_data_store_view: LearnerDataStoreView,
         train_timesteps: int,
-        rollout_generator: RolloutGenerator,
         callbacks: Optional[List[Callback]] = None,
-        total_timesteps: Optional[int] = None,
-        start_timesteps: int = 0,
     ) -> AlgorithmSelf:
         ...
 

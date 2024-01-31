@@ -23,9 +23,13 @@ import torch
 import torch.nn as nn
 
 from rl_algo_impls.runner.config import Config, RunArgs
-from rl_algo_impls.runner.running_utils import load_hyperparams, make_policy
+from rl_algo_impls.runner.running_utils import load_hyperparams, make_eval_policy
+from rl_algo_impls.shared.data_store.in_process_data_store_accessor import (
+    InProcessDataStoreAccessor,
+)
 from rl_algo_impls.shared.policy.policy import Policy
 from rl_algo_impls.shared.tensor_utils import NumpyOrDict
+from rl_algo_impls.shared.vec_env.env_spaces import EnvSpaces
 from rl_algo_impls.wrappers.vector_wrapper import ObsType, VectorEnv
 
 MODEL_ROOT_PATH = "rai_microrts_saved_models"
@@ -158,10 +162,11 @@ class MapSizePolicyPicker(Policy, Generic[ObsType]):
             if "load_path" in policy_hyperparams:
                 del policy_hyperparams["load_path"]
             self.logger.debug(f"Loading policy {args.env}")
-            return make_policy(
+            return make_eval_policy(
                 args.config,
-                vec_env,
+                EnvSpaces.from_vec_env(vec_env),
                 device,
+                InProcessDataStoreAccessor(),
                 load_path=args.model_path,
                 **policy_hyperparams,
             )

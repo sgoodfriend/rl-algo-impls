@@ -81,7 +81,3 @@ class CategoricalActorHead(Actor):
         logits = self._fc(obs)
         pi = MaskedCategorical(logits=logits, mask=action_masks)
         return pi_forward(pi, actions)
-
-    @property
-    def action_shape(self) -> Tuple[int, ...]:
-        return ()

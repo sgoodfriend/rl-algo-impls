@@ -1,3 +1,5 @@
+from typing import Tuple
+
 import numpy as np
 
 from rl_algo_impls.wrappers.vector_wrapper import (
@@ -54,3 +56,16 @@ class ScoreRewardWrapper(VectorWrapper):
             r = np.expand_dims(r, axis=-1)
         rewards = np.concatenate([r] + r_to_add, axis=-1)
         return o, rewards, terminations, truncations, infos
+
+    @property
+    def reward_shape(self) -> Tuple[int, ...]:
+        if hasattr(self.env, "reward_shape"):
+            _reward_shape = getattr(self.env, "reward_shape")
+            assert isinstance(_reward_shape, tuple)
+        else:
+            _reward_shape: Tuple[int, ...] = ()
+        if len(_reward_shape):
+            _reward_shape = (_reward_shape[0] + 1,)
+        else:
+            _reward_shape = (2,)
+        return _reward_shape
