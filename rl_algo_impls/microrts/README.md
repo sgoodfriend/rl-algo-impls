@@ -3,7 +3,7 @@
 ## Training
 Training requires an Nvidia GPU with CUDA support. It's fine to develop on a machine without a GPU, but training will likely be so slow as to be impractical.
 
-1. Install Java JDK. Ubuntu 20.04's default JDK is 11, which is fine.
+1. Install Java JDK (Ubuntu 20.04's default JDK is 11, which is fine) and swig
 2. Install [poetry](https://python-poetry.org/docs/#installation).
 3. Install [git-lfs](https://github.com/git-lfs/git-lfs?tab=readme-ov-file#installing) and `git lfs pull` to download the jar files.
 4. Install rl_algo_impls with `poetry install -E microrts`.
