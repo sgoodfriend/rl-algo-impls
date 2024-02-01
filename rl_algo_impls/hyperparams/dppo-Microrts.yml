@@ -405,3 +405,15 @@ Microrts-env16-240m-ent5d1-lr4d1-mgn2-05wb2lwr-vf50-nga-a100:
       - ent_coef: !!float 1e-3
         learning_rate: !!float 1e-4
     durations: [0, 1, 0]
+
+Microrts-env16-300m-ent5d05-lr4d05-mgn2-05wb2lwr-vf50-nga-a100:
+  &microrts-env16-300m-ent5d05-lr4d05-mgn2-05wb2lwr-vf50-nga-a100
+  <<: *microrts-env16-240m-ent5d1-lr4d1-mgn2-05wb2lwr-vf50-nga-a100
+  n_timesteps: !!float 300e6
+  hyperparam_transitions_kwargs:
+    phases:
+      - ent_coef: !!float 5e-3
+        learning_rate: !!float 4e-4
+      - ent_coef: !!float 5e-4
+        learning_rate: !!float 5e-5
+    durations: [0, 1, 0]
