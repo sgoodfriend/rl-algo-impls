@@ -226,6 +226,7 @@ Microrts-env16-240m-ent5-lr3c-mgn2-info-rew-vf50-nga-a100:
         - - raw_rewards
           - ScoreRewardFunction
     make_kwargs:
+      &microrts-env16-240m-ent5-lr3c-mgn2-info-rew-vf50-nga-a100-make-kwargs
       bot_envs_alternate_player: true
       map_paths:
         - maps/16x16/basesWorkers16x16.xml
@@ -266,8 +267,10 @@ Microrts-env16-240m-ent5-lr3c-mgn2-info-rew-vf50-nga-a100:
       - 16
   env_id: Microrts-squnet-map16
   eval_hyperparams:
+    &microrts-env16-240m-ent5-lr3c-mgn2-info-rew-vf50-nga-a100-eval
     deterministic: false
     env_overrides:
+      &microrts-env16-240m-ent5-lr3c-mgn2-info-rew-vf50-nga-a100-eval-env
       additional_win_loss_reward: false
       bots:
         coacAI: 2
@@ -286,6 +289,7 @@ Microrts-env16-240m-ent5-lr3c-mgn2-info-rew-vf50-nga-a100:
         workerRushAI: 2
       info_rewards: null
       make_kwargs:
+        &microrts-env16-240m-ent5-lr3c-mgn2-info-rew-vf50-nga-a100-eval-make-kwargs
         bot_envs_alternate_player: false
         map_paths:
           - maps/16x16/basesWorkers16x16A.xml
@@ -315,6 +319,7 @@ Microrts-env16-240m-ent5-lr3c-mgn2-info-rew-vf50-nga-a100:
     step_freq: !!float 10e6
   n_timesteps: !!float 240e6
   policy_hyperparams:
+    &microrts-env16-240m-ent5-lr3c-mgn2-info-rew-vf50-nga-a100-policy
     actor_head_style: squeeze_unet
     additional_critic_activation_functions:
       - identity
@@ -357,6 +362,7 @@ Microrts-env16-240m-ent5-lr3c-mgn2-info-rew-vf50-nga-a100:
         6: 5
   process_mode: async
   rollout_hyperparams:
+    &microrts-env16-240m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a100-rollout
     full_batch_off_accelerator: true
     gae_lambda: 0.95
     gamma: 0.999
@@ -427,3 +433,44 @@ Microrts-env16-240m-ent5d1-lr4d1-05wb2lwr-adv-bot-only-a100:
     bots:
       coacAI: 12
       mayari: 12
+
+Microrts-env32-240m-ent5d1-lr4d1-05wb2lwr-a100:
+  algo_hyperparams: &microrts-env32-240m-ent5d1-lr4d1-05wb2lwr-a100-algo
+    <<: *microrts-env16-240m-ent5d1-lr4d1-mgn2-05wb2lwr-vf50-nga-a100-algo
+    batch_size: 1024
+    gradient_accumulation: 2
+    teacher_kl_loss_coef: !!float 5e-3
+  env_hyperparams: &microrts-env32-240m-ent5d1-lr4d1-05wb2lwr-a100-env
+    <<: *microrts-env16-240m-ent5d1-lr4d1-05wb2lwr-adv-bot-only-a100-env
+    bots:
+      coacAI: 8
+      mayari: 8
+    make_kwargs: &microrts-env32-240m-ent5d1-lr4d1-05wb2lwr-a100-make-kwargs
+      <<: *microrts-env16-240m-ent5-lr3c-mgn2-info-rew-vf50-nga-a100-make-kwargs
+      max_steps: 6000
+      num_selfplay_envs: 48
+    map_paths:
+      - maps/DoubleGame24x24.xml
+      - maps/BWDistantResources32x32.xml
+      - maps/chambers32x32.xml
+      - maps/24x24/basesWorkers24x24A.xml
+    n_envs: 48
+    play_checkpoints_kwargs:
+      n_envs_against_checkpoints: 16
+    valid_sizes:
+      - 32
+  eval_hyperparams: &microrts-env32-240m-ent5d1-lr4d1-05wb2lwr-a100-eval
+    <<: *microrts-env16-240m-ent5-lr3c-mgn2-info-rew-vf50-nga-a100-eval
+    env_overrides: &microrts-env32-240m-ent5d1-lr4d1-05wb2lwr-a100-eval-env
+      <<: *microrts-env16-240m-ent5-lr3c-mgn2-info-rew-vf50-nga-a100-eval-env
+      make_kwargs:
+        &microrts-env32-240m-ent5d1-lr4d1-05wb2lwr-a100-eval-make-kwargs
+        <<: *microrts-env16-240m-ent5-lr3c-mgn2-info-rew-vf50-nga-a100-eval-make-kwargs
+        max_steps: 6000
+  policy_hyperparams: &microrts-env32-240m-ent5d1-lr4d1-05wb2lwr-a100-policy
+    <<: *microrts-env16-240m-ent5-lr3c-mgn2-info-rew-vf50-nga-a100-policy
+    load_run_path: sgoodfriend/rl-algo-impls-microrts-2024/vn8kt9qp
+    load_run_path_best: true
+  rollout_hyperparams: &microrts-env32-240m-ent5d1-lr4d1-05wb2lwr-a100-rollout
+    <<: *microrts-env16-240m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a100-rollout
+    n_steps: 256
