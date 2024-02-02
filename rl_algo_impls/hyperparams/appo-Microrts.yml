@@ -644,5 +644,23 @@ Microrts-small-net-bw8a-20m-ent5-lr3c-05wb2lwr-vf50-nga-2t4:
     <<: *microrts-bw16a-10m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-2t4-worker
     rollout_incremental_start_delay_seconds: 20
 
+Microrts-env16-160m-ent5d1-lr4d1-05wb2lwr-adv-bot-only-a100:
+  &microrts-env16-160m-ent5d1-lr4d1-05wb2lwr-adv-bot-only-a100
+  <<: *microrts-env16-160m-ent5d1-lr4d1-mgn2-05wb2lwr-vf50-nga-a100
+  env_hyperparams:
+    &microrts-env16-160m-ent5d1-lr4d1-05wb2lwr-adv-bot-only-a100-env
+    <<: *microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf24-nga-a100-env
+    bots:
+      coacAI: 12
+      mayari: 12
+
+Microrts-env16-160m-ent5d1-lr4d1-05wb2lwr-adv-bot-only-a10:
+  &microrts-env16-160m-ent5d1-lr4d1-05wb2lwr-adv-bot-only-a10
+  <<: *microrts-env16-160m-ent5d1-lr4d1-05wb2lwr-adv-bot-only-a100
+  algo_hyperparams:
+    &microrts-env16-160m-ent5d1-lr4d1-05wb2lwr-adv-bot-only-a10-algo
+    <<: *microrts-env16-160m-ent5d1-lr4d1-mgn2-05wb2lwr-vf50-nga-a100-algo
+    batch_size: 2304
+
 Microrts-debug:
   <<: *microrts-env16-160m-ent5d1-lr4d1-mgn2-05wb2lwr-vf50-nga-a100
