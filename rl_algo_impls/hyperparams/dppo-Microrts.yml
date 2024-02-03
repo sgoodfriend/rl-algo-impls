@@ -441,6 +441,7 @@ Microrts-env32-240m-ent5d1-lr4d1-05wb2lwr-a100:
     <<: *microrts-env16-240m-ent5d1-lr4d1-mgn2-05wb2lwr-vf50-nga-a100-algo
     batch_size: 1024
     gradient_accumulation: 2
+    learning_rate: !!float 8e-4
     teacher_kl_loss_coef: !!float 5e-3
   env_hyperparams: &microrts-env32-240m-ent5d1-lr4d1-05wb2lwr-a100-env
     <<: *microrts-env16-240m-ent5d1-lr4d1-05wb2lwr-adv-bot-only-a100-env
@@ -470,10 +471,18 @@ Microrts-env32-240m-ent5d1-lr4d1-05wb2lwr-a100:
         <<: *microrts-env16-240m-ent5-lr3c-mgn2-info-rew-vf50-nga-a100-eval-make-kwargs
         map_paths: [maps/BWDistantResources32x32.xml]
         max_steps: 6000
+  hyperparam_transitions_kwargs:
+    phases:
+      - ent_coef: !!float 5e-3
+        learning_rate: !!float 8e-4
+      - ent_coef: !!float 1e-3
+        learning_rate: !!float 1e-4
+    durations: [0, 1, 0]
   policy_hyperparams: &microrts-env32-240m-ent5d1-lr4d1-05wb2lwr-a100-policy
     <<: *microrts-env16-240m-ent5-lr3c-mgn2-info-rew-vf50-nga-a100-policy
     load_run_path: sgoodfriend/rl-algo-impls-microrts-2024/vn8kt9qp
     load_run_path_best: true
   rollout_hyperparams: &microrts-env32-240m-ent5d1-lr4d1-05wb2lwr-a100-rollout
     <<: *microrts-env16-240m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a100-rollout
+    gamma: 0.9999
     n_steps: 256
