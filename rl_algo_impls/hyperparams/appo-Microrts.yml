@@ -662,5 +662,18 @@ Microrts-env16-160m-ent5d1-lr4d1-05wb2lwr-adv-bot-only-a10:
     <<: *microrts-env16-160m-ent5d1-lr4d1-mgn2-05wb2lwr-vf50-nga-a100-algo
     batch_size: 2304
 
+Microrts-env16-240m-ent5d1-lr4d1-05wb2lwr-adv-bot-only-a100:
+  &microrts-env16-240m-ent5d1-lr4d1-05wb2lwr-adv-bot-only-a100
+  <<: *microrts-env16-160m-ent5d1-lr4d1-05wb2lwr-adv-bot-only-a100
+  n_timesteps: !!float 240e6
+
+Microrts-env16-240m-ent5d1-lr4d1-05wb2lwr-adv-bot-only-a10:
+  &microrts-env16-240m-ent5d1-lr4d1-05wb2lwr-adv-bot-only-a10
+  <<: *microrts-env16-240m-ent5d1-lr4d1-05wb2lwr-adv-bot-only-a100
+  algo_hyperparams:
+    &microrts-env16-240m-ent5d1-lr4d1-05wb2lwr-adv-bot-only-a10-algo
+    <<: *microrts-env16-160m-ent5d1-lr4d1-05wb2lwr-adv-bot-only-a10-algo
+    batch_size: 2304
+
 Microrts-debug:
   <<: *microrts-env16-160m-ent5d1-lr4d1-mgn2-05wb2lwr-vf50-nga-a100
