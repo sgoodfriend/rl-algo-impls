@@ -253,6 +253,7 @@ Microrts-env16-240m-ent5-lr3c-mgn2-info-rew-vf50-nga-a100:
     n_envs: 72
     normalize: true
     normalize_kwargs:
+      &microrts-env16-240m-ent5-lr3c-mgn2-info-rew-vf50-nga-a100-normalize-kwargs
       clip_reward: 1
       emv_window_size: 5000000.0
       exponential_moving_mean_var_reward: true
@@ -471,6 +472,7 @@ Microrts-env32-240m-ent5d1-lr4d1-05wb2lwr-a100:
         <<: *microrts-env16-240m-ent5-lr3c-mgn2-info-rew-vf50-nga-a100-eval-make-kwargs
         map_paths: [maps/BWDistantResources32x32.xml]
         max_steps: 6000
+      max_video_length: 6000
   hyperparam_transitions_kwargs:
     phases:
       - ent_coef: !!float 5e-3
@@ -486,3 +488,17 @@ Microrts-env32-240m-ent5d1-lr4d1-05wb2lwr-a100:
     <<: *microrts-env16-240m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a100-rollout
     gamma: 0.9999
     n_steps: 256
+
+Microrts-env32-240m-ent5d1-lr8d1-05wb2lwr-ft-a100:
+  &microrts-env32-240m-ent5d1-lr8d1-05wb2lwr-ft-a100
+  <<: *microrts-env32-240m-ent5d1-lr4d1-05wb2lwr-a100
+  env_hyperparams: &microrts-env32-240m-ent5d1-lr8d1-05wb2lwr-ft-a100-env
+    <<: *microrts-env32-240m-ent5d1-lr4d1-05wb2lwr-a100-env
+    normalize_kwargs:
+      &microrts-env32-240m-ent5d1-lr8d1-05wb2lwr-ft-a100-normalize-kwargs
+      <<: *microrts-env16-240m-ent5-lr3c-mgn2-info-rew-vf50-nga-a100-normalize-kwargs
+      emv_window_size: !!float 10e6
+  policy_hyperparams: &microrts-env32-240m-ent5d1-lr8d1-05wb2lwr-ft-a100-policy
+    <<: *microrts-env32-240m-ent5d1-lr4d1-05wb2lwr-a100-policy
+    load_run_path: sgoodfriend/rl-algo-impls-microrts-2024/ukexkds4
+    load_run_path_best: true
