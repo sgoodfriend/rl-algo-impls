@@ -5,7 +5,6 @@ import torch
 import torch.nn as nn
 from gymnasium.spaces import Box, Space
 
-from rl_algo_impls.shared.module.channel_layer_norm import ChannelLayerNorm2d
 from rl_algo_impls.shared.module.normalization import (
     NormalizationMethod,
     normalization2d,
