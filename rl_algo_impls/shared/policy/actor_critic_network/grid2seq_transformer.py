@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, NamedTuple, Optional, Union
 
 import torch
 import torch.nn as nn
@@ -32,6 +32,7 @@ class Grid2SeqTransformerNetwork(BackboneActorCritic):
         normalization: str = "layer",
         add_position_features: bool = True,
         actor_head_kernel_size: int = 1,
+        key_mask_empty_spaces: bool = True,
     ) -> None:
         if cnn_layers_init_orthogonal is None:
             cnn_layers_init_orthogonal = False
@@ -48,6 +49,7 @@ class Grid2SeqTransformerNetwork(BackboneActorCritic):
             encoder_layers,
             normalization=normalization,
             add_position_features=add_position_features,
+            key_mask_empty_spaces=key_mask_empty_spaces,
         )
         super().__init__(
             observation_space,
@@ -79,6 +81,7 @@ class Grid2SeqTransformerBackbone(nn.Module):
         encoder_layers: int,
         normalization: str = "layer",
         add_position_features: bool = True,
+        key_mask_empty_spaces: bool = True,
     ) -> None:
         super().__init__()
         channels, self.height, self.width = observation_space.shape
@@ -91,6 +94,7 @@ class Grid2SeqTransformerBackbone(nn.Module):
 
             self.register_buffer("position", position)
             channels += 2
+        self.key_mask_empty_spaces = key_mask_empty_spaces
 
         self.encoder_embed_dim = encoder_embed_dim
         self.embedding_layer = nn.Conv2d(channels, encoder_embed_dim, 1)
@@ -107,15 +111,28 @@ class Grid2SeqTransformerBackbone(nn.Module):
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        if self.key_mask_empty_spaces:
+            NO_UNIT_TYPE_IDX = 6
+            IN_BOUNDS_IDX = 58
+            mask_cols = x[:, (NO_UNIT_TYPE_IDX, IN_BOUNDS_IDX)].flatten(2).bool()  # bool[B, 2, H*W]
+            key_padding_mask = mask_cols.all(dim=1)  # bool[B, H*W]
+        else:
+            key_padding_mask = None
+
         if self.add_position_features:
             x = torch.cat((x, self.position.expand(x.size(0), -1, -1, -1)), dim=1)
         x = self.embedding_layer(x)  # [B, C, H, W] -> [B, embed_dim, H, W]
         x = x.flatten(2).permute(0, 2, 1)  # [B, embed_dim, H, W] -> [B, H*W, embed_dim]
-        x = self.encoding_layers(x)
+        x, _ = self.encoding_layers(TransformerEncoderForwardArgs(x, key_padding_mask))
         x = x.permute(0, 2, 1).reshape(
             -1, self.encoder_embed_dim, self.height, self.width
         )  # [B, H*W, embed_dim] -> [B, embed_dim, H, W]
         return x
+
+
+class TransformerEncoderForwardArgs(NamedTuple):
+    x: torch.Tensor
+    key_padding_mask: Optional[torch.Tensor]
 
 
 class TransformerEncoderLayer(nn.Module):
@@ -139,11 +156,16 @@ class TransformerEncoderLayer(nn.Module):
         self.attention_normalization = normalization1d(normalization, embed_dim)
         self.feed_forward_normalization = normalization1d(normalization, embed_dim)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        attention_output, _ = self.multihead_attention(x, x, x)
+    def forward(
+        self, args: TransformerEncoderForwardArgs
+    ) -> TransformerEncoderForwardArgs:
+        x, key_padding_mask = args
+        attention_output, _ = self.multihead_attention(
+            x, x, x, key_padding_mask=key_padding_mask
+        )
         x = x + attention_output
         x = self.attention_normalization(x)
         ff_output = self.feed_forward(x)
         x = x + ff_output
         x = self.feed_forward_normalization(x)
-        return x
+        return TransformerEncoderForwardArgs(x, key_padding_mask)
