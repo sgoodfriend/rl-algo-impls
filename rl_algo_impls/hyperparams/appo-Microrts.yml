@@ -776,5 +776,21 @@ Microrts-bw8a-80m-ent5-lr3c-05wb2lwr-vf50-nga-grid2seq-a10:
     ent_coef: !!float 5e-3
   hyperparam_transitions_kwargs: null
 
+Microrts-bw8a-80m-ent5-lr3c-05wb2lwr-vf50-nga-grid2seq-wide-a10:
+  &microrts-bw8a-80m-ent5-lr3c-05wb2lwr-vf50-nga-grid2seq-wide-a10
+  <<: *microrts-bw8a-80m-ent5-lr3c-05wb2lwr-vf50-nga-grid2seq-a10
+  policy_hyperparams:
+    &microrts-bw8a-80m-ent5d05-lr20d1-05wb2lwr-vf50-nga-grid2seq-a10-policy
+    <<: *microrts-bw8a-80m-ent5d05-lr20d1-05wb2lwr-vf50-nga-grid2seq-a10-policy
+    encoder_embed_dim: 128
+
+Microrts-bw8a-80m-ent5-lr3c-05wb2lwr-vf50-nga-grid2seq-6l-a10:
+  &microrts-bw8a-80m-ent5-lr3c-05wb2lwr-vf50-nga-grid2seq-6l-a10
+  <<: *microrts-bw8a-80m-ent5-lr3c-05wb2lwr-vf50-nga-grid2seq-a10
+  policy_hyperparams:
+    &microrts-bw8a-80m-ent5-lr3c-05wb2lwr-vf50-nga-grid2seq-6l-a10-policy
+    <<: *microrts-bw8a-80m-ent5d05-lr20d1-05wb2lwr-vf50-nga-grid2seq-a10-policy
+    encoder_layers: 6
+
 Microrts-debug:
   <<: *microrts-bw8a-80m-ent5d05-lr20d1-05wb2lwr-vf50-nga-grid2seq-a10
