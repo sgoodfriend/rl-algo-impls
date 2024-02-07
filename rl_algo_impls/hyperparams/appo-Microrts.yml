@@ -792,6 +792,23 @@ Microrts-bw8a-80m-ent5-lr3c-05wb2lwr-vf50-nga-grid2seq-6l-a10:
     <<: *microrts-bw8a-80m-ent5d05-lr20d1-05wb2lwr-vf50-nga-grid2seq-a10-policy
     encoder_layers: 6
 
+Microrts-bw8a-80m-ent5d05-lr10d1-05wb2lwr-vf50-nga-grid2seq-a10:
+  &microrts-bw8a-80m-ent5d05-lr10d1-05wb2lwr-vf50-nga-grid2seq-a10
+  <<: *microrts-bw8a-80m-ent5-lr3c-05wb2lwr-vf50-nga-grid2seq-a10
+  algo_hyperparams:
+    &microrts-bw8a-80m-ent5d05-lr10d1-05wb2lwr-vf50-nga-grid2seq-a10-algo
+    <<: *microrts-bw8a-80m-ent5-lr3c-05wb2lwr-vf50-nga-grid2seq-a10-algo
+    learning_rate: !!float 1e-3
+    ent_coef: !!float 5e-3
+  hyperparam_transitions_kwargs:
+    &microrts-bw8a-80m-ent5d05-lr10d1-05wb2lwr-vf50-nga-grid
+    <<: *microrts-bw8a-80m-ent5d05-lr20d1-05wb2lwr-vf50-nga-grid
+    phases:
+      - ent_coef: !!float 5e-3
+        learning_rate: !!float 1e-3
+      - ent_coef: !!float 5e-4
+        learning_rate: !!float 1e-4
+
 Microrts-bw16a-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-grid2seq-a10:
   &microrts-bw16a-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-grid2seq-a10
   <<: *microrts-bw16a-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a10
@@ -829,4 +846,4 @@ Microrts-bw16a-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-grid2seq-a10:
         6: 5
 
 Microrts-debug:
-  <<: *microrts-bw16a-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-grid2seq-a10
+  <<: *microrts-bw8a-80m-ent5d05-lr10d1-05wb2lwr-vf50-nga-grid2seq-a10
