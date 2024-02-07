@@ -1739,7 +1739,7 @@ Microrts-bw8a-80m-ent5-lr3c-05wb2lwr-vf50-nga-grid2seq-a10:
   algo_hyperparams:
     &microrts-bw8a-80m-ent5-lr3c-05wb2lwr-vf50-nga-grid2seq-a10-algo
     <<: *env16-05wb2lwr-vf50-algo
-    batch_size: 4096
+    batch_size: 8192
   env_hyperparams:
     &microrts-bw8a-80m-ent5-lr3c-05wb2lwr-vf50-nga-grid2seq-a10-env
     <<: *microrts-bw16a-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a100-env

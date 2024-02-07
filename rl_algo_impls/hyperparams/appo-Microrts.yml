@@ -681,7 +681,7 @@ Microrts-bw8a-80m-ent5-lr3c-05wb2lwr-vf50-nga-grid2seq-a10:
   algo_hyperparams:
     &microrts-bw8a-80m-ent5-lr3c-05wb2lwr-vf50-nga-grid2seq-a10-algo
     <<: *microrts-small-net-bw8a-40m-ent5-lr3c-05wb2lwr-vf50-nga-a10-algo
-    batch_size: 4096
+    batch_size: 8192
   policy_hyperparams:
     &microrts-bw8a-80m-ent5-lr3c-05wb2lwr-vf50-nga-grid2seq-a10-policy
     actor_head_style: grid2seq_transformer
