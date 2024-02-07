@@ -675,18 +675,21 @@ Microrts-env16-240m-ent5d1-lr4d1-05wb2lwr-adv-bot-only-a10:
     <<: *microrts-env16-160m-ent5d1-lr4d1-05wb2lwr-adv-bot-only-a10-algo
     batch_size: 2304
 
-Microrts-bw8a-80m-ent5-lr10d1-05wb2lwr-vf50-nga-grid2seq-a10:
+Microrts-bw8a-80m-ent5d05-lr20d1-05wb2lwr-vf50-nga-grid2seq-a10:
   &microrts-bw8a-80m-ent5-lr10d1-05wb2lwr-vf50-nga-grid2seq-a10
   <<: *microrts-small-net-bw8a-40m-ent5-lr3c-05wb2lwr-vf50-nga-a10
   algo_hyperparams:
     &microrts-bw8a-80m-ent5-lr10d1-05wb2lwr-vf50-nga-grid2seq-a10-algo
     <<: *microrts-small-net-bw8a-40m-ent5-lr3c-05wb2lwr-vf50-nga-a10-algo
     batch_size: 8192
-    learning_rate: !!float 1e-3
+    learning_rate: !!float 2e-3
+    ent_coef: !!float 5e-3
   hyperparam_transitions_kwargs:
     phases:
-      - learning_rate: !!float 1e-3
-      - learning_rate: !!float 1e-4
+      - ent_coef: !!float 5e-3
+        learning_rate: !!float 2e-3
+      - ent_coef: !!float 5e-4
+        learning_rate: !!float 1e-4
     durations: [0, 1, 0]
   policy_hyperparams:
     &microrts-bw8a-80m-ent5-lr10d1-05wb2lwr-vf50-nga-grid2seq-a10-policy
