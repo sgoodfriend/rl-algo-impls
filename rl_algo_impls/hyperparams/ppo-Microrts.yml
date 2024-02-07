@@ -1565,7 +1565,7 @@ Microrts-env16-80m-ent5-lr3c-mgn2-shaped-rew-nga-a100:
         rojo: 2
         tiamat: 2
         workerRushAI: 2
-      make_kwargs:
+      make_kwargs: &env16-eval-env-make-kwargs
         bot_envs_alternate_player: false
         map_paths:
           - maps/16x16/basesWorkers16x16A.xml
@@ -1728,10 +1728,77 @@ Microrts-env16-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a100:
 Microrts-bw16a-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a100:
   &microrts-bw16a-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a100
   <<: *microrts-env16-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a100
-  env_hyperparams:
+  env_hyperparams: &microrts-bw16a-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a100-env
     <<: *env16-info-rew-env
     map_paths:
       - maps/16x16/basesWorkers16x16A.xml
+
+Microrts-bw8a-80m-ent5-lr3c-05wb2lwr-vf50-nga-grid2seq-a10:
+  &microrts-bw8a-80m-ent5-lr3c-05wb2lwr-vf50-nga-grid2seq-a10
+  <<: *microrts-bw16a-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a100
+  algo_hyperparams:
+    &microrts-bw8a-80m-ent5-lr3c-05wb2lwr-vf50-nga-grid2seq-a10-algo
+    <<: *env16-05wb2lwr-vf50-algo
+    batch_size: 1024
+  env_hyperparams:
+    &microrts-bw8a-80m-ent5-lr3c-05wb2lwr-vf50-nga-grid2seq-a10-env
+    <<: *microrts-bw16a-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a100-env
+    bots:
+      coacAI: 12
+      mayari: 12
+    make_kwargs:
+      &microrts-bw8a-80m-ent5-lr3c-05wb2lwr-vf50-nga-grid2seq-a10-env-make-kwargs
+      <<: *env16-info-rew-env-make-kwargs
+      map_paths:
+        - maps/8x8/basesWorkers8x8A.xml
+      max_steps: 3000
+      num_selfplay_envs: 64
+    map_paths:
+      - maps/8x8/basesWorkers8x8A.xml
+    n_envs: 64
+    play_checkpoints_kwargs:
+      n_envs_against_checkpoints: 24
+    valid_sizes: [8]
+  eval_hyperparams:
+    &microrts-bw8a-80m-ent5-lr3c-05wb2lwr-vf50-nga-grid2seq-a10-eval
+    <<: *env16-info-rew-eval
+    env_overrides:
+      &microrts-bw8a-80m-ent5-lr3c-05wb2lwr-vf50-nga-grid2seq-a10-eval-env-overrides
+      <<: *env16-info-rew-eval-env-overrides
+      make_kwargs:
+        &microrts-bw8a-80m-ent5-lr3c-05wb2lwr-vf50-nga-grid2seq-a10-eval-make-kwargs
+        <<: *env16-eval-env-make-kwargs
+        map_paths:
+          - maps/8x8/basesWorkers8x8A.xml
+        max_steps: 3000
+  policy_hyperparams:
+    &microrts-bw8a-80m-ent5-lr3c-05wb2lwr-vf50-nga-grid2seq-a10-policy
+    actor_head_style: grid2seq_transformer
+    additional_critic_activation_functions:
+      - identity
+      - identity
+      - identity
+      - identity
+      - identity
+      - identity
+      - identity
+      - identity
+    critic_strides: [4]
+    encoder_embed_dim: 64
+    encoder_attention_heads: 4
+    encoder_feed_forward_dim: 256
+    encoder_layers: 4
+    normalization: layer
+    output_activation_fn: identity
+    shared_critic_head: true
+    subaction_mask:
+      0:
+        1: 1
+        2: 2
+        3: 3
+        4: 4
+        5: 4
+        6: 5
 
 Microrts-agent: &microrts-agent
   <<: *microrts-sp-dc-phases-defaults
@@ -1766,8 +1833,8 @@ Microrts-agent: &microrts-agent
         #   use_paper_obs: true
 
 Microrts-debug:
-  <<: *microrts-bw16a-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a100
+  <<: *microrts-bw8a-80m-ent5-lr3c-05wb2lwr-vf50-nga-grid2seq-a10
   n_timesteps: !!float 1e6
   eval_hyperparams:
-    <<: *env16-info-rew-eval
+    <<: *microrts-bw8a-80m-ent5-lr3c-05wb2lwr-vf50-nga-grid2seq-a10-eval
     skip_evaluate_at_start: true

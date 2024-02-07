@@ -9,7 +9,7 @@ if __name__ == "__main__":
     parser.add_argument("-e", "--env-id", type=str)
     parser.add_argument("-a", "--algo", default="appo")
     parser.set_defaults(
-        env_id="Microrts-env16-80m-ent5-lr3c-mgn2-info-rew-vf50-nga-a100"
+        env_id="Microrts-small-net-bw8a-40m-ent5-lr3c-05wb2lwr-vf50-nga-a10"
     )
     args = parser.parse_args()
 

@@ -675,5 +675,41 @@ Microrts-env16-240m-ent5d1-lr4d1-05wb2lwr-adv-bot-only-a10:
     <<: *microrts-env16-160m-ent5d1-lr4d1-05wb2lwr-adv-bot-only-a10-algo
     batch_size: 2304
 
+Microrts-bw8a-80m-ent5-lr3c-05wb2lwr-vf50-nga-grid2seq-a10:
+  &microrts-bw8a-80m-ent5-lr3c-05wb2lwr-vf50-nga-grid2seq-a10
+  <<: *microrts-small-net-bw8a-40m-ent5-lr3c-05wb2lwr-vf50-nga-a10
+  algo_hyperparams:
+    &microrts-bw8a-80m-ent5-lr3c-05wb2lwr-vf50-nga-grid2seq-a10-algo
+    <<: *microrts-small-net-bw8a-40m-ent5-lr3c-05wb2lwr-vf50-nga-a10-algo
+    batch_size: 1024
+  policy_hyperparams:
+    &microrts-bw8a-80m-ent5-lr3c-05wb2lwr-vf50-nga-grid2seq-a10-policy
+    actor_head_style: grid2seq_transformer
+    additional_critic_activation_functions:
+      - identity
+      - identity
+      - identity
+      - identity
+      - identity
+      - identity
+      - identity
+      - identity
+    critic_strides: [4]
+    encoder_embed_dim: 64
+    encoder_attention_heads: 4
+    encoder_feed_forward_dim: 256
+    encoder_layers: 4
+    normalization: layer
+    output_activation_fn: identity
+    shared_critic_head: true
+    subaction_mask:
+      0:
+        1: 1
+        2: 2
+        3: 3
+        4: 4
+        5: 4
+        6: 5
+
 Microrts-debug:
-  <<: *microrts-env16-160m-ent5d1-lr4d1-mgn2-05wb2lwr-vf50-nga-a100
+  <<: *microrts-bw8a-80m-ent5-lr3c-05wb2lwr-vf50-nga-grid2seq-a10
