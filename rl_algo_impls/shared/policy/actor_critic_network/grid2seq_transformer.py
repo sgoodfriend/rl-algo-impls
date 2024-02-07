@@ -111,7 +111,7 @@ class Grid2SeqTransformerBackbone(nn.Module):
         x = self.encoding_layers(x)
         x = x.permute(0, 2, 1).reshape(
             -1, self.encoder_embed_dim, self.height, self.width
-        )  # [B, H*W, embed_dim] -> [B, embed_dim, H*W]
+        )  # [B, H*W, embed_dim] -> [B, embed_dim, H, W]
         return x
 
 
