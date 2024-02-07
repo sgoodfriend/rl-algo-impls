@@ -23,8 +23,7 @@ from rl_algo_impls.shared.policy.actor_critic_network.network import (
     ACNForward,
     ActorCriticNetwork,
 )
-from rl_algo_impls.shared.policy.policy import ACTIVATION
-from rl_algo_impls.shared.policy.policy import MODEL_FILENAME
+from rl_algo_impls.shared.policy.policy import ACTIVATION, MODEL_FILENAME
 
 CRITIC_FILENAME = "critic.pth"
 
@@ -49,6 +48,7 @@ class BackboneActorCritic(ActorCriticNetwork):
         save_critic_separate: bool = False,
         shared_critic_head: bool = False,
         normalization: Optional[str] = None,
+        actor_head_kernel_size: int = 3,
     ):
         if num_additional_critics and not additional_critic_activation_functions:
             additional_critic_activation_functions = [
@@ -86,6 +86,7 @@ class BackboneActorCritic(ActorCriticNetwork):
             or normalization.upper() in NormalizationMethod.__members__
         ), f"Invalid normalization method {normalization}"
 
+        actor_head_padding = (actor_head_kernel_size - 1) // 2
         self.actor_head = nn.Sequential(
             *[
                 layer_init(
@@ -93,8 +94,8 @@ class BackboneActorCritic(ActorCriticNetwork):
                         in_channels=backbone_out_channels,
                         out_channels=self.action_vec.sum()
                         + (len(self.pick_vec) if self.pick_vec else 0),
-                        kernel_size=3,
-                        padding=1,
+                        kernel_size=actor_head_kernel_size,
+                        padding=actor_head_padding,
                     ),
                     init_layers_orthogonal=init_layers_orthogonal,
                     std=0.01,
@@ -204,11 +205,13 @@ class BackboneActorCritic(ActorCriticNetwork):
             self.action_vec,
             logits,
             action_masks,
-            subaction_mask=ValueDependentMask.from_reference_index_to_index_to_value(
-                self.subaction_mask
-            )
-            if self.subaction_mask
-            else None,
+            subaction_mask=(
+                ValueDependentMask.from_reference_index_to_index_to_value(
+                    self.subaction_mask
+                )
+                if self.subaction_mask
+                else None
+            ),
         )
 
         v = self.critic_heads(x if self.critic_shares_backbone else o)

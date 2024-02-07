@@ -31,6 +31,7 @@ class Grid2SeqTransformerNetwork(BackboneActorCritic):
         shared_critic_head: bool = False,
         normalization: str = "layer",
         add_position_features: bool = True,
+        actor_head_kernel_size: int = 1,
     ) -> None:
         if cnn_layers_init_orthogonal is None:
             cnn_layers_init_orthogonal = False
@@ -46,6 +47,7 @@ class Grid2SeqTransformerNetwork(BackboneActorCritic):
             encoder_feed_forward_dim,
             encoder_layers,
             normalization=normalization,
+            add_position_features=add_position_features,
         )
         super().__init__(
             observation_space,
@@ -63,6 +65,7 @@ class Grid2SeqTransformerNetwork(BackboneActorCritic):
             subaction_mask=subaction_mask,
             shared_critic_head=shared_critic_head,
             normalization=normalization,
+            actor_head_kernel_size=actor_head_kernel_size,
         )
 
 
