@@ -753,5 +753,28 @@ Microrts-bw8a-80m-ent1d01-lr5d1-05wb2lwr-vf50-nga-grid2seq-a10:
       - ent_coef: !!float 1e-4
         learning_rate: !!float 1e-4
 
+Microrts-bw8a-80m-ent1d01-lr3c-05wb2lwr-vf50-nga-grid2seq-a10:
+  &microrts-bw8a-80m-ent1d01-lr3c-05wb2lwr-vf50-nga-grid2seq-a10
+  <<: *microrts-bw8a-80m-ent1d01-lr5d1-05wb2lwr-vf50-nga-grid2seq-a10
+  algo_hyperparams:
+    &microrts-bw8a-80m-ent1d01-lr3c-05wb2lwr-vf50-nga-grid2seq-a10-algo
+    <<: *microrts-bw8a-80m-ent1d01-lr5d1-05wb2lwr-vf50-nga-grid2seq-a10-algo
+    learning_rate: !!float 3e-4
+  hyperparam_transitions_kwargs:
+    &microrts-bw8a-80m-ent1d01-lr3c-05wb2lwr-vf50-nga-grid2seq-a10-hyperparam-transitions
+    <<: *microrts-bw8a-80m-ent1d01-lr5d1-05wb2lwr-vf50-nga-grid
+    phases:
+      - ent_coef: !!float 1e-3
+      - ent_coef: !!float 1e-4
+
+Microrts-bw8a-80m-ent5-lr3c-05wb2lwr-vf50-nga-grid2seq-a10:
+  &microrts-bw8a-80m-ent5-lr3c-05wb2lwr-vf50-nga-grid2seq-a10
+  <<: *microrts-bw8a-80m-ent1d01-lr3c-05wb2lwr-vf50-nga-grid2seq-a10
+  algo_hyperparams:
+    &microrts-bw8a-80m-ent5-lr3c-05wb2lwr-vf50-nga-grid2seq-a10-algo
+    <<: *microrts-bw8a-80m-ent1d01-lr3c-05wb2lwr-vf50-nga-grid2seq-a10-algo
+    ent_coef: !!float 5e-3
+  hyperparam_transitions_kwargs: null
+
 Microrts-debug:
   <<: *microrts-bw8a-80m-ent5d05-lr20d1-05wb2lwr-vf50-nga-grid2seq-a10
