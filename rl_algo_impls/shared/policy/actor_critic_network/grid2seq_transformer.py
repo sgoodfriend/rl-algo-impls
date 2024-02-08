@@ -177,11 +177,11 @@ class TransformerEncoderLayer(nn.Module):
                 attention_input,
                 key_padding_mask=key_padding_mask,
             )
-            x = x + F.gelu(attention_output)
+            x = x + attention_output
 
             ff_input = self.feed_forward_normalization(x)
             ff_output = self.feed_forward(ff_input)
-            x = x + F.gelu(ff_output)
+            x = x + ff_output
         else:
             attention_output, _ = self.multihead_attention(
                 x, x, x, key_padding_mask=key_padding_mask
