@@ -49,7 +49,7 @@ class MicroRTSGridModeVecEnv(MicroRTSInterface):
         render_theme=2,
         frame_skip=0,
         ai2s=[],
-        map_paths=["maps/10x10/basesTwoWorkers10x10.xml"],
+        map_paths=["maps/10x10/basesWorkers10x10.xml"],
         reward_weight=np.array([10.0, 1.0, 1.0, 0.2, 1.0, 4.0, 5.25, 6.0, 0]),
         cycle_maps=[],
         bot_envs_alternate_player: bool = False,
@@ -79,9 +79,9 @@ class MicroRTSGridModeVecEnv(MicroRTSInterface):
         self.reward_weight = reward_weight
         self.metadata = {
             "render.modes": ["human", "rgb_array"],
-            "video.frames_per_second": video_frames_per_second
-            if video_frames_per_second is not None
-            else 150,
+            "video.frames_per_second": (
+                video_frames_per_second if video_frames_per_second is not None else 150
+            ),
         }
         self.render_mode = render_mode
 
