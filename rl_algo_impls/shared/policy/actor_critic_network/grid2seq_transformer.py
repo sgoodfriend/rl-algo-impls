@@ -101,12 +101,7 @@ class Grid2SeqTransformerBackbone(nn.Module):
         self.key_mask_empty_spaces = key_mask_empty_spaces
 
         self.encoder_embed_dim = encoder_embed_dim
-        self.embedding_layer = nn.Sequential(
-            *[
-                nn.Conv2d(channels, encoder_embed_dim, 1),
-                nn.ReLU(),
-            ]
-        )
+        self.embedding_layer = nn.Conv2d(channels, encoder_embed_dim, 1)
         self.encoding_layers = nn.Sequential(
             *[
                 TransformerEncoderLayer(
