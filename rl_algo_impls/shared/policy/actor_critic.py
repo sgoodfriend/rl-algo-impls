@@ -147,6 +147,7 @@ class ActorCritic(OnPolicy, Generic[ObsType]):
         actor_head_kernel_size: int = 1,
         key_mask_empty_spaces: bool = True,
         identity_map_reordering: bool = True,
+        filter_key_mask_empty_spaces: bool = True,
         **kwargs,
     ) -> None:
         super().__init__(env_spaces, **kwargs)
@@ -276,6 +277,7 @@ class ActorCritic(OnPolicy, Generic[ObsType]):
                 actor_head_kernel_size=actor_head_kernel_size,
                 key_mask_empty_spaces=key_mask_empty_spaces,
                 identity_map_reordering=identity_map_reordering,
+                filter_key_mask_empty_spaces=filter_key_mask_empty_spaces,
             )
         elif share_features_extractor:
             self.network = ConnectedTrioActorCriticNetwork(
