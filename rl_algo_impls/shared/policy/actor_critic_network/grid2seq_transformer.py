@@ -2,6 +2,7 @@ from typing import Dict, List, NamedTuple, Optional, Union
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from gymnasium.spaces import Box, Space
 
 from rl_algo_impls.shared.module.normalization import normalization1d
@@ -33,6 +34,7 @@ class Grid2SeqTransformerNetwork(BackboneActorCritic):
         add_position_features: bool = True,
         actor_head_kernel_size: int = 1,
         key_mask_empty_spaces: bool = True,
+        identity_map_reordering: bool = True,
     ) -> None:
         if cnn_layers_init_orthogonal is None:
             cnn_layers_init_orthogonal = False
@@ -50,6 +52,7 @@ class Grid2SeqTransformerNetwork(BackboneActorCritic):
             normalization=normalization,
             add_position_features=add_position_features,
             key_mask_empty_spaces=key_mask_empty_spaces,
+            identity_map_reordering=identity_map_reordering,
         )
         super().__init__(
             observation_space,
@@ -82,6 +85,7 @@ class Grid2SeqTransformerBackbone(nn.Module):
         normalization: str = "layer",
         add_position_features: bool = True,
         key_mask_empty_spaces: bool = True,
+        identity_map_reordering: bool = True,
     ) -> None:
         super().__init__()
         channels, self.height, self.width = observation_space.shape
@@ -105,6 +109,7 @@ class Grid2SeqTransformerBackbone(nn.Module):
                     encoder_attention_heads,
                     encoder_feed_forward_dim,
                     normalization,
+                    identity_map_reordering,
                 )
                 for _ in range(encoder_layers)
             ]
@@ -114,7 +119,9 @@ class Grid2SeqTransformerBackbone(nn.Module):
         if self.key_mask_empty_spaces:
             NO_UNIT_TYPE_IDX = 6
             IN_BOUNDS_IDX = 58
-            mask_cols = x[:, (NO_UNIT_TYPE_IDX, IN_BOUNDS_IDX)].flatten(2).bool()  # bool[B, 2, H*W]
+            mask_cols = (
+                x[:, (NO_UNIT_TYPE_IDX, IN_BOUNDS_IDX)].flatten(2).bool()
+            )  # bool[B, 2, H*W]
             key_padding_mask = mask_cols.all(dim=1)  # bool[B, H*W]
         else:
             key_padding_mask = None
@@ -142,6 +149,7 @@ class TransformerEncoderLayer(nn.Module):
         attention_heads: int,
         feed_forward_dim: int,
         normalization: str = "layer",
+        identity_map_reordering: bool = True,
     ):
         super().__init__()
         self.multihead_attention = nn.MultiheadAttention(
@@ -155,17 +163,32 @@ class TransformerEncoderLayer(nn.Module):
 
         self.attention_normalization = normalization1d(normalization, embed_dim)
         self.feed_forward_normalization = normalization1d(normalization, embed_dim)
+        self.identity_map_reordering = identity_map_reordering
 
     def forward(
         self, args: TransformerEncoderForwardArgs
     ) -> TransformerEncoderForwardArgs:
         x, key_padding_mask = args
-        attention_output, _ = self.multihead_attention(
-            x, x, x, key_padding_mask=key_padding_mask
-        )
-        x = x + attention_output
-        x = self.attention_normalization(x)
-        ff_output = self.feed_forward(x)
-        x = x + ff_output
-        x = self.feed_forward_normalization(x)
+        if self.identity_map_reordering:
+            attention_input = self.attention_normalization(x)
+            attention_output, _ = self.multihead_attention(
+                attention_input,
+                attention_input,
+                attention_input,
+                key_padding_mask=key_padding_mask,
+            )
+            x = x + F.gelu(attention_output)
+
+            ff_input = self.feed_forward_normalization(x)
+            ff_output = self.feed_forward(ff_input)
+            x = x + F.gelu(ff_output)
+        else:
+            attention_output, _ = self.multihead_attention(
+                x, x, x, key_padding_mask=key_padding_mask
+            )
+            x = x + attention_output
+            x = self.attention_normalization(x)
+            ff_output = self.feed_forward(x)
+            x = x + ff_output
+            x = self.feed_forward_normalization(x)
         return TransformerEncoderForwardArgs(x, key_padding_mask)
