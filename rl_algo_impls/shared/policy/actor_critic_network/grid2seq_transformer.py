@@ -101,7 +101,13 @@ class Grid2SeqTransformerBackbone(nn.Module):
         self.key_mask_empty_spaces = key_mask_empty_spaces
 
         self.encoder_embed_dim = encoder_embed_dim
-        self.embedding_layer = nn.Conv2d(channels, encoder_embed_dim, 1)
+        self.embedding_layer = nn.Sequential(
+            *[
+                nn.Conv2d(channels, encoder_embed_dim, 1),
+                nn.ReLU(),
+            ]
+        )
+        self.embedding_normalization = normalization1d(normalization, encoder_embed_dim)
         self.encoding_layers = nn.Sequential(
             *[
                 TransformerEncoderLayer(
@@ -130,6 +136,7 @@ class Grid2SeqTransformerBackbone(nn.Module):
             x = torch.cat((x, self.position.expand(x.size(0), -1, -1, -1)), dim=1)
         x = self.embedding_layer(x)  # [B, C, H, W] -> [B, embed_dim, H, W]
         x = x.flatten(2).permute(0, 2, 1)  # [B, embed_dim, H, W] -> [B, H*W, embed_dim]
+        x = self.embedding_normalization(x)
         x, _ = self.encoding_layers(TransformerEncoderForwardArgs(x, key_padding_mask))
         x = x.permute(0, 2, 1).reshape(
             -1, self.encoder_embed_dim, self.height, self.width
