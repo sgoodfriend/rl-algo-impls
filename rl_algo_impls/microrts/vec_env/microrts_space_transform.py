@@ -180,11 +180,8 @@ class MicroRTSSpaceTransform(VectorEnv, MicroRTSInterfaceListener):
                 self._set_spaces(is_init=is_init, sz=sz, use_paper_obs=use_paper_obs)
                 return
         # Set height and width to next factor of 4 if not factor of 4 already
-        next_factor_of_4 = lambda n: n + 4 - n % 4 if n % 4 else n
-        height = next_factor_of_4(np.max(self.interface.heights))
-        width = next_factor_of_4(np.max(self.interface.widths))
-        assert height % 4 == 0, f"{height} must be multiple of 4"
-        assert width % 4 == 0, f"{width} must be multiple of 4"
+        height = np.max(self.interface.heights)
+        width = np.max(self.interface.widths)
         sz = max(height, width)
         if self.valid_sizes is not None:
             for valid_sz in self.valid_sizes:
