@@ -1800,6 +1800,99 @@ Microrts-bw8a-80m-ent5-lr3c-05wb2lwr-vf50-nga-grid2seq-a10:
         5: 4
         6: 5
 
+Microrts-bw10-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10:
+  &microrts-bw10-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10
+  additional_keys_to_log:
+    - microrts_stats
+    - microrts_results
+    - results
+    - action_mask_stats
+  algo_hyperparams:
+    autocast_loss: true
+    batch_size: 1024
+    clip_range: 0.2
+    clip_range_vf: 0.2
+    ent_coef: 0.1
+    gradient_accumulation: false
+    learning_rate: 0.001
+    max_grad_norm: 2
+    n_epochs: 3
+    ppo2_vf_coef_halving: true
+    vf_coef: 0.5
+  device_hyperparams:
+    set_float32_matmul_precision: high
+    use_deterministic_algorithms: false
+  env_hyperparams:
+    bots:
+      coacAI: 24
+    env_type: microrts
+    make_kwargs:
+      map_paths: [maps/10x10/basesWorkers10x10.xml]
+      reward_weight: [10.0, 1.0, 1.0, 0.2, 1.0, 4.0, 4.0, 4.0, 0]
+      max_steps: 2000
+    n_envs: 24
+    valid_sizes: [10]
+  env_id: Microrts-baseWorkers10x10
+  eval_hyperparams:
+    &microrts-bw10-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10-eval
+    deterministic: false
+    env_overrides:
+      bots:
+        coacAI: 8
+      info_rewards: null
+      make_kwargs:
+        map_paths: [maps/10x10/basesWorkers10x10.xml]
+        max_steps: 2000
+        reward_weight:
+          - 1.0
+          - 0
+          - 0
+          - 0
+          - 0
+          - 0
+          - 0
+          - 0
+          - 0
+      n_envs: 8
+    max_video_length: 2000
+    n_episodes: 8
+    only_checkpoint_best_policies: true
+    score_function: mean
+    skip_evaluate_at_start: true
+    step_freq: !!float 5e5
+  hyperparam_transitions_kwargs:
+    phases:
+      - learning_rate: 0.001
+        ent_coef: 0.1
+      - learning_rate: 0
+        ent_coef: 0
+    durations: [0, 1, 0]
+  n_timesteps: !!float 1e6
+  policy_hyperparams:
+    actor_head_style: grid2seq_transformer
+    critic_channels: 32
+    critic_strides:
+      - 2
+    encoder_attention_heads: 2
+    encoder_embed_dim: 32
+    encoder_feed_forward_dim: 128
+    encoder_layers: 2
+    normalization: layer
+    output_activation_fn: identity
+    subaction_mask:
+      0:
+        1: 1
+        2: 2
+        3: 3
+        4: 4
+        5: 4
+        6: 5
+  rollout_hyperparams:
+    full_batch_off_accelerator: false
+    gae_lambda: 0.95
+    gamma: 0.99
+    n_steps: 256
+
 Microrts-agent: &microrts-agent
   <<: *microrts-sp-dc-phases-defaults
   device: cpu
@@ -1833,7 +1926,7 @@ Microrts-agent: &microrts-agent
         #   use_paper_obs: true
 
 Microrts-debug:
-  <<: *microrts-bw8a-80m-ent5-lr3c-05wb2lwr-vf50-nga-grid2seq-a10
+  <<: *microrts-bw10-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10
   eval_hyperparams:
-    <<: *microrts-bw8a-80m-ent5-lr3c-05wb2lwr-vf50-nga-grid2seq-a10-eval
+    <<: *microrts-bw10-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10-eval
     skip_evaluate_at_start: true
