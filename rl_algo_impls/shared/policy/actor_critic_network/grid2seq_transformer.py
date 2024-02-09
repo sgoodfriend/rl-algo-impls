@@ -2,7 +2,6 @@ from typing import Dict, List, NamedTuple, Optional, Union
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 from gymnasium.spaces import Box, Space
 
 from rl_algo_impls.shared.module.normalization import normalization1d
@@ -10,6 +9,9 @@ from rl_algo_impls.shared.module.utils import layer_init
 from rl_algo_impls.shared.policy.actor_critic_network.backbone_actor_critic import (
     BackboneActorCritic,
 )
+
+NO_UNIT_TYPE_IDX = 6
+IN_BOUNDS_IDX = 58
 
 
 class Grid2SeqTransformerNetwork(BackboneActorCritic):
@@ -133,14 +135,10 @@ class Grid2SeqTransformerBackbone(nn.Module):
 
         x = x.flatten(2).permute(0, 2, 1)  # [B, C, H, W] -> [B, C, H*W] -> [B, H*W, C]
         if self.key_mask_empty_spaces:
-            NO_UNIT_TYPE_IDX = 6
-            IN_BOUNDS_IDX = 58
-            mask_cols = x[
-                ..., (NO_UNIT_TYPE_IDX, IN_BOUNDS_IDX)
-            ].bool()  # Bool[B, H*W, 2]
-            key_padding_mask = mask_cols.all(dim=-1)  # Bool[B, H*W]
+            key_padding_mask = empty_spaces_mask(x)  # Bool[B, H*W]
         else:
             key_padding_mask = None
+
         if self.filter_key_mask_empty_spaces:
             assert key_padding_mask is not None
             keep_mask = ~key_padding_mask  # Bool[B, H*W]
@@ -185,6 +183,10 @@ class Grid2SeqTransformerBackbone(nn.Module):
             -1, self.encoder_embed_dim, self.height, self.width
         )  # [B, H*W, embed_dim] -> [B, embed_dim, H, W]
         return x
+
+
+def empty_spaces_mask(x: torch.Tensor) -> torch.Tensor:
+    return x[..., (NO_UNIT_TYPE_IDX, IN_BOUNDS_IDX)].bool().all(dim=-1)
 
 
 class TransformerEncoderForwardArgs(NamedTuple):
