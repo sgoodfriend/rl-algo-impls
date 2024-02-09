@@ -105,7 +105,7 @@ class StateDependentNoiseActorHead(Actor):
             self.latent_net = mlp(
                 layer_sizes[:-1],
                 activation,
-                output_activation=activation,
+                output_activation=activation(),
                 init_layers_orthogonal=init_layers_orthogonal,
             )
         self.mu_net = mlp(

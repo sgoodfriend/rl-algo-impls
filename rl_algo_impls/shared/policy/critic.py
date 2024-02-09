@@ -31,7 +31,7 @@ class CriticHead(nn.Module):
                 activation,
                 init_layers_orthogonal=init_layers_orthogonal,
                 final_layer_gain=1.0,
-                output_activation=output_activation,
+                output_activation=output_activation(),
             )
         )
         self._fc = nn.Sequential(*seq)

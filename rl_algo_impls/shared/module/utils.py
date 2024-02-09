@@ -1,4 +1,4 @@
-from typing import Sequence, Type
+from typing import Optional, Sequence, Type
 
 import numpy as np
 import torch.nn as nn
@@ -7,7 +7,7 @@ import torch.nn as nn
 def mlp(
     layer_sizes: Sequence[int],
     activation: Type[nn.Module],
-    output_activation: Type[nn.Module] = nn.Identity,
+    output_activation: Optional[nn.Module] = None,
     init_layers_orthogonal: bool = False,
     final_layer_gain: float = np.sqrt(2),
     hidden_layer_gain: float = np.sqrt(2),
@@ -29,7 +29,8 @@ def mlp(
             std=final_layer_gain,
         )
     )
-    layers.append(output_activation())
+    if output_activation is not None:
+        layers.append(output_activation)
     return nn.Sequential(*layers)
 
 
