@@ -55,6 +55,7 @@ class MicroRTSGridModeVecEnv(MicroRTSInterface):
         bot_envs_alternate_player: bool = False,
         video_frames_per_second: Optional[int] = None,
         render_mode: str = "rgb_array",
+        always_player_1: bool = False,
     ):
         self.num_selfplay_envs = num_selfplay_envs
         self.num_bot_envs = num_bot_envs
@@ -67,8 +68,15 @@ class MicroRTSGridModeVecEnv(MicroRTSInterface):
         self.render_theme = render_theme
         self.frame_skip = frame_skip
         self.ai2s = ai2s
-        self.players = [i % 2 for i in range(self._num_envs)]
-        self.bot_envs_alternate_player = bot_envs_alternate_player
+        if always_player_1:
+            assert (
+                not bot_envs_alternate_player
+            ), "always_player_1 and bot_envs_alternate_player cannot be both True"
+            self.players = [0 for _ in range(self._num_envs)]
+            self.bot_envs_alternate_player = False
+        else:
+            self.players = [i % 2 for i in range(self._num_envs)]
+            self.bot_envs_alternate_player = bot_envs_alternate_player
         self.map_paths = map_paths
         if len(map_paths) == 1:
             self.map_paths = [map_paths[0] for _ in range(self.num_envs)]

@@ -1823,10 +1823,12 @@ Microrts-bw10-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10:
     set_float32_matmul_precision: high
     use_deterministic_algorithms: false
   env_hyperparams:
+    &microrts-bw10-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10-env
     bots:
       coacAI: 24
     env_type: microrts
     make_kwargs:
+      &microrts-bw10-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10-env-make-kwargs
       map_paths: [maps/10x10/basesWorkers10x10.xml]
       reward_weight: [10.0, 1.0, 1.0, 0.2, 1.0, 4.0, 4.0, 4.0, 0]
       max_steps: 2000
@@ -1837,10 +1839,12 @@ Microrts-bw10-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10:
     &microrts-bw10-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10-eval
     deterministic: false
     env_overrides:
+      &microrts-bw10-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10-eval-env-overrides
       bots:
         coacAI: 8
       info_rewards: null
       make_kwargs:
+        &microrts-bw10-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10-eval-make-kwargs
         map_paths: [maps/10x10/basesWorkers10x10.xml]
         max_steps: 2000
         reward_weight:
@@ -1903,6 +1907,27 @@ Microrts-bw10-3m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10:
   <<: *microrts-bw10-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10
   n_timesteps: !!float 3e6
 
+Microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10:
+  &microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10
+  <<: *microrts-bw10-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10
+  env_hyperparams:
+    &microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10-env
+    <<: *microrts-bw10-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10-env
+    make_kwargs:
+      &microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10-env-make-kwargs
+      <<: *microrts-bw10-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10-env-make-kwargs
+      always_player_1: true
+  eval_hyperparams:
+    &microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10-eval
+    <<: *microrts-bw10-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10-eval
+    env_overrides:
+      &microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10-eval-env-overrides
+      <<: *microrts-bw10-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10-eval-env-overrides
+      make_kwargs:
+        &microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10-eval-make-kwargs
+        <<: *microrts-bw10-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10-eval-make-kwargs
+        always_player_1: true
+
 Microrts-agent: &microrts-agent
   <<: *microrts-sp-dc-phases-defaults
   device: cpu
@@ -1936,7 +1961,7 @@ Microrts-agent: &microrts-agent
         #   use_paper_obs: true
 
 Microrts-debug:
-  <<: *microrts-bw10-3m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10
+  <<: *microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10
   # eval_hyperparams:
   #   <<: *microrts-bw10-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10-eval
   #   skip_evaluate_at_start: true
