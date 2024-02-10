@@ -1956,6 +1956,11 @@ Microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2entity-a10:
         5: 4
         6: 5
 
+Microrts-bw10-p1-2m-ent100d-lr10d-shaped-rew-mgn2-grid2entity-a10:
+  &microrts-bw10-p1-2m-ent100d-lr10d-shaped-rew-mgn2-grid2entity-a10
+  <<: *microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2entity-a10
+  n_timesteps: !!float 2e6
+
 Microrts-agent: &microrts-agent
   <<: *microrts-sp-dc-phases-defaults
   device: cpu
