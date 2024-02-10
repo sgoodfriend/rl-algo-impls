@@ -40,19 +40,23 @@ class GridnetDistribution(Distribution):
         self,
         map_size: int,
         action_vec: NDArray[np.int64],
-        logits: torch.Tensor,
-        masks: TensorOrDict,
+        logits: torch.Tensor,  # Float[B, H, W, A]
+        masks: TensorOrDict,  # Bool[B, H*W, A] or Dict[str, Bool[B, ?]]
         validate_args: Optional[bool] = None,
         subaction_mask: Optional[Dict[int, ValueDependentMask]] = None,
     ) -> None:
         self.map_size = map_size
         self.action_vec = action_vec
 
-        masks_per_position = masks["per_position"] if isinstance(masks, dict) else masks
-        masks_per_position = masks_per_position.view(-1, masks_per_position.shape[-1])
+        masks_per_position = (
+            masks["per_position"] if isinstance(masks, dict) else masks
+        )  # Bool[B, H*W, A]
+        masks_per_position = masks_per_position.view(
+            -1, masks_per_position.shape[-1]
+        )  # Bool[B*H*W, A]
         split_masks_per_position = torch.split(
             masks_per_position, action_vec.tolist(), dim=1
-        )
+        )  # Tuple[Bool[B*H*W, A_i], ...]
 
         grid_logits = logits.reshape(-1, logits.shape[-1])
         grid_logits_per_position = grid_logits[:, : action_vec.sum()]
@@ -109,7 +113,7 @@ class GridnetDistribution(Distribution):
             -1, action_per_position.shape[-1]
         ).T
 
-        prob_per_position = []
+        prob_per_position = []  # List[Float[B*H*W]], len=A
         for idx, (a, c) in enumerate(
             zip(
                 action_per_position,
@@ -127,7 +131,9 @@ class GridnetDistribution(Distribution):
                 )
             else:
                 prob_per_position.append(c.log_prob(a))
-        prob_stack_per_position = torch.stack(prob_per_position, dim=-1)
+        prob_stack_per_position = torch.stack(
+            prob_per_position, dim=-1
+        )  # Float[B*H*W, A]
         if DEBUG_VERIFY:
             non_one_probs = prob_stack_per_position[prob_stack_per_position < 0]
             low_probs = non_one_probs[non_one_probs < -6.90776]
@@ -142,7 +148,9 @@ class GridnetDistribution(Distribution):
                 )
         logprob_per_position = prob_stack_per_position.view(
             -1, self.map_size, len(self.action_vec)
-        ).sum(dim=(1, 2))
+        ).sum(
+            dim=(1, 2)
+        )  # -> Float[B, H*W, A] -> Float[B]
 
         if isinstance(action, dict) and "pick_position" in action:
             assert self.categoricals_pick_position is not None
@@ -180,7 +188,7 @@ class GridnetDistribution(Distribution):
             torch.stack([c.entropy() for c in self.categoricals_per_position], dim=-1)
             .view(-1, self.map_size, len(self.action_vec))
             .sum(dim=(1, 2))
-        )
+        )  # Float[B*H*W, A] -> Float[B, H*W, A] -> Float[B]
         if self.categoricals_pick_position:
             ent_pick_position = (
                 torch.stack(

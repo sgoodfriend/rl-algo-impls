@@ -185,8 +185,12 @@ class Grid2SeqTransformerBackbone(nn.Module):
         return x
 
 
-def empty_spaces_mask(x: torch.Tensor) -> torch.Tensor:
-    return x[..., (NO_UNIT_TYPE_IDX, IN_BOUNDS_IDX)].bool().all(dim=-1)
+def empty_spaces_mask(
+    x: torch.Tensor,  # Float[B, H*W, C]
+) -> torch.Tensor:
+    return (
+        x[..., (NO_UNIT_TYPE_IDX, IN_BOUNDS_IDX)].bool().all(dim=-1)
+    )  # -> Bool[B, H*W]
 
 
 class TransformerEncoderForwardArgs(NamedTuple):

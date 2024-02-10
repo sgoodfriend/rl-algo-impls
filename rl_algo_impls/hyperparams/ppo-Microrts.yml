@@ -1873,6 +1873,7 @@ Microrts-bw10-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10:
     durations: [0, 1, 0]
   n_timesteps: !!float 1e6
   policy_hyperparams:
+    &microrts-bw10-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10-policy
     actor_head_style: grid2seq_transformer
     critic_channels: 32
     critic_strides:
@@ -1933,6 +1934,28 @@ Microrts-bw10-p1-2m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10:
   <<: *microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10
   n_timesteps: !!float 2e6
 
+Microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2entity-a10:
+  &microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2entity-a10
+  <<: *microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10
+  policy_hyperparams:
+    &microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2entity-a10-policy
+    actor_head_style: grid2entity_transformer
+    encoder_attention_heads: 2
+    encoder_embed_dim: 32
+    encoder_feed_forward_dim: 128
+    encoder_layers: 2
+    hidden_critic_dims: []
+    normalization: layer
+    output_activation_fn: identity
+    subaction_mask:
+      0:
+        1: 1
+        2: 2
+        3: 3
+        4: 4
+        5: 4
+        6: 5
+
 Microrts-agent: &microrts-agent
   <<: *microrts-sp-dc-phases-defaults
   device: cpu
@@ -1966,7 +1989,7 @@ Microrts-agent: &microrts-agent
         #   use_paper_obs: true
 
 Microrts-debug:
-  <<: *microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10
+  <<: *microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2entity-a10
   # eval_hyperparams:
   #   <<: *microrts-bw10-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10-eval
   #   skip_evaluate_at_start: true

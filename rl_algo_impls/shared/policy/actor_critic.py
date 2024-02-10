@@ -30,6 +30,9 @@ from rl_algo_impls.shared.policy.actor_critic_network.backbone_actor_critic impo
 from rl_algo_impls.shared.policy.actor_critic_network.double_cone import (
     DoubleConeActorCritic,
 )
+from rl_algo_impls.shared.policy.actor_critic_network.grid2entity_transformer import (
+    Grid2EntityTransformerNetwork,
+)
 from rl_algo_impls.shared.policy.actor_critic_network.grid2seq_transformer import (
     Grid2SeqTransformerNetwork,
 )
@@ -148,6 +151,7 @@ class ActorCritic(OnPolicy, Generic[ObsType]):
         key_mask_empty_spaces: bool = True,
         identity_map_reordering: bool = True,
         filter_key_mask_empty_spaces: bool = True,
+        hidden_critic_dims: Optional[List[int]] = None,
         **kwargs,
     ) -> None:
         super().__init__(env_spaces, **kwargs)
@@ -278,6 +282,26 @@ class ActorCritic(OnPolicy, Generic[ObsType]):
                 key_mask_empty_spaces=key_mask_empty_spaces,
                 identity_map_reordering=identity_map_reordering,
                 filter_key_mask_empty_spaces=filter_key_mask_empty_spaces,
+            )
+        elif actor_head_style == "grid2entity_transformer":
+            assert action_plane_space is not None
+            assert normalization is not None
+            self.network = Grid2EntityTransformerNetwork(
+                single_observation_space,
+                single_action_space,
+                action_plane_space,
+                init_layers_orthogonal=init_layers_orthogonal,
+                encoder_embed_dim=encoder_embed_dim,
+                encoder_attention_heads=encoder_attention_heads,
+                encoder_feed_forward_dim=encoder_feed_forward_dim,
+                encoder_layers=encoder_layers,
+                num_additional_critics=num_additional_critics,
+                additional_critic_activation_functions=additional_critic_activation_functions,
+                hidden_critic_dims=hidden_critic_dims,
+                output_activation_fn=output_activation_fn,
+                subaction_mask=subaction_mask,
+                normalization=normalization,
+                add_position_features=add_position_features,
             )
         elif share_features_extractor:
             self.network = ConnectedTrioActorCriticNetwork(
