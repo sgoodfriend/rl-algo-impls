@@ -1928,6 +1928,11 @@ Microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10:
         <<: *microrts-bw10-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10-eval-make-kwargs
         always_player_1: true
 
+Microrts-bw10-p1-2m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10:
+  &microrts-bw10-p1-2m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10
+  <<: *microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10
+  n_timesteps: !!float 2e6
+
 Microrts-agent: &microrts-agent
   <<: *microrts-sp-dc-phases-defaults
   device: cpu
