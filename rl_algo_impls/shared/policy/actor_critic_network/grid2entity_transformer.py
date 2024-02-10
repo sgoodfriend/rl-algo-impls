@@ -10,7 +10,10 @@ from gymnasium.spaces import MultiDiscrete, Space
 from rl_algo_impls.shared.actor import pi_forward
 from rl_algo_impls.shared.actor.gridnet import ValueDependentMask
 from rl_algo_impls.shared.module.channelwise_activation import ChannelwiseActivation
-from rl_algo_impls.shared.module.normalization import NormalizationMethod
+from rl_algo_impls.shared.module.normalization import (
+    NormalizationMethod,
+    normalization1d,
+)
 from rl_algo_impls.shared.module.utils import layer_init, mlp
 from rl_algo_impls.shared.policy.actor_critic_network.grid2seq_transformer import (
     TransformerEncoderForwardArgs,
@@ -84,9 +87,14 @@ class Grid2EntityTransformerNetwork(ActorCriticNetwork):
             self.register_buffer("position", position)
             channels += 2
 
-        self.embedding_layer = layer_init(
-            nn.Linear(channels, encoder_embed_dim),
-            init_layers_orthogonal=init_layers_orthogonal,
+        self.embedding_layer = nn.Sequential(
+            *[
+                layer_init(
+                    nn.Linear(channels, encoder_embed_dim),
+                    init_layers_orthogonal=init_layers_orthogonal,
+                ),
+                nn.GELU(),
+            ]
         )
 
         self.backbone = TransformerEncoderBackbone(
@@ -96,6 +104,7 @@ class Grid2EntityTransformerNetwork(ActorCriticNetwork):
             encoder_layers,
             normalization=normalization,
         )
+        self.backbone_normalization = normalization1d(normalization, encoder_embed_dim)
 
         self.actor_head = layer_init(
             nn.Linear(
@@ -127,6 +136,7 @@ class Grid2EntityTransformerNetwork(ActorCriticNetwork):
             output_activation=ChannelwiseActivation(output_activations),
             init_layers_orthogonal=init_layers_orthogonal,
             final_layer_gain=1.0,
+            normalization=normalization,
         )
 
     def _preprocess(self, obs: torch.Tensor) -> torch.Tensor:
@@ -159,6 +169,7 @@ class Grid2EntityTransformerNetwork(ActorCriticNetwork):
 
         x = self.embedding_layer(x)  # [B, S, C] -> [B, S, E]
         x = self.backbone(x, key_padding_mask=key_padding_mask)
+        x = self.backbone_normalization(x)
         return BackboneForwardReturn(x, key_padding_mask, keep_mask, n_keep)
 
     def _distribution_and_value(

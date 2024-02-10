@@ -3,6 +3,8 @@ from typing import Optional, Sequence, Type
 import numpy as np
 import torch.nn as nn
 
+from rl_algo_impls.shared.module.normalization import normalization1d
+
 
 def mlp(
     layer_sizes: Sequence[int],
@@ -11,6 +13,8 @@ def mlp(
     init_layers_orthogonal: bool = False,
     final_layer_gain: float = np.sqrt(2),
     hidden_layer_gain: float = np.sqrt(2),
+    normalization: Optional[str] = None,
+    final_normalization: Optional[str] = None,
 ) -> nn.Module:
     layers = []
     for i in range(len(layer_sizes) - 2):
@@ -22,6 +26,8 @@ def mlp(
             )
         )
         layers.append(activation())
+        if normalization:
+            layers.append(normalization1d(normalization, layer_sizes[i + 1]))
     layers.append(
         layer_init(
             nn.Linear(layer_sizes[-2], layer_sizes[-1]),
@@ -31,6 +37,8 @@ def mlp(
     )
     if output_activation is not None:
         layers.append(output_activation)
+    if final_normalization:
+        layers.append(normalization1d(final_normalization, layer_sizes[-1]))
     return nn.Sequential(*layers)
 
 
