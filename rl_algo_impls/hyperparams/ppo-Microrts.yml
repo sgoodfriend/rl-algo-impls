@@ -1808,6 +1808,7 @@ Microrts-bw10-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10:
     - results
     - action_mask_stats
   algo_hyperparams:
+    &microrts-bw10-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10-algo
     autocast_loss: true
     batch_size: 1024
     clip_range: 0.2
@@ -1961,6 +1962,111 @@ Microrts-bw10-p1-2m-ent100d-lr10d-shaped-rew-mgn2-grid2entity-a10:
   <<: *microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2entity-a10
   n_timesteps: !!float 2e6
 
+Microrts-bw10-20m-ent100d-lr10d-05wb2lwr-vf24-nga-grid2entity-a10:
+  &microrts-bw10-20m-ent100d-lr10d-05wb2lwr-vf24-nga-grid2entity-a10
+  <<: *microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2entity-a10
+  algo_hyperparams:
+    &microrts-bw10-20m-ent100d-lr10d-05wb2lwr-vf24-nga-grid2entity-a10-algo
+    <<: *microrts-bw10-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10-algo
+    batch_size: 2048
+    multi_reward_weights:
+      - 1.0 # RAIWinLossRewardFunction
+      - 0.1 # ResourceGatherRewardFunction
+      - 0.05 # ProduceWorkerRewardFunction
+      - 0.05 # ProduceBuildingRewardFunction
+      - 0.1 # AttackRewardFunction
+      - 0.2 # ProduceLightUnitRewardFunction
+      - 0.2 # ProduceHeavyUnitRewardFunction
+      - 0.2 # ProduceRangedUnitRewardFunction
+      - 0.0 # ScoreRewardFunction
+    vf_coef: 0.24
+    vf_weights:
+      - 1.0 # RAIWinLossRewardFunction
+      - 0.5 # ResourceGatherRewardFunction
+      - 0.5 # ProduceWorkerRewardFunction
+      - 0.5 # ProduceBuildingRewardFunction
+      - 0.5 # AttackRewardFunction
+      - 0.5 # ProduceLightUnitRewardFunction
+      - 0.5 # ProduceHeavyUnitRewardFunction
+      - 0.5 # ProduceRangedUnitRewardFunction
+      - 0.5 # ScoreRewardFunction
+  checkpoints_kwargs:
+    history_size: 2
+  env_hyperparams:
+    &microrts-bw10-20m-ent100d-lr10d-05wb2lwr-vf24-nga-grid2entity-a10-env
+    <<: *microrts-bw10-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10-env
+    bots:
+      coacAI: 12
+      mayari: 12
+    info_rewards:
+      info_paths:
+        - [raw_rewards, ResourceGatherRewardFunction]
+        - [raw_rewards, ProduceWorkerRewardFunction]
+        - [raw_rewards, ProduceBuildingRewardFunction]
+        - [raw_rewards, AttackRewardFunction]
+        - [raw_rewards, ProduceLightUnitRewardFunction]
+        - [raw_rewards, ProduceHeavyUnitRewardFunction]
+        - [raw_rewards, ProduceRangedUnitRewardFunction]
+        - [raw_rewards, ScoreRewardFunction]
+      episode_end: false
+    make_kwargs:
+      &microrts-bw10-20m-ent100d-lr10d-05wb2lwr-vf24-nga-grid2entity-a10-env-make-kwargs
+      <<: *microrts-bw10-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10-env-make-kwargs
+      num_selfplay_envs: 64
+      reward_weight: [1.0, 0, 0, 0, 0, 0, 0, 0, 0]
+    n_envs: 64
+    normalize: true
+    normalize_kwargs:
+      clip_reward: 10
+      emv_window_size: !!float 1e6
+      exponential_moving_mean_var_reward: true
+      gamma_reward: 0.99
+      norm_obs: false
+      norm_reward: true
+    play_checkpoints_kwargs:
+      n_envs_against_checkpoints: 24
+  eval_hyperparams:
+    &microrts-bw10-20m-ent100d-lr10d-05wb2lwr-vf24-nga-grid2entity-a10-eval
+    <<: *microrts-bw10-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10-eval
+    env_overrides:
+      &microrts-bw10-20m-ent100d-lr10d-05wb2lwr-vf24-nga-grid2entity-a10-eval-env-overrides
+      <<: *microrts-bw10-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10-eval-env-overrides
+      bots:
+        coacAI: 2
+        droplet: 2
+        guidedRojoA3N: 2
+        izanagi: 2
+        lightRushAI: 2
+        mayari: 2
+        mixedBot: 2
+        naiveMCTSAI: 2
+        passiveAI: 2
+        randomAI: 2
+        randomBiasedAI: 2
+        rojo: 2
+        tiamat: 2
+        workerRushAI: 2
+      info_rewards: null
+      n_envs: 28
+      play_checkpoints_kwargs: null
+  policy_hyperparams:
+    &microrts-bw10-20m-ent100d-lr10d-05wb2lwr-vf24-nga-grid2entity-a10-policy
+    <<: *microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2entity-a10-policy
+    additional_critic_activation_functions:
+      - identity
+      - identity
+      - identity
+      - identity
+      - identity
+      - identity
+      - identity
+      - identity
+    encoder_attention_heads: 4
+    encoder_embed_dim: 64
+    encoder_feed_forward_dim: 256
+    encoder_layers: 4
+    hidden_critic_dims: [64]
+
 Microrts-agent: &microrts-agent
   <<: *microrts-sp-dc-phases-defaults
   device: cpu
@@ -1994,7 +2100,7 @@ Microrts-agent: &microrts-agent
         #   use_paper_obs: true
 
 Microrts-debug:
-  <<: *microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2entity-a10
+  <<: *microrts-bw10-20m-ent100d-lr10d-05wb2lwr-vf24-nga-grid2entity-a10
   # eval_hyperparams:
   #   <<: *microrts-bw10-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10-eval
   #   skip_evaluate_at_start: true
