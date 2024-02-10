@@ -2049,6 +2049,7 @@ Microrts-bw10-20m-ent100d-lr10d-05wb2lwr-vf24-nga-grid2entity-a10:
       info_rewards: null
       n_envs: 28
       play_checkpoints_kwargs: null
+  n_timesteps: !!float 20e6
   policy_hyperparams:
     &microrts-bw10-20m-ent100d-lr10d-05wb2lwr-vf24-nga-grid2entity-a10-policy
     <<: *microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2entity-a10-policy
