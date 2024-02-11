@@ -1894,6 +1894,7 @@ Microrts-bw10-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10:
         5: 4
         6: 5
   rollout_hyperparams:
+    &microrts-bw10-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10-rollout
     full_batch_off_accelerator: false
     gae_lambda: 0.95
     gamma: 0.99
@@ -2022,8 +2023,8 @@ Microrts-bw10-2m-ent100d-lr10d-shaped-rew-grid2entity-a10:
     play_checkpoints_kwargs:
       n_envs_against_checkpoints: 8
 
-Microrts-bw10-10m-ent100d-lr10d-05wb2lwr-vf24-nga-grid2entity-a10:
-  &microrts-bw10-10m-ent100d-lr10d-05wb2lwr-vf24-nga-grid2entity-a10
+Microrts-bw10-2m-ent100d-lr10d-05wb2lwr-vf24-nga-grid2entity-a10:
+  &microrts-bw10-2m-ent100d-lr10d-05wb2lwr-vf24-nga-grid2entity-a10
   <<: *microrts-bw10-2m-ent100d-lr10d-shaped-rew-grid2entity-a10
   algo_hyperparams:
     &microrts-bw10-10m-ent100d-lr10d-05wb2lwr-vf24-nga-grid2entity-a10-algo
@@ -2069,12 +2070,20 @@ Microrts-bw10-10m-ent100d-lr10d-05wb2lwr-vf24-nga-grid2entity-a10:
       reward_weight: [1.0, 0, 0, 0, 0, 0, 0, 0, 0]
     normalize: true
     normalize_kwargs:
-      clip_reward: 10
+      clip_reward: 1
       emv_window_size: !!float 1e6
       exponential_moving_mean_var_reward: true
       gamma_reward: 0.99
       norm_obs: false
       norm_reward: true
+  rollout_hyperparams:
+    &microrts-bw10-10m-ent100d-lr10d-05wb2lwr-vf24-nga-grid2entity-a10-rollout
+    <<: *microrts-bw10-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10-rollout
+    gamma: 0.999
+
+Microrts-bw10-10m-ent100d-lr10d-05wb2lwr-vf24-nga-grid2entity-a10:
+  &microrts-bw10-10m-ent100d-lr10d-05wb2lwr-vf24-nga-grid2entity-a10
+  <<: *microrts-bw10-2m-ent100d-lr10d-05wb2lwr-vf24-nga-grid2entity-a10
   n_timesteps: !!float 10e6
   policy_hyperparams:
     &microrts-bw10-10m-ent100d-lr10d-05wb2lwr-vf24-nga-grid2entity-a10-policy
