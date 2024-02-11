@@ -42,6 +42,7 @@ class Grid2EntityTransformerNetwork(ActorCriticNetwork):
         action_space: Space,
         action_plane_space: Space,
         init_layers_orthogonal: bool = True,
+        hidden_embedding_dims: Optional[List[int]] = None,
         encoder_embed_dim: int = 64,
         encoder_attention_heads: int = 4,
         encoder_feed_forward_dim: int = 256,
@@ -49,13 +50,18 @@ class Grid2EntityTransformerNetwork(ActorCriticNetwork):
         num_additional_critics: int = 0,
         additional_critic_activation_functions: Optional[List[str]] = None,
         hidden_critic_dims: Optional[List[int]] = None,
+        hidden_actor_dims: Optional[List[int]] = None,
         output_activation_fn: str = "identity",
         subaction_mask: Optional[Dict[int, Dict[int, int]]] = None,
         normalization: str = "layer",
         add_position_features: bool = True,
     ) -> None:
+        if hidden_embedding_dims is None:
+            hidden_embedding_dims = []
         if hidden_critic_dims is None:
             hidden_critic_dims = []
+        if hidden_actor_dims is None:
+            hidden_actor_dims = []
         if num_additional_critics and not additional_critic_activation_functions:
             additional_critic_activation_functions = [
                 "identity"
@@ -87,14 +93,12 @@ class Grid2EntityTransformerNetwork(ActorCriticNetwork):
             self.register_buffer("position", position)
             channels += 2
 
-        self.embedding_layer = nn.Sequential(
-            *[
-                layer_init(
-                    nn.Linear(channels, encoder_embed_dim),
-                    init_layers_orthogonal=init_layers_orthogonal,
-                ),
-                nn.GELU(),
-            ]
+        embedding_layer_sizes = [channels, *hidden_embedding_dims, encoder_embed_dim]
+        self.embedding_layer = mlp(
+            embedding_layer_sizes,
+            nn.GELU,
+            output_activation=nn.GELU(),
+            init_layers_orthogonal=init_layers_orthogonal,
         )
 
         self.backbone = TransformerEncoderBackbone(
@@ -106,13 +110,16 @@ class Grid2EntityTransformerNetwork(ActorCriticNetwork):
         )
         self.backbone_normalization = normalization1d(normalization, encoder_embed_dim)
 
-        self.actor_head = layer_init(
-            nn.Linear(
-                encoder_embed_dim,
-                self.action_vec.sum(),
-            ),
+        actor_layer_sizes = [
+            encoder_embed_dim,
+            *hidden_actor_dims,
+            self.action_vec.sum(),
+        ]
+        self.actor_head = mlp(
+            actor_layer_sizes,
+            nn.GELU,
             init_layers_orthogonal=init_layers_orthogonal,
-            std=0.01,
+            final_layer_gain=0.01,
         )
         self.subaction_mask = (
             ValueDependentMask.from_reference_index_to_index_to_value(subaction_mask)
@@ -136,7 +143,6 @@ class Grid2EntityTransformerNetwork(ActorCriticNetwork):
             output_activation=ChannelwiseActivation(output_activations),
             init_layers_orthogonal=init_layers_orthogonal,
             final_layer_gain=1.0,
-            normalization=normalization,
         )
 
     def _preprocess(self, obs: torch.Tensor) -> torch.Tensor:
