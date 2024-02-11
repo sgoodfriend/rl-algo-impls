@@ -2008,20 +2008,20 @@ Microrts-bw10-2m-ent100d-lr10d-shaped-rew-grid2entity-a10:
   &microrts-bw10-2m-ent100d-lr10d-shaped-rew-grid2entity-a10
   <<: *microrts-bw10-adv-bots-2m-ent100d-lr10d-shaped-rew-grid2entity-a10
   checkpoints_kwargs:
-    history_size: 2
+    history_size: 1
   env_hyperparams:
     &microrts-bw10-2m-ent100d-lr10d-shaped-rew-grid2entity-a10-env
     <<: *microrts-bw10-adv-bots-2m-ent100d-lr10d-shaped-rew-grid2entity-a10-env
     bots:
-      coacAI: 4
-      mayari: 4
+      coacAI: 6
+      mayari: 6
     make_kwargs:
       &microrts-bw10-2m-ent100d-lr10d-shaped-rew-grid2entity-a10-env-make-kwargs
       <<: *microrts-bw10-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10-env-make-kwargs
-      num_selfplay_envs: 24
+      num_selfplay_envs: 18
     n_envs: 24
     play_checkpoints_kwargs:
-      n_envs_against_checkpoints: 8
+      n_envs_against_checkpoints: 6
 
 Microrts-bw10-2m-ent100d-lr10d-05wb2lwr-vf24-nga-grid2entity-a10:
   &microrts-bw10-2m-ent100d-lr10d-05wb2lwr-vf24-nga-grid2entity-a10
