@@ -2073,7 +2073,7 @@ Microrts-bw10-2m-ent100d-lr10d-05wb2lwr-vf24-nga-grid2entity-a10:
       clip_reward: 1
       emv_window_size: !!float 1e6
       exponential_moving_mean_var_reward: true
-      gamma_reward: 0.99
+      gamma_reward: 0.999
       norm_obs: false
       norm_reward: true
   policy_hyperparams:
