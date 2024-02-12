@@ -2097,16 +2097,20 @@ Microrts-bw10-10m-ent100d-lr10d-05wb2lwr-vf24-nga-grid2entity-a10:
   &microrts-bw10-10m-ent100d-lr10d-05wb2lwr-vf24-nga-grid2entity-a10
   <<: *microrts-bw10-2m-ent100d-lr10d-05wb2lwr-vf24-nga-grid2entity-a10
   n_timesteps: !!float 10e6
-  # policy_hyperparams:
-  #   &microrts-bw10-10m-ent100d-lr10d-05wb2lwr-vf24-nga-grid2entity-a10-policy
-  #   <<: *microrts-bw10-2m-ent100d-lr10d-05wb2lwr-vf24-nga-grid2entity-a10-policy
-  #   encoder_attention_heads: 4
-  #   encoder_embed_dim: 64
-  #   encoder_feed_forward_dim: 256
-  #   encoder_layers: 4
-  #   hidden_actor_dims: [128]
-  #   hidden_critic_dims: [128]
-  #   hidden_embedding_dims: [256]
+
+Microrts-bw10-10m-ent100d-lr10d-05wb2lwr-vf24-nga-grid2entity-4l-a10:
+  &microrts-bw10-10m-ent100d-lr10d-05wb2lwr-vf24-nga-grid2entity-4l-a10
+  <<: *microrts-bw10-10m-ent100d-lr10d-05wb2lwr-vf24-nga-grid2entity-a10
+  policy_hyperparams:
+    &microrts-bw10-10m-ent100d-lr10d-05wb2lwr-vf24-nga-grid2entity-4l-a10-policy
+    <<: *microrts-bw10-2m-ent100d-lr10d-05wb2lwr-vf24-nga-grid2entity-a10-policy
+    # encoder_attention_heads: 4
+    # encoder_embed_dim: 64
+    # encoder_feed_forward_dim: 256
+    encoder_layers: 4
+    # hidden_actor_dims: [128]
+    # hidden_critic_dims: [128]
+    # hidden_embedding_dims: [256]
 
 Microrts-agent: &microrts-agent
   <<: *microrts-sp-dc-phases-defaults
