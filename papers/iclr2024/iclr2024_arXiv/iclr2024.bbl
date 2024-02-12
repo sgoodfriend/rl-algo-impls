@@ -1,0 +1,104 @@
+\begin{thebibliography}{16}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Han et~al.(2019)Han, Sun, Du, Xiong, Wang, Sun, Liu, and Zhang]{DBLP:conf/icml/HanSDXWSLZ19}
+Lei Han, Peng Sun, Yali Du, Jiechao Xiong, Qing Wang, Xinghai Sun, Han Liu, and Tong Zhang.
+\newblock Grid-wise control for multi-agent reinforcement learning in video game {AI}.
+\newblock In Kamalika Chaudhuri and Ruslan Salakhutdinov (eds.), \emph{Proceedings of the 36th International Conference on Machine Learning, {ICML} 2019, 9-15 June 2019, Long Beach, California, {USA}}, volume~97 of \emph{Proceedings of Machine Learning Research}, pp.\  2576--2585. {PMLR}, 2019.
+\newblock URL \url{http://proceedings.mlr.press/v97/han19a.html}.
+
+\bibitem[Huang \& Onta{\~{n}}{\'{o}}n(2020)Huang and Onta{\~{n}}{\'{o}}n]{DBLP:journals/corr/abs-2006-14171}
+Shengyi Huang and Santiago Onta{\~{n}}{\'{o}}n.
+\newblock A closer look at invalid action masking in policy gradient algorithms.
+\newblock \emph{CoRR}, abs/2006.14171, 2020.
+\newblock URL \url{https://arxiv.org/abs/2006.14171}.
+
+\bibitem[Huang et~al.(2021)Huang, Onta{\~{n}}{\'{o}}n, Bamford, and Grela]{DBLP:journals/corr/abs-2105-13807}
+Shengyi Huang, Santiago Onta{\~{n}}{\'{o}}n, Chris Bamford, and Lukasz Grela.
+\newblock Gym-{\(\mu\)}rts: Toward affordable full game real-time strategy games research with deep reinforcement learning.
+\newblock \emph{CoRR}, abs/2105.13807, 2021.
+\newblock URL \url{https://arxiv.org/abs/2105.13807}.
+
+\bibitem[Lillicrap et~al.(2016)Lillicrap, Hunt, Pritzel, Heess, Erez, Tassa, Silver, and Wierstra]{DBLP:journals/corr/LillicrapHPHETS15}
+Timothy~P. Lillicrap, Jonathan~J. Hunt, Alexander Pritzel, Nicolas Heess, Tom Erez, Yuval Tassa, David Silver, and Daan Wierstra.
+\newblock Continuous control with deep reinforcement learning.
+\newblock In Yoshua Bengio and Yann LeCun (eds.), \emph{4th International Conference on Learning Representations, {ICLR} 2016, San Juan, Puerto Rico, May 2-4, 2016, Conference Track Proceedings}, 2016.
+\newblock URL \url{http://arxiv.org/abs/1509.02971}.
+
+\bibitem[Limburg(2023)]{Ferdinand2021doublecone}
+Ferdinand Limburg.
+\newblock Flg's approach - deep reinforcement learning with a focus on performance - 4th place, 2023.
+\newblock Kaggle discussion: \url{https://www.kaggle.com/competitions/lux-ai-season-2/discussion/406702}.
+
+\bibitem[Mnih et~al.(2013)Mnih, Kavukcuoglu, Silver, Graves, Antonoglou, Wierstra, and Riedmiller]{DBLP:journals/corr/MnihKSGAWR13}
+Volodymyr Mnih, Koray Kavukcuoglu, David Silver, Alex Graves, Ioannis Antonoglou, Daan Wierstra, and Martin~A. Riedmiller.
+\newblock Playing atari with deep reinforcement learning.
+\newblock \emph{CoRR}, abs/1312.5602, 2013.
+\newblock URL \url{http://arxiv.org/abs/1312.5602}.
+
+\bibitem[Mnih et~al.(2016)Mnih, Badia, Mirza, Graves, Lillicrap, Harley, Silver, and Kavukcuoglu]{DBLP:journals/corr/MnihBMGLHSK16}
+Volodymyr Mnih, Adri{\`{a}}~Puigdom{\`{e}}nech Badia, Mehdi Mirza, Alex Graves, Timothy~P. Lillicrap, Tim Harley, David Silver, and Koray Kavukcuoglu.
+\newblock Asynchronous methods for deep reinforcement learning.
+\newblock \emph{CoRR}, abs/1602.01783, 2016.
+\newblock URL \url{http://arxiv.org/abs/1602.01783}.
+
+\bibitem[Moraes et~al.(2023)Moraes, Aleixo, Ferreira, and Lelis]{DBLP:conf/ijcai/MoraesAFL23}
+Rubens~O. Moraes, David~S. Aleixo, Lucas~N. Ferreira, and Levi H.~S. Lelis.
+\newblock Choosing well your opponents: How to guide the synthesis of programmatic strategies.
+\newblock In \emph{Proceedings of the Thirty-Second International Joint Conference on Artificial Intelligence, {IJCAI} 2023, 19th-25th August 2023, Macao, SAR, China}, pp.\  4847--4854. ijcai.org, 2023.
+\newblock \doi{10.24963/ijcai.2023/539}.
+\newblock URL \url{https://doi.org/10.24963/ijcai.2023/539}.
+
+\bibitem[Onta{\~{n}}{\'{o}}n(2013)]{DBLP:conf/aiide/Ontanon13}
+Santiago Onta{\~{n}}{\'{o}}n.
+\newblock The combinatorial multi-armed bandit problem and its application to real-time strategy games.
+\newblock In Gita Sukthankar and Ian Horswill (eds.), \emph{Proceedings of the Ninth {AAAI} Conference on Artificial Intelligence and Interactive Digital Entertainment, AIIDE-13, Boston, Massachusetts, USA, October 14-18, 2013}. {AAAI}, 2013.
+\newblock URL \url{http://www.aaai.org/ocs/index.php/AIIDE/AIIDE13/paper/view/7377}.
+
+\bibitem[Onta{\~{n}}{\'{o}}n et~al.(2018)Onta{\~{n}}{\'{o}}n, Barriga, Silva, Moraes, and Lelis]{Ontañón_Barriga_Silva_Moraes_Lelis_2018}
+Santiago Onta{\~{n}}{\'{o}}n, Nicolas~A. Barriga, Cleyton~R. Silva, Rubens~O. Moraes, and Levi H.~S. Lelis.
+\newblock The first microrts artificial intelligence competition.
+\newblock \emph{{AI} Mag.}, 39\penalty0 (1):\penalty0 75--83, 2018.
+\newblock \doi{10.1609/aimag.v39i1.2777}.
+\newblock URL \url{https://doi.org/10.1609/aimag.v39i1.2777}.
+
+\bibitem[Pressman et~al.(2021)Pressman, Kirwin, and Sturrock]{lux-ai-2021-winner}
+Isaiah Pressman, Liam Kirwin, and Robert Sturrock.
+\newblock Kaggle lux ai 2021.
+\newblock \url{https://github.com/IsaiahPressman/Kaggle\_Lux\_AI\_2021}, 2021.
+
+\bibitem[Schulman et~al.(2016)Schulman, Moritz, Levine, Jordan, and Abbeel]{DBLP:journals/corr/SchulmanMLJA15}
+John Schulman, Philipp Moritz, Sergey Levine, Michael~I. Jordan, and Pieter Abbeel.
+\newblock High-dimensional continuous control using generalized advantage estimation.
+\newblock In Yoshua Bengio and Yann LeCun (eds.), \emph{4th International Conference on Learning Representations, {ICLR} 2016, San Juan, Puerto Rico, May 2-4, 2016, Conference Track Proceedings}, 2016.
+\newblock URL \url{http://arxiv.org/abs/1506.02438}.
+
+\bibitem[Schulman et~al.(2017)Schulman, Wolski, Dhariwal, Radford, and Klimov]{DBLP:journals/corr/SchulmanWDRK17}
+John Schulman, Filip Wolski, Prafulla Dhariwal, Alec Radford, and Oleg Klimov.
+\newblock Proximal policy optimization algorithms.
+\newblock \emph{CoRR}, abs/1707.06347, 2017.
+\newblock URL \url{http://arxiv.org/abs/1707.06347}.
+
+\bibitem[Uchendu et~al.(2023)Uchendu, Xiao, Lu, Zhu, Yan, Simon, Bennice, Fu, Ma, Jiao, Levine, and Hausman]{10.5555/3618408.3619847}
+Ikechukwu Uchendu, Ted Xiao, Yao Lu, Banghua Zhu, Mengyuan Yan, Jos\'{e}phine Simon, Matthew Bennice, Chuyuan Fu, Cong Ma, Jiantao Jiao, Sergey Levine, and Karol Hausman.
+\newblock Jump-start reinforcement learning.
+\newblock In \emph{Proceedings of the 40th International Conference on Machine Learning}, ICML'23. JMLR.org, 2023.
+
+\bibitem[Vinyals et~al.(2019)Vinyals, Babuschkin, Czarnecki, Mathieu, Dudzik, Chung, Choi, Powell, Ewalds, Georgiev, Oh, Horgan, Kroiss, Danihelka, Huang, Sifre, Cai, Agapiou, Jaderberg, Vezhnevets, Leblond, Pohlen, Dalibard, Budden, Sulsky, Molloy, Paine, G{\"{u}}l{\c{c}}ehre, Wang, Pfaff, Wu, Ring, Yogatama, W{\"{u}}nsch, McKinney, Smith, Schaul, Lillicrap, Kavukcuoglu, Hassabis, Apps, and Silver]{Vinyals2019GrandmasterLI}
+Oriol Vinyals, Igor Babuschkin, Wojciech~M. Czarnecki, Micha{\"{e}}l Mathieu, Andrew Dudzik, Junyoung Chung, David~H. Choi, Richard Powell, Timo Ewalds, Petko Georgiev, Junhyuk Oh, Dan Horgan, Manuel Kroiss, Ivo Danihelka, Aja Huang, Laurent Sifre, Trevor Cai, John~P. Agapiou, Max Jaderberg, Alexander~Sasha Vezhnevets, R{\'{e}}mi Leblond, Tobias Pohlen, Valentin Dalibard, David Budden, Yury Sulsky, James Molloy, Tom~Le Paine, {\c{C}}aglar G{\"{u}}l{\c{c}}ehre, Ziyu Wang, Tobias Pfaff, Yuhuai Wu, Roman Ring, Dani Yogatama, Dario W{\"{u}}nsch, Katrina McKinney, Oliver Smith, Tom Schaul, Timothy~P. Lillicrap, Koray Kavukcuoglu, Demis Hassabis, Chris Apps, and David Silver.
+\newblock Grandmaster level in starcraft {II} using multi-agent reinforcement learning.
+\newblock \emph{Nat.}, 575\penalty0 (7782):\penalty0 350--354, 2019.
+\newblock \doi{10.1038/s41586-019-1724-z}.
+\newblock URL \url{https://doi.org/10.1038/s41586-019-1724-z}.
+
+\bibitem[Winter(2021)]{Winter2021}
+Clemens Winter.
+\newblock Mastering real-time strategy games with deep reinforcement learning: Mere mortal edition, 2021.
+\newblock URL \url{https://clemenswinter.com/2021/03/24/mastering-real-time-strategy-games-with-deep-reinforcement-learning-mere-mortal-edition}.
+\newblock Accessed: 2023-07-16.
+
+\end{thebibliography}

@@ -719,23 +719,23 @@ choosing DoubleCone if it computed actions within 75 ms on average.
                 &\multicolumn{1}{c}{\bf Representation}
                 &\multicolumn{1}{c}{\bf Start} \\ \hline
                 basesWorkers8x8A & 8x8 & 16x16 &
-                \includegraphics[width=2.25cm]{supplemental/vsMayari/basesWorkers8x8A.png} \\
+                \includegraphics[width=2.25cm]{basesWorkers8x8A.png} \\
                 FourBasesWorkers8x8 & 8x8 & 16x16 &
-                \includegraphics[width=2.25cm]{supplemental/vsMayari/FourBasesWorkers8x8.png} \\
+                \includegraphics[width=2.25cm]{FourBasesWorkers8x8.png} \\
                 NoWhereToRun9x8 & 9x8 & 12x12\tnote{*} or 16x16\tnote{\P} &
-                \includegraphics[width=2.25cm]{supplemental/vsMayari/NoWhereToRun9x8.png} \\
+                \includegraphics[width=2.25cm]{NoWhereToRun9x8.png} \\
                 basesWorkers16x16A & 16x16 & 16x16 &
-                \includegraphics[width=2.25cm]{supplemental/vsMayari/basesWorkers16x16A.png} \\
+                \includegraphics[width=2.25cm]{basesWorkers16x16A.png} \\
                 TwoBasesBarracks16x16 & 16x16 & 16x16 &
-                \includegraphics[width=2.25cm]{supplemental/vsMayari/TwoBasesBarracks16x16.png}
+                \includegraphics[width=2.25cm]{TwoBasesBarracks16x16.png}
                 \\
                 DoubleGame24x24 & 24x24 & 24x24\tnote{\dag} or 32x32\tnote{\ddag} &
-                \includegraphics[width=2.25cm]{supplemental/vsMayari/DoubleGame24x24.png} \\
+                \includegraphics[width=2.25cm]{DoubleGame24x24.png} \\
                 BWDistantResources32x32 & 32x32 & 32x32 &
-                \includegraphics[width=2.25cm]{supplemental/vsMayari/BWDistantResources32x32.png}
+                \includegraphics[width=2.25cm]{BWDistantResources32x32.png}
                 \\
                 (4)BloodBath.scmB & 64x64 & 64x64 &
-                \includegraphics[width=2.25cm]{supplemental/vsMayari/(4)BloodBath.png} \\
+                \includegraphics[width=2.25cm]{BloodBath.png} \\
             \end{tabular}
             \begin{tablenotes}
                 \item[*] ppo-Microrts-finetuned-NoWhereToRun-S1-best uses a 12x12
@@ -773,7 +773,7 @@ The adaptive average pooling layer allows the network to be used on different ma
 
 \begin{figure}[H]
     \begin{center}
-        \includegraphics[width=0.59\linewidth]{figures/DoubleCone.png}
+        \includegraphics[width=0.59\linewidth]{DoubleCone.png}
     \end{center}
     \caption{DoubleCone(4, 6, 4) neural network architecture.}
     \label{fig:doublecone}
@@ -781,7 +781,7 @@ The adaptive average pooling layer allows the network to be used on different ma
 
 \begin{figure}[H]
     \begin{center}
-        \includegraphics[width=0.3\linewidth]{figures/SqueezeExcitation.png}
+        \includegraphics[width=0.3\linewidth]{SqueezeExcitation.png}
     \end{center}
     \caption{ResBlock used in DoubleCone, squnet32, and squnet64. The residual block is similar to a standard residual block but inserts a Squeeze-Excitation block after the convolutional layers and before the residual connection.}
     \label{fig:squeezeexcitation}
@@ -789,7 +789,7 @@ The adaptive average pooling layer allows the network to be used on different ma
 
 \begin{figure}[H]
     \begin{center}
-        \includegraphics[width=0.7\linewidth]{figures/ValueHeads.png}
+        \includegraphics[width=0.7\linewidth]{ValueHeads.png}
     \end{center}
     \caption{Value heads used in (from left to right) DoubleCone, squnet32, and
     squnet64. The AdaptiveAvgPool2d layer allows the network to be used on other map
@@ -799,7 +799,7 @@ The adaptive average pooling layer allows the network to be used on different ma
 
 \begin{figure}[H]
     \begin{center}
-        \includegraphics[width=0.55\linewidth]{figures/squnet64.png}
+        \includegraphics[width=0.55\linewidth]{squnet64.png}
     \end{center}
     \caption{squnet64 neural network architecture. Instead of one downscaling block as in DoubleCone, this network downscales 3 times. This aggressive downscaling reduces the number of computations for larger maps, while theoretically supporting a large receptive field.}
     \label{fig:squnet}
@@ -1377,3 +1377,4 @@ opponent on each map for 20 matches
     \end{center}
 \end{table}
 \end{document}
+\typeout{get arXiv to do 4 passes: Label(s) may have changed. Rerun}
