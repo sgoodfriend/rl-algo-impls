@@ -2096,6 +2096,10 @@ Microrts-bw10-2m-ent100d-lr10d-05wb2lwr-vf24-nga-grid2entity-a10:
 Microrts-bw10-10m-ent100d-lr10d-05wb2lwr-vf24-nga-grid2entity-a10:
   &microrts-bw10-10m-ent100d-lr10d-05wb2lwr-vf24-nga-grid2entity-a10
   <<: *microrts-bw10-2m-ent100d-lr10d-05wb2lwr-vf24-nga-grid2entity-a10
+  eval_hyperparams:
+    &microrts-bw10-10m-ent100d-lr10d-05wb2lwr-vf24-nga-grid2entity-a10-eval
+    <<: *microrts-bw10-coac-2m-ent100d-lr10d-shaped-rew-grid2entity-a10-eval
+    step_freq: !!float 1e6
   n_timesteps: !!float 10e6
 
 Microrts-bw10-10m-ent100d-lr10d-05wb2lwr-vf24-nga-grid2entity-4l-a10:
