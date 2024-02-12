@@ -2115,9 +2115,16 @@ Microrts-bw10-10m-ent100d-lr10d-05wb2lwr-vf24-nga-grid2entity-4lw-a10:
     encoder_attention_heads: 4
     encoder_embed_dim: 64
     encoder_feed_forward_dim: 256
+
+Microrts-bw10-10m-ent100d-lr10d-05wb2lwr-vf24-nga-grid2entity-4lw-ew-a10:
+  &microrts-bw10-10m-ent100d-lr10d-05wb2lwr-vf24-nga-grid2entity-4lw-ew-a10
+  <<: *microrts-bw10-10m-ent100d-lr10d-05wb2lwr-vf24-nga-grid2entity-4lw-a10
+  policy_hyperparams:
+    &microrts-bw10-10m-ent100d-lr10d-05wb2lwr-vf24-nga-grid2entity-4lw-ew-a10-policy
+    <<: *microrts-bw10-10m-ent100d-lr10d-05wb2lwr-vf24-nga-grid2entity-4lw-a10-policy
+    hidden_embedding_dims: [256]
     # hidden_actor_dims: [128]
     # hidden_critic_dims: [128]
-    # hidden_embedding_dims: [256]
 
 Microrts-agent: &microrts-agent
   <<: *microrts-sp-dc-phases-defaults
