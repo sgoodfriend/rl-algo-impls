@@ -2144,6 +2144,27 @@ Microrts-bw10-10m-ent100d-lr10d01-05wb2lwr-vf24-nga-grid2entity-a10:
       - learning_rate: !!float 1e-5
         ent_coef: 0
 
+Microrts-bw10-10m-ent100d-lr10d01-05wb2lwr-vf24-nga-grid2entity-4l-a10:
+  &microrts-bw10-10m-ent100d-lr10d01-05wb2lwr-vf24-nga-grid2entity-4l-a10
+  <<: *microrts-bw10-10m-ent100d-lr10d01-05wb2lwr-vf24-nga-grid2entity-a10
+  policy_hyperparams:
+    &microrts-bw10-10m-ent100d-lr10d01-05wb2lwr-vf24-nga-grid2entity-4l-a10-policy
+    <<: *microrts-bw10-10m-ent100d-lr10d-05wb2lwr-vf24-nga-grid2entity-4l-a10-policy
+
+Microrts-bw10-10m-ent100d-lr10d01-05wb2lwr-vf24-nga-grid2entity-4lw-a10:
+  &microrts-bw10-10m-ent100d-lr10d01-05wb2lwr-vf24-nga-grid2entity-4lw-a10
+  <<: *microrts-bw10-10m-ent100d-lr10d01-05wb2lwr-vf24-nga-grid2entity-4l-a10
+  policy_hyperparams:
+    &microrts-bw10-10m-ent100d-lr10d01-05wb2lwr-vf24-nga-grid2entity-4lw-a10-policy
+    <<: *microrts-bw10-10m-ent100d-lr10d-05wb2lwr-vf24-nga-grid2entity-4lw-a10-policy
+
+Microrts-bw10-10m-ent100d-lr10d01-05wb2lwr-vf24-nga-grid2entity-4lw-ew-a10:
+  &microrts-bw10-10m-ent100d-lr10d01-05wb2lwr-vf24-nga-grid2entity-4lw-ew-a10
+  <<: *microrts-bw10-10m-ent100d-lr10d01-05wb2lwr-vf24-nga-grid2entity-4lw-a10
+  policy_hyperparams:
+    &microrts-bw10-10m-ent100d-lr10d01-05wb2lwr-vf24-nga-grid2entity-4lw-ew-a10-policy
+    <<: *microrts-bw10-10m-ent100d-lr10d-05wb2lwr-vf24-nga-grid2entity-4lw-ew-a10-policy
+
 Microrts-agent: &microrts-agent
   <<: *microrts-sp-dc-phases-defaults
   device: cpu
