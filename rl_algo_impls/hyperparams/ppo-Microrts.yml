@@ -2071,6 +2071,7 @@ Microrts-bw10-2m-ent100d-lr10d-05wb2lwr-vf24-nga-grid2entity-a10:
       reward_weight: [1.0, 0, 0, 0, 0, 0, 0, 0, 0]
     normalize: true
     normalize_kwargs:
+      &microrts-bw10-2m-ent100d-lr10d-05wb2lwr-vf24-nga-grid2entity-a10-env-normalize-kwargs
       clip_reward: 1
       emv_window_size: !!float 1e6
       exponential_moving_mean_var_reward: true
@@ -2165,6 +2166,16 @@ Microrts-bw10-10m-ent100d-lr10d01-05wb2lwr-vf24-nga-grid2entity-4lw-ew-a10:
     &microrts-bw10-10m-ent100d-lr10d01-05wb2lwr-vf24-nga-grid2entity-4lw-ew-a10-policy
     <<: *microrts-bw10-10m-ent100d-lr10d-05wb2lwr-vf24-nga-grid2entity-4lw-ew-a10-policy
 
+Microrts-bw10-10m-5emm-lr10d01-05wb2lwr-grid2entity-a10:
+  &microrts-bw10-10m-5emm-lr10d01-05wb2lwr-grid2entity-a10
+  <<: *microrts-bw10-10m-ent100d-lr10d01-05wb2lwr-vf24-nga-grid2entity-a10
+  env_hyperparams: &microrts-bw10-10m-5emm-lr10d01-05wb2lwr-grid2entity-a10-env
+    <<: *microrts-bw10-2m-ent100d-lr10d-05wb2lwr-vf24-nga-grid2entity-a10-env
+    normalize_kwargs:
+      &microrts-bw10-10m-5emm-lr10d01-05wb2lwr-grid2entity-a10-env-normalize-kwargs
+      <<: *microrts-bw10-2m-ent100d-lr10d-05wb2lwr-vf24-nga-grid2entity-a10-env-normalize-kwargs
+      emv_window_size: !!float 5e6
+
 Microrts-agent: &microrts-agent
   <<: *microrts-sp-dc-phases-defaults
   device: cpu
@@ -2198,7 +2209,7 @@ Microrts-agent: &microrts-agent
         #   use_paper_obs: true
 
 Microrts-debug:
-  <<: *microrts-bw10-10m-ent100d-lr10d01-05wb2lwr-vf24-nga-grid2entity-a10
+  <<: *microrts-bw10-10m-5emm-lr10d01-05wb2lwr-grid2entity-a10
   # eval_hyperparams:
   #   <<: *microrts-bw10-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10-eval
   #   skip_evaluate_at_start: true
