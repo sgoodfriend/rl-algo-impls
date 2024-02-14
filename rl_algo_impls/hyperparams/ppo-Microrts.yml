@@ -2129,8 +2129,6 @@ Microrts-bw10-10m-ent100d-lr10d-05wb2lwr-vf24-nga-grid2entity-4lw-ew-a10:
     &microrts-bw10-10m-ent100d-lr10d-05wb2lwr-vf24-nga-grid2entity-4lw-ew-a10-policy
     <<: *microrts-bw10-10m-ent100d-lr10d-05wb2lwr-vf24-nga-grid2entity-4lw-a10-policy
     hidden_embedding_dims: [256]
-    # hidden_actor_dims: [128]
-    # hidden_critic_dims: [128]
 
 Microrts-bw10-10m-ent100d-lr10d01-05wb2lwr-vf24-nga-grid2entity-a10:
   &microrts-bw10-10m-ent100d-lr10d01-05wb2lwr-vf24-nga-grid2entity-a10
@@ -2196,6 +2194,15 @@ Microrts-bw10-10m-5emm-lr10d01-05wb2lwr-grid2entity-4lw-ew-a10:
   policy_hyperparams:
     &microrts-bw10-10m-5emm-lr10d01-05wb2lwr-grid2entity-4lw-ew-a10-policy
     <<: *microrts-bw10-10m-ent100d-lr10d01-05wb2lwr-vf24-nga-grid2entity-4lw-ew-a10-policy
+
+Microrts-bw10-10m-ent100d-lr10d-05wb2lwr-grid2entity-4lw-eavw-a10:
+  &microrts-bw10-10m-ent100d-lr10d-05wb2lwr-grid2entity-4lw-eavw-a10
+  <<: *microrts-bw10-10m-5emm-lr10d01-05wb2lwr-grid2entity-4lw-ew-a10
+  policy_hyperparams:
+    &microrts-bw10-10m-ent100d-lr10d-05wb2lwr-grid2entity-4lw-eavw-a10-policy
+    <<: *microrts-bw10-10m-5emm-lr10d01-05wb2lwr-grid2entity-4lw-ew-a10-policy
+    hidden_actor_dims: [128]
+    hidden_critic_dims: [128]
 
 Microrts-agent: &microrts-agent
   <<: *microrts-sp-dc-phases-defaults
