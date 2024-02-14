@@ -2176,6 +2176,27 @@ Microrts-bw10-10m-5emm-lr10d01-05wb2lwr-grid2entity-a10:
       <<: *microrts-bw10-2m-ent100d-lr10d-05wb2lwr-vf24-nga-grid2entity-a10-env-normalize-kwargs
       emv_window_size: !!float 5e6
 
+Microrts-bw10-10m-5emm-lr10d01-05wb2lwr-grid2entity-4l-a10:
+  &microrts-bw10-10m-5emm-lr10d01-05wb2lwr-grid2entity-4l-a10
+  <<: *microrts-bw10-10m-5emm-lr10d01-05wb2lwr-grid2entity-a10
+  policy_hyperparams:
+    &microrts-bw10-10m-5emm-lr10d01-05wb2lwr-grid2entity-4l-a10-policy
+    <<: *microrts-bw10-10m-ent100d-lr10d01-05wb2lwr-vf24-nga-grid2entity-4l-a10-policy
+
+Microrts-bw10-10m-5emm-lr10d01-05wb2lwr-grid2entity-4lw-a10:
+  &microrts-bw10-10m-5emm-lr10d01-05wb2lwr-grid2entity-4lw-a10
+  <<: *microrts-bw10-10m-5emm-lr10d01-05wb2lwr-grid2entity-a10
+  policy_hyperparams:
+    &microrts-bw10-10m-5emm-lr10d01-05wb2lwr-grid2entity-4lw-a10-policy
+    <<: *microrts-bw10-10m-ent100d-lr10d01-05wb2lwr-vf24-nga-grid2entity-4lw-a10-policy
+
+Microrts-bw10-10m-5emm-lr10d01-05wb2lwr-grid2entity-4lw-ew-a10:
+  &microrts-bw10-10m-5emm-lr10d01-05wb2lwr-grid2entity-4lw-ew-a10
+  <<: *microrts-bw10-10m-5emm-lr10d01-05wb2lwr-grid2entity-4lw-a10
+  policy_hyperparams:
+    &microrts-bw10-10m-5emm-lr10d01-05wb2lwr-grid2entity-4lw-ew-a10-policy
+    <<: *microrts-bw10-10m-ent100d-lr10d01-05wb2lwr-vf24-nga-grid2entity-4lw-ew-a10-policy
+
 Microrts-agent: &microrts-agent
   <<: *microrts-sp-dc-phases-defaults
   device: cpu
