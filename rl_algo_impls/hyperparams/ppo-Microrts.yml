@@ -1964,18 +1964,15 @@ Microrts-bw10-p1-2m-ent100d-lr10d-shaped-rew-mgn2-grid2entity-a10:
   <<: *microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2entity-a10
   n_timesteps: !!float 2e6
 
-Microrts-bw10-coac-2m-ent100d-lr10d-shaped-rew-grid2entity-a10:
-  &microrts-bw10-coac-2m-ent100d-lr10d-shaped-rew-grid2entity-a10
+Microrts-bw10-p1-2m-ent100d-lr10d-shaped-rew-grid2entity-diverse-eval-a10:
+  &microrts-bw10-p1-2m-ent100d-lr10d-shaped-rew-grid2entity-diverse-eval-a10
   <<: *microrts-bw10-p1-2m-ent100d-lr10d-shaped-rew-mgn2-grid2entity-a10
-  env_hyperparams:
-    &microrts-bw10-coac-2m-ent100d-lr10d-shaped-rew-grid2entity-a10-env
-    <<: *microrts-bw10-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10-env
   eval_hyperparams:
-    &microrts-bw10-coac-2m-ent100d-lr10d-shaped-rew-grid2entity-a10-eval
-    <<: *microrts-bw10-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10-eval
+    &microrts-bw10-p1-2m-ent100d-lr10d-shaped-rew-grid2entity-diverse-eval-a10-eval
+    <<: *microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10-eval
     env_overrides:
-      &microrts-bw10-coac-2m-ent100d-lr10d-shaped-rew-grid2entity-a10-eval-env-overrides
-      <<: *microrts-bw10-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10-eval-env-overrides
+      &microrts-bw10-p1-2m-ent100d-lr10d-shaped-rew-grid2entity-diverse-eval-a10-env-overrides
+      <<: *microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10-eval-env-overrides
       bots:
         coacAI: 2
         droplet: 2
@@ -1994,6 +1991,23 @@ Microrts-bw10-coac-2m-ent100d-lr10d-shaped-rew-grid2entity-a10:
       info_rewards: null
       n_envs: 28
       play_checkpoints_kwargs: null
+
+Microrts-bw10-coac-2m-ent100d-lr10d-shaped-rew-grid2entity-a10:
+  &microrts-bw10-coac-2m-ent100d-lr10d-shaped-rew-grid2entity-a10
+  <<: *microrts-bw10-p1-2m-ent100d-lr10d-shaped-rew-grid2entity-diverse-eval-a10
+  env_hyperparams:
+    &microrts-bw10-coac-2m-ent100d-lr10d-shaped-rew-grid2entity-a10-env
+    <<: *microrts-bw10-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10-env
+  eval_hyperparams:
+    &microrts-bw10-coac-2m-ent100d-lr10d-shaped-rew-grid2entity-a10-eval
+    <<: *microrts-bw10-p1-2m-ent100d-lr10d-shaped-rew-grid2entity-diverse-eval-a10-eval
+    env_overrides:
+      &microrts-bw10-coac-2m-ent100d-lr10d-shaped-rew-grid2entity-a10-eval-env-overrides
+      <<: *microrts-bw10-p1-2m-ent100d-lr10d-shaped-rew-grid2entity-diverse-eval-a10-env-overrides
+      make_kwargs:
+        &microrts-bw10-coac-2m-ent100d-lr10d-shaped-rew-grid2entity-a10-eval-make-kwargs
+        <<: *microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10-eval-make-kwargs
+        always_player_1: false
 
 Microrts-bw10-adv-bots-2m-ent100d-lr10d-shaped-rew-grid2entity-a10:
   &microrts-bw10-adv-bots-2m-ent100d-lr10d-shaped-rew-grid2entity-a10
@@ -2237,7 +2251,7 @@ Microrts-agent: &microrts-agent
         #   use_paper_obs: true
 
 Microrts-debug:
-  <<: *microrts-bw10-10m-5emm-lr10d01-05wb2lwr-grid2entity-a10
+  <<: *microrts-bw10-p1-2m-ent100d-lr10d-shaped-rew-grid2entity-diverse-eval-a10
   # eval_hyperparams:
   #   <<: *microrts-bw10-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10-eval
   #   skip_evaluate_at_start: true
