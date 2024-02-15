@@ -35,7 +35,6 @@ class SummaryWriterActor:
 
         self.tb_writer = SummaryWriter(config.tensorboard_summary_path)
         self.timesteps_elapsed = 0
-        self.paths_live_saving: Set[str] = set()
 
     def close(self) -> None:
         self.tb_writer.close()
@@ -66,9 +65,7 @@ class SummaryWriterActor:
                 path,
             )
             save_path = f"{archive_path}.zip"
-            if not save_path in self.paths_live_saving:
-                self.paths_live_saving.add(save_path)
-                wandb.save(save_path, policy="live")
+            wandb.save(save_path, policy="now")
 
     def log_video(self, video_path: str, fps: int, global_step: int) -> None:
         if self.wandb_enabled:

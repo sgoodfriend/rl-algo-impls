@@ -37,7 +37,6 @@ class InProcessSummaryWrapper(AbstractSummaryWrapper):
 
         self.tb_writer = SummaryWriter(config.tensorboard_summary_path)
         self.timesteps_elapsed = 0
-        self.paths_live_saving: Set[str] = set()
 
     def on_timesteps_elapsed(self, timesteps_elapsed: int) -> None:
         self.timesteps_elapsed = timesteps_elapsed
@@ -77,9 +76,7 @@ class InProcessSummaryWrapper(AbstractSummaryWrapper):
                 path,
             )
             save_path = f"{archive_path}.zip"
-            if not save_path in self.paths_live_saving:
-                self.paths_live_saving.add(save_path)
-                wandb.save(save_path, policy="live")
+            wandb.save(save_path, policy="now")
 
     def log_video(self, video_path: str, fps: int) -> None:
         if self.wandb_enabled:
