@@ -2244,6 +2244,17 @@ Microrts-bw10-10m-ent10d-lr10d01-05wb2lwr-grid2entity-4lw-eavw-4l-a10:
       - learning_rate: !!float 1e-5
         ent_coef: 0
 
+Microrts-bw10-10m-ent10d-lr10d01-05wb2lwr-clip10-grid2entity-a10:
+  &microrts-bw10-10m-ent10d-lr10d01-05wb2lwr-clip10-grid2entity-a10
+  <<: *microrts-bw10-10m-ent10d-lr10d01-05wb2lwr-grid2entity-4lw-eavw-4l-a10
+  env_hyperparams:
+    &microrts-bw10-10m-ent10d-lr10d01-05wb2lwr-clip10-grid2entity-a10-env
+    <<: *microrts-bw10-10m-5emm-lr10d01-05wb2lwr-grid2entity-a10-env
+    normalize_kwargs:
+      &microrts-bw10-10m-ent10d-lr10d01-05wb2lwr-clip10-grid2entity-a10-env-normalize-kwargs
+      <<: *microrts-bw10-10m-5emm-lr10d01-05wb2lwr-grid2entity-a10-env-normalize-kwargs
+      clip_reward: 10
+
 Microrts-agent: &microrts-agent
   <<: *microrts-sp-dc-phases-defaults
   device: cpu
