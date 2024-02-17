@@ -474,12 +474,15 @@ Microrts-env32-240m-ent5d1-lr4d1-05wb2lwr-a100:
         max_steps: 6000
     max_video_length: 6000
   hyperparam_transitions_kwargs:
+    interpolate_method: cosine
     phases:
+      - ent_coef: !!float 5e-3
+        learning_rate: !!float 1e-6
       - ent_coef: !!float 5e-3
         learning_rate: !!float 8e-4
       - ent_coef: !!float 1e-3
         learning_rate: !!float 1e-4
-    durations: [0, 1, 0]
+    durations: [0, 0.05, 0, 0.95, 0]
   policy_hyperparams: &microrts-env32-240m-ent5d1-lr4d1-05wb2lwr-a100-policy
     <<: *microrts-env16-240m-ent5-lr3c-mgn2-info-rew-vf50-nga-a100-policy
     load_run_path: sgoodfriend/rl-algo-impls-microrts-2024/5br71q18
