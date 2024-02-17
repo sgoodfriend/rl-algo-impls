@@ -482,7 +482,8 @@ Microrts-env32-240m-ent5d1-lr4d1-05wb2lwr-a100:
     durations: [0, 1, 0]
   policy_hyperparams: &microrts-env32-240m-ent5d1-lr4d1-05wb2lwr-a100-policy
     <<: *microrts-env16-240m-ent5-lr3c-mgn2-info-rew-vf50-nga-a100-policy
-    load_path: downloaded_models/dppo-Microrts-env16-240m-ent5d1-lr4d1-05wb2lwr-adv-bot-only-a100-S1-best
+    load_run_path: sgoodfriend/rl-algo-impls-microrts-2024/5br71q18
+    load_run_path_best: true
   rollout_hyperparams: &microrts-env32-240m-ent5d1-lr4d1-05wb2lwr-a100-rollout
     <<: *microrts-env16-240m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-a100-rollout
     gamma: 0.9999
