@@ -2324,6 +2324,24 @@ Microrts-bw16a-20m-ent10d-lr10d01-05wb4lhr-grid2entity-a10:
         <<: *microrts-bw10-coac-2m-ent100d-lr10d-shaped-rew-grid2entity-a10-eval-make-kwargs
         map_paths: [maps/16x16/basesWorkers16x16A.xml]
 
+Microrts-bw16a-20m-ent10d-lr10d01-05wb4lhr-grid2entity-8l-a10:
+  &microrts-bw16a-20m-ent10d-lr10d01-05wb4lhr-grid2entity-8l-a10
+  <<: *microrts-bw16a-20m-ent10d-lr10d01-05wb4lhr-grid2entity-a10
+  policy_hyperparams:
+    &microrts-bw16a-20m-ent10d-lr10d01-05wb4lhr-grid2entity-8l-a10-policy
+    <<: *microrts-bw10-10m-ent100d-lr10d01-05wb2lwr-grid2entity-4lw-eavw-a10-policy
+    encoder_layers: 8
+
+Microrts-bw16a-20m-ent10d-lr10d01-05wb4lhr-grid2entity-8lw-a10:
+  &microrts-bw16a-20m-ent10d-lr10d01-05wb4lhr-grid2entity-8lw-a10
+  <<: *microrts-bw16a-20m-ent10d-lr10d01-05wb4lhr-grid2entity-8l-a10
+  policy_hyperparams:
+    &microrts-bw16a-20m-ent10d-lr10d01-05wb4lhr-grid2entity-8lw-a10-policy
+    <<: *microrts-bw16a-20m-ent10d-lr10d01-05wb4lhr-grid2entity-8l-a10-policy
+    encoder_attention_heads: 8
+    encoder_embed_dim: 128
+    encoder_feed_forward_dim: 512
+
 Microrts-agent: &microrts-agent
   <<: *microrts-sp-dc-phases-defaults
   device: cpu
@@ -2357,7 +2375,7 @@ Microrts-agent: &microrts-agent
         #   use_paper_obs: true
 
 Microrts-debug:
-  <<: *microrts-bw16a-20m-ent10d-lr10d01-05wb4lhr-grid2entity-a10
+  <<: *microrts-bw16a-20m-ent10d-lr10d01-05wb4lhr-grid2entity-8lw-a10
   # eval_hyperparams:
   #   <<: *microrts-bw10-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10-eval
   #   skip_evaluate_at_start: true
