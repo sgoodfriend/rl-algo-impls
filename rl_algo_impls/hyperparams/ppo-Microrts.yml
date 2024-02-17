@@ -2297,6 +2297,33 @@ Microrts-bw10-2m-ent100d-lr10d01-05wb4lwr-clip10-grid2entity-small-a10:
     &microrts-bw10-2m-ent100d-lr10d01-05wb4lwr-clip10-grid2entity-small-a10-policy
     <<: *microrts-bw10-2m-ent100d-lr10d-05wb2lwr-vf24-nga-grid2entity-a10-policy
 
+Microrts-bw10-20m-ent10d-lr10d01-05wb4lhr-grid2entity-a10:
+  &microrts-bw10-20m-ent10d-lr10d01-05wb4lhr-grid2entity-a10
+  <<: *microrts-bw10-10m-ent10d-lr10d01-05wb4lwr-clip10-grid2entity-a10
+  n_timesteps: !!float 20e6
+
+Microrts-bw16a-20m-ent10d-lr10d01-05wb4lhr-grid2entity-a10:
+  &microrts-bw16a-20m-ent10d-lr10d01-05wb4lhr-grid2entity-a10
+  <<: *microrts-bw10-20m-ent10d-lr10d01-05wb4lhr-grid2entity-a10
+  env_hyperparams:
+    &microrts-bw16a-20m-ent10d-lr10d01-05wb4lhr-grid2entity-a10-env
+    <<: *microrts-bw10-10m-ent10d-lr10d01-05wb2lwr-clip10-grid2entity-a10-env
+    make_kwargs:
+      &microrts-bw16a-20m-ent10d-lr10d01-05wb4lhr-grid2entity-a10-env-make-kwargs
+      <<: *microrts-bw10-2m-ent100d-lr10d-05wb2lwr-vf24-nga-grid2entity-a10-env-make-kwargs
+      map_paths: [maps/16x16/basesWorkers16x16A.xml]
+    valid_sizes: [16]
+  eval_hyperparams:
+    &microrts-bw16a-20m-ent10d-lr10d01-05wb4lhr-grid2entity-a10-eval
+    <<: *microrts-bw10-10m-ent100d-lr10d-05wb2lwr-vf24-nga-grid2entity-a10-eval
+    env_overrides:
+      &microrts-bw16a-20m-ent10d-lr10d01-05wb4lhr-grid2entity-a10-eval-env-overrides
+      <<: *microrts-bw10-coac-2m-ent100d-lr10d-shaped-rew-grid2entity-a10-eval-env-overrides
+      make_kwargs:
+        &microrts-bw16a-20m-ent10d-lr10d01-05wb4lhr-grid2entity-a10-eval-make-kwargs
+        <<: *microrts-bw10-coac-2m-ent100d-lr10d-shaped-rew-grid2entity-a10-eval-make-kwargs
+        map_paths: [maps/16x16/basesWorkers16x16A.xml]
+
 Microrts-agent: &microrts-agent
   <<: *microrts-sp-dc-phases-defaults
   device: cpu
@@ -2330,7 +2357,7 @@ Microrts-agent: &microrts-agent
         #   use_paper_obs: true
 
 Microrts-debug:
-  <<: *microrts-bw10-2m-ent100d-lr10d01-05wb4lwr-clip10-grid2entity-small-a10
+  <<: *microrts-bw16a-20m-ent10d-lr10d01-05wb4lhr-grid2entity-a10
   # eval_hyperparams:
   #   <<: *microrts-bw10-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10-eval
   #   skip_evaluate_at_start: true
