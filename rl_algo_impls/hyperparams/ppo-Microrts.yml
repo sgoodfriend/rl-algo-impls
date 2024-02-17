@@ -2292,6 +2292,7 @@ Microrts-bw10-2m-ent100d-lr10d01-05wb4lwr-clip10-grid2entity-small-a10:
         ent_coef: 0.1
       - learning_rate: !!float 1e-5
         ent_coef: 0
+  n_timesteps: !!float 2e6
   policy_hyperparams:
     &microrts-bw10-2m-ent100d-lr10d01-05wb4lwr-clip10-grid2entity-small-a10-policy
     <<: *microrts-bw10-2m-ent100d-lr10d-05wb2lwr-vf24-nga-grid2entity-a10-policy
