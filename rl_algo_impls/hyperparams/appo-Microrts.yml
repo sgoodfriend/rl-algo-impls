@@ -854,7 +854,7 @@ Microrts-bw16a-20m-ent10d-lr10d01-05wb4lhr-grid2entity-a10:
     - action_mask_stats
   algo_hyperparams:
     autocast_loss: true
-    batch_size: 1024
+    batch_size: 3072
     clip_range: 0.2
     clip_range_vf: 0.2
     ent_coef: 0.1
