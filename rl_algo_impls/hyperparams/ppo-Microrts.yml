@@ -2350,6 +2350,18 @@ Microrts-bw16a-20m-ent10d-lr10d01-b3072-05wb4lhr-grid2entity-8lw-a10:
     <<: *microrts-bw10-10m-ent10d-lr10d01-05wb4lwr-clip10-grid2entity-a10-algo
     batch_size: 3072
 
+Microrts-bw16a-20m-ent10d-lr5d05-b3072-05wb4lhr-grid2entity-8lw-a10:
+  &microrts-bw16a-20m-ent10d-lr5d05-b3072-05wb4lhr-grid2entity-8lw-a10
+  <<: *microrts-bw16a-20m-ent10d-lr10d01-b3072-05wb4lhr-grid2entity-8lw-a10
+  hyperparam_transitions_kwargs:
+    &microrts-bw16a-20m-ent10d-lr5d05-b3072-05wb4lhr-grid
+    <<: *microrts-bw10-10m-ent10d-lr10d01-05wb2lwr-grid2entity-4lw-eavw-4l-a10-hyperparam-transitions
+    phases:
+      - learning_rate: !!float 5e-4
+        ent_coef: 0.01
+      - learning_rate: !!float 5e-5
+        ent_coef: 0
+
 Microrts-agent: &microrts-agent
   <<: *microrts-sp-dc-phases-defaults
   device: cpu
@@ -2383,7 +2395,7 @@ Microrts-agent: &microrts-agent
         #   use_paper_obs: true
 
 Microrts-debug:
-  <<: *microrts-bw16a-20m-ent10d-lr10d01-b3072-05wb4lhr-grid2entity-8lw-a10
+  <<: *microrts-bw16a-20m-ent10d-lr5d05-b3072-05wb4lhr-grid2entity-8lw-a10
   # eval_hyperparams:
   #   <<: *microrts-bw10-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10-eval
   #   skip_evaluate_at_start: true
