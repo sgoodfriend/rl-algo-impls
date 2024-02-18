@@ -845,8 +845,8 @@ Microrts-bw16a-80m-ent5-lr3c-mgn2-05wb2lwr-vf50-nga-grid2seq-a10:
         5: 4
         6: 5
 
-Microrts-bw16a-20m-ent10d-lr10d01-05wb4lhr-grid2entity-a10:
-  &microrts-bw16a-20m-ent10d-lr10d01-05wb4lhr-grid2entity-a10
+Microrts-bw16a-20m-ent10d-lr10d01-05wb4lhr-grid2entity-a100:
+  &microrts-bw16a-20m-ent10d-lr10d01-05wb4lhr-grid2entity-a100
   additional_keys_to_log:
     - microrts_stats
     - microrts_results
@@ -1036,4 +1036,4 @@ Microrts-bw16a-20m-ent10d-lr10d01-05wb4lhr-grid2entity-a10:
     n_inference_workers: 2
 
 Microrts-debug:
-  <<: *microrts-bw16a-20m-ent10d-lr10d01-05wb4lhr-grid2entity-a10
+  <<: *microrts-bw16a-20m-ent10d-lr10d01-05wb4lhr-grid2entity-a100
