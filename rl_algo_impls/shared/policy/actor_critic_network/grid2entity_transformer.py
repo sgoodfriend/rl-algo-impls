@@ -3,9 +3,7 @@ from typing import Dict, List, NamedTuple, Optional, Union
 import numpy as np
 import torch
 import torch.nn as nn
-from gymnasium.spaces import Box
-from gymnasium.spaces import Dict as DictSpace
-from gymnasium.spaces import MultiDiscrete, Space
+from gymnasium.spaces import Box, MultiDiscrete, Space
 
 from rl_algo_impls.shared.actor import pi_forward
 from rl_algo_impls.shared.actor.gridnet import ValueDependentMask
@@ -14,7 +12,7 @@ from rl_algo_impls.shared.module.normalization import (
     NormalizationMethod,
     normalization1d,
 )
-from rl_algo_impls.shared.module.utils import layer_init, mlp
+from rl_algo_impls.shared.module.utils import mlp
 from rl_algo_impls.shared.policy.actor_critic_network.grid2seq_transformer import (
     TransformerEncoderForwardArgs,
     TransformerEncoderLayer,
@@ -99,6 +97,7 @@ class Grid2EntityTransformerNetwork(ActorCriticNetwork):
             nn.GELU,
             output_activation=nn.GELU(),
             init_layers_orthogonal=init_layers_orthogonal,
+            final_normalization=normalization,
         )
 
         self.backbone = TransformerEncoderBackbone(
@@ -108,7 +107,6 @@ class Grid2EntityTransformerNetwork(ActorCriticNetwork):
             encoder_layers,
             normalization=normalization,
         )
-        self.backbone_normalization = normalization1d(normalization, encoder_embed_dim)
 
         actor_layer_sizes = [
             encoder_embed_dim,
@@ -175,7 +173,6 @@ class Grid2EntityTransformerNetwork(ActorCriticNetwork):
 
         x = self.embedding_layer(x)  # [B, S, C] -> [B, S, E]
         x = self.backbone(x, key_padding_mask=key_padding_mask)
-        x = self.backbone_normalization(x)
         return BackboneForwardReturn(x, key_padding_mask, keep_mask, n_keep)
 
     def _distribution_and_value(
