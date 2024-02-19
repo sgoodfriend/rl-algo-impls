@@ -220,6 +220,7 @@ class TransformerEncoderLayer(nn.Module):
         self.attention_normalization = normalization1d(normalization, embed_dim)
         self.feed_forward_normalization = normalization1d(normalization, embed_dim)
         self.identity_map_reordering = identity_map_reordering
+        self.apply(self._init_weights)
 
     def forward(
         self, args: TransformerEncoderForwardArgs
@@ -248,3 +249,9 @@ class TransformerEncoderLayer(nn.Module):
             x = x + ff_output
             x = self.feed_forward_normalization(x)
         return TransformerEncoderForwardArgs(x, key_padding_mask)
+
+    def _init_weights(self, module: nn.Module) -> None:
+        if isinstance(module, nn.Linear):
+            module.weight.data.normal_(mean=0.0, std=0.02)
+            if module.bias is not None:
+                module.bias.data.zero_()
