@@ -2350,7 +2350,7 @@ Microrts-bw16a-20m-ent10d-lr10d01-b3072-05wb4lhr-grid2entity-8lw-a10:
     <<: *microrts-bw10-10m-ent10d-lr10d01-05wb4lwr-clip10-grid2entity-a10-algo
     batch_size: 3072
 
-Microrts-bw16a-20m-ent10d-lr5d05-b3072-05wb4lhr-grid2entity-8lw-a10:
+Microrts-bw16a-20m-ent10d-lr5d05-b2048-05wb4lhr-grid2entity-8lw-a10:
   &microrts-bw16a-20m-ent10d-lr5d05-b2048-05wb4lhr-grid2entity-8lw-a10
   <<: *microrts-bw16a-20m-ent10d-lr10d01-b3072-05wb4lhr-grid2entity-8lw-a10
   algo_hyperparams:
