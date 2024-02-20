@@ -2407,6 +2407,14 @@ Microrts-bw16a-2m-ent100d-lr10d01-shaped-rew-grid2entity-2l-a10:
   <<: *microrts-bw16a-1m-ent100d-lr10d01-shaped-rew-grid2entity-2l-a10
   n_timesteps: !!float 2e6
 
+Microrts-bw16a-2m-ent100d-lr10d01-shaped-rew-grid2entity-4l-a10:
+  &microrts-bw16a-2m-ent100d-lr10d01-shaped-rew-grid2entity-4l-a10
+  <<: *microrts-bw16a-2m-ent100d-lr10d01-shaped-rew-grid2entity-2l-a10
+  policy_hyperparams:
+    &microrts-bw16a-2m-ent100d-lr10d01-shaped-rew-grid2entity-4l-a10-policy
+    <<: *microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2entity-a10-policy
+    encoder_layers: 4
+
 Microrts-agent: &microrts-agent
   <<: *microrts-sp-dc-phases-defaults
   device: cpu
@@ -2440,7 +2448,7 @@ Microrts-agent: &microrts-agent
         #   use_paper_obs: true
 
 Microrts-debug:
-  <<: *microrts-bw16a-1m-ent100d-lr10d01-shaped-rew-grid2entity-2l-a10
+  <<: *microrts-bw16a-2m-ent100d-lr10d01-shaped-rew-grid2entity-2l-a10
   # eval_hyperparams:
   #   <<: *microrts-bw10-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10-eval
   #   skip_evaluate_at_start: true
