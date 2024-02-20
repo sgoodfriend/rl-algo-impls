@@ -2390,11 +2390,17 @@ Microrts-bw16a-1m-ent100d-lr10d01-shaped-rew-grid2entity-2l-a10:
       &microrts-bw16a-1m-ent100d-lr10d01-shaped-rew-grid2entity-2l-a10-env-make-kwargs
       <<: *microrts-bw16a-20m-ent10d-lr10d01-05wb4lhr-grid2entity-a10-env-make-kwargs
       reward_weight: [10.0, 1.0, 1.0, 0.2, 1.0, 4.0, 5.0, 6.0, 0]
+      always_player_1: true
     normalize: false
     normalize_kwargs: null
   eval_hyperparams:
     &microrts-bw16a-1m-ent100d-lr10d01-shaped-rew-grid2entity-2l-a10-eval
     <<: *microrts-bw16a-20m-ent10d-lr10d01-05wb4lhr-grid2entity-a10-eval
+    env_overrides:
+      &microrts-bw16a-20m-ent10d-lr10d01-05wb4lhr-grid2entity-a10-eval-env-overrides
+      make_kwargs:
+        &microrts-bw16a-20m-ent10d-lr10d01-05wb4lhr-grid2entity-a10-eval-make-kwargs
+        always_player_1: true
     step_freq: !!float 5e5
   hyperparam_transitions_kwargs:
     <<: *microrts-bw10-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10-transitions
@@ -2468,7 +2474,7 @@ Microrts-agent: &microrts-agent
         #   use_paper_obs: true
 
 Microrts-debug:
-  <<: *microrts-bw16a-2m-ent100d-lr10d01-shaped-rew-grid2entity-4lw-ew-a10
+  <<: *microrts-bw16a-1m-ent100d-lr10d01-shaped-rew-grid2entity-2l-a10
   # eval_hyperparams:
   #   <<: *microrts-bw10-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10-eval
   #   skip_evaluate_at_start: true
