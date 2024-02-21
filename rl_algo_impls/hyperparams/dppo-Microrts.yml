@@ -540,3 +540,6 @@ Microrts-env64-240m-ent5d1-lr8d1-05wb2lwr-a100:
         map_paths: [maps/BroodWar/(4)BloodBath.scmB.xml]
         max_steps: 8000
     max_video_length: 8000
+  worker_hyperparams:
+    n_inference_workers: 2
+    n_rollout_workers: 4
