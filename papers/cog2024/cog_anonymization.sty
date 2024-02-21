@@ -1,0 +1,32 @@
+\ProvidesPackage{cog_anonymization}
+
+\newif\ifcogfinal
+\cogfinalfalse
+\def\cogfinal{\cogfinaltrue}
+
+% \cogfinal
+
+\ifcogfinal
+    \newcommand{\authorName}{Scott Goodfriend}
+    \newcommand{\authorSecondary}{Berkeley, CA \\ goodfriend.scott@gmail.com}
+    \newcommand{\raiMicroRTSGitHubUrl}{\url{https://github.com/sgoodfriend/rl-algo-impls/tree/main/rl_algo_impls/microrts}}
+    \newcommand{\rlAlgoImplsGitHubUrl}{\url{https://github.com/sgoodfriend/rl-algo-impls}}
+    \newcommand{\unownedFixGitHubCommit}{\url{https://github.com/sgoodfriend/rl-algo-impls/commit/cea47c0e086b9b436d23f0bc95f6f20d3e50ebb7}}
+    \newcommand{\bcAgent}{RAI-BC}
+    \newcommand{\bcPPOAgent}{RAI-BC-PPO}
+    \newcommand{\microRTSWBProject}{sgoodfriend/rl-algo-impls-microrts-2023 Weights and Biases project}
+    \newcommand{\microRTSWBProjectPath}{sgoodfriend/rl-algo-impls-microrts-2023}
+    \newcommand{\wbProject}{sgoodfriend/rl-algo-impls-benchmarks Weights and Biases project}
+\else % Otherwise, in anonymous version
+    \newcommand{\authorName}{Anonymous authors}
+    \newcommand{\authorSecondary}{Anonymous affiliations \\ Anonymous emails}
+    \newcommand{\agentName}{AnonymizedAI}
+    \newcommand{\raiMicroRTSGitHubUrl}{\agentName's microRTS GitHub URL}
+    \newcommand{\rlAlgoImplsGitHubUrl}{\agentName's GitHub URL}
+    \newcommand{\unownedFixGitHubCommit}{Anonymized GitHub URL to opponent owned resources bug fix}
+    \newcommand{\bcAgent}{BC-Agent}
+    \newcommand{\bcPPOAgent}{BC-PPO-Agent}
+    \newcommand{\microRTSWBProject}{Anonymized microRTS Weights and Biases project}
+    \newcommand{\microRTSWBProjectPath}{Anonymized microRTS Weights and Biases project path}
+    \newcommand{\wbProject}{Anonymized benchmark Weights and Biases project}
+\fi
