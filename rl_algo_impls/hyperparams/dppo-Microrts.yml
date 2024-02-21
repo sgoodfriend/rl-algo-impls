@@ -543,4 +543,4 @@ Microrts-env64-240m-ent5d1-lr8d1-05wb2lwr-a100:
     step_freq: !!float 15e6
   worker_hyperparams:
     n_inference_workers: 2
-    n_rollout_workers: 4
+    n_rollout_workers: 3
