@@ -552,3 +552,11 @@ Microrts-env64-240m-ent5d1-lr8d1-05wb2lwr-a10:
     <<: *microrts-env64-240m-ent5d1-lr8d1-05wb2lwr-a100-algo
     batch_size: 128
     gradient_accumulation: true
+
+Microrts-env64-240m-ent5d1-lr8d1-05wb2lwr-h100:
+  &microrts-env64-240m-ent5d1-lr8d1-05wb2lwr-h100
+  <<: *microrts-env64-240m-ent5d1-lr8d1-05wb2lwr-a100
+  algo_hyperparams: &microrts-env64-240m-ent5d1-lr8d1-05wb2lwr-h100-algo
+    <<: *microrts-env64-240m-ent5d1-lr8d1-05wb2lwr-a100-algo
+    batch_size: 512
+    gradient_accumulation: true
