@@ -551,4 +551,4 @@ Microrts-env64-240m-ent5d1-lr8d1-05wb2lwr-a10:
   algo_hyperparams: &microrts-env64-240m-ent5d1-lr8d1-05wb2lwr-a10-algo
     <<: *microrts-env64-240m-ent5d1-lr8d1-05wb2lwr-a100-algo
     batch_size: 128
-    gradient_accumulation: 16
+    gradient_accumulation: true
