@@ -1,0 +1,678 @@
+\documentclass[conference,onecolumn]{IEEEtran}
+\IEEEoverridecommandlockouts
+% The preceding line is only needed to identify funding in the first footnote. If that is unneeded, please comment it out.
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{times}
+\usepackage{array}
+\usepackage{paralist}
+\usepackage{float}
+\usepackage[utf8]{inputenc}
+\usepackage{threeparttable}
+\usepackage{booktabs}
+\usepackage[T1]{fontenc}
+\usepackage{tabularx}
+\usepackage{ragged2e}
+\usepackage{adjustbox}
+\usepackage{rotating}
+\usepackage{subcaption}
+
+\newcounter{suppfigure}
+\renewcommand{\thesuppfigure}{S\arabic{suppfigure}}
+\newenvironment{suppfigure}
+  {\renewcommand{\figurename}{Supplemental Fig}\setcounter{figure}{\value{suppfigure}}\addtocounter{suppfigure}{1}\begin{figure}}
+  {\end{figure}\setcounter{suppfigure}{\value{figure}}}
+
+\newcounter{supptable}
+\renewcommand{\thesupptable}{S\arabic{supptable}}
+\newenvironment{supptable}
+  {\renewcommand{\tablename}{Supplemental Table}\setcounter{table}{\value{supptable}}\addtocounter{supptable}{1}\begin{table}}
+  {\end{table}\setcounter{supptable}{\value{table}}}
+
+\usepackage{cog2024_anonymization}
+
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+
+\begin{document}
+
+\title{A Competition Winning Deep Reinforcement Learning Agent in microRTS: supplemental document}
+\author{}
+\maketitle
+
+\section{Neural network architecture}
+DoubleCone(4, 6, 4) (\cite{Ferdinand2021doublecone}) consists of
+\begin{inparaenum}[(1)]
+    \item 4 residual blocks;
+    \item a downscaled residual block consisting of a stride-4 convolution, 6 residual blocks, and
+        2 stride-2 transpose convolutions;
+    \item 4 residual blocks; and
+    \item actor and value heads (Figure~\ref{fig:doublecone}).
+\end{inparaenum}
+Each residual block includes a squeeze-excitation layer after the second convolutional
+layer (Figure~\ref{fig:squeezeexcitation}).  The values heads are each 
+\begin{inparaenum}[(1)]
+    \item 2 stride-2 convolutions,
+    \item an adaptive average pooling layer,
+    \item flattened,
+    \item 2 densely connected layers, and
+    \item an activation function (Identity [no activation] or Tanh) to a single, scalar value (Figure~\ref{fig:valueheads}).
+\end{inparaenum}
+The adaptive average pooling layer allows the network to be used on different map sizes.
+
+\begin{suppfigure}[H]
+    \begin{center}
+        \includegraphics[width=0.59\linewidth]{figures/DoubleCone.png}
+    \end{center}
+    \caption{DoubleCone(4, 6, 4) neural network architecture.}
+    \label{fig:doublecone}
+\end{suppfigure}
+
+\begin{suppfigure}[H]
+    \begin{center}
+        \includegraphics[width=0.3\linewidth]{figures/SqueezeExcitation.png}
+    \end{center}
+    \caption{ResBlock used in DoubleCone, squnet32, and squnet64. The residual block is similar to a standard residual block but inserts a Squeeze-Excitation block after the convolutional layers and before the residual connection.}
+    \label{fig:squeezeexcitation}
+\end{suppfigure}
+
+\begin{suppfigure}[H]
+    \begin{center}
+        \includegraphics[width=0.7\linewidth]{figures/ValueHeads.png}
+    \end{center}
+    \caption{Value heads used in (from left to right) DoubleCone, squnet32, and
+    squnet64. The AdaptiveAvgPool2d layer allows the network to be used on other map
+    sizes.}
+    \label{fig:valueheads}
+\end{suppfigure}
+
+\begin{suppfigure}[H]
+    \begin{center}
+        \includegraphics[width=0.55\linewidth]{figures/squnet64.png}
+    \end{center}
+    \caption{squnet64 neural network architecture. Instead of one downscaling block as in DoubleCone, this network downscales 3 times. This aggressive downscaling reduces the number of computations for larger maps, while theoretically supporting a large receptive field.}
+    \label{fig:squnet}
+\end{suppfigure}
+        
+\begin{supptable}[h]
+    \centering
+    \begin{threeparttable}
+        \caption{Comparison of different architectures}
+        \label{table:architectureBreakdown}
+        \begin{tabular}{cccc}
+            & \textbf{DoubleCone} & \textbf{squnet-map32\tnote{\P}} & \textbf{squnet-map64} \\
+            \midrule
+            Levels & 2 & 4 & 4 \\
+            Encoder residual blocks/level & [4, 6] & [1, 1, 1, 1] & [1, 1, 1, 1] \\
+            Decoder residual blocks/level & [4] & [1, 1, 1] & [1, 1, 1] \\
+            Stride/level & [4] & [2, 2, 4] & [2, 4, 4] \\
+            Deconvolution strides/level & [[2, 2]\tnote{*}] & [2, 2, 4] & [2, 4, 4] \\
+            Channels/level & [128, 128] & [128, 128, 128, 128] & [64, 64, 64, 64] \\
+            Trainable parameters & 5,014,865 & 3,584,657 & 1,420,625 \\
+            MACs\tnote{\dag} & \begin{tabular}[c]{@{}c@{}}0.70B (16x16)\tnote{\ddag} \\ 0.40B (12x12)\tnote{\S} \\ 1.58B (24x24) \\ 2.81B (32x32)\end{tabular} & 1.16B (32x32) & 1.41B (64x64) \\ 
+        \end{tabular}
+        \begin{tablenotes}
+            \item[\P] Used by ppo-Microrts-squnet-DistantResources-128ch-finetuned-S1-best and ppo-Microrts-squnet-map32-128ch-selfplay-S1-best. 
+            \item[*] 2 stride-2 transpose convolutions to match the 1 stride-4 convolution.
+            \item[\dag] Multiply-Accumulates for computing actions for a single observation.
+            \item[\ddag] All maps smaller than 16x16 (except NoWhereToRun9x8) are padded with walls up to 16x16. 
+            \item[\S] NoWhereToRun9x8 is padded with walls up to 12x12.
+        \end{tablenotes}
+    \end{threeparttable}
+\end{supptable}
+
+\section{Initial training details}
+\label{appendix:initial-training-details}
+\agentName\ was trained with partial observability and environment non-determinism disabled.
+
+\begin{supptable}[H]
+    \centering
+    \begin{threeparttable}
+    \caption{Initial training schedule from a randomly initialized model}
+    \label{tab:initial-training-schedule}
+    \begin{tabular}{lccccr}
+    \toprule
+     & Phase 1 & Transition 1→2\tnote{*} & Phase 2 & Transition 2→3\tnote{*} & Phase 3 \\
+    \midrule
+    steps & 90M & 60M & 30M & 60M & 60M \\
+    reward weights\tnote{†} & [0.8, 0.01, 0.19] &  & [0, 0.5, 0.5] &  & [0, 0.99, 0.01] \\
+    $c_1$ (value loss coef)\tnote{†} & [0.5, 0.1, 0.2] &  & [0, 0.4, 0.4] &  & [0, 0.5, 0.1]\\
+    $c_2$ (entropy coef)& 0.01 & & 0.01 & & 0.001 \\
+    learning rate & $10^{-4}$ & & $10^{-4}$ & & $5 \times 10^{-5}$\\
+    \bottomrule
+    \end{tabular}
+    \begin{tablenotes}
+       \item[*] Values are linearly interpolated between phases based on step count.
+       \item[†] Listed weights are for the shaped, win-loss, cost-based values, respectively.
+    \end{tablenotes}
+    \end{threeparttable}
+\end{supptable}
+
+\begin{supptable}[H]
+    \centering
+    \begin{threeparttable}
+    \caption{Comparison of initial training, shaped fine-tuning, and sparse fine-tuning parameters}
+    \label{tab:training-parameters}
+    \begin{tabular}{lccc}
+    Parameter & Initial Training & Shaped Fine-Tuning & Sparse Fine-Tuning \\
+    \midrule
+    Steps & 300M &   100M &   100M \\
+    Number of Environments & 24 &    \textquotedbl &    \textquotedbl \\
+    Rollout Steps Per Env & 512 &   \textquotedbl &   \textquotedbl \\
+    Minibatch Size & 4096 &   \textquotedbl &   \textquotedbl \\
+    Epochs Per Rollout & 2 &   \textquotedbl &   \textquotedbl \\
+    $\gamma$ (Discount Factor) & [0.99, 0.999, 0.999]\tnote{*} &   \textquotedbl &   \textquotedbl \\
+    GAE $\lambda$ & [0.95, 0.99, 0.99]\tnote{\P} &   \textquotedbl &   \textquotedbl \\
+    Clip Range & 0.1 &   \textquotedbl &   \textquotedbl \\
+    Clip Range VF & 0.1 &    \textquotedbl &   \textquotedbl \\
+    VF Coef Halving\tnote{‡} & True  &    \textquotedbl &   \textquotedbl \\
+    Max Grad Norm &  0.5 &   \textquotedbl &   \textquotedbl \\   
+    Latest Self-play Envs   &   12 &                      \textquotedbl &                      \textquotedbl \\
+    Old Self-play Envs   &   12 &                      0 &                      0 \\
+    Bots   &   none & CoacAI: 12 & \begin{tabular}[c]{@{}c}CoacAI: 6\\ Mayari: 6\end{tabular} \\
+    Maps   &   \begin{tabular}[c]{@{}c}basesWorkers16x16A \\ TwoBasesBarracks16x16 \\
+    basesWorkers8x8A \\ FourBasesWorkers8x8 \\ NoWhereToRun9x8 \\
+    EightBasesWorkers16x16\tnote{\dag} \end{tabular} &  \textquotedbl & \textquotedbl \\
+    \end{tabular}
+    \begin{tablenotes}
+    \item[\textquotedbl] Same value as cell to left.
+    \item[*] Value per value head (shaped, win-loss, cost-based).
+    \item[\P] Multiply v\_{loss} by 0.5, as done in CleanRL.
+    \item[\dag] Map not used in competition.
+    \end{tablenotes}
+    \end{threeparttable}
+\end{supptable}
+
+\begin{supptable}[H]
+    \centering
+    \begin{threeparttable}
+    \caption{Shaped fine-tuning schedule}
+    \label{tab:shaped-finetuning-schedule}
+    \begin{tabular}{lccccc}
+    \toprule
+     & Start & Transition →1\tnote{*} & Phase 1 & Transition 1→2\tnote{*} & Phase 2 \\
+     \midrule
+    steps & & 5M & 30M & 20M & 45M \\
+    reward weights\tnote{†} & [0, 0.99, 0.01] & & [0, 0.5, 0.5] & & [0, 0.99, 0.01] \\
+    $c_1$ (value loss coef)\tnote{†} & [0, 0.4, 0.2] & & [0, 0.4, 0.4] & & [0, 0.5, 0.1]\\
+    $c_2$ (entropy coef) & 0.01 & & 0.01 & & 0.001 \\
+    learning rate & $10^{-5}$ & & $5 \times 10^{-5}$ & & $5 \times 10^{-5}$\\
+    \bottomrule
+    \end{tabular}
+    \begin{tablenotes}
+       \item[*] Values are linearly interpolated between phases based on step count.
+       \item[†] Listed weights are for the shaped, win-loss, cost-based values, respectively.
+    \end{tablenotes}
+    \end{threeparttable}
+\end{supptable}
+
+\begin{supptable}[H]
+    \centering
+    \begin{threeparttable}
+    \caption{Sparse fine-tuning schedule}
+    \label{tab:sparse-finetuning-schedule}
+    \begin{tabular}{lcccc}
+    \toprule
+     & Phase 1 & Transition 1→2\tnote{*} & Phase 2 \\
+     \midrule
+    steps & 30M & 40M & 30M \\
+    reward weights\tnote{†} & [0, 0.99, 0.01] &  & [0, 0.99, 0.01] \\
+    $c_1$ (value loss coef)\tnote{†} & [0, 0.5, 0.1] &  & [0, 0.5, 0.1]\\
+    $c_2$ (entropy coef)) & 0.001 & & 0.0001 \\
+    learning rate & $5 \times 10^{-5}$ & & $10^{-5}$ \\
+    \bottomrule
+    \end{tabular}
+    \begin{tablenotes}
+       \item[*] Values are linearly interpolated between phases based on step count.
+       \item[†] Listed weights are for the shaped, win-loss, cost-based values, respectively.
+    \end{tablenotes}
+    \end{threeparttable}
+\end{supptable}
+
+\section{Transfer learning details}
+\label{appendix:transfer-learning-details}
+
+\begin{supptable}[H]
+    \centering
+    \begin{threeparttable}
+    \caption{Transfer learning schedule starting from ppo-Microrts-A6000-finetuned-coac-mayari-S1-best model}
+    \label{tab:transfer-learning-schedule}
+    \begin{tabular}{lccccc}
+    \toprule
+     & Start & Transition →1\tnote{*} & Phase 1 & Transition 1→2\tnote{*} & Phase 2 \\
+     \midrule
+    steps & & 5M & 30M & 20M & 45M \\
+    reward weights\tnote{†} & [0, 0.99, 0.01] & & [0.4, 0.5, 0.1] & & [0, 0.99, 0.01] \\
+    $c_1$ (value loss coef)\tnote{†} & [0.2, 0.4, 0.2] & & [0.3, 0.4, 0.1] & & [0, 0.5, 0.1]\\
+    $c_2$ (entropy coef) & 0.01 & & 0.01 & & 0.0001 \\
+    learning rate & $5 \times 10^{-5}$ & & $7 \times 10^{-5}$ & & $10^{-5}$ \\
+    \bottomrule
+    \end{tabular}
+    \begin{tablenotes}
+       \item[*] Values are linearly interpolated between phases based on step count.
+       \item[†] Listed weights are for the shaped, win-loss, cost-based values, respectively.
+    \end{tablenotes}
+    \end{threeparttable}
+\end{supptable}
+
+\section{squnet learning details}
+\label{appendix:squnet-learning-details}
+
+\begin{supptable}[H]
+    \centering
+    \begin{threeparttable}
+    \caption{Squnet training parameters}
+    \label{tab:squnet-training-parameters}
+    \begin{tabular}{lccc}
+    \toprule
+    Parameter & map32 & map32-DistantResources & map64 \\
+    \midrule
+    Steps & 200M & 100M & 200M \\
+    n\_envs & 24 & \textquotedbl & \textquotedbl \\
+    Rollout Steps Per Env & 512 & 512 & 256 \\
+    Minibatch Size & 2048 & 2048 & 258 \\
+    Clip Range & 0.1 & \textquotedbl & \textquotedbl \\
+    Clip Range VF & none & \textquotedbl & \textquotedbl \\
+    Latest Self-play Envs & 12 & \textquotedbl & \textquotedbl \\
+    Old Self-play Envs & 6 & 6 & 4 \\
+    Bots & \begin{tabular}[c]{@{}c}CoacAI: 3 \\ Mayari: 3 \end{tabular} & \begin{tabular}[c]{@{}c}CoacAI: 3 \\ Mayari: 3 \end{tabular} & \begin{tabular}[c]{@{}c}CoacAI: 4 \\ Mayari: 4 \end{tabular} \\
+    Maps & \begin{tabular}[c]{@{}c}DoubleGame24x24 \\ BWDistantResources32x32 \\ chambers32x32\tnote{*} \end{tabular} & BWDistantResources32x32 & \begin{tabular}[c]{@{}c}BloodBath.scmB \\ BloodBath.scmE\tnote{*}\end{tabular} \\   
+    \bottomrule
+    \end{tabular}
+    \begin{tablenotes}
+    \item[\textquotedbl] Same value as cell to left.
+    \item[*] Not competition Open maps.
+    \end{tablenotes}
+    \end{threeparttable}
+\end{supptable}
+
+\begin{supptable}[H]
+    \centering
+    \begin{threeparttable}
+    \caption{squnet training schedule starting with randomly initialized weights}
+    \label{tab:squnet-training-schedule}
+    \begin{tabular}{lcccc}
+    \toprule
+     & Phase 1 & Transition 1→2\tnote{*} & Phase 2 \\
+     \midrule
+    steps & 100M & 60M & 40M \\
+    reward weights\tnote{†} & [0.8, 0.01, 0.19] &  & [0, 0.99, 0.01] \\
+    $c_1$ (value loss coef)\tnote{†} & [0.5, 0.1, 0.2] &  & [0, 0.5, 0.1]\\
+    $c_2$ (entropy coef) & 0.01 & & 0.001 \\
+    learning rate & $10^{-4}$ & & $5 \times 10^{-5}$ \\
+    \bottomrule
+    \end{tabular}
+    \begin{tablenotes}
+       \item[*] Values are linearly interpolated between phases based on step count.
+       \item[†] Listed weights are for the shaped, win-loss, cost-based values, respectively.
+    \end{tablenotes}
+    \end{threeparttable}
+\end{supptable}
+
+\section{Behavior cloning details}
+\label{appendix:behavior-cloning-details}
+\begin{supptable}[H]
+    \centering
+    \begin{threeparttable}
+    \caption{Neural architecture for behavior cloning and PPO fine-tuned training}
+    \label{tab:bc-architecture}
+    \begin{tabular}{lc}
+    \toprule
+                                 & deep16-128 \\
+    \midrule
+    Levels                      & 3  \\
+    Encoder residual blocks/level & [3, 2, 4] \\
+    Decoder residual blocks/level & [3, 2] \\
+    Stride per level            & [4, 4] \\
+    Deconvolution strides per level & [[2, 2], [2, 2]]\tnote{*}\\
+    Channels per level          & [128, 128, 128] \\
+    Trainable parameters        & 5,027,279 \\
+    MACs\tnote{†} (16x16)          & 0.52B \\
+    MACs\tnote{†} (64x64)          & 8.40B \\
+    \bottomrule
+    \end{tabular}
+    \begin{tablenotes}
+       \item[*] 2 stride-2 transpose convolutions to match the 1 stride-4 convolution.
+       \item[†] Multiply-Accumulates for computing actions for a single observation.
+    \end{tablenotes}
+    \end{threeparttable}
+\end{supptable}
+
+\begin{supptable}[H]
+    \caption{Behavior cloning training parameters. \textquotedbl\ means same value as the cell to the left.}
+    \label{tab:bc-training-parameters}
+    \begin{center}
+    \begin{tabular}{lccc}
+    Map Size & 16x16 & 32x32 & 64x64 \\
+    \midrule
+    Steps & 100M & \textquotedbl & \textquotedbl \\
+    Number of Environments & 36 & 24 & 24 \\
+    Rollout Steps Per Env & 512 & \textquotedbl & \textquotedbl \\
+    Minibatch Size & 3072 & 768 & 192 \\
+    Epochs Per Rollout & 2 & \textquotedbl & \textquotedbl \\
+    $\gamma$ (Discount Factor) & 0.999 & 0.9996 & 0.999 \\
+    GAE $\lambda$ & 0.99 & 0.996 & 0.999 \\
+    Max Grad Norm & 0.5 & \textquotedbl & \textquotedbl \\
+    Gradient Accumulation & FALSE & FALSE & TRUE \\
+    Scale Loss by \# Actions & TRUE & \textquotedbl & \textquotedbl \\
+    \hline
+    Bots & \begin{tabular}[c]{@{}c@{}}Mayari: 12\\ CoacAI: 12\\ POLightRush:
+    12\end{tabular} & \begin{tabular}[c]{@{}c@{}}Mayari: 12\\ CoacAI: 6\\ POLightRush:
+    6\end{tabular} & \begin{tabular}[c]{@{}c@{}}Mayari: 8\\ CoacAI: 8\\ POLightRush:
+    8\end{tabular} \\
+    \hline
+    Maps & \begin{tabular}[c]{@{}c@{}}basesWorkers16x16A\\ TwoBasesBarracks16x16\\
+    basesWorkers8x8A\\ FourBasesWorkers8x8\\ NoWhereToRun9x8\\
+    EightBasesWorkers16x16\end{tabular} & \begin{tabular}[c]{@{}c@{}}DoubleGame24x24\\
+    BWDistantResources32x32\\ chambers32x32\end{tabular} &
+    \begin{tabular}[c]{@{}c@{}}(4)BloodBath.scmB\\ (4)BloodBath.scmE\end{tabular}
+    \end{tabular}
+\end{center}
+\end{supptable}
+
+\begin{supptable}[H]
+    \caption{Training parameters for PPO of behavior cloned models. \textquotedbl\ means same value as the cell to the left.}
+    \label{tab:bc-ppo-training-parameters}
+    \begin{center}
+    \begin{tabular}{lccc}
+    Map Size & 16x16 & 32x32 & 64x64 \\
+    \midrule
+    Steps & 100M & 200M & 200M \\
+    Number of Environments & 36 & 24 & 48 \\
+    Rollout Steps Per Env & 512 & \textquotedbl & \textquotedbl \\
+    Minibatch Size & 3072 & 768 & 192 \\
+    Epochs Per Rollout & 2 & \textquotedbl & \textquotedbl \\
+    {\color[HTML]{1A1A1A} $\gamma$ (Discount Factor)} & 0.999 & 0.9996 & 0.99983 \\
+    GAE $\lambda$ & 0.99 & 0.996 & 0.9983 \\
+    Clip Range & 0.1 & \textquotedbl & \textquotedbl \\
+    Clip Range VF & none & \textquotedbl & \textquotedbl \\
+    VF Coef Halving‡ & TRUE & \textquotedbl & \textquotedbl \\
+    Max Grad Norm & 0.5 & \textquotedbl & \textquotedbl \\
+    Gradient Accumulation & FALSE & TRUE & TRUE \\
+    Latest Selfplay Envs & 12 & 12 & 28 \\
+    Old Selfplay Envs & 12 & 6 & 12 \\
+    Bots & \begin{tabular}[c]{@{}c@{}}Mayari: 6\\ CoacAI: 6\end{tabular} & \begin{tabular}[c]{@{}c@{}}Mayari: 3\\ CoacAI: 3\end{tabular} & \begin{tabular}[c]{@{}c@{}}Mayari: 2\\ CoacAI: 2\\ POLightRush: 2\\ POWorkerRush: 2\end{tabular} \\
+    Maps & \begin{tabular}[c]{@{}c@{}}basesWorkers16x16A\\ TwoBasesBarracks16x16\\ basesWorkers8x8A\\ FourBasesWorkers8x8\\ NoWhereToRun9x8\\ EightBasesWorkers16x16\end{tabular} & \begin{tabular}[c]{@{}c@{}}DoubleGame24x24\\ BWDistantResources32x32\\ chambers32x32\end{tabular} & \begin{tabular}[c]{@{}c@{}}(4)BloodBath.scmB\\ (4)BloodBath.scmE\end{tabular}
+    \end{tabular}
+\end{center}
+\end{supptable}
+
+\begin{supptable}[H]
+    \caption{Behavior cloning schedule for 16x16 maps. Values in transition are linearly interpolated.}
+    \label{tab:bc-schedule-map16}
+    \begin{center}
+    \begin{tabular}{lccc}
+    & Start & Transition & End \\
+    \midrule
+    & & 100M & \\
+    learning rate & $8 \times 10^{-5}$ &  & 0 \\
+    \end{tabular}
+\end{center}
+\end{supptable}
+
+\begin{supptable}[H]
+    \caption{Behavior cloning schedule for 32x32 and 64x64 maps. Values in transitions are cosine interpolated.}
+    \label{tab:bc-schedule}
+    \begin{center}
+    \begin{tabular}{lccccc}
+    & Start & Transition →1 & Phase 1 & Transition 1→2 & Phase 2 \\
+    \midrule
+    &  & 5M & 5M & 85M & 5M \\
+    learning rate & $10^{-5}$ &  & $8 \times 10^{-5}$ &  & $10^{-6}$
+    \end{tabular}
+\end{center}
+\end{supptable}
+
+\begin{supptable}[H]
+    \caption{Schedule for PPO fine-tuning of behavior cloned model for 16x16 map. Transition values are cosine interpolated.}
+    \label{tab:bc-ppo-schedule-map16}
+    \begin{center}
+    \begin{tabular}{lccccc}
+    & Start & Transition →1 & Phase 1 & Transition 1→2 & Phase 2 \\
+    \midrule
+    &  & 5M & 5M & 85M & 5M \\
+    $c_2$ (entropy coef) & 0.001 &  & 0.001 &  & 0.0001 \\
+    learning rate & $10^{-5}$ &  & $5 \times 10^{-5}$ &  & $10^{-5}$ \\
+    \end{tabular}
+\end{center}
+\end{supptable}
+
+\begin{supptable}[H]
+    \caption{Schedule for PPO fine-tuning of behavior cloned model for 32x32 map. Transition values are cosine interpolated.}
+    \label{tab:bc-ppo-schedule-map32}
+    \begin{center}
+    \begin{tabular}{lccccc}
+    & Start & Transition →1 & Phase 1 & Transition 1→2 & Phase 2 \\
+    \midrule
+    &  & 10M & 80M & 70M & 40M \\
+    $c_2$ (entropy coef) & 0.001 &  & 0.001 &  & 0.0001 \\
+    learning rate & $10^{-5}$ &  & $5 \times 10^{-5}$ &  & $10^{-5}$ \\
+    \end{tabular}
+\end{center}
+\end{supptable}
+
+\begin{supptable}[H]
+    \caption{Schedule for PPO fine-tuning of behavior cloned model for 64x64 map. Transition values are cosine interpolated. Transition 1→2 being empty means values jump from Phase 1 to Phase 2.}
+    \label{tab:bc-ppo-schedule-map64}
+    \begin{center}
+        \begin{tabular}{lccccccccc}
+            & \begin{sideways} Start \end{sideways} & \begin{sideways} Transition →1
+            \end{sideways} & \begin{sideways} Phase 1 \end{sideways} & \begin{sideways}
+            Transition 1→2 \end{sideways} & \begin{sideways} Phase 2 \end{sideways} &
+            \begin{sideways} Transition 2→3 \end{sideways} & \begin{sideways} Phase 3
+            \end{sideways} & \begin{sideways} Transition 3→4 \end{sideways} &
+            \begin{sideways} Phase 4 \end{sideways} \\
+            \midrule
+            &  & 10M &  &  &  & 40M & 80M & 66M & 4M \\
+           $c_2$ (entropy coef) & 0 &  & 0 &  & 0.001 &  & 0.001 &  & 0.0001 \\
+           learning rate & $10^{-6}$ &  & $5 \times 10^{-5}$ & & $10^{-6}$ &  & $5 \times 10^{-5}$ &  & $10^{-6}$ \\
+           \begin{tabular}[c]{@{}l@{}}freeze backbone \\ and policy head\end{tabular} & TRUE &  & TRUE &  & FALSE &  & FALSE &  & FALSE
+    \end{tabular}
+\end{center}
+\end{supptable}
+
+\section{Training durations}
+We trained using Lambda Labs GPU on-demand instances. We used single Nvidia GPU instances, but
+different ones to be able to fit larger minibatches onto the GPU. A10 (24 GB VRAM) and
+A100 (40 GB VRAM) machines had 30 vCPUs and 200 GB RAM. A6000 (48 GB VRAM) machines had
+14 vCPUs and 46 GB RAM. We did not fully utilize the CPU, RAM, or hard drive resources
+during training.
+
+Behavior cloning and PPO fine-tuning of behavior cloned models were trained only using
+A10 machines. We had implemented gradient accumulation at this point to support larger
+batch sizes that did not need to fit on the GPU all-at-once.
+
+\label{appendix:training-durations}
+\begin{supptable}[H]
+    \caption{\agentName\ training durations. Blank models are intermediate models that
+    lead to the next row. For example, the first 3 runs are intermediate models for
+    16x16. Runs are uploaded to the \wbProject, except
+    for squnet-DistantResources (\microRTSWBProjectPath).}
+    \label{tab:training-durations}
+    \begin{center}
+    \begin{tabular}{lccc}
+        \multicolumn{1}{c}{Map} & Run ID & GPU & Days Training \\
+        \midrule
+         & \texttt{df4flrs4} & A10 & 12.5 \\
+         & \texttt{9bz7wsuv} & A6000 & 2.7 \\
+         & \texttt{tff7xk4b} & A6000 & 4.1 \\
+        \multicolumn{1}{c}{16x16} & \texttt{1ilo9yae} & A6000 & 4.3 \\
+         \hline
+         & \texttt{hpp5pffx} & A10 & 1.9 \\
+        \multicolumn{1}{c}{NoWhereToRun9x8} & \texttt{vmns9sbe} & A10 & 1.7 \\
+         \hline
+        \multicolumn{1}{c}{DoubleGame24x24} & \texttt{unnxtprk} & A6000 & 5.3 \\
+         \hline
+        \multicolumn{1}{c}{BWDistantResources32x32} & \texttt{x4tg80vk} & A100 & 3.6 \\
+         \hline
+        \multicolumn{1}{c}{32x32} & \texttt{tga53t25} & A6000 & 10.2 \\
+        \multicolumn{1}{c}{squnet-DistantResources} & \texttt{jl8zkpfr} & A6000 & 5.0 \\
+         \hline
+        \multicolumn{1}{c}{64x64} & \texttt{nh5pdv4o} & A6000 & 19.0 \\
+        \hline
+         & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & 70.4 \\
+         & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{}
+        \end{tabular}
+\end{center}
+\end{supptable}
+
+\begin{supptable}[H]
+    \caption{Behavior cloning training durations. Runs are uploaded to the \microRTSWBProject.}
+    \label{tab:bc-training-durations}
+    \begin{center}
+    \begin{tabular}{llc}
+        Map Size & Run ID & Days Training \\
+        \midrule
+        16x16 & \texttt{lhs1b2gj} & 3.5 \\
+        32x32 & \texttt{16o4391r} & 4.7 \\
+        64x64 & \texttt{uksp6znl} & 15.1 \\
+        \hline
+        \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & 23.3
+    \end{tabular}
+\end{center}
+\end{supptable}
+
+\begin{supptable}[H]
+    \caption{Training durations for PPO fine-tuning of behavior cloned models. Runs are uploaded to the \microRTSWBProject.}
+    \label{tab:bc-ppo-training-durations}
+    \begin{center}
+    \begin{tabular}{llc}
+        Map Size & Run ID & Days Training \\
+        \midrule
+        16x16 & \texttt{a4efzeug} & 4.0 \\
+        32x32 & \texttt{042rwd8p} & 11.3 \\
+        64x64 & \texttt{9l2debnz} & 33.9 \\
+        \hline
+        \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & 49.1
+    \end{tabular}
+\end{center}
+\end{supptable}
+
+\section{Single player round-robin benchmark setup}
+\label{appendix:single-player-benchmark-setup}
+In Section~\ref{sec:single-player-benchmark}, \agentName\ plays on the 8 Open maps
+against 4 opponents:
+\begin{inparaenum}[(1)]
+    \item baseline POWorkerRush,
+    \item baseline and 2017 competition winner POLightRush,
+    \item 2020 competition winner CoacAI, and
+    \item last competition (2021) winner Mayari.
+\end{inparaenum}
+\agentName\ normally plays against each opponent on each map for 100 matches (50
+each as player 1 and 2). The exception is squnet (S) on \texttt{BWDistantResources32x32},
+where \agentName\ only played each opponent for 20 matches (10 each as player 1 and 2).
+All opponents use A* for pathfinding, which is default for competitions.  Win rates are 
+percentages of wins where draws count as 0.5 wins for each player. The single player 
+round-robin benchmark was run on a 2018 Mac Mini with Intel i7-8700B CPU (6-core, 
+3.2GHz) with PyTorch limited to 6 threads. Timeouts were set to 100 ms. If
+an agent took 20ms over the deadline (120 ms total), the game was terminated and the win
+awarded to the opponent.
+
+In Section~\ref{sec:behavior-cloning-results}, \bcAgent\ and \bcPPOAgent\ play each
+opponent on each map for 20 matches
+(10 each as player 1 and 2).
+
+\section{Additional IEEE-CoG 2023 microRTS competition details}
+\begin{supptable}[H]
+    \caption{Win rates of all agents in the IEEE-CoG 2023 microRTS competition on Open maps.  Player 1 is the row agent and player 2 is the column agent. Each win rate value is the percentage of games won by player 1 (the row agent).}
+    \label{tab:all-competition-winrate}
+    \begin{center}
+    \begin{tabular}{lccccccccccccccccc|c}
+    & \begin{sideways} Mayari \end{sideways} & \begin{sideways} 2L \end{sideways} 
+    & \begin{sideways} \textbf{\agentName} \end{sideways} & \begin{sideways} ObiBotKenobi \end{sideways} 
+    & \begin{sideways} Aggrobot \end{sideways} & \begin{sideways} sophia \end{sideways} 
+    & \begin{sideways} bRHEAdBot \end{sideways} & \begin{sideways} Ragnar \end{sideways} 
+    & \begin{sideways} POLightRush \end{sideways} & \begin{sideways} SaveTheBeesV4 \end{sideways} 
+    & \begin{sideways} POWorkerRush \end{sideways} & \begin{sideways} MyMicroRtsBot \end{sideways} 
+    & \begin{sideways} NaiveMCTS \end{sideways} & \begin{sideways} myBot \end{sideways} 
+    & \begin{sideways} NIlSiBot \end{sideways} & \begin{sideways} Predator \end{sideways} 
+    & \begin{sideways} RandomBiasedAI \end{sideways} & \begin{sideways} Overall \end{sideways} \\
+    \midrule
+    Mayari         & -      & 53 & 32          & 73           & 78       & 93     & 95        & 64     & 88          & 93            & 75           & 78            & 100       & 100   & 100      & 100      & 100            & 82      \\
+    2L             & 51     & -  & 39          & 50           & 69       & 63     & 93        & 56     & 75          & 98            & 88           & 81            & 76        & 94    & 94       & 95       & 96             & 76      \\
+    \textbf{\agentName}    & 62     & 59 & -           & 49           & 64       & 71     & 64        & 64     & 64          & 78            & 78           & 76            & 84        & 94    & 73       & 87       & 87             & 72      \\
+    ObiBotKenobi   & 39     & 29 & 47          & -            & 47       & 69     & 60        & 56     & 58          & 83            & 65           & 76            & 72        & 99    & 79       & 85       & 100            & 66      \\
+    Aggrobot       & 9      & 25 & 26          & 60           & -        & 69     & 55        & 44     & 63          & 86            & 69           & 94            & 66        & 94    & 94       & 91       & 94             & 65      \\
+    sophia         & 25     & 44 & 30          & 35           & 38       & -      & 41        & 88     & 75          & 76            & 63           & 69            & 71        & 100   & 75       & 84       & 83             & 62      \\
+    bRHEAdBot      & 4      & 7  & 24          & 44           & 49       & 69     & -         & 51     & 64          & 79            & 59           & 65            & 83        & 99    & 81       & 96       & 98             & 61      \\
+    Ragnar         & 40     & 50 & 32          & 26           & 50       & 13     & 46        & -      & 44          & 71            & 63           & 69            & 73        & 88    & 81       & 73       & 85             & 56      \\
+    POLightRush    & 0      & 25 & 29          & 38           & 31       & 44     & 34        & 38     & -           & 71            & 69           & 69            & 73        & 100   & 75       & 91       & 100            & 55      \\
+    SaveTheBeesV4  & 14     & 9  & 21          & 43           & 31       & 59     & 38        & 47     & 66          & -             & 50           & 57            & 81        & 86    & 85       & 90       & 93             & 54      \\
+    POWorkerRush   & 13     & 13 & 21          & 29           & 31       & 44     & 44        & 56     & 38          & 89            & -            & 75            & 49        & 94    & 81       & 81       & 96             & 53      \\
+    MyMicroRtsBot  & 11     & 13 & 15          & 25           & 38       & 56     & 38        & 56     & 38          & 86            & 44           & -             & 43        & 94    & 69       & 74       & 92             & 49      \\
+    NaiveMCTS      & 0      & 11 & 17          & 22           & 34       & 27     & 15        & 26     & 29          & 69            & 56           & 58            & -         & 92    & 46       & 60       & 84             & 40      \\
+    myBot          & 1      & 6  & 21          & 20           & 39       & 48     & 28        & 41     & 43          & 77            & 39           & 40            & 50        & -     & 55       & 66       & 66             & 40      \\
+    NIlSiBot       & 0      & 13 & 18          & 18           & 31       & 25     & 13        & 13     & 31          & 63            & 31           & 38            & 51        & 81    & -        & 58       & 73             & 35      \\
+    Predator       & 1      & 7  & 13          & 6            & 12       & 21     & 11        & 16     & 14          & 56            & 22           & 28            & 44        & 73    & 43       & -        & 45             & 26      \\
+    RandomBiasedAI & 0      & 1  & 15          & 0            & 4        & 15     & 6
+    & 9      & 4           & 52            & 4            & 13            & 18        &
+    85    & 39       & 39       & - & 19 \\
+    \end{tabular}
+\end{center}
+\end{supptable}
+
+\begin{supptable}[H]
+    \caption{\agentName\ win rates split by competition job. Each map has 5 or 10 jobs that runs a round-robin tournament of all agents for 2 or 1 iterations, respectively. "Outlier" jobs are bolded. "Average" is the average win rate for all jobs. "Average Removing Outliers" is the average win rate for all jobs excluding "outlier" jobs.}
+    \label{tab:outlier-winrate}
+    \begin{center}
+    \begin{tabular}{r|rrrrrrrr|l}
+    & \begin{sideways}\texttt{basesWorkers8x8A}\end{sideways} &
+    \begin{sideways}\texttt{FourBasesWorkers8x8}\end{sideways} &
+    \begin{sideways}\texttt{NoWhereToRun9x8}\end{sideways} &
+    \begin{sideways}\texttt{basesWorkers16x16A}\end{sideways} &
+    \begin{sideways}\texttt{TwoBasesBarracks16x16}\end{sideways} &
+    \begin{sideways}\texttt{DoubleGame24x24}\end{sideways} &
+    \begin{sideways}\texttt{BWDistantResources32x32}\end{sideways} &
+    \begin{sideways}\texttt{(4)BloodBath.scmB}\end{sideways} & 
+    \begin{sideways}Overall\end{sideways}\\
+    \midrule
+    & 98 & 97 & 97 & 100 & 94 & 99 & 49 & 34 &  \\
+    & 100 & 94 & 97 & 100 & \textbf{4} & 96 & 53 & 38 &  \\
+    & 100 & 95 & \textbf{33} & 100 & 92 & 100 & 54 & 38 &  \\
+    & \textbf{5} & 92 & 94 & 98 & 94 & 97 & 58 & 39 &  \\
+    & \textbf{28} & 95 & 100 & 100 & 94 & \textbf{9} & 58 & \textbf{19} &  \\
+    & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & 100 & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & 39 &  \\
+    & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & 97 & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \textbf{19} &  \\
+    & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \textbf{30} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & 44 &  \\
+    & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & 97 & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & 36 &  \\
+    & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & 95 & \multicolumn{1}{l}{} &
+    \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & 36 &  \\
+    \hline
+   Average & 66 & 95 & 84 & 100 & 75 & 80 & 54 & 34 & \multicolumn{1}{r}{74} \\
+    Average Removing Outliers & 99 & 95 & 97 & 100 & 93 & 98 & 54 & 38 & \multicolumn{1}{r}{84} \\
+    \end{tabular}
+\end{center}
+\end{supptable}
+
+\section{Additional behavior cloning benchmarks}
+\begin{supptable}[H]
+    \caption{\bcAgent\ win rate in single player round-robin benchmark. Win rates above 50\% are bolded.}
+    \label{tab:bc-winrate}
+    \begin{center}
+    \begin{tabular}{lcccc|c}
+     & POWorkerRush & POLightRush & CoacAI & Mayari & Overall \\
+    \midrule
+    \texttt{basesWorkers8x8A} & \textbf{60} & \textbf{100} & \textbf{90} & 50 & 75 \\
+    \texttt{FourBasesWorkers8x8} & \textbf{100} & \textbf{100} & \textbf{85} & \textbf{65} & 88 \\
+    \texttt{NoWhereToRun9x8} & \textbf{100} & \textbf{100} & \textbf{83} & \textbf{55} & 85 \\
+    \texttt{basesWorkers16x16A} & 10 & \textbf{100} & \textbf{100} & 28 & 60 \\
+    \texttt{TwoBasesBarracks16x16} & \textbf{100} & \textbf{100} & 43 & 20 & 66 \\
+    \texttt{DoubleGame24x24} & 0 & \textbf{100} & \textbf{100} & 30 & 58 \\
+    \texttt{BWDistantResources32x32} & 48 & \textbf{100} & \textbf{100} & \textbf{65} & 78 \\
+    \texttt{(4)BloodBath.scmB} & \textbf{100} & \textbf{63} & 20 & 40 & 56 \\
+    \hline
+    AI Average & \textbf{65} & \textbf{96} & \textbf{78} & 44 & 71 \\
+    \end{tabular}
+    \end{center}
+\end{supptable}
+
+\bibliographystyle{IEEEtran}
+\bibliography{IEEEabrv, cog2024_supplemental}
+
+\end{document}
