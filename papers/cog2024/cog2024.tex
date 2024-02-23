@@ -98,10 +98,26 @@ The IEEE microRTS competitions have been hosted at the Conference on Games (CoG)
 every year since 2019 and at the Conference on Computational Intelligence and Games
 (CIG) before that since 2017 \cite{Ontañón_Barriga_Silva_Moraes_Lelis_2018}.
 Competitors submit an agent that plays against other submissions and baselines in a round-robin tournament
-on 12 different maps: 8 Open (known beforehand) and 4 Hidden (unknown until after the
+on 12 different maps: 8 Open (known beforehand, Table~\ref{tab-open-maps}) and 4 Hidden (unknown until after the
 competition results are released). Agents are supposed
 to submit actions every step within 100 ms. Without GPU acceleration, this is a significant constraint for deep neural
 network agents.
+
+\begin{table}[t]
+    \centering
+    \caption{Open competition maps.}
+    \label{tab:open-maps}
+    \begin{tabular}{cc}
+        \includegraphics[width=0.45\linewidth]{figures/basesWorkers8x8A.png} & \includegraphics[width=0.45\linewidth]{figures/FourBasesWorkers8x8.png} \\
+        basesWorkers8x8A & FourBasesWorkers8x8 \\
+        \includegraphics[width=0.45\linewidth]{figures/NoWhereToRun9x8.png} & \includegraphics[width=0.45\linewidth]{figures/basesWorkers16x16A.png} \\
+        NoWhereToRun9x8 & basesWorkers16x16A \\
+        \includegraphics[width=0.45\linewidth]{figures/TwoBasesBarracks16x16.png} & \includegraphics[width=0.45\linewidth]{figures/DoubleGame24x24.png} \\
+        TwoBasesBarracks16x16 & DoubleGame24x24 \\
+        \includegraphics[width=0.45\linewidth]{figures/BWDistantResources32x32.png} & \includegraphics[width=0.45\linewidth]{figures/(4)BloodBath.png} \\
+        BWDistantResources32x32 & (4)BloodBath.scmB \\
+    \end{tabular}
+\end{table}
 
 This paper describes how the \agentName\ agent\footnote{\raiMicroRTSGitHubUrl} was
 trained and became the first DRL agent to win the microRTS competition by winning at CoG
@@ -382,35 +398,35 @@ PPO to fine-tune the behavior cloned models on the same maps (Supplemental Table
 \section{Results}
 \subsection{Single player round-robin benchmark}
 \label{sec:single-player-benchmark}
+
 \begin{table}[t]
     \centering
     \begin{threeparttable}
-    \caption{Single player round-robin benchmark win rates. Win rates above 50\% are bolded. (D)
-    DoubleCone model used. (S) squnet model used.}
+    \caption{Single player round-robin benchmark win rates. Win rates above 50\% are bolded. (D) DoubleCone model used. (S) squnet model used.}
     \label{tab:single-player-winrate}
     \begin{tabular}{lcccc|c}
-     & \textbf{WorkerRush} & \textbf{LightRush} & \textbf{CoacAI} & \textbf{Mayari} & \textbf{Overall} \\
+     & \rotatebox{90}{\textbf{WorkerRush}} & \rotatebox{90}{\textbf{LightRush}} & \rotatebox{90}{\textbf{CoacAI}} & \rotatebox{90}{\textbf{Mayari}} & \rotatebox{90}{\textbf{Overall}} \\
     \midrule
-    \texttt{basesWorkers8x8A} & \textbf{95} & \textbf{100} & \textbf{99} & \textbf{100} & \textbf{99} \\
-    \texttt{FourBasesWorkers8x8} & \textbf{100} & \textbf{100} & \textbf{100} & \textbf{98} & \textbf{100} \\
-    \texttt{NoWhereToRun9x8} & \textbf{100} & \textbf{100} & \textbf{93} & \textbf{99} & \textbf{98} \\
-    \texttt{basesWorkers16x16A} & \textbf{100} & \textbf{100} & \textbf{90} & \textbf{98} & \textbf{97} \\
-    \texttt{TwoBasesBarracks16x16} & \textbf{100} & \textbf{89} & \textbf{99} & \textbf{100} & \textbf{97} \\
-    \texttt{DoubleGame24x24} & \textbf{100} & \textbf{98} & \textbf{94} & \textbf{100} & \textbf{98} \\
-    \texttt{BWDistantResources32x32} & \begin{tabular}[c]{@{}c@{}}\textbf{99} (D) \\ \textbf{93}
-    (S)\end{tabular}  & \begin{tabular}[c]{@{}c@{}}\textbf{90} (D) \\ \textbf{73}
-    (S)\end{tabular} & \begin{tabular}[c]{@{}c@{}}\textbf{88} (D) \\ 23
-    (S)\end{tabular} &
-    \begin{tabular}[c]{@{}c@{}}\textbf{99} (D) \\ \textbf{58} (S)\end{tabular} &
-    \begin{tabular}[c]{@{}c@{}}\textbf{94}\tnote{\P} (D) \\ \textbf{61} (S)\end{tabular} \\
-    \texttt{(4)BloodBath.scmB} & \textbf{98} & 0 & 0 & 0 & 25\tnote{\dag} \\
+    basesWorkers8x8A & \textbf{95} & \textbf{100} & \textbf{99} & \textbf{100} & \textbf{99} \\
+    FourBasesWorkers8x8 & \textbf{100} & \textbf{100} & \textbf{100} & \textbf{98} & \textbf{100} \\
+    NoWhereToRun9x8 & \textbf{100} & \textbf{100} & \textbf{93} & \textbf{99} & \textbf{98} \\
+    basesWorkers16x16A & \textbf{100} & \textbf{100} & \textbf{90} & \textbf{98} & \textbf{97} \\
+    TwoBasesBarracks16x16 & \textbf{100} & \textbf{89} & \textbf{99} & \textbf{100} & \textbf{97} \\
+    DoubleGame24x24 & \textbf{100} & \textbf{98} & \textbf{94} & \textbf{100} & \textbf{98} \\
+    BWDistantResources32x32 & \begin{tabular}[c]{@{}c@{}}\textbf{99} (D) \\ \textbf{93}
+        (S)\end{tabular}  & \begin{tabular}[c]{@{}c@{}}\textbf{90} (D) \\ \textbf{73}
+        (S)\end{tabular} & \begin{tabular}[c]{@{}c@{}}\textbf{88} (D) \\ 23
+        (S)\end{tabular} &
+        \begin{tabular}[c]{@{}c@{}}\textbf{99} (D) \\ \textbf{58} (S)\end{tabular} &
+        \begin{tabular}[c]{@{}c@{}}\textbf{94}\tnote{b} (D) \\ \textbf{61} (S)\end{tabular} \\
+    (4)BloodBath.scmB & \textbf{98} & 0 & 0 & 0 & 25\tnote{c} \\
     \hline
-    \textbf{AI Average}\tnote{*} & \textbf{99} & \textbf{85} & \textbf{83} & \textbf{87} & \textbf{88} \\
+    AI Average\tnote{a} & \textbf{99} & \textbf{85} & \textbf{83} & \textbf{87} & \textbf{88} \\
     \end{tabular}
     \begin{tablenotes}
-    \item[*] AI Average uses the DoubleCone (D) results from \texttt{BWDistantResources32x32}.
-    \item[\P] \agentName\ lost 0.25\% of matches (1 match) by timeout.
-    \item[\dag] \agentName\ lost  1\% of matches (4 matches) by timeout.
+    \item[a] AI Average uses the DoubleCone (D) results from BWDistantResources32x32.
+    \item[b] \agentName\ lost 0.25\% of matches (1 match) by timeout.
+    \item[c] \agentName\ lost  1\% of matches (4 matches) by timeout.
     \end{tablenotes}
     \end{threeparttable}
 \end{table}
@@ -534,21 +550,22 @@ map-specific models.
     \label{tab:bcppo-winrate}
     \begin{center}
     \begin{tabular}{lcccc|c}
-    & POWorkerRush & POLightRush & CoacAI & Mayari & Overall \\
+    & \rotatebox{90}{POWorkerRush} & \rotatebox{90}{POLightRush} & \rotatebox{90}{CoacAI} & \rotatebox{90}{Mayari} & \rotatebox{90}{Overall} \\
     \midrule
-    \texttt{basesWorkers8x8A} & \textbf{92} & \textbf{100} & \textbf{85} & \textbf{100} & \textbf{94} \\
-    \texttt{FourBasesWorkers8x8} & \textbf{100} & \textbf{100} & \textbf{100} & \textbf{100} & \textbf{100} \\
-    \texttt{NoWhereToRun9x8} & \textbf{100} & \textbf{100} & \textbf{90} & \textbf{80} & \textbf{92} \\
-    \texttt{basesWorkers16x16A} & \textbf{100} & \textbf{100} & \textbf{95} & \textbf{95} & \textbf{98} \\
-    \texttt{TwoBasesBarracks16x16} & \textbf{100} & 0 & \textbf{100} & \textbf{95} & \textbf{74} \\
-    \texttt{DoubleGame24x24} & \textbf{98} & \textbf{85} & \textbf{100} & \textbf{100} & \textbf{96} \\
-    \texttt{BWDistantResources32x32} & \textbf{100} & \textbf{100} & \textbf{95} & \textbf{100} & \textbf{99} \\
-    \texttt{(4)BloodBath.scmB} & \textbf{100} & \textbf{88} & 0 & 5 & 48 \\
+    basesWorkers8x8A & \textbf{92} & \textbf{100} & \textbf{85} & \textbf{100} & \textbf{94} \\
+    FourBasesWorkers8x8 & \textbf{100} & \textbf{100} & \textbf{100} & \textbf{100} & \textbf{100} \\
+    NoWhereToRun9x8 & \textbf{100} & \textbf{100} & \textbf{90} & \textbf{80} & \textbf{92} \\
+    basesWorkers16x16A & \textbf{100} & \textbf{100} & \textbf{95} & \textbf{95} & \textbf{98} \\
+    TwoBasesBarracks16x16 & \textbf{100} & 0 & \textbf{100} & \textbf{95} & \textbf{74} \\
+    DoubleGame24x24 & \textbf{98} & \textbf{85} & \textbf{100} & \textbf{100} & \textbf{96} \\
+    BWDistantResources32x32 & \textbf{100} & \textbf{100} & \textbf{95} & \textbf{100} & \textbf{99} \\
+    (4)BloodBath.scmB & \textbf{100} & \textbf{88} & 0 & 5 & 48 \\
     \hline
     AI Average & \textbf{99} & \textbf{84} & \textbf{83} & \textbf{84} & \textbf{88} \\
     \end{tabular}
     \end{center}
 \end{table}
+
 
 \bcAgent\ had a 71\% win rate, doing well against the POLightRush baseline (96\%, better than \agentName) and respectably against
 Mayari (44\%) (Supplemental Table~\ref{tab:bc-winrate}). On the largest map, \bcAgent\ manages to occasionally beat POLightRush (63\%), CoacAI
@@ -706,45 +723,5 @@ its turn (submitting no actions) if 100 ms had elapsed. On
 \texttt{BWDistantResources32x32}, \agentName\ chose between the DoubleCone and squnet
 fine-tuned models by running both models on the first observation 100 times each and
 choosing DoubleCone if it computed actions within 75 ms on average.
-
-\begin{table}[H]
-    \centering
-    \begin{threeparttable}
-        \caption{Open competition maps. Representation column is the size of the vectorized observation in \agentName.}
-        \label{tab:open-maps}
-            \begin{tabular}{>{\centering\arraybackslash}m{4cm}>{\centering\arraybackslash}m{2cm}>{\centering\arraybackslash}m{2cm}>{\centering\arraybackslash}m{2.25cm}}
-                \multicolumn{1}{c}{\bf Name}  &\multicolumn{1}{c}{\bf Size}
-                &\multicolumn{1}{c}{\bf Representation}
-                &\multicolumn{1}{c}{\bf Start} \\ \hline
-                basesWorkers8x8A & 8x8 & 16x16 &
-                \includegraphics[width=2.25cm]{figures/basesWorkers8x8A.png} \\
-                FourBasesWorkers8x8 & 8x8 & 16x16 &
-                \includegraphics[width=2.25cm]{figures/FourBasesWorkers8x8.png} \\
-                NoWhereToRun9x8 & 9x8 & 12x12\tnote{*} or 16x16\tnote{\P} &
-                \includegraphics[width=2.25cm]{figures/NoWhereToRun9x8.png} \\
-                basesWorkers16x16A & 16x16 & 16x16 &
-                \includegraphics[width=2.25cm]{figures/basesWorkers16x16A.png} \\
-                TwoBasesBarracks16x16 & 16x16 & 16x16 &
-                \includegraphics[width=2.25cm]{figures/TwoBasesBarracks16x16.png}
-                \\
-                DoubleGame24x24 & 24x24 & 24x24\tnote{\dag} or 32x32\tnote{\ddag} &
-                \includegraphics[width=2.25cm]{figures/DoubleGame24x24.png} \\
-                BWDistantResources32x32 & 32x32 & 32x32 &
-                \includegraphics[width=2.25cm]{figures/BWDistantResources32x32.png}
-                \\
-                (4)BloodBath.scmB & 64x64 & 64x64 &
-                \includegraphics[width=2.25cm]{figures/(4)BloodBath.png} \\
-            \end{tabular}
-            \begin{tablenotes}
-                \item[*] ppo-Microrts-finetuned-NoWhereToRun-S1-best uses a 12x12
-                representation
-                \item[\P] ppo-Microrts-A6000-finetuned-coac-mayari-S1-best
-                \item[\dag] ppo-Microrts-finetuned-DoubleGame-shaped-S1-best uses a 24x24
-                    representation.
-                \item[\ddag] ppo-Microrts-squnet-map32-128ch-selfplay-S1-best pads the
-                    observation to 32x32.
-            \end{tablenotes}
-    \end{threeparttable}
-\end{table}
 
 \end{document}
