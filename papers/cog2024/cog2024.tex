@@ -27,6 +27,7 @@
 \externaldocument{cog2024_supplemental}
 
 \usepackage{cog2024_anonymization}
+\interdisplaylinepenalty=2500
 
 \def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
     T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
@@ -259,9 +260,10 @@ win-loss sparse rewards by the end.
 \subsection{Base model training}
 We train using the PPO loss function from \cite{DBLP:journals/corr/SchulmanWDRK17}:
 \begin{align}
-    L^{CLIP+VF+S}(\theta) &= \hat{\mathbb{E}}_t \left[ L^{CLIP}(\theta) - c_1 L^{VF}(\theta) + c_2 S\left[\pi_\theta\right](s_t) \right], \\
-    L^{CLIP}(\theta) &= \min \left( \frac{\pi_\theta(a_t|s_t)}{\pi_{\theta_{old}}(a_t|s_t)} \hat{A}_t, \text{clip}\left( \frac{\pi_\theta(a_t|s_t)}{\pi_{\theta_{old}}(a_t|s_t)}, 1-\epsilon, 1+\epsilon \right) \hat{A}_t \right), \\
-    L^{VF}(\theta) &= \frac{1}{2} \left( V_\theta(s_t) - \hat{V}_t \right)^2,
+    L(\theta) &= \hat{\mathbb{E}}_t \left[ L^{\text{CLIP}}(\theta) - c_1 L^{\text{VF}}(\theta) + c_2 S\left[\pi_\theta\right](s_t) \right], \\
+    L^{\text{CLIP}}(\theta) &= \min \bigg( \frac{\pi_\theta(a_t|s_t)}{\pi_{\theta_{old}}(a_t|s_t)} \hat{A}_t, \notag \\
+    &\qquad \text{clip}\left( \frac{\pi_\theta(a_t|s_t)}{\pi_{\theta_{old}}(a_t|s_t)}, 1-\epsilon, 1+\epsilon \right) \hat{A}_t \bigg), \\
+    L^{\text{VF}}(\theta) &= \frac{1}{2} \left( V_\theta(s_t) - \hat{V}_t \right)^2,
 \end{align}
 where $c_1$ is the value loss coefficient, $c_2$ is the entropy coefficient, $S$ is an
 entropy bonus function, $\pi_\theta$ is the stochastic policy, $\pi_{\theta_{old}}$ is the rollout policy, $a_t$
@@ -361,8 +363,8 @@ generating an offline replay dataset, we set the microRTS environment to play bo
 against each other and these observations and actions were fed into rollouts used for
 behavior cloning the policy and fitting the value heads:
 \begin{align}
-    L^{BC+VF}(\theta) &= \hat{\mathbb{E}}_t \left[ L^{BC}(\theta) - c_1 L^{VF}(\theta) \right], \\
-    L^{BC}(\theta) &= -\frac{1}{\|a_t\|} \log \pi_{\theta}(a_t|s_t),
+    L^{\text{BC+VF}}(\theta) &= \hat{\mathbb{E}}_t \left[ L^{\text{BC}}(\theta) - c_1 L^{\text{VF}}(\theta) \right], \\
+    L^{\text{BC}}(\theta) &= -\frac{1}{\|a_t\|} \log \pi_{\theta}(a_t|s_t),
 \end{align}
 where $c_1$ and $L^{VF}$ are the same as in the PPO loss function. The behavior cloning
 policy loss is the cross-entropy loss between the policy logits and the actions taken by
@@ -380,7 +382,7 @@ PPO to fine-tune the behavior cloned models on the same maps (Supplemental Table
 \section{Results}
 \subsection{Single player round-robin benchmark}
 \label{sec:single-player-benchmark}
-\begin{table}[ht]
+\begin{table}[t]
     \centering
     \begin{threeparttable}
     \caption{Single player round-robin benchmark win rates. Win rates above 50\% are bolded. (D)
@@ -447,7 +449,7 @@ submissions (Supplemental Table~\ref{tab:competition-winrate}). \agentName\ had 
 than all but two baselines: \texttt{2L} (76\%) and Mayari (82\%). \agentName\ had an 
 over 50\% win rate versus every opponent including \texttt{2L} (60\%) and Mayari (65\%).
 
-\begin{table}[ht]
+\begin{table}[t]
     \caption{Win rates of selection of agents in the IEEE-CoG 2023 microRTS competition.
     Player 1 is the row agent and player 2 is the column agent. Each win rate value is
     the percentage of games won by player 1. Cells are bolded if the win
@@ -470,33 +472,34 @@ over 50\% win rate versus every opponent including \texttt{2L} (60\%) and Mayari
     Mayari (2021 winner) & - & \textbf{53} & 32 & \textbf{73} & \textbf{88} & \textbf{75} & 82 \\
     2L (baseline) & 51 & - & 39 & \textbf{50} & \textbf{75} & \textbf{88} & 76 \\
     \textbf{\agentName} (2023 winner) & \textbf{62} & \textbf{59} & - & \textbf{49} & \textbf{64} & \textbf{78} & 72 \\
-    ObiBotKenobi (2023 2nd place) & 39 & 29 & 47 & - & \textbf{58} & \textbf{65} & 66 \\
+    ObiBotKenobi (2023 2\textsuperscript{nd} place) & 39 & 29 & 47 & - & \textbf{58} & \textbf{65} & 66 \\
     POLightRush (baseline) & 0 & 25 & 29 & 38 & - & \textbf{69} & 55 \\
     POWorkerRush (baseline) & 13 & 13 & 21 & 29 & 38 & - & 53 \\
     \end{tabular}
 \end{center}
 \end{table}
 
-\begin{table}[ht]
+\begin{table}[t]
     \caption{\agentName\ win rates in 2023 competition by opponent and map. Bolded cells are win rates over 50\%. Overall includes all agents, including those not shown.}
     \label{tab:competition-winrate-by-map}
     \begin{center}
     \begin{tabular}{lccccc|c}
-    & \begin{sideways}POWorkerRush\end{sideways} & \begin{sideways}POLightRush\end{sideways} & \begin{sideways}ObiBotKenobi\end{sideways} & \begin{sideways}2L\end{sideways} & \begin{sideways}Mayari\end{sideways} & \begin{sideways}Overall\end{sideways}\\ 
+    & \rotatebox{90}{POWorkerRush} & \rotatebox{90}{POLightRush} & \rotatebox{90}{ObiBotKenobi} & \rotatebox{90}{2L} & \rotatebox{90}{Mayari} & \rotatebox{90}{Overall}\\ 
     \midrule
-    \texttt{basesWorkers8x8A} & \textbf{60} & \textbf{70} & \textbf{60} & \textbf{60} & \textbf{60} & \textbf{66}\\ 
-    \texttt{FourBasesWorkers8x8} & \textbf{100} & \textbf{100} & 20 & \textbf{95} & \textbf{100} & \textbf{95}\\ 
-    \texttt{NoWhereToRun9x8} & \textbf{90} & \textbf{85} & \textbf{83} & \textbf{70} & \textbf{70} & \textbf{84}\\
-    \texttt{basesWorkers16x16A} & \textbf{100} & \textbf{100} & \textbf{95} & \textbf{100} & \textbf{100} & \textbf{100}\\
-    \texttt{TwoBasesBarracks16x16} & \textbf{80} & \textbf{80} & 10 & \textbf{70} & \textbf{80} & \textbf{75}\\
-    \texttt{DoubleGame24x24} & \textbf{80} & \textbf{75} & \textbf{78} & \textbf{80} & \textbf{75} & \textbf{80}\\ 
-    \texttt{BWDistantResources32x32} & 50 & 30 & 35 & 3 & 35 & \textbf{54}\\
-    \texttt{(4)BloodBath.scmB} & \textbf{70} & 0 & 28 & 0 & 0 & 34\\ 
+    basesWorkers8x8A & \textbf{60} & \textbf{70} & \textbf{60} & \textbf{60} & \textbf{60} & \textbf{66}\\ 
+    FourBasesWorkers8x8 & \textbf{100} & \textbf{100} & 20 & \textbf{95} & \textbf{100} & \textbf{95}\\ 
+    NoWhereToRun9x8 & \textbf{90} & \textbf{85} & \textbf{83} & \textbf{70} & \textbf{70} & \textbf{84}\\
+    basesWorkers16x16A & \textbf{100} & \textbf{100} & \textbf{95} & \textbf{100} & \textbf{100} & \textbf{100}\\
+    TwoBasesBarracks16x16 & \textbf{80} & \textbf{80} & 10 & \textbf{70} & \textbf{80} & \textbf{75}\\
+    DoubleGame24x24 & \textbf{80} & \textbf{75} & \textbf{78} & \textbf{80} & \textbf{75} & \textbf{80}\\ 
+    BWDistantResources32x32 & 50 & 30 & 35 & 3 & 35 & \textbf{54}\\
+    (4)BloodBath.scmB & \textbf{70} & 0 & 28 & 0 & 0 & 34\\ 
     \hline
     AI Average & \textbf{79} & \textbf{68} & \textbf{51} & \textbf{60} & \textbf{65} & \textbf{74}\\ 
     \end{tabular}
     \end{center}
 \end{table}
+
 
 As expected from the single player round-robin benchmark, \agentName\ does better on
 smaller maps and dismally on the largest maps
@@ -525,7 +528,7 @@ Each agent consisted of the models trained on their
 respective map sizes (16x16, 32x32, and 64x64). These agents do not have any
 map-specific models.
 
-\begin{table}[ht]
+\begin{table}[t]
     \centering
     \caption{\bcPPOAgent\ win rate in a single player round-robin benchmark. Win rates above 50\% are bolded.}
     \label{tab:bcppo-winrate}
@@ -671,7 +674,7 @@ to create competitive DRL agents without needing to handcraft shaped reward func
 
 \appendices
 \section{Competition details}
-\begin{table}[H]
+\begin{table}[t]
     \caption{Policy networks used by \agentName}
     \label{tab:policy-networks}
     \begin{center}
