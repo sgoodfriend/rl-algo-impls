@@ -541,6 +541,10 @@ Microrts-env64-240m-ent5d1-lr8d1-05wb2lwr-a100:
         max_steps: 8000
     max_video_length: 8000
     step_freq: !!float 15e6
+  policy_hyperparams: &microrts-env64-240m-ent5d1-lr8d1-05wb2lwr-a100-policy
+    <<: *microrts-env32-240m-ent5d1-lr8d1-05wb2lwr-ft-a100-policy
+    load_run_path: sgoodfriend/rl-algo-impls-microrts-2024/zmyztxhk
+    load_run_path_best: true
   worker_hyperparams:
     n_inference_workers: 2
     n_rollout_workers: 3
