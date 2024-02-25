@@ -1037,12 +1037,13 @@ Microrts-bw16a-20m-ent10d-lr10d01-05wb4lhr-grid2entity-a100:
     n_inference_workers: 2
 
 Microrts-env64-240m-ent5d1-lr8d1-05wb2lwr-a100:
+  &microrts-env64-240m-ent5d1-lr8d1-05wb2lwr-a100
   additional_keys_to_log:
     - microrts_stats
     - microrts_results
     - results
     - action_mask_stats
-  algo_hyperparams:
+  algo_hyperparams: &microrts-env64-240m-ent5d1-lr8d1-05wb2lwr-a100-algo
     autocast_loss: true
     batch_size: 128
     clip_range: 0.1
@@ -1264,8 +1265,7 @@ Microrts-env64-240m-ent5d1-lr8d1-05wb2lwr-a100:
 Microrts-env64-240m-ent5d1-lr8d1-05wb2lwr-b256-a100:
   &microrts-env64-240m-ent5d1-lr8d1-05wb2lwr-b256-a100
   <<: *microrts-env64-240m-ent5d1-lr8d1-05wb2lwr-a100
-  algo_hyperparams:
-    &microrts-env64-240m-ent5d1-lr8d1-05wb2lwr-b256-a100-algo
+  algo_hyperparams: &microrts-env64-240m-ent5d1-lr8d1-05wb2lwr-b256-a100-algo
     <<: *microrts-env64-240m-ent5d1-lr8d1-05wb2lwr-a100-algo
     batch_size: 256
 
