@@ -1261,5 +1261,13 @@ Microrts-env64-240m-ent5d1-lr8d1-05wb2lwr-a100:
     n_inference_workers: 2
     n_rollout_workers: 3
 
+Microrts-env64-240m-ent5d1-lr8d1-05wb2lwr-b256-a100:
+  &microrts-env64-240m-ent5d1-lr8d1-05wb2lwr-b256-a100
+  <<: *microrts-env64-240m-ent5d1-lr8d1-05wb2lwr-a100
+  algo_hyperparams:
+    &microrts-env64-240m-ent5d1-lr8d1-05wb2lwr-b256-a100-algo
+    <<: *microrts-env64-240m-ent5d1-lr8d1-05wb2lwr-a100-algo
+    batch_size: 256
+
 Microrts-debug:
   <<: *microrts-bw16a-20m-ent10d-lr10d01-05wb4lhr-grid2entity-a100
