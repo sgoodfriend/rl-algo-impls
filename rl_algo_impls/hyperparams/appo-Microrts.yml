@@ -1026,6 +1026,7 @@ Microrts-bw16a-20m-ent10d-lr10d01-05wb4lhr-grid2entity-a100:
         4: 4
         5: 4
         6: 5
+  process_mode: async
   rollout_hyperparams:
     full_batch_off_accelerator: false
     gae_lambda: 0.95
@@ -1034,6 +1035,231 @@ Microrts-bw16a-20m-ent10d-lr10d01-05wb4lhr-grid2entity-a100:
   worker_hyperparams:
     n_rollout_workers: 4
     n_inference_workers: 2
+
+Microrts-env64-240m-ent5d1-lr8d1-05wb2lwr-a100:
+  additional_keys_to_log:
+    - microrts_stats
+    - microrts_results
+    - results
+    - action_mask_stats
+  algo_hyperparams:
+    autocast_loss: true
+    batch_size: 128
+    clip_range: 0.1
+    clip_range_vf: null
+    ent_coef: 0.005
+    gradient_accumulation: 16
+    learning_rate: 0.0008
+    max_grad_norm: 2
+    multi_reward_weights:
+      - 1.0
+      - 0.1
+      - 0.05
+      - 0.05
+      - 0.1
+      - 0.2
+      - 0.2
+      - 0.2
+      - 0.0
+    ppo2_vf_coef_halving: true
+    teacher_kl_loss_coef: 0.005
+    vf_coef: 0.5
+    vf_loss_fn: huber_loss
+    vf_weights:
+      - 1.0
+      - 0.5
+      - 0.5
+      - 0.5
+      - 0.5
+      - 0.5
+      - 0.5
+      - 0.5
+      - 0.5
+  checkpoints_kwargs:
+    history_size: 2
+  device_hyperparams:
+    set_float32_matmul_precision: high
+    use_deterministic_algorithms: false
+  env_hyperparams:
+    additional_win_loss_reward: false
+    bots:
+      coacAI: 4
+      lightRushAI: 4
+      mayari: 4
+      workerRushAI: 4
+    env_type: microrts
+    info_rewards:
+      episode_end: false
+      info_paths:
+        - - raw_rewards
+          - ResourceGatherRewardFunction
+        - - raw_rewards
+          - ProduceWorkerRewardFunction
+        - - raw_rewards
+          - ProduceBuildingRewardFunction
+        - - raw_rewards
+          - AttackRewardFunction
+        - - raw_rewards
+          - ProduceLightUnitRewardFunction
+        - - raw_rewards
+          - ProduceHeavyUnitRewardFunction
+        - - raw_rewards
+          - ProduceRangedUnitRewardFunction
+        - - raw_rewards
+          - ScoreRewardFunction
+    make_kwargs:
+      bot_envs_alternate_player: true
+      map_paths:
+        - maps/BroodWar/(4)BloodBath.scmB.xml
+        - maps/BroodWar/(4)BloodBath.scmE.xml
+      max_steps: 8000
+      num_selfplay_envs: 24
+      render_theme: 2
+      reward_weight:
+        - 1.0
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+    map_paths:
+      - maps/BroodWar/(4)BloodBath.scmB.xml
+      - maps/BroodWar/(4)BloodBath.scmE.xml
+    n_envs: 32
+    normalize: true
+    normalize_kwargs:
+      clip_reward: 1
+      emv_window_size: 10000000.0
+      exponential_moving_mean_var_reward: true
+      gamma_reward: 0.999
+      norm_obs: false
+      norm_reward: true
+    play_checkpoints_kwargs:
+      n_envs_against_checkpoints: 8
+    score_reward_kwargs: null
+    self_play_kwargs: null
+    valid_sizes:
+      - 64
+  env_id: Microrts-bloodbath
+  eval_hyperparams:
+    deterministic: false
+    env_overrides:
+      additional_win_loss_reward: false
+      bots:
+        coacAI: 2
+        droplet: 2
+        guidedRojoA3N: 2
+        izanagi: 2
+        lightRushAI: 2
+        mayari: 2
+        mixedBot: 2
+        naiveMCTSAI: 2
+        passiveAI: 2
+        randomAI: 2
+        randomBiasedAI: 2
+        rojo: 2
+        tiamat: 2
+        workerRushAI: 2
+      info_rewards: null
+      make_kwargs:
+        bot_envs_alternate_player: false
+        map_paths:
+          - maps/BroodWar/(4)BloodBath.scmB.xml
+        max_steps: 8000
+        num_selfplay_envs: 0
+        render_theme: 2
+        reward_weight:
+          - 1.0
+          - 0
+          - 0
+          - 0
+          - 0
+          - 0
+          - 0
+          - 0
+          - 0
+      map_paths: []
+      n_envs: 28
+      play_checkpoints_kwargs: null
+      score_reward_kwargs: {}
+      self_play_kwargs: {}
+    max_video_length: 8000
+    n_episodes: 28
+    only_checkpoint_best_policies: true
+    score_function: mean
+    skip_evaluate_at_start: true
+    step_freq: 15000000.0
+  hyperparam_transitions_kwargs:
+    durations:
+      - 0
+      - 0.05
+      - 0
+      - 0.95
+      - 0
+    interpolate_method: cosine
+    phases:
+      - ent_coef: 0.005
+        learning_rate: 1.0e-06
+      - ent_coef: 0.005
+        learning_rate: 0.0008
+      - ent_coef: 0.001
+        learning_rate: 0.0001
+  n_timesteps: 240000000.0
+  policy_hyperparams:
+    actor_head_style: squeeze_unet
+    additional_critic_activation_functions:
+      - identity
+      - identity
+      - identity
+      - identity
+      - identity
+      - identity
+      - identity
+      - identity
+    channels_per_level:
+      - 128
+      - 128
+      - 128
+    decoder_residual_blocks_per_level:
+      - 2
+      - 3
+    deconv_strides_per_level:
+      - - 2
+        - 2
+      - - 2
+        - 2
+    encoder_residual_blocks_per_level:
+      - 3
+      - 2
+      - 4
+    load_run_path: sgoodfriend/rl-algo-impls-microrts-2024/zmyztxhk
+    load_run_path_best: true
+    normalization: layer
+    output_activation_fn: identity
+    shared_critic_head: true
+    strides_per_level:
+      - 4
+      - 4
+    subaction_mask:
+      0:
+        1: 1
+        2: 2
+        3: 3
+        4: 4
+        5: 4
+        6: 5
+  process_mode: async
+  rollout_hyperparams:
+    full_batch_off_accelerator: true
+    gae_lambda: 0.95
+    gamma: 0.9999
+    n_steps: 256
+  worker_hyperparams:
+    n_inference_workers: 2
+    n_rollout_workers: 3
 
 Microrts-debug:
   <<: *microrts-bw16a-20m-ent10d-lr10d01-05wb4lhr-grid2entity-a100
