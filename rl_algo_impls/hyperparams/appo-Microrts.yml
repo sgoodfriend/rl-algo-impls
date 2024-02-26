@@ -1081,7 +1081,7 @@ Microrts-env64-240m-ent5d1-lr8d1-05wb2lwr-a100:
   device_hyperparams:
     set_float32_matmul_precision: high
     use_deterministic_algorithms: false
-  env_hyperparams:
+  env_hyperparams: &microrts-env64-240m-ent5d1-lr8d1-05wb2lwr-a100-env
     additional_win_loss_reward: false
     bots:
       coacAI: 4
@@ -1108,7 +1108,7 @@ Microrts-env64-240m-ent5d1-lr8d1-05wb2lwr-a100:
           - ProduceRangedUnitRewardFunction
         - - raw_rewards
           - ScoreRewardFunction
-    make_kwargs:
+    make_kwargs: &microrts-env64-240m-ent5d1-lr8d1-05wb2lwr-a100-env-make-kwargs
       bot_envs_alternate_player: true
       map_paths:
         - maps/BroodWar/(4)BloodBath.scmB.xml
@@ -1258,7 +1258,7 @@ Microrts-env64-240m-ent5d1-lr8d1-05wb2lwr-a100:
     gae_lambda: 0.95
     gamma: 0.9999
     n_steps: 256
-  worker_hyperparams:
+  worker_hyperparams: &microrts-env64-240m-ent5d1-lr8d1-05wb2lwr-a100-worker
     n_inference_workers: 2
     n_rollout_workers: 3
 
@@ -1268,6 +1268,14 @@ Microrts-env64-240m-ent5d1-lr8d1-05wb2lwr-b256-a100:
   algo_hyperparams: &microrts-env64-240m-ent5d1-lr8d1-05wb2lwr-b256-a100-algo
     <<: *microrts-env64-240m-ent5d1-lr8d1-05wb2lwr-a100-algo
     batch_size: 256
+
+Microrts-env64-240m-ent5d1-lr8d1-05wb2lwr-b256-rw2-a100:
+  &microrts-env64-240m-ent5d1-lr8d1-05wb2lwr-b256-rw2-a100
+  <<: *microrts-env64-240m-ent5d1-lr8d1-05wb2lwr-b256-a100
+  worker_hyperparams:
+    &microrts-env64-240m-ent5d1-lr8d1-05wb2lwr-b256-rw2-a100-worker
+    <<: *microrts-env64-240m-ent5d1-lr8d1-05wb2lwr-a100-worker
+    n_rollout_workers: 2
 
 Microrts-debug:
   <<: *microrts-bw16a-20m-ent10d-lr10d01-05wb4lhr-grid2entity-a100
