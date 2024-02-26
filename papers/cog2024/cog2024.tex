@@ -242,7 +242,7 @@ observations are padded to fit the policy network. Policy actions are clipped to
 map size.
 
 \agentName\ uses two different neural network backbones:
-\cite{Ferdinand2021doublecone}'s DoubleCone(4, 6, 4) and a custom network
+\cite{Ferdinand2021doublecone}'s DoubleCone(4, 6, 4) (Fig~\ref{fig:doublecone}) and a custom network
 (squnet). The actor head is a convolutional layer
 that outputs logits for unit actions at every position. A unit action is composed of
 independent discrete subactions: $D = \{a_{action\ type},$ $a_{move\ direction},$ $a_{harvest\
@@ -252,6 +252,13 @@ logits to a very large negative number (thus zeroing probabilities and gradients
 illegal or would accomplish nothing (e.g., moving a unit to an occupied or reserved
 position) \cite{DBLP:journals/corr/abs-2006-14171}. This masking significantly reduces
 the action space per turn and makes training more efficient.
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.9\linewidth]{figures/DoubleCone.pdf}
+    \caption{DoubleCone architecture.}
+    \label{fig:doublecone}
+\end{figure}
 
 While DoubleCone could support any map size, inference would likely exceed 100
 milliseconds for larger maps. Therefore, for larger maps, we used a different
