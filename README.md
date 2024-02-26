@@ -199,3 +199,26 @@ poetry install -E lux
 # If CUDA 12 installed, use `cuda12_pip` instead.
 poetry run pip install --upgrade "jax[cuda11_pip]==0.4.7" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
 ```
+
+## Citing this Project
+To cite the microRTS work in this project:
+```bibtex
+@misc{goodfriend2024competition,
+      title={A Competition Winning Deep Reinforcement Learning Agent in microRTS}, 
+      author={Scott Goodfriend},
+      year={2024},
+      eprint={2402.08112},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG}
+}
+```
+
+If citing parts of this project NOT microRTS:
+```bibtex
+@misc{rl-algo-impls,
+      title={rl-algo-impls: Implementations of reinforcement learning algorithms},
+      author={Scott Goodfriend},
+      publisher={GitHub},
+      howpublished={\url{https://github.com/sgoodfriend/rl-algo-impls}}
+}
+```
