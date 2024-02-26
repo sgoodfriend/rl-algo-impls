@@ -564,3 +564,17 @@ Microrts-env64-240m-ent5d1-lr8d1-05wb2lwr-h100:
     <<: *microrts-env64-240m-ent5d1-lr8d1-05wb2lwr-a100-algo
     batch_size: 256
     gradient_accumulation: true
+
+Microrts-env64-240m-ent5d1-lr8d1-05wb2lhr-2x2a100:
+  &microrts-env64-240m-ent5d1-lr8d1-05wb2lhr-2x2a100
+  <<: *microrts-env64-240m-ent5d1-lr8d1-05wb2lwr-a100
+  algo_hyperparams: &microrts-env64-240m-ent5d1-lr8d1-05wb2lhr-2x2a100-algo
+    <<: *microrts-env64-240m-ent5d1-lr8d1-05wb2lwr-a100-algo
+    batch_size: 256
+    gradient_accumulation: 16
+  worker_hyperparams:
+    evaluator_gpu_index: 1
+    inference_gpu_indexes: [1]
+    n_inference_workers: 2
+    n_rollout_workers: 4
+    rollout_gpu_indexes: [1]
