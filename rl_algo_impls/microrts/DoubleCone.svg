@@ -1,0 +1,361 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="graph-div" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 592.74 1056.61">
+  <defs>
+    <style>
+      .cls-1 {
+        letter-spacing: -.08em;
+      }
+
+      .cls-2 {
+        letter-spacing: -.08em;
+      }
+
+      .cls-3 {
+        clip-path: url(#clippath);
+      }
+
+      .cls-3, .cls-4, .cls-5, .cls-6, .cls-7, .cls-8, .cls-9, .cls-10, .cls-11, .cls-12, .cls-13, .cls-14, .cls-15, .cls-16, .cls-17, .cls-18, .cls-19, .cls-20 {
+        fill: none;
+      }
+
+      .cls-3, .cls-4, .cls-5, .cls-6, .cls-21, .cls-9, .cls-10, .cls-11, .cls-12, .cls-13, .cls-14, .cls-15, .cls-16, .cls-17, .cls-18, .cls-19, .cls-20 {
+        stroke-width: 0px;
+      }
+
+      .cls-22 {
+        letter-spacing: -.04em;
+      }
+
+      .cls-23 {
+        letter-spacing: -.2em;
+      }
+
+      .cls-24 {
+        font-family: TrebuchetMS-Bold, 'Trebuchet MS';
+        font-weight: 700;
+      }
+
+      .cls-24, .cls-25 {
+        font-size: 24px;
+      }
+
+      .cls-26 {
+        opacity: .9;
+      }
+
+      .cls-26, .cls-27, .cls-28 {
+        font-size: 18px;
+      }
+
+      .cls-26, .cls-28 {
+        font-family: TrebuchetMS-Italic, 'Trebuchet MS';
+        font-style: italic;
+      }
+
+      .cls-29 {
+        letter-spacing: -.07em;
+      }
+
+      .cls-30 {
+        letter-spacing: -.04em;
+      }
+
+      .cls-31 {
+        letter-spacing: -.11em;
+      }
+
+      .cls-32 {
+        stroke-miterlimit: 5.59;
+        stroke-width: 1.4px;
+      }
+
+      .cls-32, .cls-33, .cls-34, .cls-35 {
+        fill: #333;
+        stroke-dasharray: 0 0 1.4 0;
+      }
+
+      .cls-32, .cls-33, .cls-34, .cls-35, .cls-7, .cls-8, .cls-36, .cls-37, .cls-38 {
+        stroke: #333;
+      }
+
+      .cls-33 {
+        stroke-miterlimit: 5.59;
+        stroke-width: 1.4px;
+      }
+
+      .cls-34 {
+        stroke-miterlimit: 5.59;
+        stroke-width: 1.4px;
+      }
+
+      .cls-35 {
+        stroke-miterlimit: 5.59;
+        stroke-width: 1.4px;
+      }
+
+      .cls-5 {
+        clip-path: url(#clippath-4);
+      }
+
+      .cls-6 {
+        clip-path: url(#clippath-8);
+      }
+
+      .cls-27, .cls-25 {
+        font-family: TrebuchetMS, 'Trebuchet MS';
+      }
+
+      .cls-7, .cls-8, .cls-36, .cls-37, .cls-38, .cls-39 {
+        stroke-miterlimit: 4.66;
+      }
+
+      .cls-8, .cls-36, .cls-37, .cls-38, .cls-39 {
+        stroke-width: 1.16px;
+      }
+
+      .cls-36 {
+        fill: #ffffde;
+      }
+
+      .cls-37 {
+        fill: #231f20;
+      }
+
+      .cls-38, .cls-39 {
+        fill: #ececff;
+      }
+
+      .cls-39 {
+        stroke: #9370db;
+      }
+
+      .cls-40 {
+        letter-spacing: -.1em;
+      }
+
+      .cls-9 {
+        clip-path: url(#clippath-16);
+      }
+
+      .cls-10 {
+        clip-path: url(#clippath-12);
+      }
+
+      .cls-11 {
+        clip-path: url(#clippath-72);
+      }
+
+      .cls-12 {
+        clip-path: url(#clippath-48);
+      }
+
+      .cls-13 {
+        clip-path: url(#clippath-40);
+      }
+
+      .cls-14 {
+        clip-path: url(#clippath-44);
+      }
+
+      .cls-15 {
+        clip-path: url(#clippath-32);
+      }
+
+      .cls-16 {
+        clip-path: url(#clippath-28);
+      }
+
+      .cls-17 {
+        clip-path: url(#clippath-36);
+      }
+
+      .cls-18 {
+        clip-path: url(#clippath-24);
+      }
+
+      .cls-19 {
+        clip-path: url(#clippath-20);
+      }
+
+      .cls-20 {
+        clip-path: url(#clippath-52);
+      }
+    </style>
+    <clipPath id="clippath">
+      <polygon class="cls-4" points="70.82 3.49 71.98 3.49 70.82 4.66 70.82 3.49"/>
+    </clipPath>
+    <clipPath id="clippath-1">
+      <polygon class="cls-3" points="68.49 1.16 67.32 1.16 68.49 0 68.49 1.16"/>
+    </clipPath>
+    <clipPath id="clippath-4">
+      <polygon class="cls-4" points="70.82 3.49 71.98 3.49 70.82 4.66 70.82 3.49"/>
+    </clipPath>
+    <clipPath id="clippath-5">
+      <polygon class="cls-5" points="68.49 1.16 67.32 1.16 68.49 0 68.49 1.16"/>
+    </clipPath>
+    <clipPath id="clippath-8">
+      <polygon class="cls-4" points="70.82 3.49 71.98 3.49 70.82 4.66 70.82 3.49"/>
+    </clipPath>
+    <clipPath id="clippath-9">
+      <polygon class="cls-6" points="68.49 1.16 67.32 1.16 68.49 0 68.49 1.16"/>
+    </clipPath>
+    <clipPath id="clippath-12">
+      <polygon class="cls-4" points="70.82 3.49 71.98 3.49 70.82 4.66 70.82 3.49"/>
+    </clipPath>
+    <clipPath id="clippath-13">
+      <polygon class="cls-10" points="68.49 1.16 67.32 1.16 68.49 0 68.49 1.16"/>
+    </clipPath>
+    <clipPath id="clippath-16">
+      <polygon class="cls-4" points="70.82 3.49 71.98 3.49 70.82 4.66 70.82 3.49"/>
+    </clipPath>
+    <clipPath id="clippath-17">
+      <polygon class="cls-9" points="68.49 1.16 67.32 1.16 68.49 0 68.49 1.16"/>
+    </clipPath>
+    <clipPath id="clippath-20">
+      <polygon class="cls-4" points="70.82 3.49 71.98 3.49 70.82 4.66 70.82 3.49"/>
+    </clipPath>
+    <clipPath id="clippath-21">
+      <polygon class="cls-19" points="68.49 1.16 67.32 1.16 68.49 0 68.49 1.16"/>
+    </clipPath>
+    <clipPath id="clippath-24">
+      <polygon class="cls-4" points="70.82 3.49 71.98 3.49 70.82 4.66 70.82 3.49"/>
+    </clipPath>
+    <clipPath id="clippath-25">
+      <polygon class="cls-18" points="68.49 1.16 67.32 1.16 68.49 0 68.49 1.16"/>
+    </clipPath>
+    <clipPath id="clippath-28">
+      <polygon class="cls-4" points="70.82 3.49 71.98 3.49 70.82 4.66 70.82 3.49"/>
+    </clipPath>
+    <clipPath id="clippath-29">
+      <polygon class="cls-16" points="68.49 1.16 67.32 1.16 68.49 0 68.49 1.16"/>
+    </clipPath>
+    <clipPath id="clippath-32">
+      <polygon class="cls-4" points="70.82 3.49 71.98 3.49 70.82 4.66 70.82 3.49"/>
+    </clipPath>
+    <clipPath id="clippath-33">
+      <polygon class="cls-15" points="68.49 1.16 67.32 1.16 68.49 0 68.49 1.16"/>
+    </clipPath>
+    <clipPath id="clippath-36">
+      <polygon class="cls-4" points="70.82 3.49 71.98 3.49 70.82 4.66 70.82 3.49"/>
+    </clipPath>
+    <clipPath id="clippath-37">
+      <polygon class="cls-17" points="68.49 1.16 67.32 1.16 68.49 0 68.49 1.16"/>
+    </clipPath>
+    <clipPath id="clippath-40">
+      <polygon class="cls-4" points="70.82 3.49 71.98 3.49 70.82 4.66 70.82 3.49"/>
+    </clipPath>
+    <clipPath id="clippath-41">
+      <polygon class="cls-13" points="68.49 1.16 67.32 1.16 68.49 0 68.49 1.16"/>
+    </clipPath>
+    <clipPath id="clippath-44">
+      <polygon class="cls-4" points="70.82 3.49 71.98 3.49 70.82 4.66 70.82 3.49"/>
+    </clipPath>
+    <clipPath id="clippath-45">
+      <polygon class="cls-14" points="68.49 1.16 67.32 1.16 68.49 0 68.49 1.16"/>
+    </clipPath>
+    <clipPath id="clippath-48">
+      <polygon class="cls-4" points="70.82 3.49 71.98 3.49 70.82 4.66 70.82 3.49"/>
+    </clipPath>
+    <clipPath id="clippath-49">
+      <polygon class="cls-12" points="68.49 1.16 67.32 1.16 68.49 0 68.49 1.16"/>
+    </clipPath>
+    <clipPath id="clippath-52">
+      <polygon class="cls-4" points="214.39 177.6 215.55 177.6 214.39 178.76 214.39 177.6"/>
+    </clipPath>
+    <clipPath id="clippath-53">
+      <polygon class="cls-20" points="212.06 175.27 210.89 175.27 212.06 174.1 212.06 175.27"/>
+    </clipPath>
+    <clipPath id="clippath-72">
+      <polygon class="cls-4" points="349.93 724.23 351.09 724.23 349.93 725.39 349.93 724.23"/>
+    </clipPath>
+    <clipPath id="clippath-73">
+      <polygon class="cls-11" points="347.6 721.9 346.44 721.9 347.6 720.73 347.6 721.9"/>
+    </clipPath>
+  </defs>
+  <rect class="cls-36" x="263.8" y="741.23" width="328.36" height="302.74"/>
+  <rect class="cls-36" x="258.72" y="747.56" width="328.36" height="302.74"/>
+  <rect class="cls-36" x="251.73" y="753.28" width="328.36" height="302.74"/>
+  <path class="cls-8" d="M355.72,723.01s60.51,33.03,60.51,46.79"/>
+  <line class="cls-37" x1="348.76" y1="128.1" x2="348.76" y2="156.87"/>
+  <line class="cls-37" x1="348.76" y1="68.13" x2="348.76" y2="47.75"/>
+  <rect class="cls-36" x="68.51" y="238.62" width="397.88" height="355.65"/>
+  <path class="cls-35" d="M355.75,68.13l-6.99,13.97-6.99-13.97h13.97Z"/>
+  <path class="cls-35" d="M355.75,148.48l-6.99,13.97-6.99-13.97h13.97Z"/>
+  <path class="cls-35" d="M355.75,246.3l-6.99,13.97-6.99-13.97h13.97Z"/>
+  <path class="cls-35" d="M355.75,619.42l-6.99,13.97-6.99-13.97h13.97Z"/>
+  <path class="cls-35" d="M262.71,298.71l-6.99,13.97-6.99-13.97h13.97Z"/>
+  <path class="cls-35" d="M262.71,379.06l-6.99,13.97-6.99-13.97h13.97Z"/>
+  <path class="cls-35" d="M262.71,459.42l-6.99,13.97-6.99-13.97h13.97Z"/>
+  <path class="cls-34" d="M324.25,552.39l11.04,11.06-15.47,2.2,4.43-13.25Z"/>
+  <path class="cls-32" d="M377.7,565.65l-15.47-2.2,11.04-11.06,4.43,13.25Z"/>
+  <path class="cls-35" d="M355.75,699.77l-6.99,13.97-6.99-13.97h13.97Z"/>
+  <rect class="cls-39" x="180.11" y="393.62" width="151.24" height="45.42"/>
+  <polygon class="cls-39" points="239.85 47.75 434.97 47.75 457.68 2.33 262.56 2.33 239.85 47.75"/>
+  <rect class="cls-39" x="253.18" y="82.78" width="191.17" height="45.42"/>
+  <rect class="cls-39" x="273.15" y="163.04" width="151.24" height="45.42"/>
+  <circle class="cls-39" cx="348.76" cy="723.06" r="8.73"/>
+  <line class="cls-37" x1="348.76" y1="208.46" x2="348.76" y2="246.3"/>
+  <path class="cls-7" d="M357.5,269.23l14.24,4.01c14.24,4.01,42.71,12.03,56.95,22.8,14.24,10.77,14.24,24.29,14.24,37.81v162.22c0,13.52,0,27.04-12.49,37.97-12.49,10.93-37.48,19.28-49.98,23.46l-12.49,4.17"/>
+  <path class="cls-7" d="M340.03,269.6l-14.05,3.96c-14.05,3.96-42.15,11.87-56.2,17.7-14.05,5.83-14.05,9.58-14.05,11.46v1.88"/>
+  <line class="cls-8" x1="255.73" y1="358.68" x2="255.73" y2="379.06"/>
+  <circle class="cls-39" cx="348.76" cy="269.6" r="8.73"/>
+  <rect class="cls-39" x="120.13" y="313.27" width="271.2" height="45.42"/>
+  <line class="cls-38" x1="255.73" y1="439.04" x2="255.73" y2="459.42"/>
+  <path class="cls-7" d="M255.73,519.39v2.73c0,2.73,0,8.19,11.6,14.79,11.6,6.6,34.8,14.36,46.4,18.23l11.6,3.88"/>
+  <rect class="cls-39" x="84.21" y="473.98" width="343.04" height="45.42"/>
+  <line class="cls-38" x1="348.76" y1="581.57" x2="348.76" y2="619.42"/>
+  <circle class="cls-39" cx="348.76" cy="567.95" r="13.62"/>
+  <line class="cls-38" x1="348.76" y1="679.39" x2="348.76" y2="699.77"/>
+  <rect class="cls-39" x="273.15" y="633.97" width="151.24" height="45.42"/>
+  <text class="cls-27" transform="translate(266.75 31.45)"><tspan x="0" y="0">Observation, 22×L×</tspan><tspan class="cls-30" x="155.2" y="0">L</tspan></text>
+  <text class="cls-27" transform="translate(264.86 110.84)"><tspan x="0" y="0">Conv 3×3, GELU, 128</tspan></text>
+  <text class="cls-27" transform="translate(284.15 191.1)"><tspan class="cls-22" x="0" y="0">R</tspan><tspan x="9.75" y="0">esBlock×4, 128</tspan></text>
+  <text class="cls-27" transform="translate(133.17 341.33)"><tspan x="0" y="0">Conv 4×4, stride=4, GELU, 128</tspan></text>
+  <text class="cls-27" transform="translate(191.11 421.69)"><tspan class="cls-22" x="0" y="0">R</tspan><tspan x="9.75" y="0">esBlock×6, 128</tspan></text>
+  <text class="cls-27" transform="translate(98.47 502.04)"><tspan x="0" y="0">Conv</tspan><tspan class="cls-31" x="39.08" y="0">T</tspan><tspan x="47.55" y="0">ranspose 2×2, stride=2, GELU, ×2</tspan></text>
+  <text class="cls-27" transform="translate(284.15 662.04)"><tspan class="cls-22" x="0" y="0">R</tspan><tspan x="9.75" y="0">esBlock×4, 128</tspan></text>
+  <text class="cls-24" transform="translate(74.51 264.2)"><tspan x="0" y="0">DoubleConeBlock</tspan></text>
+  <path class="cls-35" d="M422.9,878.12l-6.99,13.61-6.99-13.61h13.97Z"/>
+  <path class="cls-35" d="M422.9,769.63l-6.99,13.61-6.99-13.61h13.97Z"/>
+  <path class="cls-33" d="M423.22,987.05l-6.73,13.73-7.24-13.49,13.97-.25Z"/>
+  <rect class="cls-21" x="97.47" y="846.02" width="84.07" height="17.14"/>
+  <rect class="cls-36" x=".58" y="752.72" width="244.14" height="303.3"/>
+  <path class="cls-35" d="M147.59,769.75l-6.99,13.97-6.99-13.97h13.97Z"/>
+  <path class="cls-33" d="M147.91,878.51l-6.73,14.1-7.24-13.85,13.97-.25Z"/>
+  <path class="cls-33" d="M147.91,986.81l-6.73,14.1-7.24-13.85,13.97-.25Z"/>
+  <path class="cls-8" d="M340.03,723.06s-199.43,32.68-199.43,46.68"/>
+  <line class="cls-8" x1="140.6" y1="829.72" x2="140.6" y2="878.51"/>
+  <line class="cls-36" x1="140.6" y1="938.02" x2="140.6" y2="986.81"/>
+  <polygon class="cls-39" points="65.26 1046.33 193.24 1046.33 215.95 1000.91 87.97 1000.91 65.26 1046.33"/>
+  <polygon class="cls-39" points="57.01 938.02 201.49 938.02 224.2 892.61 79.72 892.61 57.01 938.02"/>
+  <rect class="cls-39" x="49.91" y="784.3" width="181.4" height="45.42"/>
+  <text class="cls-27" transform="translate(61.42 812.37)"><tspan x="0" y="0">Conv 3×3, GELU, 78</tspan></text>
+  <text class="cls-27" transform="translate(82.91 920.67)"><tspan x="0" y="0">Logits, L×L×78</tspan></text>
+  <text class="cls-27" transform="translate(90.89 1028.98)"><tspan x="0" y="0">Action, L²×7</tspan></text>
+  <text class="cls-24" transform="translate(5.33 778.13)"><tspan x="0" y="0">Actor Head</tspan></text>
+  <text class="cls-26" transform="translate(100.96 859.51)"><tspan class="cls-40" x="0" y="0">T</tspan><tspan x="8.58" y="0">ranspose</tspan></text>
+  <text class="cls-28" transform="translate(60.94 967.81)"><tspan x="0" y="0">GridnetDistribution</tspan></text>
+  <text class="cls-24" transform="translate(258.43 778.37)"><tspan class="cls-29" x="0" y="0">V</tspan><tspan x="13.14" y="0">alue Heads,</tspan></text>
+  <line class="cls-8" x1="415.91" y1="933.53" x2="416.38" y2="987.18"/>
+  <line class="cls-8" x1="415.91" y1="878.12" x2="415.91" y2="828.05"/>
+  <text class="cls-24" transform="translate(426.18 778.37)"><tspan x="0" y="0">×3</tspan></text>
+  <g>
+    <g id="flowchart-ValueMLP-20366">
+      <rect class="cls-39" x="316.93" y="893.3" width="197.97" height="44.23"/>
+    </g>
+    <text class="cls-27" transform="translate(328.73 920.77)"><tspan x="0" y="0">ML</tspan><tspan class="cls-23" x="21.88" y="0">P</tspan><tspan x="28.41" y="0">, 64-&gt;64-&gt;1, GELU</tspan></text>
+  </g>
+  <g>
+    <g id="flowchart-ValueConf-20365">
+      <rect class="cls-39" x="269.2" y="784.81" width="293.42" height="44.23"/>
+    </g>
+    <text class="cls-27" transform="translate(282.62 812.29)"><tspan x="0" y="0">Conv 3×3, stride=2, GELU, 64, ×2</tspan></text>
+  </g>
+  <text class="cls-26" transform="translate(303.21 858.48)"><tspan x="0" y="0">Adaptive</tspan><tspan class="cls-2" x="72.07" y="0">A</tspan><tspan x="81.6" y="0">vgPool2d, Flatten</tspan></text>
+  <text class="cls-28" transform="translate(336.61 965.75)"><tspan x="0" y="0">Activation Function</tspan></text>
+  <g id="flowchart-Value-2225">
+    <polygon class="cls-39" points="292.4 1046.6 516.71 1046.6 539.42 1001.19 315.11 1001.19 292.4 1046.6"/>
+  </g>
+  <text class="cls-27" transform="translate(319.66 1029.25)"><tspan class="cls-1" x="0" y="0">V</tspan><tspan x="9.16" y="0">alue prediction, Scalar</tspan></text>
+  <text class="cls-25" transform="translate(342.47 575.09)"><tspan x="0" y="0">+</tspan></text>
+</svg>

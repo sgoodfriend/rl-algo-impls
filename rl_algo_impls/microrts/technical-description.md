@@ -43,44 +43,7 @@ The DoubleCone model is a reimplementation of the LUX Season 2 4th place winner'
 3. 4 residual blocks
 4. Actor and critic heads.
 
-```mermaid
-graph TD
-	Obs[/"Observation, 22×L×L"/]
-	InConv["Conv 3×3, GELU, 128"]
-	EncRes1["ResBlock×4, 128"]
-	subgraph DoubleConeBlock["<b>DoubleConeBlock</b>"]
-	Split1((" "))
-	Add1(("+"))
-	Down1["Conv 4×4, stride=4, GELU, 128"]
-	EncRes2["ResBlock×6, 128"]
-	Up1["ConvTranspose 2×2, stride=2, GELU, ×2"]
-	end
-	DecRes1["ResBlock×4, 128"]
-	SplitHead((" "))
-	subgraph ActorHead["<b>Actor Head</b>&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"]
-	ActorConv["Conv 3×3, GELU, 78"]
-	ActorLogits[/"Logits, L×L×78"/]
-	Action[/"Action, L²×7"/]
-	end
-	ValueHeads["3×Value Heads"]
-	Value[/"Value, 3"/]
-
-  Obs --> InConv
-	InConv --> EncRes1
-	EncRes1 --> Split1
-	Add1 --> DecRes1
-	Split1 --> Down1
-	Down1 --> EncRes2
-	EncRes2 --> Up1
-	Up1 --> Add1
-	Split1 ---> Add1
-	DecRes1 --> SplitHead
-	SplitHead --> ActorConv
-	ActorConv -- Transpose --> ActorLogits
-	ActorLogits -- GridnetDistribution --> Action
-	SplitHead --> ValueHeads
-	ValueHeads --> Value
-```
+![DoubleCone(4,6,4) neural network architecture](DoubleCone.svg)
 
 Each residual block includes a SqueezeAndExcitation layer.
 
@@ -90,7 +53,7 @@ graph TD
 	Split1((" "))
 	Conv1["Conv 3×3, GELU, C"]
 	Conv2["Conv 3×3, C"]
-	subgraph SqueezeExcitation["SqueezeAndExcitation&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"]
+	subgraph SqueezeExcitation["SqueezeAndExcitation"]
 		Split2((" "))
 		Linear1["Linear, GELU, C/r"]
 		Linear2["Linear, Sigmoid, C"]
@@ -124,17 +87,17 @@ graph TD
 	EncRes1["ResBlock×1, 64"]
 	Split1((" "))
 	Add1(("+"))
-	subgraph DC32["<b>32×32</b>"]
+	subgraph DC32["32×32"]
 		Down1["Conv 2×2, stride=2, GELU, 64"]
 		EncRes2["ResBlock×1, 64"]
 		Split2((" "))
 		Add2(("+"))
-		subgraph DC8["<b>8×8</b>"]
+		subgraph DC8["8×8"]
 			Down2["Conv 4×4, stride=4, GELU, 64"]
 			EncRes3["ResBlock×1, 64"]
 			Split3((" "))
 			Add3(("+"))
-			subgraph DC2["<b>2×2</b>"]
+			subgraph DC2["2×2"]
 				Down3["Conv 4×4, stride=4, GELU, 64"]
 				EncRes4["ResBlock×1, 64"]
 				Up3["ConvTranspose 4×4, stride=4, GELU", 64]
