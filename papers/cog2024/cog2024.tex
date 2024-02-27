@@ -495,21 +495,18 @@ baselines:
 The baselines cannot win the competition.
 
 \agentName\ was declared the winner with the highest win rate (72\%) across all
-submissions (Supplemental Table~\ref{tab:competition-winrate}). \agentName\ had a higher win rate 
+submissions (Table~\ref{tab:competition-winrate}). \agentName\ had a higher win rate 
 than all but two baselines: \texttt{2L} (76\%) and Mayari (82\%). \agentName\ had an 
 over 50\% win rate versus every opponent including \texttt{2L} (60\%) and Mayari (65\%).
 
 \begin{table}[t]
+    \centering
+    \begin{threeparttable}
     \caption{Win rates of selection of agents in the IEEE-CoG 2023 microRTS competition.
-    Player 1 is the row agent and player 2 is the column agent. Each win rate value is
+    The row agent is player 1, while the column agent is player 2. The win rate value is
     the percentage of games won by player 1. Cells are bolded if the win
-    rate is higher than the opponent's row win rate. For example, \agentName\ vs
-    ObiBotKenobi is bolded because 49\% is higher than 47\%, thus meaning the combined player 1
-    and 2 win rate is 51\% for \agentName\ vs ObiBotKenobi. Overall includes all
-    agents, including those not shown. Win rates for all agents are shown in
-    Supplemental Table~\ref{tab:all-competition-winrate}.}
+    rate is higher than the opponent's row win rate.}
     \label{tab:competition-winrate}
-    \begin{center}
     \begin{tabular}{lcccccc|c}
     & \begin{sideways} Mayari \end{sideways} 
     & \begin{sideways} 2L \end{sideways} 
@@ -517,24 +514,38 @@ over 50\% win rate versus every opponent including \texttt{2L} (60\%) and Mayari
     & \begin{sideways} ObiBotKenobi \end{sideways} 
     & \begin{sideways} POLightRush \end{sideways} 
     & \begin{sideways} POWorkerRush \end{sideways} 
-    & \begin{sideways} Overall \end{sideways} \\
+    & \begin{sideways} Overall\tnote{a} \end{sideways} \\
     \midrule
     Mayari (2021 winner) & - & \textbf{53} & 32 & \textbf{73} & \textbf{88} & \textbf{75} & 82 \\
     2L (baseline) & 51 & - & 39 & \textbf{50} & \textbf{75} & \textbf{88} & 76 \\
-    \textbf{\agentName} (2023 winner) & \textbf{62} & \textbf{59} & - & \textbf{49} & \textbf{64} & \textbf{78} & 72 \\
+    \textbf{\agentName} (2023 winner) & \textbf{62} & \textbf{59} & - & \textbf{49}\tnote{b} & \textbf{64} & \textbf{78} & 72 \\
     ObiBotKenobi (2023 2\textsuperscript{nd} place) & 39 & 29 & 47 & - & \textbf{58} & \textbf{65} & 66 \\
     POLightRush (baseline) & 0 & 25 & 29 & 38 & - & \textbf{69} & 55 \\
     POWorkerRush (baseline) & 13 & 13 & 21 & 29 & 38 & - & 53 \\
     \end{tabular}
-\end{center}
+    \begin{tablenotes}
+    \item[a] Overall includes all agents, including those not shown.
+    \item[b] \agentName\ vs ObiBotKenobi is bolded because 49\% is higher than 47\%, thus meaning the combined player 1
+    and 2 win rate is 51\% for \agentName\ vs ObiBotKenobi.
+    \end{tablenotes}
+    \end{threeparttable}
 \end{table}
 
+As expected from the single player round-robin benchmark, \agentName\ does better on
+smaller maps and dismally on the largest maps
+(Table~\ref{tab:competition-winrate-by-map}). However, in the competition, \agentName\
+underperformed against agents already benchmarked in the single player round-robin
+(14-19\% lower win rate against each agent), even accounting for the likely use of
+the weaker squnet model on \texttt{BWDistantResources32x32}.  Breaking down by map, 
+\agentName\ underperformed against benchmarked agents by 20-40\% on 5 maps.
+
 \begin{table}[t]
-    \caption{\agentName\ win rates in 2023 competition by opponent and map. Bolded cells are win rates over 50\%. Overall includes all agents, including those not shown.}
+    \centering
+    \begin{threeparttable}
+    \caption{\agentName\ win rates in 2023 competition by opponent and map. Bolded cells are win rates over 50\%.}
     \label{tab:competition-winrate-by-map}
-    \begin{center}
     \begin{tabular}{lccccc|c}
-    & \rotatebox{90}{POWorkerRush} & \rotatebox{90}{POLightRush} & \rotatebox{90}{ObiBotKenobi} & \rotatebox{90}{2L} & \rotatebox{90}{Mayari} & \rotatebox{90}{Overall}\\ 
+    & \rotatebox{90}{POWorkerRush} & \rotatebox{90}{POLightRush} & \rotatebox{90}{ObiBotKenobi} & \rotatebox{90}{2L} & \rotatebox{90}{Mayari} & \rotatebox{90}{Overall\tnote{a}}\\ 
     \midrule
     basesWorkers8x8A & \textbf{60} & \textbf{70} & \textbf{60} & \textbf{60} & \textbf{60} & \textbf{66}\\ 
     FourBasesWorkers8x8 & \textbf{100} & \textbf{100} & 20 & \textbf{95} & \textbf{100} & \textbf{95}\\ 
@@ -547,17 +558,11 @@ over 50\% win rate versus every opponent including \texttt{2L} (60\%) and Mayari
     \hline
     AI Average & \textbf{79} & \textbf{68} & \textbf{51} & \textbf{60} & \textbf{65} & \textbf{74}\\ 
     \end{tabular}
-    \end{center}
+    \begin{tablenotes}
+    \item[a] Overall includes all agents, including those not shown.
+    \end{tablenotes}
+    \end{threeparttable}
 \end{table}
-
-
-As expected from the single player round-robin benchmark, \agentName\ does better on
-smaller maps and dismally on the largest maps
-(Supplemental Table~\ref{tab:competition-winrate-by-map}). However, in the competition, \agentName\
-underperformed against agents already benchmarked in the single player round-robin
-(14-19\% lower win rate against each agent), even accounting for the likely use of
-the weaker squnet model on \texttt{BWDistantResources32x32}.  Breaking down by map, 
-\agentName\ underperformed against benchmarked agents by 20-40\% on 5 maps.
 
 The competition ran jobs, splitting each map into 5 or 10 jobs where
 each job would run a complete round-robin with all agents on that map playing 2 or 1
@@ -773,7 +778,7 @@ A supplemental document includes many implementation details and additional resu
     \item behavior cloning and PPO of behavior cloning details,
     \item training durations,
     \item single player round-robin benchmark setup,
-    \item additional results from the IEEE-CoG 2023 microRTS competition, and
+    \item win rates against all opponents in the IEEE-CoG 2023 microRTS competition, and
     \item benchmarking results for the behavior cloning (no PPO) agent.
 \end{inparaenum}
 
