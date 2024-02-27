@@ -47,13 +47,13 @@
 \maketitle
 
 \section{Neural network architecture}
-DoubleCone(4, 6, 4) (\cite{Ferdinand2021doublecone}) consists of
+DoubleCone(4, 6, 4) \cite{Ferdinand2021doublecone} consists of
 \begin{inparaenum}[(1)]
     \item 4 residual blocks;
     \item a downscaled residual block consisting of a stride-4 convolution, 6 residual blocks, and
         2 stride-2 transpose convolutions;
     \item 4 residual blocks; and
-    \item actor and value heads (Figure~\ref{fig:doublecone}).
+    \item actor and value heads (Figure~\ref{suppfig:doublecone}).
 \end{inparaenum}
 Each residual block includes a squeeze-excitation layer after the second convolutional
 layer (Figure~\ref{fig:squeezeexcitation}).  The values heads are each 
@@ -68,10 +68,10 @@ The adaptive average pooling layer allows the network to be used on different ma
 
 \begin{suppfigure}[H]
     \begin{center}
-        \includegraphics[width=0.59\linewidth]{figures/DoubleCone.png}
+        \includegraphics[width=0.5\linewidth]{figures/DoubleCone.png}
     \end{center}
     \caption{DoubleCone(4, 6, 4) neural network architecture.}
-    \label{fig:doublecone}
+    \label{suppfig:doublecone}
 \end{suppfigure}
 
 \begin{suppfigure}[H]
@@ -94,7 +94,7 @@ The adaptive average pooling layer allows the network to be used on different ma
 
 \begin{suppfigure}[H]
     \begin{center}
-        \includegraphics[width=0.55\linewidth]{figures/squnet64.png}
+        \includegraphics[width=0.45\linewidth]{figures/squnet64.png}
     \end{center}
     \caption{squnet64 neural network architecture. Instead of one downscaling block as in DoubleCone, this network downscales 3 times. This aggressive downscaling reduces the number of computations for larger maps, while theoretically supporting a large receptive field.}
     \label{fig:squnet}

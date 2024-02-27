@@ -81,8 +81,7 @@ several reasons:
     \item rewards are sparse (win, loss, or tie) and delayed by possibly several
     thousand timesteps;
     \item winning requires combining tactical (micro) and strategic (macro) decisions;
-    \item actions must be taken in real-time (i.e., the game won't wait for the agent to
-        take an action);
+    \item actions must be computed within a reasonable time window;
     \item the agent might not have full visibility of the game state (i.e., fog of war); and
     \item events in the game might be non-deterministic.
 \end{inparaenum}
@@ -98,14 +97,13 @@ The IEEE microRTS competitions have been hosted at the Conference on Games (CoG)
 every year since 2019 and at the Conference on Computational Intelligence and Games
 (CIG) before that since 2017 \cite{Ontañón_Barriga_Silva_Moraes_Lelis_2018}.
 Competitors submit an agent that plays against other submissions and baselines in a round-robin tournament
-on 12 different maps: 8 Open (known beforehand, Table~\ref{tab-open-maps}) and 4 Hidden (unknown until after the
+on 12 different maps: 8 Open (known beforehand, Table~\ref{tab:open-maps}) and 4 Hidden (unknown until after the
 competition results are released). Agents are supposed
 to submit actions every step within 100 ms. Without GPU acceleration, this is a significant constraint for deep neural
 network agents.
 
-\begin{table}[t]
+\begin{figure}[t]
     \centering
-    \caption{Open competition maps.}
     \label{tab:open-maps}
     \begin{tabular}{cc}
         \includegraphics[width=0.45\linewidth]{figures/basesWorkers8x8A.png} & \includegraphics[width=0.45\linewidth]{figures/FourBasesWorkers8x8.png} \\
@@ -117,7 +115,8 @@ network agents.
         \includegraphics[width=0.45\linewidth]{figures/BWDistantResources32x32.png} & \includegraphics[width=0.45\linewidth]{figures/(4)BloodBath.png} \\
         BWDistantResources32x32 & (4)BloodBath.scmB \\
     \end{tabular}
-\end{table}
+    \caption{Open competition maps.}
+\end{figure}
 
 This paper describes how the \agentName\ agent\footnote{\raiMicroRTSGitHubUrl} was
 trained and became the first DRL agent to win the microRTS competition by winning at CoG
@@ -137,7 +136,7 @@ rewards, eliminating the need for a handcrafted reward function.
 
 \section{Related Work}
 \subsection{MicroRTS-Py}
-\cite{DBLP:journals/corr/abs-2105-13807} released MicroRTS-Py\footnote{\url{https://github.com/Farama-Foundation/MicroRTS-Py}}, an OpenAI Gym
+Reference~\cite{DBLP:journals/corr/abs-2105-13807} released MicroRTS-Py\footnote{\url{https://github.com/Farama-Foundation/MicroRTS-Py}}, an OpenAI Gym
 wrapper for microRTS that includes a Proximal Policy Optimization (PPO) \cite{DBLP:journals/corr/SchulmanWDRK17} implementation
 trained on 1 of the Open maps (\texttt{16x16basesWorkers}). They added action composition, a shaped reward function, invalid action
 masking, IMPALA-CNN (a convolutional neural network with residual blocks), and trained
@@ -409,7 +408,7 @@ PPO to fine-tune the behavior cloned models on the same maps (Supplemental Table
 \begin{table}[t]
     \centering
     \begin{threeparttable}
-    \caption{Single player round-robin benchmark win rates. Win rates above 50\% are bolded. (D) DoubleCone model used. (S) squnet model used.}
+    \caption{Single player round-robin benchmark win rates. Win rates above 50\% are bolded}
     \label{tab:single-player-winrate}
     \begin{tabular}{lcccc|c}
      & \rotatebox{90}{\textbf{WorkerRush}} & \rotatebox{90}{\textbf{LightRush}} & \rotatebox{90}{\textbf{CoacAI}} & \rotatebox{90}{\textbf{Mayari}} & \rotatebox{90}{\textbf{Overall}} \\
@@ -420,20 +419,18 @@ PPO to fine-tune the behavior cloned models on the same maps (Supplemental Table
     basesWorkers16x16A & \textbf{100} & \textbf{100} & \textbf{90} & \textbf{98} & \textbf{97} \\
     TwoBasesBarracks16x16 & \textbf{100} & \textbf{89} & \textbf{99} & \textbf{100} & \textbf{97} \\
     DoubleGame24x24 & \textbf{100} & \textbf{98} & \textbf{94} & \textbf{100} & \textbf{98} \\
-    BWDistantResources32x32 & \begin{tabular}[c]{@{}c@{}}\textbf{99} (D) \\ \textbf{93}
-        (S)\end{tabular}  & \begin{tabular}[c]{@{}c@{}}\textbf{90} (D) \\ \textbf{73}
-        (S)\end{tabular} & \begin{tabular}[c]{@{}c@{}}\textbf{88} (D) \\ 23
-        (S)\end{tabular} &
-        \begin{tabular}[c]{@{}c@{}}\textbf{99} (D) \\ \textbf{58} (S)\end{tabular} &
-        \begin{tabular}[c]{@{}c@{}}\textbf{94}\tnote{b} (D) \\ \textbf{61} (S)\end{tabular} \\
+    BWDistantResources32x32\tnote{a} & \textbf{99}/\textbf{93} & \textbf{90}/\textbf{73} &
+    \textbf{88}/23 & \textbf{99}/\textbf{58} & \textbf{94}\tnote{b}{ }/\textbf{61} \\
     (4)BloodBath.scmB & \textbf{98} & 0 & 0 & 0 & 25\tnote{c} \\
     \hline
-    AI Average\tnote{a} & \textbf{99} & \textbf{85} & \textbf{83} & \textbf{87} & \textbf{88} \\
+    AI Average\tnote{d} & \textbf{99} & \textbf{85} & \textbf{83} & \textbf{87} & \textbf{88} \\
     \end{tabular}
     \begin{tablenotes}
-    \item[a] AI Average uses the DoubleCone (D) results from BWDistantResources32x32.
+    \item[a] Two models were trained for BWDistantResources32x32: DoubleCone (1\textsuperscript{st} number)
+    and squnet (2\textsuperscript{nd} number).
     \item[b] \agentName\ lost 0.25\% of matches (1 match) by timeout.
     \item[c] \agentName\ lost  1\% of matches (4 matches) by timeout.
+    \item[d] AI Average uses the DoubleCone (1\textsuperscript{st} number) results from BWDistantResources32x32.
     \end{tablenotes}
     \end{threeparttable}
 \end{table}
@@ -698,6 +695,22 @@ to create competitive DRL agents without needing to handcraft shaped reward func
 
 \appendices
 \section{Competition details}
+
+To participate in the competition, \agentName\ has a Java class that handles turn
+handling and resetting commands from the Java game engine. While earlier Python
+solutions  passed JSON or XML data over a
+socket\footnote{\url{https://github.com/douglasrizzo/python-microRTS}}, \agentName\
+passes binary data over a pipe to the Python process as a performance optimization for
+the larger maps.
+
+Each agent played every other agent on each map 20 times (10 each as player 1 and 2).
+Timeouts were disabled for the competition, but the Java-side of \agentName\ would skip
+its turn (submitting no actions) if 100 ms had elapsed. On
+\texttt{BWDistantResources32x32}, \agentName\ chose between the DoubleCone and squnet
+fine-tuned models by running both models on the first observation 100 times each and
+choosing DoubleCone if it computed actions within 75 ms on average.
+
+
 \begin{table}[t]
     \caption{Policy networks used by \agentName}
     \label{tab:policy-networks}
@@ -716,19 +729,5 @@ to create competitive DRL agents without needing to handcraft shaped reward func
         \end{tabular}
     \end{center}
 \end{table}
-
-To participate in the competition, \agentName\ has a Java class that handles turn
-handling and resetting commands from the Java game engine. While earlier Python
-solutions  passed JSON or XML data over a
-socket\footnote{\url{https://github.com/douglasrizzo/python-microRTS}}, \agentName\
-passes binary data over a pipe to the Python process as a performance optimization for
-the larger maps.
-
-Each agent played every other agent on each map 20 times (10 each as player 1 and 2).
-Timeouts were disabled for the competition, but the Java-side of \agentName\ would skip
-its turn (submitting no actions) if 100 ms had elapsed. On
-\texttt{BWDistantResources32x32}, \agentName\ chose between the DoubleCone and squnet
-fine-tuned models by running both models on the first observation 100 times each and
-choosing DoubleCone if it computed actions within 75 ms on average.
 
 \end{document}
