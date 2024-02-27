@@ -32,6 +32,25 @@
 \def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
     T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
 
+\newif\ifsupplemental
+% \supplementaltrue % Uncomment to show supplemental references
+\supplementalfalse % Uncomment to hide supplemental references
+
+\newcommand{\supptableref}[1]{%
+  \ifsupplemental
+    \ (Supplemental Table~\ref{#1})%
+  \fi
+}
+
+\newcommand{\suppfigref}[1]{%
+  \ifsupplemental
+    \ (Supplemental Figure~\ref{#1})%
+  \fi
+}
+
+\newcommand{\mapname}[1]{#1} % Normal font
+%\newcommand{\mapname}[1]{\texttt{#1}} % Uncomment to use texttt
+
 \begin{document}
 
 \title{A Competition Winning Deep Reinforcement Learning Agent in microRTS}
@@ -104,7 +123,6 @@ network agents.
 
 \begin{figure}[t]
     \centering
-    \label{tab:open-maps}
     \begin{tabular}{cc}
         \includegraphics[width=0.45\linewidth]{figures/basesWorkers8x8A.png} & \includegraphics[width=0.45\linewidth]{figures/FourBasesWorkers8x8.png} \\
         basesWorkers8x8A & FourBasesWorkers8x8 \\
@@ -116,6 +134,7 @@ network agents.
         BWDistantResources32x32 & (4)BloodBath.scmB \\
     \end{tabular}
     \caption{Open competition maps.}
+    \label{tab:open-maps}
 \end{figure}
 
 This paper describes how the \agentName\ agent\footnote{\raiMicroRTSGitHubUrl} was
@@ -138,8 +157,8 @@ rewards, eliminating the need for a handcrafted reward function.
 \subsection{MicroRTS-Py}
 Reference~\cite{DBLP:journals/corr/abs-2105-13807} released MicroRTS-Py\footnote{\url{https://github.com/Farama-Foundation/MicroRTS-Py}}, an OpenAI Gym
 wrapper for microRTS that includes a Proximal Policy Optimization (PPO) \cite{DBLP:journals/corr/SchulmanWDRK17} implementation
-trained on 1 of the Open maps (\texttt{16x16basesWorkers}). They added action composition, a shaped reward function, invalid action
-masking, IMPALA-CNN (a convolutional neural network with residual blocks), and trained
+trained on 1 of the Open maps (\mapname{16x16basesWorkers} is the same as \mapname{basesWorkers16x16A}). They added action composition, a shaped reward function, invalid action
+masking, IMPALA-CNN \cite{DBLP:conf/icml/EspeholtSMSMWDF18} (a convolutional neural network with residual blocks), and trained
 against a diverse set of scripted agents. The agent achieved a
 91\% win rate on a single map against a diverse set of competition bots.
 
@@ -150,7 +169,7 @@ residual block network IMPALA-CNN architecture instead of the Atari Nature CNN b
 
 They experimented with two different ways to issue player actions: Unit Action Simulation (UAS)
 and GridNet \cite{DBLP:conf/icml/HanSDXWSLZ19}. UAS calls the policy iteratively on each unit, simulating the game state
-after each unit action before issuing all unit actions combined to the game engine. GridNet
+after each unit action before combining all actions to submit to the game engine. GridNet
 computes the actions for all units in a single policy call by computing unit action
 logits for all grid positions and using a player action mask to ignore cells that don't
 have any units owned by the player. UAS performed better than GridNet (91\% vs 89\%).
@@ -166,7 +185,7 @@ more maps, extend training capabilities, fix
 self-play\footnote{\unownedFixGitHubCommit}, and add imitation learning.
 
 \subsection{DeepMind AlphaStar}
-\cite{Vinyals2019GrandmasterLI}'s AlphaStar is a grandmaster-level AI trained with DRL to play the RTS game
+Reference~\cite{Vinyals2019GrandmasterLI}'s AlphaStar is a grandmaster-level AI trained with DRL to play the RTS game
 StarCraft II. They created an initial set of agents through imitation learning: supervised learning
 using a dataset of observations, actions, and rewards to train a policy to mimic actions
 from the dataset. The dataset was created by sampling replays of top-quartile human
@@ -177,7 +196,7 @@ training agents. AlphaStar was trained on 3072 TPU cores and 50,400 preemptible 
 cores for a duration of 44 days.
 
 microRTS is a much simpler game than StarCraft II, both in game mechanics and simulation
-cost. \cite{DBLP:journals/corr/abs-2105-13807} trained on a single map for 300 million
+cost. Reference~\cite{DBLP:journals/corr/abs-2105-13807} trained on a single map for 300 million
 steps in less than 3 GPU-days. \agentName\ trained on 10 maps for 1.5 billion steps in
 70 GPU-days. While \agentName\ didn't use supervised learning to bootstrap the agent,
 our following work uses imitation learning to train a competitive agent.
@@ -212,21 +231,17 @@ middle residual blocks are downscaled 4x to reduce inference time.
 
 \section{Methods}
 \label{sec:methods}
-\subsection{Neural network architecture}
-We reimplement much of MicroRTS-Py, including the PPO implementation, action
-composition, shaped reward function, invalid action masking, GridNet, self-play, and
-scripted bot training. \agentName's codebase\footnote{\rlAlgoImplsGitHubUrl} supports 
-multiple environments and reimplementing allowed the environment to fit into the 
-existing codebase. We extended the observation representation in two ways:
-\begin{inparaenum}[(1)]
-    \item walls and
-    \item unit destinations as invalid move targets in the invalid action mask.
-\end{inparaenum}
-Only the unit's current location was considered invalid in MicroRTS-Py; however, 
-microRTS doesn't allow units to move where another unit is moving into.
-Padded positions were represented as walls, which are impassable and noninteractive.
 
-\agentName\ loads 7 different policy networks. Only one network is used
+Compared to \cite{DBLP:journals/corr/abs-2105-13807}, \agentName's biggest differences
+are 
+\begin{inparaenum}[(1)]
+    \item the DoubleCone neural network architecture,
+    \item adding self-play to the training regime,
+    \item using a training schedule that transitioned from shaped to sparse rewards,
+    \item training on multiple maps, and
+    \item using transfer learning to train specialized models for specific maps.
+\end{inparaenum}
+\agentName\ loads 7 different neural networks. Only one network is used
 for a given map (Table~\ref{tab:policy-networks}). 
 Networks are selected by
 \begin{inparaenum}[(1)]
@@ -240,6 +255,20 @@ map size (even non-square), and
 observations are padded to fit the policy network. Policy actions are clipped to fit the
 map size.
 
+We reimplement much of MicroRTS-Py, including the PPO implementation, action
+composition, shaped reward function, invalid action masking, GridNet, self-play, and
+scripted bot training. \agentName's codebase\footnote{\rlAlgoImplsGitHubUrl} supports 
+environments beyond microRTS and reimplementing allowed the environment to fit into the 
+existing codebase. We extended the observation representation in two ways:
+\begin{inparaenum}[(1)]
+    \item walls and
+    \item unit destinations as invalid move targets in the invalid action mask.
+\end{inparaenum}
+Only the unit's current location was considered invalid in MicroRTS-Py; however, 
+microRTS doesn't allow units to move where another unit is moving into.
+Padded positions were represented as walls, which are impassable and noninteractive.
+
+\subsection{Neural network architecture}
 \agentName\ uses two different neural network backbones:
 \cite{Ferdinand2021doublecone}'s DoubleCone(4, 6, 4) (Fig~\ref{fig:doublecone}) and a custom network
 (squnet). The actor head is a convolutional layer
@@ -261,10 +290,11 @@ the action space per turn and makes training more efficient.
 
 While DoubleCone could support any map size, inference would likely exceed 100
 milliseconds for larger maps. Therefore, for larger maps, we used a different
-architecture (squnet) which nests 3 downscaling blocks (Supplemental Figure~\ref{fig:squnet}). This 
+architecture (squnet) which nests 3 downscaling blocks\suppfigref{fig:squnet}. This 
 creates a network shaped like U-Net, but functionally similar to DoubleCone.
 This aggressive downscaling reduces the number of operations necessary during inference,
-especially for larger maps (Supplemental Table~\ref{table:architectureBreakdown}).
+especially for larger maps where squnet does 8-fold fewer operations compared to
+DoubleCone on the largest 64x64 map\supptableref{table:architectureBreakdown}.
 
 Instead of 1 value head, \agentName\ uses 3 values heads for 3 different value
 functions:
@@ -296,27 +326,27 @@ using Generalized Advantage Estimation (GAE) \cite{DBLP:journals/corr/SchulmanML
 We compute a separate advantage for each of the 3 rewards with independent $\gamma$
 (discount factor) and $\lambda$ (exponential weight discount) for each reward. The 3 
 advantages are weighted summed together to get the final advantage estimate, which is
-used in computing the policy loss ($L^{CLIP}$).
+used in computing the policy loss ($L^{\text{CLIP}}$).
 
 The reward weights, value loss coefficients (each value
 head has its own loss coefficient), entropy coefficient, and learning rate are varied on
-a schedule (Supplemental Table~\ref{tab:initial-training-schedule}). At the start of training, the policy loss heavily weighs the shaped 
-reward advantage, and the value loss similarly weighs the shaped value head. By the end
+a schedule \supptableref{tab:initial-training-schedule}. At the start of training, the policy loss heavily weighs the shaped 
+reward advantage, and the value loss similarly weighs towards the shaped value head. By the end
 of training, both losses are weighted more towards the win-loss sparse reward. The entropy coefficient is also
-lowered at the end of training to discourage the agent from making random moves as the
+lowered at the end of training to discourage the agent from making as many random moves as the
 learning rate is lowered. The schedule specifies phases where these values are set and
 transitions between phases by changing values linearly based on timesteps.
 
 We first trained \agentName\ with self-play both against itself and against prior
-versions of itself (Supplemental Table~\ref{tab:training-parameters}). We reached a 91\% win rate against the same bots MicroRTS-Py was
+versions of itself\supptableref{tab:training-parameters}. We reached a 91\% win rate against the same bots MicroRTS-Py was
 benchmarked against. However, it only beat CoacAI (the 2020 competition winner) in 20\%
 of games. The best performing agent of MicroRTS-Py nearly always beat CoacAI; however,
 the best versions using GridNet also usually lost against CoacAI. We fine-tuned
 the model through 3 iterations:
 \begin{inparaenum}[(1)]
-    \item one-half of environments trained against CoacAI (Supplemental Table~\ref{tab:shaped-finetuning-schedule});
+    \item one-half of environments trained against CoacAI\supptableref{tab:shaped-finetuning-schedule};
     \item one-half of environments trained against CoacAI or Mayari (2021 competition
-    winner) split evenly and primarily trained on win-loss rewards (Supplemental Table~\ref{tab:sparse-finetuning-schedule}); and
+    winner) split evenly and primarily trained on win-loss rewards\supptableref{tab:sparse-finetuning-schedule}; and
     \item same as before with action mask improvements and a GELU activation
     after the stride-4 convolution to match \cite{Ferdinand2021doublecone}'s DoubleCone.
 \end{inparaenum}
@@ -326,29 +356,29 @@ against each of CoacAI and Mayari.
 \subsection{Transfer learning}
 The model so far had been trained on the 5 smaller Open maps. Using the
 fine-tuned model as a starting point, we trained additional models, each trained exclusively
-on 1 of 3 Open maps. \texttt{NoWhereToRun9x8} is very different from the other maps with a wall of
-resources separating opponents. \texttt{DoubleGame24x24} and
-\texttt{BWDistantResources32x32} are larger than the maps the base model trained on.
+on 1 of 3 Open maps. \mapname{NoWhereToRun9x8} is very different from the other maps with a wall of
+resources separating opponents. \mapname{DoubleGame24x24} and \mapname{BWDistantResources32x32} are larger 
+than the maps the base model trained on.
 All 3 transfer learning runs used the same schedule:
 \begin{inparaenum}[(1)]
     \item warmup of sparse, win-loss reward weights linearly transitioned to a mixture
     of both shaped and sparse rewards,
     \item middle phase of mixed rewards,
-    \item end phase of sparse rewards again at a lower learning rate (Supplemental Table~\ref{tab:transfer-learning-schedule}).
+    \item end phase of sparse rewards again at a lower learning rate\supptableref{tab:transfer-learning-schedule}.
 \end{inparaenum}
-We did an additional fine-tuning on \texttt{NoWhereToRun9x8} using only the win-loss reward.
+We did an additional fine-tuning on \mapname{NoWhereToRun9x8} using only the win-loss reward.
 These transfer learned agents exceeded 90\% win rate on their respective maps,
 significant improvements over the base model (especially on
-\texttt{BWDistantResources32x32} which started below 10\%)
+\mapname{BWDistantResources32x32} which started below 10\%)
 
 \subsection{squnet training}
 We trained the squnet models with fewer steps because of time constraints and skipped the
 predominantly cost-based reward phase because it didn't help train the
-base model (Supplemental Table~\ref{tab:squnet-training-parameters}). The 2 models (trained on maps of
+base model \supptableref{tab:squnet-training-parameters}. The 2 models (trained on maps of
 up to size 32x32 and 64x64) managed only a 40\% win rate, never beating CoacAI or Mayari. 
 These models were policies of last resort.
 
-We also fine-tuned the squnet-map32 model on only \texttt{BWDistantResources32x32}
+We also fine-tuned the squnet-map32 model on only \mapname{BWDistantResources32x32}
 using the sparse reward fine-tuning schedule. This fine-tuned 
 model achieved 85\% win rate, beating Mayari half the time, but never beating CoacAI.
 
@@ -363,25 +393,26 @@ We opted for a neural architecture between DoubleCone and squnet: a nested downs
 block each of stride 4, so the bottom block scales the input down to 1/16th the original
 size. At each downscaling level, there were multiple residual blocks (6 at full
 resolution, split evenly by the downscaling block; 4 at 1/4 resolution, split evenly by
-the 1/16 downscaling block; and 4 at 1/16 resolution) (Supplemental Table~\ref{tab:bc-architecture}). This architecture theoretically
+the 1/16 downscaling block; and 4 at 1/16 resolution)\supptableref{tab:bc-architecture}. This architecture theoretically
 has a 128x128 receptive field while using 25\% fewer operations than DoubleCone at inference time. On
-the largest Open map (\texttt{(4)BloodBath.scmB}), this is 6 times more
+the largest Open map (\mapname{(4)BloodBath.scmB}), this is 6 times more
 computations than squnet-64. Therefore, this neural architecture won't be usable in a
 competition given the same hardware constraints as the 2023 competition.
 
 Initially, we tried a similar training strategy to \agentName\ where the model is
 trained on 16x16 maps and that model is used for transfer learning to
 larger maps. However, we only managed a 60\% win rate on
-\texttt{BWDistantResources32x32} and less than a 20\% win rate on
-\texttt{(4)BloodBath.scmB} after over 100 million
+\mapname{BWDistantResources32x32} and less than a 20\% win rate on
+\mapname{(4)BloodBath.scmB} after over 100 million
 steps before terminating training.
 
 Next, we tried imitation learning to bootstrap the model, similar to
 \cite{Vinyals2019GrandmasterLI}. We got rid of the three rewards, opting for only the
 win-loss reward. microRTS doesn't have human replays, so we used playthroughs of the
 2021 competition winner Mayari playing against itself, 2020 competition winner CoacAI, 
-and POLightRush (baseline scripted bot and 2017 competition winner) (Supplemental Table~\ref{tab:bc-training-parameters}). Instead of
-generating an offline replay dataset, we set the microRTS environment to play bots
+and POLightRush (baseline scripted bot and 2017 competition
+winner)\supptableref{tab:bc-training-parameters}.
+Instead of generating an offline replay dataset, we set the microRTS environment to play bots
 against each other and these observations and actions were fed into rollouts used for
 behavior cloning the policy and fitting the value heads:
 \begin{align}
@@ -399,11 +430,17 @@ summed together (each unit's actions are assumed to be independent).
 We trained 3 behavior cloned models (16x16, 32x32, and 64x64) on the same maps for each
 map size as \agentName\ training. The 64x64 model used the weights of the 32x32 model 
 as a starting point, while the other two models were randomly initialized. We then used 
-PPO to fine-tune the behavior cloned models on the same maps (Supplemental Table~\ref{tab:bc-ppo-training-parameters}).
+PPO to fine-tune the behavior cloned models on the same maps\supptableref{tab:bc-ppo-training-parameters}.
 
 \section{Results}
 \subsection{Single player round-robin benchmark}
 \label{sec:single-player-benchmark}
+In a single player round-robin benchmark on the Open maps (Table~\ref{tab:single-player-winrate}), \agentName\
+beat the competition winners of 2021 (Mayari), 2020 (CoacAI), and 2017 (POLightRush,
+baseline) on 7 of the 8 maps (winning over 96\% of games on these maps). \agentName\
+could only beat the POWorkerRush baseline bot on the largest map,
+\mapname{(4)BloodBath.scmB}. The DistantResources fine-tuned squnet model performed worse than the DoubleCone model
+across all opponents, but maintained an over 50\% win rate against all but CoacAI. Timeouts didn't affect results significantly.
 
 \begin{table}[t]
     \centering
@@ -434,13 +471,6 @@ PPO to fine-tune the behavior cloned models on the same maps (Supplemental Table
     \end{tablenotes}
     \end{threeparttable}
 \end{table}
-
-In a single player round-robin benchmark on the Open maps (Supplemental Table~\ref{tab:single-player-winrate}), \agentName\
-beat the competition winners of 2021 (Mayari), 2020 (CoacAI), and 2017 (POLightRush,
-baseline) on 7 of the 8 maps (winning over 96\% of games on these maps). \agentName\
-could only beat the POWorkerRush baseline bot on the largest map,
-\texttt{(4)BloodBath.scmB}. The DistantResources fine-tuned squnet model performed worse than the DoubleCone model
-across all opponents, but maintained an over 50\% win rate against all but CoacAI. Timeouts didn't affect results significantly.
 
 \subsection{IEEE-CoG 2023 microRTS competition results}
 The IEEE-CoG 2023 microRTS competition is a round-robin tournament on 12 maps of
@@ -690,6 +720,11 @@ resource-constrained researchers and students to create novel DRL agents for fut
 competitions and experiments. Fine-tuning behavior cloning with PPO is a promising way
 to create competitive DRL agents without needing to handcraft shaped reward functions.
 
+\section{Acknowledgments}
+We thank the IEEE-CoG 2023 microRTS competition organizers for their work running the
+competition and helping us work through performance concerns in the lead-up to our
+submission.
+
 \bibliographystyle{IEEEtran}
 \bibliography{IEEEabrv, cog2024}
 
@@ -710,7 +745,6 @@ its turn (submitting no actions) if 100 ms had elapsed. On
 fine-tuned models by running both models on the first observation 100 times each and
 choosing DoubleCone if it computed actions within 75 ms on average.
 
-
 \begin{table}[t]
     \caption{Policy networks used by \agentName}
     \label{tab:policy-networks}
@@ -729,5 +763,18 @@ choosing DoubleCone if it computed actions within 75 ms on average.
         \end{tabular}
     \end{center}
 \end{table}
+
+\section{Supplemental material}
+A supplemental document includes many implementation details and additional results:
+\begin{inparaenum}[(1)]
+    \item residual blocks used squeeze-excitation layers,
+    \item neural network architecture details for DoubleCone and squnet,
+    \item training parameters and schedules,
+    \item behavior cloning and PPO of behavior cloning details,
+    \item training durations,
+    \item single player round-robin benchmark setup,
+    \item additional results from the IEEE-CoG 2023 microRTS competition, and
+    \item benchmarking results for the behavior cloning (no PPO) agent.
+\end{inparaenum}
 
 \end{document}
