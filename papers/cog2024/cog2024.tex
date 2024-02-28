@@ -567,6 +567,52 @@ the weaker squnet model on \mapname{BWDistantResources32x32}.  Breaking down by 
     \end{threeparttable}
 \end{table}
 
+The competition ran jobs, splitting each map into 5 or 10 jobs where
+each job would run a complete round-robin with all agents on that map playing 2 or 1
+games, respectively, as player 1 and 2 each. For \mapname{basesWorkers8x8A}, on which \agentName\
+underperformed by almost 40\%, the competition had 5 jobs. On the first 3 jobs,
+\agentName\ won nearly every game. On the last 2 jobs, \agentName\ lost nearly every
+game. 1 or 2 jobs per underperforming map appear to have outlier low win rates
+for \agentName\ (Table~\ref{tab:outlier-winrate}).
+
+\begin{table}[t]
+    \centering
+    \begin{threeparttable}
+    \caption{\agentName\ win rates split by competition job. Outlier jobs are bolded.}
+    \label{tab:outlier-winrate}
+    \begin{tabular}{r|rrrrrrrr|l}
+    & \begin{sideways}\tablemapname{basesWorkers8x8A}\end{sideways} &
+    \begin{sideways}\tablemapname{FourBasesWorkers8x8}\end{sideways} &
+    \begin{sideways}\tablemapname{NoWhereToRun9x8}\end{sideways} &
+    \begin{sideways}\tablemapname{basesWorkers16x16A}\end{sideways} &
+    \begin{sideways}\tablemapname{TwoBasesBarracks16x16}\end{sideways} &
+    \begin{sideways}\tablemapname{DoubleGame24x24}\end{sideways} &
+    \begin{sideways}\tablemapname{BWDistantResources32x32}\end{sideways} &
+    \begin{sideways}\tablemapname{(4)BloodBath.scmB}\end{sideways} & 
+    \begin{sideways}Overall\end{sideways}\\
+    \midrule
+    & 98 & 97 & 97 & 100 & 94 & 99 & 49 & 34 &  \\
+    & 100 & 94 & 97 & 100 & \textbf{4} & 96 & 53 & 38 &  \\
+    & 100 & 95 & \textbf{33} & 100 & 92 & 100 & 54 & 38 &  \\
+    & \textbf{5} & 92 & 94 & 98 & 94 & 97 & 58 & 39 &  \\
+    & \textbf{28} & 95 & 100 & 100 & 94 & \textbf{9} & 58 & \textbf{19} &  \\
+    & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & 100 & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & 39 &  \\
+    & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & 97 & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \textbf{19} &  \\
+    & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \textbf{30} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & 44 &  \\
+    & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & 97 & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & 36 &  \\
+    & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & 95 & \multicolumn{1}{l}{} &
+    \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & 36 &  \\
+    \hline
+   Average\tnote{a} & 66 & 95 & 84 & 100 & 75 & 80 & 54 & 34 & \multicolumn{1}{r}{74} \\
+   No Outliers\tnote{b} & 99 & 95 & 97 & 100 & 93 & 98 & 54 & 38 & \multicolumn{1}{r}{84} \\
+    \end{tabular}
+    \begin{tablenotes}
+        \item[a] Average is the average win rate for all jobs.
+        \item[b] No Outliers is the average win rate for all jobs excluding "outlier" jobs.
+    \end{tablenotes}
+\end{threeparttable}
+\end{table}
+
 \subsection{Behavior Cloning Results}
 \label{sec:behavior-cloning-results}
 We created 2 additional agents:
@@ -729,9 +775,10 @@ competitions and experiments. Fine-tuning behavior cloning with PPO is a promisi
 to create competitive DRL agents without needing to handcraft shaped reward functions.
 
 \section{Acknowledgments}
-We thank the IEEE-CoG 2023 microRTS competition organizers for their work running the
-competition and helping us work through performance concerns in the lead-up to our
-submission.
+We thank the IEEE-CoG 2023 microRTS competition organizers Rubens O. Moraes and Levi H.
+S. Lelis for their work running the competition, helping us work through performance
+concerns in the lead-up to our submission, and providing suggestions on this paper. We
+thank Chang Liu for reading and providing feedback on drafts of this paper.
 
 \bibliographystyle{IEEEtran}
 \bibliography{IEEEabrv, cog2024}
@@ -752,52 +799,6 @@ its turn (submitting no actions) if 100 ms had elapsed. On
 \mapname{BWDistantResources32x32}, \agentName\ chose between the DoubleCone and squnet
 fine-tuned models by running both models on the first observation 100 times each and
 choosing DoubleCone if it computed actions within 75 ms on average.
-
-The competition ran jobs, splitting each map into 5 or 10 jobs where
-each job would run a complete round-robin with all agents on that map playing 2 or 1
-games as player 1 and 2 each. For \mapname{basesWorkers8x8A}, on which \agentName\
-underperformed by almost 40\%, the competition had 5 jobs. On the first 3 jobs,
-\agentName\ won nearly every game. On the last 2 jobs, \agentName\ lost nearly every
-game. 1 or 2 jobs per underperforming map appear to have outlier low win rates
-for \agentName\ (Table~\ref{tab:outlier-winrate}).
-
-\begin{table}[t]
-    \centering
-    \begin{threeparttable}
-    \caption{\agentName\ win rates split by competition job. Outlier jobs are bolded.}
-    \label{tab:outlier-winrate}
-    \begin{tabular}{r|rrrrrrrr|l}
-    & \begin{sideways}\tablemapname{basesWorkers8x8A}\end{sideways} &
-    \begin{sideways}\tablemapname{FourBasesWorkers8x8}\end{sideways} &
-    \begin{sideways}\tablemapname{NoWhereToRun9x8}\end{sideways} &
-    \begin{sideways}\tablemapname{basesWorkers16x16A}\end{sideways} &
-    \begin{sideways}\tablemapname{TwoBasesBarracks16x16}\end{sideways} &
-    \begin{sideways}\tablemapname{DoubleGame24x24}\end{sideways} &
-    \begin{sideways}\tablemapname{BWDistantResources32x32}\end{sideways} &
-    \begin{sideways}\tablemapname{(4)BloodBath.scmB}\end{sideways} & 
-    \begin{sideways}Overall\end{sideways}\\
-    \midrule
-    & 98 & 97 & 97 & 100 & 94 & 99 & 49 & 34 &  \\
-    & 100 & 94 & 97 & 100 & \textbf{4} & 96 & 53 & 38 &  \\
-    & 100 & 95 & \textbf{33} & 100 & 92 & 100 & 54 & 38 &  \\
-    & \textbf{5} & 92 & 94 & 98 & 94 & 97 & 58 & 39 &  \\
-    & \textbf{28} & 95 & 100 & 100 & 94 & \textbf{9} & 58 & \textbf{19} &  \\
-    & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & 100 & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & 39 &  \\
-    & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & 97 & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \textbf{19} &  \\
-    & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \textbf{30} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & 44 &  \\
-    & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & 97 & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & 36 &  \\
-    & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & 95 & \multicolumn{1}{l}{} &
-    \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & 36 &  \\
-    \hline
-   Average\tnote{a} & 66 & 95 & 84 & 100 & 75 & 80 & 54 & 34 & \multicolumn{1}{r}{74} \\
-   No Outliers\tnote{b} & 99 & 95 & 97 & 100 & 93 & 98 & 54 & 38 & \multicolumn{1}{r}{84} \\
-    \end{tabular}
-    \begin{tablenotes}
-        \item[a] Average is the average win rate for all jobs.
-        \item[b] No Outliers is the average win rate for all jobs excluding "outlier" jobs.
-    \end{tablenotes}
-\end{threeparttable}
-\end{table}
 
 \begin{table}[t]
     \caption{Policy networks used by \agentName}
