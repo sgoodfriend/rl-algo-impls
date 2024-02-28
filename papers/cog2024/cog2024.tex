@@ -51,6 +51,9 @@
 \newcommand{\mapname}[1]{#1} % Normal font
 %\newcommand{\mapname}[1]{\texttt{#1}} % Uncomment to use texttt
 
+\newcommand{\tablemapname}[1]{#1} % Normal font
+%\newcommand{\tablemapname}[1]{\texttt{#1}} % Uncomment to use texttt
+
 \begin{document}
 
 \title{A Competition Winning Deep Reinforcement Learning Agent in microRTS}
@@ -212,7 +215,7 @@ observations and controls. An AlphaStar action is
 Once supplied an action and a target, units will perform the action until the action is complete or the unit is interrupted.
 microRTS requires the agent to give single step actions for each unit at each timestep.
 
-\subsection{Lux AI Kaggle competitions}
+\subsection{Lux AI Kaggle Competitions}
 The competition platform Kaggle hosts Simulation competitions where competitors
 submit agents that play against other submitted agents in a turn-based game
 environment. About once a year since 2020, Kaggle features an RTS-like Simulation competition:
@@ -268,7 +271,7 @@ Only the unit's current location was considered invalid in MicroRTS-Py; however,
 microRTS doesn't allow units to move where another unit is moving into.
 Padded positions were represented as walls, which are impassable and noninteractive.
 
-\subsection{Neural network architecture}
+\subsection{Neural Network Architecture}
 \agentName\ uses two different neural network backbones:
 \cite{Ferdinand2021doublecone}'s DoubleCone(4, 6, 4) (Fig~\ref{fig:doublecone}) and a custom network
 (squnet). The actor head is a convolutional layer
@@ -309,7 +312,7 @@ These 3 value heads are used to mix-and-match rewards over the course of trainin
 generally starting with dense rewards using heads (1) and (3) and finishing with only
 win-loss sparse rewards by the end.
 
-\subsection{Base model training}
+\subsection{Base Model Training}
 We train using the PPO loss function from \cite{DBLP:journals/corr/SchulmanWDRK17}:
 \begin{align}
     L(\theta) &= \hat{\mathbb{E}}_t \left[ L^{\text{CLIP}}(\theta) - c_1 L^{\text{VF}}(\theta) + c_2 S\left[\pi_\theta\right](s_t) \right], \\
@@ -353,7 +356,7 @@ the model through 3 iterations:
 By the end of fine-tuning, the model was winning 98\% of games, including about 90\%
 against each of CoacAI and Mayari.
 
-\subsection{Transfer learning}
+\subsection{Transfer Learning}
 The model so far had been trained on the 5 smaller Open maps. Using the
 fine-tuned model as a starting point, we trained additional models, each trained exclusively
 on 1 of 3 Open maps. \mapname{NoWhereToRun9x8} is very different from the other maps with a wall of
@@ -371,7 +374,7 @@ These transfer learned agents exceeded 90\% win rate on their respective maps,
 significant improvements over the base model (especially on
 \mapname{BWDistantResources32x32} which started below 10\%)
 
-\subsection{squnet training}
+\subsection{Squnet Training}
 We trained the squnet models with fewer steps because of time constraints and skipped the
 predominantly cost-based reward phase because it didn't help train the
 base model \supptableref{tab:squnet-training-parameters}. The 2 models (trained on maps of
@@ -382,7 +385,7 @@ We also fine-tuned the squnet-map32 model on only \mapname{BWDistantResources32x
 using the sparse reward fine-tuning schedule. This fine-tuned 
 model achieved 85\% win rate, beating Mayari half the time, but never beating CoacAI.
 
-\subsection{Behavior cloning bootstrapped training}
+\subsection{Behavior Cloning Bootstrapped Training}
 In follow-up work after the \agentName\ submission, we wanted to train a model that
 \begin{inparaenum}[(1)]
     \item didn't require the shaped rewards and reward scheduling,
@@ -433,7 +436,7 @@ as a starting point, while the other two models were randomly initialized. We th
 PPO to fine-tune the behavior cloned models on the same maps\supptableref{tab:bc-ppo-training-parameters}.
 
 \section{Results}
-\subsection{Single player round-robin benchmark}
+\subsection{Single Player Round-robin Benchmark}
 \label{sec:single-player-benchmark}
 In a single player round-robin benchmark on the Open maps (Table~\ref{tab:single-player-winrate}), \agentName\
 beat the competition winners of 2021 (Mayari), 2020 (CoacAI), and 2017 (POLightRush,
@@ -472,7 +475,7 @@ across all opponents, but maintained an over 50\% win rate against all but CoacA
     \end{threeparttable}
 \end{table}
 
-\subsection{IEEE-CoG 2023 microRTS competition results}
+\subsection{IEEE-CoG 2023 microRTS Competition Results}
 The IEEE-CoG 2023 microRTS competition is a round-robin tournament on 12 maps of
 different sizes and distributions of terrain, resources, and starting units and
 buildings. 8 Open maps are known beforehand, 4 Hidden maps are only revealed after the
@@ -536,7 +539,7 @@ smaller maps and dismally on the largest maps
 (Table~\ref{tab:competition-winrate-by-map}). However, in the competition, \agentName\
 underperformed against agents already benchmarked in the single player round-robin
 (14-19\% lower win rate against each agent), even accounting for the likely use of
-the weaker squnet model on \texttt{BWDistantResources32x32}.  Breaking down by map, 
+the weaker squnet model on \mapname{BWDistantResources32x32}.  Breaking down by map, 
 \agentName\ underperformed against benchmarked agents by 20-40\% on 5 maps.
 
 \begin{table}[t]
@@ -564,15 +567,7 @@ the weaker squnet model on \texttt{BWDistantResources32x32}.  Breaking down by m
     \end{threeparttable}
 \end{table}
 
-The competition ran jobs, splitting each map into 5 or 10 jobs where
-each job would run a complete round-robin with all agents on that map playing 2 or 1
-games as player 1 and 2 each. For \texttt{basesWorkers8x8A}, on which \agentName\
-underperformed by almost 40\%, the competition had 5 jobs. On the first 3 jobs,
-\agentName\ won nearly every game. On the last 2 jobs, \agentName\ lost nearly every
-game. 1 or 2 jobs per underperforming map appear to have outlier low win rates
-for \agentName\ (Supplemental Table~\ref{tab:outlier-winrate}).
-
-\subsection{Behavior cloning results}
+\subsection{Behavior Cloning Results}
 \label{sec:behavior-cloning-results}
 We created 2 additional agents:
 \begin{inparaenum}[(1)]
@@ -582,6 +577,16 @@ We created 2 additional agents:
 Each agent consisted of the models trained on their
 respective map sizes (16x16, 32x32, and 64x64). These agents do not have any
 map-specific models.
+
+\bcAgent\ had a 71\% win rate, doing well against the POLightRush baseline (96\%, better than \agentName) and respectably against
+Mayari (44\%)\supptableref{tab:bc-winrate}. On the largest map, \bcAgent\ manages to occasionally beat POLightRush (63\%), CoacAI
+(20\%), and Mayari (40\%) compared to \agentName's 0\% against these 3 more difficult opponents.
+
+Once fine-tuned with PPO, \bcPPOAgent\ obtains an \agentName-comparable 88\% win rate
+(Table~\ref{tab:bcppo-winrate}). \bcPPOAgent\ generally improves upon \bcAgent's win
+rates on each map and against each opponent. However, the biggest exceptions are
+POLightRush on \mapname{TwoBasesBarracks16x16} (from 100\% to 0\%) and the largest map
+where the fine-tuned model can no longer beat CoacAI and Mayari.
 
 \begin{table}[t]
     \centering
@@ -605,24 +610,13 @@ map-specific models.
     \end{center}
 \end{table}
 
-
-\bcAgent\ had a 71\% win rate, doing well against the POLightRush baseline (96\%, better than \agentName) and respectably against
-Mayari (44\%) (Supplemental Table~\ref{tab:bc-winrate}). On the largest map, \bcAgent\ manages to occasionally beat POLightRush (63\%), CoacAI
-(20\%), and Mayari (40\%) compared to \agentName's 0\% against these 3 more difficult opponents.
-
-Once fine-tuned with PPO, \bcPPOAgent\ obtains an \agentName-comparable 88\% win rate
-(Supplemental Table~\ref{tab:bcppo-winrate}). \bcPPOAgent\ generally improves upon \bcAgent's win
-rates on each map and against each opponent. However, the biggest exceptions are
-POLightRush on \texttt{TwoBasesBarracks16x16} (from 100\% to 0\%) and the largest map
-where the fine-tuned model can no longer beat CoacAI and Mayari.
-
 While \agentName\ required map-specific fine-tuned models to be competitive on
-\texttt{NoWhereToRun9x8}, \texttt{DoubleGame24x24}, and \texttt{BWDistantResources32x32},
+\mapname{NoWhereToRun9x8}, \mapname{DoubleGame24x24}, and \mapname{BWDistantResources32x32},
 \bcPPOAgent\ only has models for the different map-sizes. This demonstrates promise for
 creating generalized agents that can play across a wide range of maps.
 
 \section{Discussion}
-\subsection{Improving inference time in microRTS competitions}
+\subsection{Improving Inference Time in microRTS Competitions}
 \agentName's underperformance in the 2023 competition suggests that job
 environments can run slow. We worked with the competition
 organizers to reduce the chance of timeouts. However, it was difficult to reproduce the same results as
@@ -639,25 +633,25 @@ We suggest 3 improvements (2 for agents, and 1 for the competition organizers):
 \end{inparaenum}
 For DoubleCone, \cite{Ferdinand2021doublecone} found using OpenVINO could have made
 inference 2-3 times faster in the LUX competition. This  would likely
-make running DoubleCone or the larger squnet models on all maps except the largest
+make running DoubleCone and the larger squnet models on all maps except the largest
 feasible for the competition. An overtime budget for an entire match instead of the 20 ms
 per turn tolerance will help agents deal with environment instabilities. For example,
-\bcPPOAgent\ timed out in 11\% of games on \texttt{(4)BloodBath.scmB}, despite averaging
+\bcPPOAgent\ timed out in 11\% of games on \mapname{(4)BloodBath.scmB}, despite averaging
 55 ms/turn and going over 100 ms in only 0.016\% of turns (averaging less than 1 over
 100 ms turn per game). An overage budget of even 1 second per game would likely prevent
 most timeouts.
 
-\subsection{Training on larger maps}
+\subsection{Training on Larger Maps}
 None of our agents managed to reliably defeat the prior two competition winners on 
-the largest map. \texttt{(4)BloodBath.scmB} is a challenging map for DRL because game 
+the largest map. \mapname{(4)BloodBath.scmB} is a challenging map for DRL because game 
 lengths are significantly longer than on smaller
 maps. \bcPPOAgent\ averaged 3,500 steps per game on
-\texttt{(4)BloodBath.scmB} compared to around 925 steps on the next largest map,
-\texttt{BWDistantResources32x32}. DRL must learn to propagate rewards over longer time
+\mapname{(4)BloodBath.scmB} compared to around 925 steps on the next largest map,
+\mapname{BWDistantResources32x32}. DRL must learn to propagate rewards over longer time
 periods, and the observation-action space is so large that DRL can only hope to explore a
 fraction of it. A rushing strategy of sending attack units and surplus workers towards
 the enemy as soon as possible is a strong strategy on all but the largest map.
-\texttt{(4)BloodBath.scmB} seems to reward a build up of forces before attacking, which
+\mapname{(4)BloodBath.scmB} seems to reward a build up of forces before attacking, which
 DRL struggled to learn.
 
 We hoped imitation learning would mitigate these issues by providing a model that
@@ -667,14 +661,11 @@ training games, dropped to 20\% midway through training. It eventually recovers 
 winning 40\% of training games; however, the fine-tuned policy had a worse evaluation
 win rate than the initial supervised policy. This training curve differs from the
 smaller map fine-tuning where the training policy quickly won 60\% of
-training games and improved upon the evaluation win rate.
-
-PPO (and DRL algorithms in general) have many hyperparameters that need to be tuned
-before a model is able to learn, and our hyperparameter search is ongoing. Other 
-algorithms might perform better from a behavior cloned start. For example,
-Advantage Actor Critic (A2C) \cite{DBLP:conf/icml/MnihBMGLHSK16} uses a loss
-function similar to behavior cloning, and thus policy training might more smoothly
-transition from behavior cloning to DRL.
+training games and improved upon the evaluation win rate. When transitioning to larger 
+maps, \cite{Ferdinand2021doublecone} used a teacher KL-divergence loss term to keep the 
+policy from diverging too far from the prior trained policy. Using a similar teacher 
+loss term when fine-tuning the behavior cloned policy could help the policy maintain its 
+performance.
 
 Extending the curriculum to include more game states could also improve large map
 training. For example, varied existing agents can be used to advance the game before
@@ -683,7 +674,16 @@ Another way is to utilize a prioritized fictitious self-play mechanism used by
 \cite{Vinyals2019GrandmasterLI} that prioritizes training the agent on the
 most difficult prior agent checkpoints.
 
-\subsection{Behavior cloning, transfer learning, and academic competitions}
+While the squnet neural network architectures theoretically have a large enough
+receptive field to handle the largest map, using a smaller-map trained model as a
+starting point for transfer learning to the largest maps was not effective. One possible
+explanation is that the model learns behaviors on a smaller size scale and is not able
+to generalize behaviors such as resource gathering or enemy pursuit to larger maps. If
+units were instead processed as entities in a transformer architecture, the agent could
+process relationships between entities across the map. AlphaStar \cite{Vinyals2019GrandmasterLI} used a transformer
+entity encoder as part of its processing.
+
+\subsection{Academic Competition and Research Considerations}
 Training multiple models for \agentName\ took 70 GPU-days. Imitation learning \bcAgent\
 trained for 23 GPU-days, and PPO fine-tuning \bcPPOAgent\ took another 49 GPU-days. 
 These are significant amounts of compute for a mostly academic competition.
@@ -697,7 +697,7 @@ There are several ways to make DRL more feasible in a competition and educationa
 \end{inparaenum}
 The largest map took 19 GPU-days to train for \agentName, 15 GPU-days for \bcAgent, and
 34 GPU-days for \bcPPOAgent. Over two-thirds of training time for \bcPPOAgent\ was spent
-training on the largest map to little benefit. \cite{DBLP:journals/corr/abs-2105-13807}
+training on the largest map to little benefit. Reference \cite{DBLP:journals/corr/abs-2105-13807}
 trained an agent for player 1 on a single 16x16 map in 2.5 days. \bcPPOAgent\ trained
 on the 5 Open maps up to size 16x16 in about 7.5 days.
 
@@ -711,14 +711,17 @@ to effective policies that would be extremely difficult to obtain with naive DRL
 training.
 
 \agentName's DoubleCone and \bcPPOAgent's deep squnet are relatively large neural
-networks, each at around 5 million parameters.
+networks, each at around 5 million parameters. Reference
 \cite{DBLP:journals/corr/abs-2105-13807}'s best performing policies each used fewer
 than 1 million parameters. These smaller networks are quicker to train and have faster
 inference time, and there's no definitive evidence so far that they are worse than
-larger networks.
+larger networks. Reference 
+\cite{Winter2023} uses an entity-based transformer exclusively and demonstrates
+it can train an agent to beat CoacAI on a 10x10 map in 20 minutes using a single
+consumer-grade GPU.
 
 \section{Conclusion}
-\agentName\ is the first DRL agent to win a microRTS competition. It demonstrates that
+\agentName\ is the first DRL agent to win a microRTS competition in 6 iterations. It demonstrates that
 an iterative training process of fine-tuning and transfer learning is effective for
 creating competitive DRL agents. Such a training process can be used by
 resource-constrained researchers and students to create novel DRL agents for future
@@ -746,9 +749,55 @@ the larger maps.
 Each agent played every other agent on each map 20 times (10 each as player 1 and 2).
 Timeouts were disabled for the competition, but the Java-side of \agentName\ would skip
 its turn (submitting no actions) if 100 ms had elapsed. On
-\texttt{BWDistantResources32x32}, \agentName\ chose between the DoubleCone and squnet
+\mapname{BWDistantResources32x32}, \agentName\ chose between the DoubleCone and squnet
 fine-tuned models by running both models on the first observation 100 times each and
 choosing DoubleCone if it computed actions within 75 ms on average.
+
+The competition ran jobs, splitting each map into 5 or 10 jobs where
+each job would run a complete round-robin with all agents on that map playing 2 or 1
+games as player 1 and 2 each. For \mapname{basesWorkers8x8A}, on which \agentName\
+underperformed by almost 40\%, the competition had 5 jobs. On the first 3 jobs,
+\agentName\ won nearly every game. On the last 2 jobs, \agentName\ lost nearly every
+game. 1 or 2 jobs per underperforming map appear to have outlier low win rates
+for \agentName\ (Table~\ref{tab:outlier-winrate}).
+
+\begin{table}[t]
+    \centering
+    \begin{threeparttable}
+    \caption{\agentName\ win rates split by competition job. Outlier jobs are bolded.}
+    \label{tab:outlier-winrate}
+    \begin{tabular}{r|rrrrrrrr|l}
+    & \begin{sideways}\tablemapname{basesWorkers8x8A}\end{sideways} &
+    \begin{sideways}\tablemapname{FourBasesWorkers8x8}\end{sideways} &
+    \begin{sideways}\tablemapname{NoWhereToRun9x8}\end{sideways} &
+    \begin{sideways}\tablemapname{basesWorkers16x16A}\end{sideways} &
+    \begin{sideways}\tablemapname{TwoBasesBarracks16x16}\end{sideways} &
+    \begin{sideways}\tablemapname{DoubleGame24x24}\end{sideways} &
+    \begin{sideways}\tablemapname{BWDistantResources32x32}\end{sideways} &
+    \begin{sideways}\tablemapname{(4)BloodBath.scmB}\end{sideways} & 
+    \begin{sideways}Overall\end{sideways}\\
+    \midrule
+    & 98 & 97 & 97 & 100 & 94 & 99 & 49 & 34 &  \\
+    & 100 & 94 & 97 & 100 & \textbf{4} & 96 & 53 & 38 &  \\
+    & 100 & 95 & \textbf{33} & 100 & 92 & 100 & 54 & 38 &  \\
+    & \textbf{5} & 92 & 94 & 98 & 94 & 97 & 58 & 39 &  \\
+    & \textbf{28} & 95 & 100 & 100 & 94 & \textbf{9} & 58 & \textbf{19} &  \\
+    & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & 100 & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & 39 &  \\
+    & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & 97 & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \textbf{19} &  \\
+    & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \textbf{30} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & 44 &  \\
+    & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & 97 & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & 36 &  \\
+    & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & 95 & \multicolumn{1}{l}{} &
+    \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & 36 &  \\
+    \hline
+   Average\tnote{a} & 66 & 95 & 84 & 100 & 75 & 80 & 54 & 34 & \multicolumn{1}{r}{74} \\
+   No Outliers\tnote{b} & 99 & 95 & 97 & 100 & 93 & 98 & 54 & 38 & \multicolumn{1}{r}{84} \\
+    \end{tabular}
+    \begin{tablenotes}
+        \item[a] Average is the average win rate for all jobs.
+        \item[b] No Outliers is the average win rate for all jobs excluding "outlier" jobs.
+    \end{tablenotes}
+\end{threeparttable}
+\end{table}
 
 \begin{table}[t]
     \caption{Policy networks used by \agentName}
@@ -772,8 +821,7 @@ choosing DoubleCone if it computed actions within 75 ms on average.
 \section{Supplemental material}
 A supplemental document includes many implementation details and additional results:
 \begin{inparaenum}[(1)]
-    \item residual blocks used squeeze-excitation layers,
-    \item neural network architecture details for DoubleCone and squnet,
+    \item additional neural network architecture details for DoubleCone and squnet,
     \item training parameters and schedules,
     \item behavior cloning and PPO of behavior cloning details,
     \item training durations,
