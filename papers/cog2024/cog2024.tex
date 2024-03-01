@@ -119,7 +119,7 @@ The IEEE microRTS competitions have been hosted at the Conference on Games (CoG)
 every year since 2019 and at the Conference on Computational Intelligence and Games
 (CIG) before that since 2017 \cite{Ontañón_Barriga_Silva_Moraes_Lelis_2018}.
 Competitors submit an agent that plays against other submissions and baselines in a round-robin tournament
-on 12 different maps: 8 Open (known beforehand, Table~\ref{tab:open-maps}) and 4 Hidden (unknown until after the
+on 12 different maps: 8 Open (known beforehand, Fig.~\ref{tab:open-maps}) and 4 Hidden (unknown until after the
 competition results are released). Agents are supposed
 to submit actions every step within 100 ms. Without GPU acceleration, this is a significant constraint for deep neural
 network agents.
@@ -142,12 +142,12 @@ network agents.
 
 This paper describes how the \agentName\ agent\footnote{\raiMicroRTSGitHubUrl} was
 trained and became the first DRL agent to win the microRTS competition by winning at CoG
-in 2023. The agent consists of 7 trained neural networks, taking 70
-GPU-days to train. This significant training time combined with the general difficulty
-in debugging and fine-tuning a DRL implementation could explain why DRL hasn't been
-competitive so far. We demonstrate that transfer learning to specific maps was
-critical to winning the competition. This strategy and our training framework can be a starting
-point for future research and competition agents.
+in 2023. The agent chooses between 7 policy networks based on the map and compute
+capabilities. The significant training time (70 GPU-days) combined with the general
+difficulty in debugging and fine-tuning a DRL implementation could explain why DRL
+hasn't been competitive so far. We demonstrate that transfer learning to specific maps
+was critical to winning the competition. This strategy and our training framework can be
+a starting point for future research and competition agents.
 
 While microRTS doesn't support human players, several competition submission agents are
 available to use for imitation learning. Work following the
@@ -158,27 +158,32 @@ rewards, eliminating the need for a handcrafted reward function.
 
 \section{Related Work}
 \subsection{MicroRTS-Py}
-Reference~\cite{DBLP:journals/corr/abs-2105-13807} released MicroRTS-Py\footnote{\url{https://github.com/Farama-Foundation/MicroRTS-Py}}, an OpenAI Gym
-wrapper for microRTS that includes a Proximal Policy Optimization (PPO) \cite{DBLP:journals/corr/SchulmanWDRK17} implementation
-trained on 1 of the Open maps (\mapname{16x16basesWorkers} is the same as \mapname{basesWorkers16x16A}). They added action composition, a shaped reward function, invalid action
-masking, IMPALA-CNN \cite{DBLP:conf/icml/EspeholtSMSMWDF18} (a convolutional neural network with residual blocks), and trained
-against a diverse set of scripted agents. The agent achieved a
-91\% win rate on a single map against a diverse set of competition bots.
+Reference~\cite{DBLP:journals/corr/abs-2105-13807} released
+MicroRTS-Py\footnote{\url{https://github.com/Farama-Foundation/MicroRTS-Py}}, an OpenAI
+Gym wrapper for microRTS that includes a Proximal Policy Optimization (PPO)
+\cite{DBLP:journals/corr/SchulmanWDRK17} implementation trained on 1 of the Open maps
+(they used \mapname{16x16basesWorkers}, which is the same as
+\mapname{basesWorkers16x16A}). They added action composition, a shaped reward function,
+invalid action masking, IMPALA-CNN \cite{DBLP:conf/icml/EspeholtSMSMWDF18} (a
+convolutional neural network with residual blocks), and trained against a diverse set of
+scripted agents. The agent achieved a 91\% win rate on a single map against a diverse
+set of competition bots.
 
-In their ablation studies, they found invalid action masking was essential to training an agent that could compete at
-the most basic level (82\% win rate with invalid action masking, 0\% without). Using the
+In their ablation studies, they found invalid action masking was essential to training a
+competitive agent (82\% win rate with invalid action masking, 0\% without). Using the
 residual block network IMPALA-CNN architecture instead of the Atari Nature CNN by
 \cite{DBLP:journals/corr/MnihKSGAWR13} got the win rate up the rest of the way.
 
-They experimented with two different ways to issue player actions: Unit Action Simulation (UAS)
-and GridNet \cite{DBLP:conf/icml/HanSDXWSLZ19}. UAS calls the policy iteratively on each unit, simulating the game state
-after each unit action before combining all actions to submit to the game engine. GridNet
-computes the actions for all units in a single policy call by computing unit action
-logits for all grid positions and using a player action mask to ignore cells that don't
-have any units owned by the player. UAS performed better than GridNet (91\% vs 89\%).
-Despite UAS's better performance, MicroRTS-Py is deprecating UAS in favor of GridNet
-because of UAS's more complex implementation and difficulty to incorporate self-play and
-imitation learning, both features important in \agentName\ and our further work.
+They experimented with two different ways to issue player actions: Unit Action
+Simulation (UAS) and GridNet \cite{DBLP:conf/icml/HanSDXWSLZ19}. UAS calls the policy
+iteratively on each unit, simulating the game state after each unit action before
+combining all actions to submit to the game engine. GridNet computes the actions for all
+units in a single policy call by computing unit action logits for all grid positions and
+using a player action mask to ignore cells that don't have any units owned by the
+player. UAS performed better than GridNet (91\% vs 89\%). Despite UAS's better
+performance, the MicroRTS-Py library is deprecating UAS in favor of GridNet because of
+UAS's more complex implementation and difficulty to incorporate self-play and imitation
+learning, both features important in \agentName\ and our further work.
 
 They tried training with self-play where the policy plays against itself, but found it
 didn't improve win rate. However, we found a bug where resources
@@ -188,15 +193,15 @@ more maps, extend training capabilities, fix
 self-play\footnote{\unownedFixGitHubCommit}, and add imitation learning.
 
 \subsection{DeepMind AlphaStar}
-Reference~\cite{Vinyals2019GrandmasterLI}'s AlphaStar is a grandmaster-level AI trained with DRL to play the RTS game
-StarCraft II. They created an initial set of agents through imitation learning: supervised learning
-using a dataset of observations, actions, and rewards to train a policy to mimic actions
-from the dataset. The dataset was created by sampling replays of top-quartile human
-players. The supervised agents were rated in the top 16\% of human players and used as
-starting points for DRL. They created a league-based framework to train multiple agents
-in parallel, each with different opponents to beat, thus creating a diverse set of
-training agents. AlphaStar was trained on 3072 TPU cores and 50,400 preemptible CPU
-cores for a duration of 44 days.
+Reference~\cite{Vinyals2019GrandmasterLI}'s AlphaStar is a grandmaster-level AI trained
+with DRL to play the RTS game StarCraft II. They created an initial set of agents
+through imitation learning: supervised learning using a dataset of observations and
+actions to train a policy to mimic the actions from the dataset. The dataset was created
+by sampling replays of top-quartile human players. The supervised agents were rated in
+the top 16\% of human players and used as starting points for DRL. They created a
+league-based framework to train multiple agents in parallel, each with different
+opponents to beat, thus creating a diverse set of training agents. AlphaStar was trained
+on 3072 TPU cores and 50,400 preemptible CPU cores for a duration of 44 days.
 
 microRTS is a much simpler game than StarCraft II, both in game mechanics and simulation
 cost. Reference~\cite{DBLP:journals/corr/abs-2105-13807} trained on a single map for 300 million
@@ -216,20 +221,21 @@ Once supplied an action and a target, units will perform the action until the ac
 microRTS requires the agent to give single step actions for each unit at each timestep.
 
 \subsection{Lux AI Kaggle Competitions}
-The competition platform Kaggle hosts Simulation competitions where competitors
-submit agents that play against other submitted agents in a turn-based game
-environment. About once a year since 2020, Kaggle features an RTS-like Simulation competition:
-Halite, Lux AI, Kore, and Lux AI Season 2. Rules-based agents won Halite, Kore, and Lux
-AI Season 2. The first season Lux AI winning DRL agent by \cite{lux-ai-2021-winner} 
-has many similarities to MicroRTS-Py: GridNet action space, reward shaping, and an
-actor-critic training algorithm (IMPALA with additional UPGO and TD($\lambda$) loss
-terms, instead of PPO). Instead
-of training with a shaped reward function throughout training, \cite{lux-ai-2021-winner}
-used shaped rewards on a smaller map before transitioning to sparse win-loss rewards on
-larger and competition-size maps. The top DRL agent by \cite{Ferdinand2021doublecone} in the Lux AI Season 2 competition used a "DoubleCone" neural
-network backbone with critic and actor heads. DoubleCone is similar to ResNet's backbone but the 
-middle residual blocks are downscaled 4x to reduce inference time.
-\agentName\ switches from shaped to sparse rewards during training and uses the DoubleCone architecture.
+The competition platform Kaggle hosts Simulation competitions where competitors submit
+agents that play against other submitted agents in a turn-based game environment. About
+once a year since 2020, Kaggle features an RTS-like Simulation competition: Halite, Lux
+AI, Kore, and Lux AI Season 2. Rules-based agents won Halite, Kore, and Lux AI Season 2.
+The first season Lux AI winning DRL agent by \cite{lux-ai-2021-winner} has many
+similarities to MicroRTS-Py: GridNet action space, reward shaping, and an actor-critic
+training algorithm (IMPALA with additional UPGO and TD($\lambda$) loss terms, instead of
+PPO). Instead of training with a shaped reward function throughout training,
+\cite{lux-ai-2021-winner} used shaped rewards on a smaller map before transitioning to
+sparse win-loss rewards on larger and competition-size maps. The top DRL agent by
+\cite{Ferdinand2021doublecone} in the Lux AI Season 2 competition used a "DoubleCone"
+neural network backbone with critic and actor heads. DoubleCone is similar to ResNet's
+backbone but the middle residual blocks are downscaled 4x to reduce inference time.
+\agentName\ transitions from shaped to sparse rewards during training and uses the
+DoubleCone architecture.
 
 
 \section{Methods}
@@ -240,12 +246,12 @@ are
 \begin{inparaenum}[(1)]
     \item the DoubleCone neural network architecture,
     \item adding self-play to the training regime,
-    \item using a training schedule that transitioned from shaped to sparse rewards,
+    \item using a training schedule that transitions from shaped to sparse rewards,
     \item training on multiple maps, and
     \item using transfer learning to train specialized models for specific maps.
 \end{inparaenum}
-\agentName\ loads 7 different neural networks. Only one network is used
-for a given map (Table~\ref{tab:policy-networks}). 
+\agentName\ loads 7 policy networks, but only uses one network at a time chosen based
+on map and compute capabilities (Table~\ref{tab:policy-networks}).
 Networks are selected by
 \begin{inparaenum}[(1)]
     \item gathering all networks that are compatible with the map and its size,
@@ -253,10 +259,8 @@ Networks are selected by
     \item picking the highest priority network that can run within the allotted time on
     the current hardware.
 \end{inparaenum}
-Multiple networks can be prioritized for the same map or map size. microRTS supports any
-map size (even non-square), and 
-observations are padded to fit the policy network. Policy actions are clipped to fit the
-map size.
+microRTS supports any map size (even non-square), and observations are padded to fit the
+policy network. Policy actions are clipped to fit the map size.
 
 We reimplement much of MicroRTS-Py, including the PPO implementation, action
 composition, shaped reward function, invalid action masking, GridNet, self-play, and
@@ -267,18 +271,18 @@ existing codebase. We extended the observation representation in two ways:
     \item walls and
     \item unit destinations as invalid move targets in the invalid action mask.
 \end{inparaenum}
-Only the unit's current location was considered invalid in MicroRTS-Py; however, 
-microRTS doesn't allow units to move where another unit is moving into.
-Padded positions were represented as walls, which are impassable and noninteractive.
+Only units' current locations were considered invalid move targets in MicroRTS-Py;
+however, microRTS doesn't allow units to move where another unit is moving into. Padded
+positions were represented as walls, which are impassable and noninteractive.
 
 \subsection{Neural Network Architecture}
 \agentName\ uses two different neural network backbones:
-\cite{Ferdinand2021doublecone}'s DoubleCone(4, 6, 4) (Fig~\ref{fig:doublecone}) and a custom network
+\cite{Ferdinand2021doublecone}'s DoubleCone(4, 6, 4) (Fig.~\ref{fig:doublecone}) and a custom network
 (squnet). The actor head is a convolutional layer
 that outputs logits for unit actions at every position. A unit action is composed of
-independent discrete subactions: $D = \{a_{action\ type},$ $a_{move\ direction},$ $a_{harvest\
-direction},$ $a_{return\ direction},$ $a_{produce\ direction},$ $a_{produce\ type},$ $a_{relative\
-attack\ position}\}$. Invalid action masking sets
+independent discrete subactions: $D = \{a_{\text{action type}},$ $a_{\text{move direction}},$ $a_{\text{harvest
+direction}},$ $a_{\text{return direction}},$ $a_{\text{produce direction}},$ $a_{\text{produce type}},$ $a_{\text{relative
+attack position}}\}$. Invalid action masking sets
 logits to a very large negative number (thus zeroing probabilities and gradients) for actions that are
 illegal or would accomplish nothing (e.g., moving a unit to an occupied or reserved
 position) \cite{DBLP:journals/corr/abs-2006-14171}. This masking significantly reduces
@@ -309,8 +313,8 @@ functions:
     by \cite{Winter2021}).
 \end{inparaenum}
 These 3 value heads are used to mix-and-match rewards over the course of training,
-generally starting with dense rewards using heads (1) and (3) and finishing with only
-win-loss sparse rewards by the end.
+generally weighing the dense reward heads (1 and 3) more heavily at the start of
+training and finishing with only the win-loss reward contributing at the end.
 
 \subsection{Base Model Training}
 We train using the PPO loss function from \cite{DBLP:journals/corr/SchulmanWDRK17}:
@@ -333,11 +337,11 @@ used in computing the policy loss ($L^{\text{CLIP}}$).
 
 The reward weights, value loss coefficients (each value
 head has its own loss coefficient), entropy coefficient, and learning rate are varied on
-a schedule \supptableref{tab:initial-training-schedule}. At the start of training, the policy loss heavily weighs the shaped 
+a schedule\supptableref{tab:initial-training-schedule}. At the start of training, the policy loss heavily weighs the shaped 
 reward advantage, and the value loss similarly weighs towards the shaped value head. By the end
 of training, both losses are weighted more towards the win-loss sparse reward. The entropy coefficient is also
 lowered at the end of training to discourage the agent from making as many random moves as the
-learning rate is lowered. The schedule specifies phases where these values are set and
+learning rate is lowered. The schedule specifies phases when these values are set and
 transitions between phases by changing values linearly based on timesteps.
 
 We first trained \agentName\ with self-play both against itself and against prior
@@ -357,9 +361,9 @@ By the end of fine-tuning, the model was winning 98\% of games, including about 
 against each of CoacAI and Mayari.
 
 \subsection{Transfer Learning}
-The model so far had been trained on the 5 smaller Open maps. Using the
+Up to this point, the model has only been trained on the 5 smaller Open maps. Using the
 fine-tuned model as a starting point, we trained additional models, each trained exclusively
-on 1 of 3 Open maps. \mapname{NoWhereToRun9x8} is very different from the other maps with a wall of
+on 1 of 3 Open maps. \mapname{NoWhereToRun9x8} is very different from the other smaller maps with a wall of
 resources separating opponents. \mapname{DoubleGame24x24} and \mapname{BWDistantResources32x32} are larger 
 than the maps the base model trained on.
 All 3 transfer learning runs used the same schedule:
@@ -377,7 +381,7 @@ significant improvements over the base model (especially on
 \subsection{Squnet Training}
 We trained the squnet models with fewer steps because of time constraints and skipped the
 predominantly cost-based reward phase because it didn't help train the
-base model \supptableref{tab:squnet-training-parameters}. The 2 models (trained on maps of
+base model\supptableref{tab:squnet-training-parameters}. The 2 models (trained on maps of
 up to size 32x32 and 64x64) managed only a 40\% win rate, never beating CoacAI or Mayari. 
 These models were policies of last resort.
 
@@ -399,7 +403,7 @@ resolution, split evenly by the downscaling block; 4 at 1/4 resolution, split ev
 the 1/16 downscaling block; and 4 at 1/16 resolution)\supptableref{tab:bc-architecture}. This architecture theoretically
 has a 128x128 receptive field while using 25\% fewer operations than DoubleCone at inference time. On
 the largest Open map (\mapname{(4)BloodBath.scmB}), this is 6 times more
-computations than squnet-64. Therefore, this neural architecture won't be usable in a
+computations than squnet-64. Therefore, this neural architecture wouldn't be usable in a
 competition given the same hardware constraints as the 2023 competition.
 
 Initially, we tried a similar training strategy to \agentName\ where the model is
@@ -419,10 +423,10 @@ Instead of generating an offline replay dataset, we set the microRTS environment
 against each other and these observations and actions were fed into rollouts used for
 behavior cloning the policy and fitting the value heads:
 \begin{align}
-    L^{\text{BC+VF}}(\theta) &= \hat{\mathbb{E}}_t \left[ L^{\text{BC}}(\theta) - c_1 L^{\text{VF}}(\theta) \right], \\
+    L^{\text{BC+VF}}(\theta) &= \hat{\mathbb{E}}_t \left[ L^{\text{BC}}(\theta) + c_1 L^{\text{VF}}(\theta) \right], \\
     L^{\text{BC}}(\theta) &= -\frac{1}{\|a_t\|} \log \pi_{\theta}(a_t|s_t),
 \end{align}
-where $c_1$ and $L^{VF}$ are the same as in the PPO loss function. The behavior cloning
+where $c_1$ and $L^{\text{VF}}$ are the same as in the PPO loss function. The behavior cloning
 policy loss is the cross-entropy loss between the policy logits and the actions taken by
 the Mayari bot. We found scaling the loss by the number of units accepting actions
 allowed the learning rate to be significantly increased. Scaling down the loss by the
@@ -567,7 +571,7 @@ the weaker squnet model on \mapname{BWDistantResources32x32}.  Breaking down by 
     \end{threeparttable}
 \end{table}
 
-The competition ran jobs, splitting each map into 5 or 10 jobs where
+The competition ran jobs splitting each map into 5 or 10 jobs where
 each job would run a complete round-robin with all agents on that map playing 2 or 1
 games, respectively, as player 1 and 2 each. For \mapname{basesWorkers8x8A}, on which \agentName\
 underperformed by almost 40\%, the competition had 5 jobs. On the first 3 jobs,
@@ -672,20 +676,20 @@ Improving inference time is critical to matching benchmark results in a competit
 We suggest 3 improvements (2 for agents, and 1 for the competition organizers):
 \begin{inparaenum}[(1)]
     \item use fast inference runtime providers like OpenVINO for ONNX Runtime,
-    \item continue to train agents using the smaller squnet models (possibly with
-    behavior cloning to bootstrap training), and
+    \item train using smaller models (possibly using behavior cloning or policy
+    distillation from larger trained models to bootstrap training), and
     \item replace the fixed per turn timeout tolerance in the competition with an overtime
     budget.
 \end{inparaenum}
 For DoubleCone, \cite{Ferdinand2021doublecone} found using OpenVINO could have made
-inference 2-3 times faster in the LUX competition. This  would likely
-make running DoubleCone and the larger squnet models on all maps except the largest
-feasible for the competition. An overtime budget for an entire match instead of the 20 ms
-per turn tolerance will help agents deal with environment instabilities. For example,
-\bcPPOAgent\ timed out in 11\% of games on \mapname{(4)BloodBath.scmB}, despite averaging
-55 ms/turn and going over 100 ms in only 0.016\% of turns (averaging less than 1 over
-100 ms turn per game). An overage budget of even 1 second per game would likely prevent
-most timeouts.
+inference 2-3 times faster in the LUX competition. This would likely make running
+DoubleCone and the larger squnet models on all but the largest maps feasible for the
+competition. An overtime budget for an entire match instead of the 20 ms per turn
+tolerance will help agents deal with environment instabilities. For example,
+\bcPPOAgent\ timed out in 11\% of games on \mapname{(4)BloodBath.scmB}, despite
+averaging 55 ms/turn and going over 100 ms in only 0.016\% of turns (averaging less than
+1 over 100 ms turn per game). An overage budget of even 1 second per game would likely
+prevent most timeouts.
 
 \subsection{Training on Larger Maps}
 None of our agents managed to reliably defeat the prior two competition winners on 
@@ -777,7 +781,7 @@ to create competitive DRL agents without needing to handcraft shaped reward func
 \section{Acknowledgments}
 We thank the IEEE-CoG 2023 microRTS competition organizers Rubens O. Moraes and Levi H.
 S. Lelis for their work running the competition, helping us work through performance
-concerns in the lead-up to our submission, and providing suggestions on this paper. We
+concerns in the lead-up to our submission, and providing suggestions for this paper. We
 thank Chang Liu for reading and providing feedback on drafts of this paper.
 
 \bibliographystyle{IEEEtran}
