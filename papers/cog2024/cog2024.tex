@@ -192,7 +192,7 @@ the second player, which likely contributed to their finding no improvement. We 
 more maps, extend training capabilities, fix
 self-play\footnote{\unownedFixGitHubCommit}, and add imitation learning.
 
-\subsection{DeepMind AlphaStar}
+\subsection{DeepMind's AlphaStar}
 Reference~\cite{Vinyals2019GrandmasterLI}'s AlphaStar is a grandmaster-level AI trained
 with DRL to play the RTS game StarCraft II. They created an initial set of agents
 through imitation learning: supervised learning using a dataset of observations and
@@ -222,13 +222,13 @@ microRTS requires the agent to give single step actions for each unit at each ti
 
 \subsection{Lux AI Kaggle Competitions}
 The competition platform Kaggle hosts Simulation competitions where competitors submit
-agents that play against other submitted agents in a turn-based game environment. About
-once a year since 2020, Kaggle features an RTS-like Simulation competition: Halite, Lux
-AI, Kore, and Lux AI Season 2. Rules-based agents won Halite, Kore, and Lux AI Season 2.
-The first season Lux AI winning DRL agent by \cite{lux-ai-2021-winner} has many
-similarities to MicroRTS-Py: GridNet action space, reward shaping, and an actor-critic
-training algorithm (IMPALA with additional UPGO and TD($\lambda$) loss terms, instead of
-PPO). Instead of training with a shaped reward function throughout training,
+agents that play against other submitted agents in a turn-based game environment. Since
+2020, Kaggle has featured 4 RTS-like Simulation competitions: Halite, Lux AI, Kore, and
+Lux AI Season 2. Rules-based agents won Halite, Kore, and Lux AI Season 2. The first
+season Lux AI winning DRL agent by \cite{lux-ai-2021-winner} has many similarities to
+MicroRTS-Py: GridNet action space, reward shaping, and an actor-critic training
+algorithm (IMPALA with additional UPGO and TD($\lambda$) loss terms, instead of PPO).
+Instead of training with a shaped reward function throughout training,
 \cite{lux-ai-2021-winner} used shaped rewards on a smaller map before transitioning to
 sparse win-loss rewards on larger and competition-size maps. The top DRL agent by
 \cite{Ferdinand2021doublecone} in the Lux AI Season 2 competition used a "DoubleCone"
@@ -277,16 +277,17 @@ positions were represented as walls, which are impassable and noninteractive.
 
 \subsection{Neural Network Architecture}
 \agentName\ uses two different neural network backbones:
-\cite{Ferdinand2021doublecone}'s DoubleCone(4, 6, 4) (Fig.~\ref{fig:doublecone}) and a custom network
-(squnet). The actor head is a convolutional layer
-that outputs logits for unit actions at every position. A unit action is composed of
-independent discrete subactions: $D = \{a_{\text{action type}},$ $a_{\text{move direction}},$ $a_{\text{harvest
-direction}},$ $a_{\text{return direction}},$ $a_{\text{produce direction}},$ $a_{\text{produce type}},$ $a_{\text{relative
-attack position}}\}$. Invalid action masking sets
-logits to a very large negative number (thus zeroing probabilities and gradients) for actions that are
-illegal or would accomplish nothing (e.g., moving a unit to an occupied or reserved
-position) \cite{DBLP:journals/corr/abs-2006-14171}. This masking significantly reduces
-the action space per turn and makes training more efficient.
+\cite{Ferdinand2021doublecone}'s DoubleCone(4, 6, 4) (Fig.~\ref{fig:doublecone}) and a
+custom network (squnet). The actor head is a convolutional layer that outputs logits for
+unit actions at every position. A unit action is composed of independent discrete
+subactions: $D = \{a_{\text{action type}},$ $a_{\text{move direction}},$
+$a_{\text{harvest direction}},$ $a_{\text{return direction}},$ $a_{\text{produce
+direction}},$ $a_{\text{produce type}},$ $a_{\text{relative attack position}}\}$.
+Invalid action masking sets logits to a very large negative number (thus zeroing
+probabilities and gradients) for actions that are illegal or would accomplish nothing
+(e.g., moving a unit to an occupied or reserved position). This masking significantly
+reduces the action space per turn and makes training more efficient
+\cite{DBLP:journals/corr/abs-2006-14171}.
 
 \begin{figure}[t]
     \centering
@@ -361,7 +362,7 @@ By the end of fine-tuning, the model was winning 98\% of games, including about 
 against each of CoacAI and Mayari.
 
 \subsection{Transfer Learning}
-Up to this point, the model has only been trained on the 5 smaller Open maps. Using the
+Up to this point, the model had only been trained on the 5 smaller Open maps. Using the
 fine-tuned model as a starting point, we trained additional models, each trained exclusively
 on 1 of 3 Open maps. \mapname{NoWhereToRun9x8} is very different from the other smaller maps with a wall of
 resources separating opponents. \mapname{DoubleGame24x24} and \mapname{BWDistantResources32x32} are larger 
@@ -373,17 +374,17 @@ All 3 transfer learning runs used the same schedule:
     \item middle phase of mixed rewards,
     \item end phase of sparse rewards again at a lower learning rate\supptableref{tab:transfer-learning-schedule}.
 \end{inparaenum}
-We did an additional fine-tuning on \mapname{NoWhereToRun9x8} using only the win-loss reward.
-These transfer learned agents exceeded 90\% win rate on their respective maps,
-significant improvements over the base model (especially on
-\mapname{BWDistantResources32x32} which started below 10\%)
+We did additional fine-tuning on \mapname{NoWhereToRun9x8} using only the win-loss
+reward. These transfer learned agents exceeded 90\% win rate on their respective maps,
+significant improvements over the base model (especially on,
+\mapname{BWDistantResources32x32} which started below 10\%).
 
 \subsection{Squnet Training}
-We trained the squnet models with fewer steps because of time constraints and skipped the
-predominantly cost-based reward phase because it didn't help train the
-base model\supptableref{tab:squnet-training-parameters}. The 2 models (trained on maps of
-up to size 32x32 and 64x64) managed only a 40\% win rate, never beating CoacAI or Mayari. 
-These models were policies of last resort.
+We trained the squnet models with fewer steps because of time constraints and mostly
+didn't use the cost-based reward because it didn't help train the base
+model\supptableref{tab:squnet-training-parameters}. The 2 models (trained on maps of up
+to size 32x32 and 64x64, respectively) managed only a 40\% win rate, never beating
+CoacAI or Mayari. These models were policies of last resort.
 
 We also fine-tuned the squnet-map32 model on only \mapname{BWDistantResources32x32}
 using the sparse reward fine-tuning schedule. This fine-tuned 
@@ -622,7 +623,7 @@ for \agentName\ (Table~\ref{tab:outlier-winrate}).
 We created 2 additional agents:
 \begin{inparaenum}[(1)]
     \item only behavior cloning (\bcAgent) and
-    \item followed by PPO fine-tuning (\bcPPOAgent).
+    \item a PPO fine-tuned follow-up of \bcAgent\ (\bcPPOAgent).
 \end{inparaenum}
 Each agent consisted of the models trained on their
 respective map sizes (16x16, 32x32, and 64x64). These agents do not have any
@@ -747,9 +748,10 @@ There are several ways to make DRL more feasible in a competition and educationa
 \end{inparaenum}
 The largest map took 19 GPU-days to train for \agentName, 15 GPU-days for \bcAgent, and
 34 GPU-days for \bcPPOAgent. Over two-thirds of training time for \bcPPOAgent\ was spent
-training on the largest map to little benefit. Reference \cite{DBLP:journals/corr/abs-2105-13807}
-trained an agent for player 1 on a single 16x16 map in 2.5 days. \bcPPOAgent\ trained
-on the 5 Open maps up to size 16x16 in about 7.5 days.
+training on the largest map to little benefit. Reference
+\cite{DBLP:journals/corr/abs-2105-13807} trained an agent for player 1 on a single 16x16
+map in 2.5 days. Training \bcAgent\ followed by \bcPPOAgent\ on the 5 Open maps up to
+size 16x16 took about 7.5 days.
 
 Fine-tuning and transfer learning were critical to making \agentName\ competitive. Both
 took significantly less time than training from randomly initialized weights because the
@@ -828,7 +830,7 @@ A supplemental document includes many implementation details and additional resu
 \begin{inparaenum}[(1)]
     \item additional neural network architecture details for DoubleCone and squnet,
     \item training parameters and schedules,
-    \item behavior cloning and PPO of behavior cloning details,
+    \item \bcAgent\ and \bcPPOAgent\ parameters and training schedules,
     \item training durations,
     \item single player round-robin benchmark setup,
     \item win rates against all opponents in the IEEE-CoG 2023 microRTS competition, and
