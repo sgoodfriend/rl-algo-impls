@@ -780,12 +780,15 @@ resource-constrained researchers and students to create novel DRL agents for fut
 competitions and experiments. Fine-tuning behavior cloning with PPO is a promising way
 to create competitive DRL agents without needing to handcraft shaped reward functions.
 
-\section*{Acknowledgments}
-\addcontentsline{toc}{section}{Acknowledgments}
-We thank the IEEE-CoG 2023 microRTS competition organizers \CompetitionOrganizers\ for
-their work running the competition, helping us work through performance concerns in the
-lead-up to our submission, and providing suggestions for this paper. We thank \ChangLiu\
-for reading and providing feedback on drafts of this paper.
+\ifcogfinal
+    \section*{Acknowledgments}
+    \addcontentsline{toc}{section}{Acknowledgments}
+    We thank the IEEE-CoG 2023 microRTS competition organizers \CompetitionOrganizers\ for
+    their work running the competition, helping us work through performance concerns in the
+    lead-up to our submission, and providing suggestions for this paper. We thank \ChangLiu\
+    for reading and providing feedback on drafts of this paper.
+\else
+\fi
 
 \bibliographystyle{IEEEtran}
 \bibliography{IEEEabrv, cog2024}
