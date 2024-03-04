@@ -582,6 +582,10 @@ Microrts-env64-240m-ent5d1-lr8d1-05wb2lhr-2x2a100:
 Microrts-env64-240m-ent5d1-lr8d1-05wb2lhr-no-ft-2x2a100:
   &microrts-env64-240m-ent5d1-lr8d1-05wb2lhr-no-ft-2x2a100
   <<: *microrts-env64-240m-ent5d1-lr8d1-05wb2lhr-2x2a100
+  algo_hyperparams:
+    &microrts-env64-240m-ent5d1-lr8d1-05wb2lhr-no-ft-2x2a100-algo
+    <<: *microrts-env64-240m-ent5d1-lr8d1-05wb2lhr-2x2a100-algo
+    teacher_kl_loss_coef: null
   policy_hyperparams:
     &microrts-env64-240m-ent5d1-lr8d1-05wb2lhr-no-ft-2x2a100-policy
     <<: *microrts-env64-240m-ent5d1-lr8d1-05wb2lwr-a100-policy
