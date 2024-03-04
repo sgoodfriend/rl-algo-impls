@@ -578,3 +578,12 @@ Microrts-env64-240m-ent5d1-lr8d1-05wb2lhr-2x2a100:
     n_inference_workers: 2
     n_rollout_workers: 4
     rollout_gpu_indexes: [1]
+
+Microrts-env64-240m-ent5d1-lr8d1-05wb2lhr-no-ft-2x2a100:
+  &microrts-env64-240m-ent5d1-lr8d1-05wb2lhr-no-ft-2x2a100
+  <<: *microrts-env64-240m-ent5d1-lr8d1-05wb2lhr-2x2a100
+  policy_hyperparams:
+    &microrts-env64-240m-ent5d1-lr8d1-05wb2lhr-no-ft-2x2a100-policy
+    <<: *microrts-env64-240m-ent5d1-lr8d1-05wb2lwr-a100-policy
+    load_run_path: null
+    load_path: null
