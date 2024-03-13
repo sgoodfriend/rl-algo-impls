@@ -599,6 +599,13 @@ Microrts-env64-240m-ent5d1-lr1ru-05wb2lhr-no-ft-2x2a100:
     &microrts-env64-240m-ent5d1-lr1ru-05wb2lhr-no-ft-2x2a100-algo
     <<: *microrts-env64-240m-ent5d1-lr8d1-05wb2lhr-no-ft-2x2a100-algo
     learning_rate: !!float 1e-4
+  env_hyperparams: &microrts-env64-240m-ent5d1-lr1ru-05wb2lhr-no-ft-2x2a100-env
+    <<: *microrts-env64-240m-ent5d1-lr8d1-05wb2lwr-a100-env
+    normalize_kwargs:
+      &microrts-env64-240m-ent5d1-lr1ru-05wb2lhr-no-ft-2x2a100-normalize-kwargs
+      <<: *microrts-env32-240m-ent5d1-lr8d1-05wb2lwr-ft-a100-normalize-kwargs
+      clip_reward: 10
+      gamma_reward: 0.999
   hyperparam_transitions_kwargs:
     interpolate_method: cosine
     phases:
