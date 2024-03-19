@@ -160,16 +160,25 @@ class Grid2EntityTransformerNetwork(ActorCriticNetwork):
         s_dim = n_keep.max().item()
         assert isinstance(s_dim, int)
 
-        _x_squash = torch.zeros(
+        entities = x[keep_mask]  # Float[Sum(n_keep), C]
+        row_indices = torch.arange(x.size(0)).repeat_interleave(
+            n_keep
+        )  # Int[Sum(n_keep)]
+        cumulative_true_counts = (
+            keep_mask.cumsum(dim=1).masked_select(keep_mask) - 1
+        )  # Int[Sum(n_keep)]
+        x = torch.zeros(
             x.size(0), s_dim, x.size(2), dtype=x.dtype, device=x.device
         )  # Float[B, S, C]
-        key_padding_mask = torch.zeros(
-            x.size(0), s_dim, dtype=keep_mask.dtype, device=keep_mask.device
+        x[row_indices, cumulative_true_counts] = entities
+
+        key_padding_mask = torch.full(
+            (x.size(0), s_dim),
+            fill_value=True,
+            dtype=keep_mask.dtype,
+            device=keep_mask.device,
         )  # Bool[B, S]
-        for i in range(x.size(0)):
-            _x_squash[i, : n_keep[i], :] = x[i, keep_mask[i], :]
-            key_padding_mask[i, n_keep[i] :] = True
-        x = _x_squash
+        key_padding_mask[row_indices, cumulative_true_counts] = False
 
         x = self.embedding_layer(x)  # [B, S, C] -> [B, S, E]
         x = self.backbone(x, key_padding_mask=key_padding_mask)
