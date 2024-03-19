@@ -25,6 +25,8 @@ from rl_algo_impls.shared.policy.actor_critic_network.network import (
 from rl_algo_impls.shared.policy.grid2entity_distribution import Grid2EntityDistribution
 from rl_algo_impls.shared.policy.policy import ACTIVATION
 
+VERIFY = True
+
 
 class BackboneForwardReturn(NamedTuple):
     x: torch.Tensor  # Float[B, S, E]
@@ -168,6 +170,17 @@ class Grid2EntityTransformerNetwork(ActorCriticNetwork):
         s_dim = n_keep.max().item()
         assert isinstance(s_dim, int)
 
+        if VERIFY:
+            _x_squash = torch.zeros(
+                x.size(0), s_dim, x.size(2), dtype=x.dtype, device=x.device
+            )  # Float[B, S, C]
+            _key_padding_mask = torch.zeros(
+                x.size(0), s_dim, dtype=keep_mask.dtype, device=keep_mask.device
+            )  # Bool[B, S]
+            for i in range(x.size(0)):
+                _x_squash[i, : n_keep[i], :] = x[i, keep_mask[i], :]
+                _key_padding_mask[i, n_keep[i] :] = True
+
         entities = x[keep_mask]  # Float[Sum(n_keep), C]
         row_indices = torch.arange(x.size(0), device=x.device).repeat_interleave(
             n_keep
@@ -187,6 +200,11 @@ class Grid2EntityTransformerNetwork(ActorCriticNetwork):
             device=keep_mask.device,
         )  # Bool[B, S]
         key_padding_mask[row_indices, cumulative_true_counts] = False
+
+        if VERIFY:
+            assert torch.all(key_padding_mask == _key_padding_mask) and torch.all(
+                x == _x_squash
+            )
 
         x = self.embedding_layer(x)  # [B, S, C] -> [B, S, E]
         x = self.backbone(x, key_padding_mask=key_padding_mask)
