@@ -1950,8 +1950,8 @@ Microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2entity-a10:
     hidden_critic_dims: []
     normalization: layer
     output_activation_fn: identity
-    pre_backbone_normalization: layer
-    post_backbone_normalization: null
+    pre_backbone_normalization: null
+    post_backbone_normalization: layer
     subaction_mask:
       0:
         1: 1
