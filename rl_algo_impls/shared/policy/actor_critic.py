@@ -141,6 +141,7 @@ class ActorCritic(OnPolicy, Generic[ObsType]):
         shared_critic_head: Optional[bool] = None,
         critic_avg_max_pool: bool = False,
         normalization: Optional[str] = None,
+        post_backbone_normalization: Optional[str] = None,
         critic_strides: Optional[List[Union[int, List[int]]]] = None,
         encoder_embed_dim: int = 64,
         encoder_attention_heads: int = 4,
@@ -286,6 +287,7 @@ class ActorCritic(OnPolicy, Generic[ObsType]):
         elif actor_head_style == "grid2entity_transformer":
             assert action_plane_space is not None
             assert normalization is not None
+            assert post_backbone_normalization is not None
             self.network = Grid2EntityTransformerNetwork(
                 single_observation_space,
                 single_action_space,
@@ -301,6 +303,7 @@ class ActorCritic(OnPolicy, Generic[ObsType]):
                 output_activation_fn=output_activation_fn,
                 subaction_mask=subaction_mask,
                 normalization=normalization,
+                post_backbone_normalization=post_backbone_normalization,
                 add_position_features=add_position_features,
             )
         elif share_features_extractor:

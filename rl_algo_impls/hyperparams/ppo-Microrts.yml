@@ -1950,6 +1950,7 @@ Microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2entity-a10:
     hidden_critic_dims: []
     normalization: layer
     output_activation_fn: identity
+    post_backbone_normalization: layer
     subaction_mask:
       0:
         1: 1
@@ -2480,7 +2481,7 @@ Microrts-agent: &microrts-agent
         #   use_paper_obs: true
 
 Microrts-debug:
-  <<: *microrts-bw16a-1m-ent100d-lr10d01-shaped-rew-grid2entity-2l-a10
+  <<: *microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2entity-a10
   # eval_hyperparams:
   #   <<: *microrts-bw10-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10-eval
   #   skip_evaluate_at_start: true

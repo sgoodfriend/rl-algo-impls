@@ -52,6 +52,7 @@ class Grid2EntityTransformerNetwork(ActorCriticNetwork):
         output_activation_fn: str = "identity",
         subaction_mask: Optional[Dict[int, Dict[int, int]]] = None,
         normalization: str = "layer",
+        post_backbone_normalization: str = "layer",
         add_position_features: bool = True,
     ) -> None:
         if hidden_embedding_dims is None:
@@ -97,7 +98,6 @@ class Grid2EntityTransformerNetwork(ActorCriticNetwork):
             nn.GELU,
             output_activation=nn.GELU(),
             init_layers_orthogonal=init_layers_orthogonal,
-            final_normalization=normalization,
         )
 
         self.backbone = TransformerEncoderBackbone(
@@ -106,6 +106,12 @@ class Grid2EntityTransformerNetwork(ActorCriticNetwork):
             encoder_feed_forward_dim,
             encoder_layers,
             normalization=normalization,
+        )
+
+        self.post_backbone_normalization = (
+            normalization1d(post_backbone_normalization, encoder_embed_dim)
+            if post_backbone_normalization
+            else None
         )
 
         actor_layer_sizes = [
@@ -182,6 +188,8 @@ class Grid2EntityTransformerNetwork(ActorCriticNetwork):
 
         x = self.embedding_layer(x)  # [B, S, C] -> [B, S, E]
         x = self.backbone(x, key_padding_mask=key_padding_mask)
+        if self.post_backbone_normalization is not None:
+            x = self.post_backbone_normalization(x)
         return BackboneForwardReturn(x, key_padding_mask, keep_mask, n_keep)
 
     def _distribution_and_value(
