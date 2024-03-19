@@ -167,7 +167,7 @@ class Grid2EntityTransformerNetwork(ActorCriticNetwork):
         assert isinstance(s_dim, int)
 
         entities = x[keep_mask]  # Float[Sum(n_keep), C]
-        row_indices = torch.arange(x.size(0)).repeat_interleave(
+        row_indices = torch.arange(x.size(0), device=x.device).repeat_interleave(
             n_keep
         )  # Int[Sum(n_keep)]
         cumulative_true_counts = (
