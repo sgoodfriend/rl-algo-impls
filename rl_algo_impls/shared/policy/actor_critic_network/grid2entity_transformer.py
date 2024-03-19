@@ -25,7 +25,7 @@ from rl_algo_impls.shared.policy.actor_critic_network.network import (
 from rl_algo_impls.shared.policy.grid2entity_distribution import Grid2EntityDistribution
 from rl_algo_impls.shared.policy.policy import ACTIVATION
 
-VERIFY = True
+VERIFY = False
 
 
 class BackboneForwardReturn(NamedTuple):
