@@ -52,7 +52,7 @@ class Grid2EntityTransformerNetwork(ActorCriticNetwork):
         output_activation_fn: str = "identity",
         subaction_mask: Optional[Dict[int, Dict[int, int]]] = None,
         normalization: str = "layer",
-        post_backbone_normalization: str = "layer",
+        post_backbone_normalization: Optional[str] = "layer",
         add_position_features: bool = True,
     ) -> None:
         if hidden_embedding_dims is None:

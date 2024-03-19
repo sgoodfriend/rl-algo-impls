@@ -287,7 +287,6 @@ class ActorCritic(OnPolicy, Generic[ObsType]):
         elif actor_head_style == "grid2entity_transformer":
             assert action_plane_space is not None
             assert normalization is not None
-            assert post_backbone_normalization is not None
             self.network = Grid2EntityTransformerNetwork(
                 single_observation_space,
                 single_action_space,
