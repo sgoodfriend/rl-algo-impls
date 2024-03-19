@@ -51,6 +51,7 @@ class Grid2EntityTransformerNetwork(ActorCriticNetwork):
         hidden_actor_dims: Optional[List[int]] = None,
         output_activation_fn: str = "identity",
         subaction_mask: Optional[Dict[int, Dict[int, int]]] = None,
+        pre_backbone_normalization: Optional[str] = None,
         normalization: str = "layer",
         post_backbone_normalization: Optional[str] = "layer",
         add_position_features: bool = True,
@@ -98,6 +99,7 @@ class Grid2EntityTransformerNetwork(ActorCriticNetwork):
             nn.GELU,
             output_activation=nn.GELU(),
             init_layers_orthogonal=init_layers_orthogonal,
+            final_normalization=pre_backbone_normalization,
         )
 
         self.backbone = TransformerEncoderBackbone(
