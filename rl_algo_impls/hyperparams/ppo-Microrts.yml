@@ -1940,6 +1940,14 @@ Microrts-bw10-p1-2m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10:
 Microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2entity-a10:
   &microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2entity-a10
   <<: *microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10
+  env_hyperparams:
+    &microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2entity-a10-env
+    <<: *microrts-bw10-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10-env
+    normalize: true
+    normalize_kwargs:
+      clip_obs: 5
+      norm_obs: true
+      norm_reward: false
   policy_hyperparams:
     &microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2entity-a10-policy
     actor_head_style: grid2entity_transformer
