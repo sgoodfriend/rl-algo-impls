@@ -1940,6 +1940,14 @@ Microrts-bw10-p1-2m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10:
 Microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2entity-a10:
   &microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2entity-a10
   <<: *microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10
+  env_hyperparams:
+    &microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2entity-a10-env
+    <<: *microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10-env
+    make_kwargs:
+      &microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2entity-a10-env-make-kwargs
+      <<: *microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10-env-make-kwargs
+      always_player_1: false
+      reward_weight: [10.0, 1.0, 1.0, 0.2, 1.0, 4.0, 5.0, 6.0, 0]
   policy_hyperparams:
     &microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2entity-a10-policy
     actor_head_style: grid2entity_transformer
