@@ -1,6 +1,6 @@
 import os
 from dataclasses import asdict, dataclass
-from typing import Any, Dict, Optional, Tuple, Type, TypeVar, Union
+from typing import Any, Dict, NamedTuple, Optional, Tuple, Type, TypeVar, Union
 
 import numpy as np
 from numpy.typing import NDArray
@@ -12,25 +12,54 @@ RunningMeanStdSelf = TypeVar("RunningMeanStdSelf", bound="RunningMeanStd")
 RMSSelf = TypeVar("RMSSelf", bound="RMS")
 
 
-@dataclass
-class RMS:
+class RMSBatch(NamedTuple):
     mean: NDArray
     var: NDArray
     count: float
 
     @classmethod
-    def empty(cls: Type[RMSSelf], shape: Tuple[int, ...], epsilon: float) -> RMSSelf:
+    def from_rms(cls, rms: "RMS") -> "RMSBatch":
+        return cls(rms.mean, rms.var, rms.count)
+
+
+@dataclass
+class RMS:
+    mean: NDArray
+    var: NDArray
+    count: float
+    normalize_axes: Tuple[int, ...]
+
+    @classmethod
+    def empty(
+        cls: Type[RMSSelf],
+        shape: Tuple[int, ...],
+        epsilon: float,
+        normalize_axes: Optional[Tuple[int, ...]] = None,
+    ) -> RMSSelf:
+        if normalize_axes:
+            shape = tuple(
+                s if i not in normalize_axes else 1 for i, s in enumerate(shape)
+            )
+        else:
+            normalize_axes = tuple()
+        # Increment axes by 1 to account for batch axis
+        normalize_axes = tuple(a + 1 for a in normalize_axes)
         return cls(
             np.zeros(shape, np.float64),
             np.ones(shape, np.float64),
             epsilon,
+            normalize_axes,
         )
 
     def update(self, x: np.ndarray) -> None:
-        batch_rms = self.__class__(np.mean(x, axis=0), np.var(x, axis=0), x.shape[0])
+        batch_rms = RMSBatch(
+            np.mean(x, axis=(0,) + self.normalize_axes).reshape(self.mean.shape),
+            np.var(x, axis=(0,) + self.normalize_axes).reshape(self.var.shape),
+            x.shape[0],
+        )
         self.update_from_batch(batch_rms)
 
-    def update_from_batch(self: RMSSelf, batch: RMSSelf) -> None:
+    def update_from_batch(self, batch: RMSBatch) -> None:
         delta = batch.mean - self.mean
         total_count = self.count + batch.count
 
@@ -66,13 +95,17 @@ class TrackableRMS(TrackableState):
 
 class RunningMeanStd(UpdateTrackable):
     def __init__(
-        self, filename: str, epsilon: float = 1e-4, shape: Tuple[int, ...] = ()
+        self,
+        filename: str,
+        epsilon: float = 1e-4,
+        shape: Tuple[int, ...] = (),
+        normalize_axes: Optional[Tuple[int, ...]] = None,
     ) -> None:
         super().__init__(filename)
         self.filename = filename
         self.epsilon = epsilon
-        self.rms = RMS.empty(shape, epsilon)
-        self.running = RMS.empty(shape, epsilon)
+        self.rms = RMS.empty(shape, epsilon, normalize_axes)
+        self.running = RMS.empty(shape, epsilon, normalize_axes)
 
     @property
     def mean(self) -> NDArray:
@@ -96,12 +129,12 @@ class RunningMeanStd(UpdateTrackable):
     def set_state(self, state: TrackableRMS) -> None:
         self.rms = state.rms
 
-    def get_update(self) -> RMS:
-        running = self.running
+    def get_update(self) -> RMSBatch:
+        running = RMSBatch.from_rms(self.running)
         self.running = RMS.empty(self.running.mean.shape, self.epsilon)
         return running
 
-    def apply_update(self, update: RMS) -> None:
+    def apply_update(self, update: RMSBatch) -> None:
         self.rms.update_from_batch(update)
 
 
@@ -135,8 +168,7 @@ class EMMV:
         weights = (alpha * ((1 - alpha) ** np.arange(x.shape[0] - 1, -1, -1)))[:, None]
         self.mean = np.sum(weights * x, axis=0) + (1 - np.sum(weights)) * self.mean
         self.squared_mean = (
-            np.sum(weights * (x**2), axis=0)
-            + (1 - np.sum(weights)) * self.squared_mean
+            np.sum(weights * (x**2), axis=0) + (1 - np.sum(weights)) * self.squared_mean
         )
 
         self.var = self.squared_mean - self.mean**2

@@ -1,6 +1,7 @@
 import os
 from typing import Optional, Tuple, TypeVar, Union
 
+import gymnasium.spaces
 import numpy as np
 from numpy.typing import NDArray
 
@@ -28,10 +29,13 @@ class NormalizeObservation(VectorWrapper):
         training: bool = True,
         epsilon: float = 1e-8,
         clip: float = 10.0,
+        normalize_axes: Optional[Tuple[int, ...]] = None,
     ) -> None:
         super().__init__(env)
         self.rms = RunningMeanStd(
-            NORMALIZE_OBSERVATION_FILENAME, shape=env.single_observation_space.shape
+            NORMALIZE_OBSERVATION_FILENAME,
+            shape=env.single_observation_space.shape,
+            normalize_axes=normalize_axes,
         )
         self.training = training
         self.epsilon = epsilon

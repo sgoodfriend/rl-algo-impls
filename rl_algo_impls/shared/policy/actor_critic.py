@@ -154,6 +154,7 @@ class ActorCritic(OnPolicy, Generic[ObsType]):
         identity_map_reordering: bool = True,
         filter_key_mask_empty_spaces: bool = True,
         hidden_critic_dims: Optional[List[int]] = None,
+        normalize_input: bool = False,
         **kwargs,
     ) -> None:
         super().__init__(env_spaces, **kwargs)
@@ -306,6 +307,7 @@ class ActorCritic(OnPolicy, Generic[ObsType]):
                 normalization=normalization,
                 post_backbone_normalization=post_backbone_normalization,
                 add_position_features=add_position_features,
+                normalize_input=normalize_input,
             )
         elif share_features_extractor:
             self.network = ConnectedTrioActorCriticNetwork(

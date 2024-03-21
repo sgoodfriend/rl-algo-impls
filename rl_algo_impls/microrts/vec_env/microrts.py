@@ -244,6 +244,9 @@ def make_microrts_env(
                     data_store_view,
                     training=training,
                     clip=normalize_kwargs.get("clip_obs", 10.0),
+                    normalize_axes=tuple(
+                        normalize_kwargs.get("normalize_axes", tuple())
+                    ),
                 )
             if training and normalize_kwargs.get("norm_reward", True):
                 rew_shape = (

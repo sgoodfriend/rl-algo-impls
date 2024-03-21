@@ -12,6 +12,7 @@ from rl_algo_impls.shared.module.normalization import (
     NormalizationMethod,
     normalization1d,
 )
+from rl_algo_impls.shared.module.running_norm import RunningNorm
 from rl_algo_impls.shared.module.utils import mlp
 from rl_algo_impls.shared.policy.actor_critic_network.grid2seq_transformer import (
     TransformerEncoderForwardArgs,
@@ -57,6 +58,7 @@ class Grid2EntityTransformerNetwork(ActorCriticNetwork):
         normalization: str = "layer",
         post_backbone_normalization: Optional[str] = "layer",
         add_position_features: bool = True,
+        normalize_input: bool = False,
     ) -> None:
         if hidden_embedding_dims is None:
             hidden_embedding_dims = []
@@ -88,12 +90,19 @@ class Grid2EntityTransformerNetwork(ActorCriticNetwork):
 
         self.add_position_features = add_position_features
         if add_position_features:
-            y_pos = torch.linspace(-1, 1, self.height).tile(self.width, 1)  # [H, W]
-            x_pos = torch.linspace(-1, 1, self.width).tile(self.height, 1).t()  # [H, W]
+            y_pos = (
+                torch.arange(self.height).unsqueeze(-1).tile(1, self.width)
+            )  # [H, W]
+            x_pos = torch.arange(self.width).unsqueeze(0).tile(self.height, 1)  # [H, W]
+            if not normalize_input:
+                y_pos = y_pos / (self.height - 1) * 2 - 1
+                x_pos = x_pos / (self.width - 1) * 2 - 1
             position = torch.stack((y_pos, x_pos), dim=0)  # [2, H, W]
 
             self.register_buffer("position", position)
             channels += 2
+
+        self.normalize_input = RunningNorm(channels) if normalize_input else None
 
         embedding_layer_sizes = [channels, *hidden_embedding_dims, encoder_embed_dim]
         self.embedding_layer = mlp(
@@ -205,6 +214,9 @@ class Grid2EntityTransformerNetwork(ActorCriticNetwork):
             assert torch.all(key_padding_mask == _key_padding_mask) and torch.all(
                 x == _x_squash
             )
+
+        if self.normalize_input:
+            x = self.normalize_input(x, mask=~key_padding_mask)
 
         x = self.embedding_layer(x)  # [B, S, C] -> [B, S, E]
         x = self.backbone(x, key_padding_mask=key_padding_mask)
