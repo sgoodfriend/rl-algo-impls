@@ -1,12 +1,14 @@
-from typing import Iterator, List, NamedTuple, Optional, TypeVar, Union
+from typing import Dict, Iterator, List, NamedTuple, Optional, TypeVar, Union
 
 import numpy as np
 import torch
+from gymnasium.spaces import MultiDiscrete
 
 from rl_algo_impls.loss.teacher_kl_loss import teacher_kl_loss_enabled
-from rl_algo_impls.rollout.rollout import Rollout, flatten_batch_step
+from rl_algo_impls.rollout.rollout import Rollout, flatten_batch_step, num_actions
 from rl_algo_impls.rollout.rollout_dataloader import RolloutDataset
 from rl_algo_impls.runner.config import Config
+from rl_algo_impls.shared.actor.gridnet import ValueDependentMask
 from rl_algo_impls.shared.data_store.data_store_data import RolloutView
 from rl_algo_impls.shared.gae import compute_advantages
 from rl_algo_impls.shared.tensor_utils import (
@@ -34,6 +36,8 @@ class PPOBatch(NamedTuple):
     returns: torch.Tensor
 
     teacher_logprobs: Optional[torch.Tensor]
+
+    num_actions: Optional[torch.Tensor] = None
 
     def to(self: PPOBatchSelf, device: torch.device) -> PPOBatchSelf:
         def to_device(t: TDN) -> TDN:
@@ -78,6 +82,8 @@ class PPORollout(Rollout):
         gamma: NumOrArray,
         gae_lambda: NumOrArray,
         full_batch_off_accelerator: bool = False,
+        subaction_mask: Optional[Dict[int, Dict[int, int]]] = None,
+        action_plane_space: Optional[MultiDiscrete] = None,
         **kwargs,
     ) -> None:
         super().__init__()
@@ -119,6 +125,23 @@ class PPORollout(Rollout):
         else:
             self.teacher_logprobs = None
 
+        if config.algo_hyperparams.get("scale_loss_by_num_actions", False):
+            n_actions = num_actions(
+                actions,
+                action_masks,
+                (
+                    ValueDependentMask.from_reference_index_to_index_to_value(
+                        subaction_mask
+                    )
+                    if subaction_mask
+                    else None
+                ),
+                action_plane_space,
+            )
+            self.num_actions = n_actions.reshape(-1) if n_actions is not None else None
+        else:
+            self.num_actions = None
+
     @property
     def y_true(self) -> np.ndarray:
         return self.returns
@@ -142,16 +165,25 @@ class PPORollout(Rollout):
         self._batch = PPOBatch(
             numpy_to_tensor(self.obs, device),
             numpy_to_tensor(self.actions, device),
-            numpy_to_tensor(self.action_masks, device)
-            if self.action_masks is not None
-            else None,
+            (
+                numpy_to_tensor(self.action_masks, device)
+                if self.action_masks is not None
+                else None
+            ),
             numpy_to_tensor(self.logprobs, device),
             numpy_to_tensor(self.values, device),
             numpy_to_tensor(self.advantages, device),
             numpy_to_tensor(self.returns, device),
-            numpy_to_tensor(self.teacher_logprobs, device)
-            if self.teacher_logprobs is not None
-            else None,
+            (
+                numpy_to_tensor(self.teacher_logprobs, device)
+                if self.teacher_logprobs is not None
+                else None
+            ),
+            (
+                numpy_to_tensor(self.num_actions, device)
+                if self.num_actions is not None
+                else None
+            ),
         )
         return self._batch
 

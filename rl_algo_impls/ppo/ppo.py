@@ -136,6 +136,7 @@ class PPO(Algorithm):
         vf_weights: Optional[List[int]] = None,
         teacher_kl_loss_coef: Optional[float] = None,
         teacher_loss_importance_sampling: bool = True,
+        scale_loss_by_num_actions: bool = False,
     ) -> None:
         super().__init__(
             policy,
@@ -183,6 +184,8 @@ class PPO(Algorithm):
         self.teacher_kl_loss_coef = teacher_kl_loss_coef
         self.teacher_kl_loss_fn = TeacherKLLoss() if teacher_kl_loss_coef else None
         self.teacher_loss_importance_sampling = teacher_loss_importance_sampling
+
+        self.scale_loss_by_num_actions = scale_loss_by_num_actions
 
     def learn(
         self: PPOSelf,
@@ -296,6 +299,7 @@ class PPO(Algorithm):
                     mb_adv,
                     mb_returns,
                     mb_teacher_logprobs,
+                    mb_num_actions,
                 ) = mb
 
                 if self.normalize_advantages_after_scaling:
@@ -320,7 +324,14 @@ class PPO(Algorithm):
                     logratio = new_logprobs - mb_logprobs
                     ratio = torch.exp(logratio)
                     clipped_ratio = torch.clamp(ratio, min=1 - pi_clip, max=1 + pi_clip)
-                    pi_loss = -torch.min(ratio * mb_adv, clipped_ratio * mb_adv).mean()
+                    pi_loss = -torch.min(ratio * mb_adv, clipped_ratio * mb_adv)
+                    if self.scale_loss_by_num_actions:
+                        assert mb_num_actions is not None
+                        pi_loss = (
+                            pi_loss * mb_num_actions / mb_num_actions.sum()
+                        ).sum()
+                    else:
+                        pi_loss = pi_loss.mean()
 
                     v_loss_unclipped = self.vf_loss_fn(
                         new_values, mb_returns, reduction="none"
