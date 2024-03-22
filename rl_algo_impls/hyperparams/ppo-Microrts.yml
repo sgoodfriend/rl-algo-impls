@@ -1943,6 +1943,7 @@ Microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2entity-a10:
   algo_hyperparams:
     &microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2entity-a10-algo
     <<: *microrts-bw10-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10-algo
+    ent_coef: 0.05
     scale_loss_by_num_actions: true
   env_hyperparams:
     &microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2entity-a10-env
@@ -1952,6 +1953,13 @@ Microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2entity-a10:
       <<: *microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10-env-make-kwargs
       always_player_1: false
       reward_weight: [10.0, 1.0, 1.0, 0.2, 1.0, 4.0, 5.25, 6.0, 0]
+  hyperparam_transitions_kwargs:
+    phases:
+      - learning_rate: 0.001
+        ent_coef: 0.05
+      - learning_rate: 0
+        ent_coef: 0
+    durations: [0, 1, 0]
   policy_hyperparams:
     &microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2entity-a10-policy
     actor_head_style: grid2entity_transformer
@@ -1959,13 +1967,13 @@ Microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2entity-a10:
     encoder_embed_dim: 32
     encoder_feed_forward_dim: 128
     encoder_layers: 2
-    entropy_mask_correction: false
+    entropy_mask_correction: true
     hidden_critic_dims: []
     normalization: layer
     normalize_input: true
     output_activation_fn: identity
-    pre_backbone_normalization: null
-    post_backbone_normalization: layer
+    pre_backbone_normalization: layer
+    post_backbone_normalization: null
     subaction_mask:
       0:
         1: 1

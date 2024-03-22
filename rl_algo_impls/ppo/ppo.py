@@ -315,6 +315,9 @@ class PPO(Algorithm):
                     if multi_reward_weights is not None:
                         mb_adv = mb_adv @ multi_reward_weights
 
+                if mb_num_actions is not None:
+                    mb_num_actions = mb_num_actions / mb_num_actions.sum()
+
                 additional_losses = {}
                 with maybe_autocast(self.autocast_loss, self.device):
                     new_logprobs, entropy, new_values = self.policy(
@@ -327,9 +330,7 @@ class PPO(Algorithm):
                     pi_loss = -torch.min(ratio * mb_adv, clipped_ratio * mb_adv)
                     if self.scale_loss_by_num_actions:
                         assert mb_num_actions is not None
-                        pi_loss = (
-                            pi_loss * mb_num_actions / mb_num_actions.sum()
-                        ).sum()
+                        pi_loss = (pi_loss * mb_num_actions).sum()
                     else:
                         pi_loss = pi_loss.mean()
 
@@ -353,7 +354,10 @@ class PPO(Algorithm):
                     if self.ppo2_vf_coef_halving:
                         v_loss *= 0.5
 
-                    entropy_loss = -entropy.mean()
+                    if self.scale_loss_by_num_actions:
+                        entropy_loss = -(entropy * mb_num_actions).sum()
+                    else:
+                        entropy_loss = -entropy.mean()
                     with torch.no_grad():
                         approx_kl = ((ratio - 1) - logratio).mean().cpu().numpy().item()
                     if self.kl_cutoff is not None and approx_kl > self.kl_cutoff:
