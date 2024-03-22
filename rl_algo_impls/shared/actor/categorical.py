@@ -18,6 +18,7 @@ class MaskedCategorical(Categorical):
         mask: Optional[torch.Tensor] = None,
         verify: bool = False,
         neg_inf: Optional[float] = None,
+        entropy_mask_correction: bool = True,
     ):
         self.verify = verify
         if mask is not None:
@@ -28,6 +29,7 @@ class MaskedCategorical(Categorical):
                 self.rows_with_valid_actions = mask.any(dim=1)
                 self.non_empty_action_mask = mask[self.rows_with_valid_actions]
         self.mask = mask
+        self.entropy_mask_correction = entropy_mask_correction
         super().__init__(probs, logits, validate_args)
 
     def log_prob(self, value):
@@ -42,10 +44,15 @@ class MaskedCategorical(Categorical):
         return logp
 
     def entropy(self) -> torch.Tensor:
-        if self.mask is None:
+        if self.mask is None or not self.entropy_mask_correction:
             return super().entropy()
         # If mask set, then use approximation for entropy
-        p_log_p = self.logits * self.probs  # type: ignore
+        logits = self.logits
+        assert isinstance(logits, torch.Tensor)
+        logits = torch.clamp(logits, min=torch.finfo(logits.dtype).min)
+        probs = self.probs
+        assert isinstance(probs, torch.Tensor)
+        p_log_p = logits * self.probs
         masked = torch.where(
             self.mask,
             p_log_p,

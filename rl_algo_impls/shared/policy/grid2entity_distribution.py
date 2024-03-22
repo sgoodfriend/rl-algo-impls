@@ -28,6 +28,7 @@ class Grid2EntityDistribution(Distribution):
         action_masks: torch.Tensor,  # Bool[B, S, A]
         validate_args: Optional[bool] = None,
         subaction_mask: Optional[Dict[int, ValueDependentMask]] = None,
+        entropy_mask_correction: bool = True,
     ):
         self.keep_mask = keep_mask
         self.n_keep = n_keep
@@ -50,7 +51,12 @@ class Grid2EntityDistribution(Distribution):
         )  # Tuple[Float[B*S, A_i], ...]
 
         self.categoricals = [
-            MaskedCategorical(logits=lg, validate_args=validate_args, mask=m)
+            MaskedCategorical(
+                logits=lg,
+                validate_args=validate_args,
+                mask=m,
+                entropy_mask_correction=entropy_mask_correction,
+            )
             for lg, m in zip(split_logits, split_masks)
         ]
 

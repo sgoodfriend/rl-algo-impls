@@ -1955,6 +1955,7 @@ Microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2entity-a10:
     encoder_embed_dim: 32
     encoder_feed_forward_dim: 128
     encoder_layers: 2
+    entropy_mask_correction: false
     hidden_critic_dims: []
     normalization: layer
     normalize_input: true

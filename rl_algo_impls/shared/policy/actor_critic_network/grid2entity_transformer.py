@@ -59,6 +59,7 @@ class Grid2EntityTransformerNetwork(ActorCriticNetwork):
         post_backbone_normalization: Optional[str] = "layer",
         add_position_features: bool = True,
         normalize_input: bool = False,
+        entropy_mask_correction: bool = True,
     ) -> None:
         if hidden_embedding_dims is None:
             hidden_embedding_dims = []
@@ -143,6 +144,7 @@ class Grid2EntityTransformerNetwork(ActorCriticNetwork):
             if subaction_mask
             else None
         )
+        self.entropy_mask_correction = entropy_mask_correction
 
         output_activations = [
             ACTIVATION[act_fn_name]()
@@ -256,6 +258,7 @@ class Grid2EntityTransformerNetwork(ActorCriticNetwork):
             action_logits,
             action_masks,
             subaction_mask=self.subaction_mask,
+            entropy_mask_correction=self.entropy_mask_correction,
         )
 
         v_input = torch.where(key_padding_mask.unsqueeze(-1), 0, x).sum(dim=1) / (
