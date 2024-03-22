@@ -60,6 +60,7 @@ class Grid2EntityTransformerNetwork(ActorCriticNetwork):
         add_position_features: bool = True,
         normalize_input: bool = False,
         entropy_mask_correction: bool = True,
+        value_output_gain: float = 1.0,
     ) -> None:
         if hidden_embedding_dims is None:
             hidden_embedding_dims = []
@@ -161,7 +162,7 @@ class Grid2EntityTransformerNetwork(ActorCriticNetwork):
             nn.GELU,
             output_activation=ChannelwiseActivation(output_activations),
             init_layers_orthogonal=init_layers_orthogonal,
-            final_layer_gain=1.0,
+            final_layer_gain=value_output_gain,
         )
 
     def _preprocess(self, obs: torch.Tensor) -> torch.Tensor:

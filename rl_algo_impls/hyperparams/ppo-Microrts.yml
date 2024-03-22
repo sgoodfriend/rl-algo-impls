@@ -1974,6 +1974,7 @@ Microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2entity-a10:
         4: 4
         5: 4
         6: 5
+    value_output_gain: 0.02
 
 Microrts-bw10-p1-2m-ent100d-lr10d-shaped-rew-mgn2-grid2entity-a10:
   &microrts-bw10-p1-2m-ent100d-lr10d-shaped-rew-mgn2-grid2entity-a10
