@@ -1830,7 +1830,7 @@ Microrts-bw10-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10:
     env_type: microrts
     make_kwargs:
       &microrts-bw10-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10-env-make-kwargs
-      map_paths: [maps/10x10/basesWorkers10x10.xml]
+      map_paths: [maps/10x10/basesTwoWorkers10x10.xml]
       reward_weight: [10.0, 1.0, 1.0, 0.2, 1.0, 4.0, 4.0, 4.0, 0]
       max_steps: 2000
     n_envs: 24
@@ -1846,7 +1846,7 @@ Microrts-bw10-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10:
       info_rewards: null
       make_kwargs:
         &microrts-bw10-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10-eval-make-kwargs
-        map_paths: [maps/10x10/basesWorkers10x10.xml]
+        map_paths: [maps/10x10/basesTwoWorkers10x10.xml]
         max_steps: 2000
         reward_weight:
           - 1.0
