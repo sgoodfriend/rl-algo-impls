@@ -212,6 +212,7 @@ class APPO(Algorithm):
                             mb_adv,
                             mb_returns,
                             mb_teacher_logprobs,
+                            _,  # mb_num_actions
                         ) = mb.to(self.device)
                         self.policy.reset_noise(self.batch_size)
 
@@ -292,13 +293,15 @@ class APPO(Algorithm):
                                 teacher_kl_loss = self.teacher_kl_loss_fn(
                                     new_logprobs,
                                     mb_teacher_logprobs,
-                                    ratio
-                                    if self.teacher_loss_importance_sampling
-                                    else None,
+                                    (
+                                        ratio
+                                        if self.teacher_loss_importance_sampling
+                                        else None
+                                    ),
                                 )
-                                additional_losses[
-                                    "teacher_kl_loss"
-                                ] = teacher_kl_loss.item()
+                                additional_losses["teacher_kl_loss"] = (
+                                    teacher_kl_loss.item()
+                                )
                                 loss += self.teacher_kl_loss_coef * teacher_kl_loss
 
                                 loss /= minibatches_per_step
