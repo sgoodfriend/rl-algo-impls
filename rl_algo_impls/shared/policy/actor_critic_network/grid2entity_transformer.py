@@ -8,6 +8,7 @@ from gymnasium.spaces import Box, MultiDiscrete, Space
 from rl_algo_impls.shared.actor import pi_forward
 from rl_algo_impls.shared.actor.gridnet import ValueDependentMask
 from rl_algo_impls.shared.module.channelwise_activation import ChannelwiseActivation
+from rl_algo_impls.shared.module.feature_mask import FeatureMask
 from rl_algo_impls.shared.module.normalization import (
     NormalizationMethod,
     normalization1d,
@@ -61,6 +62,7 @@ class Grid2EntityTransformerNetwork(ActorCriticNetwork):
         normalize_input: bool = False,
         entropy_mask_correction: bool = True,
         value_output_gain: float = 1.0,
+        feature_mask: Optional[List[int]] = None,
     ) -> None:
         if hidden_embedding_dims is None:
             hidden_embedding_dims = []
@@ -103,6 +105,14 @@ class Grid2EntityTransformerNetwork(ActorCriticNetwork):
 
             self.register_buffer("position", position)
             channels += 2
+
+        if feature_mask:
+            if add_position_features:
+                feature_mask = feature_mask + [channels - 2, channels - 1]
+            self.feature_mask = FeatureMask(torch.tensor(feature_mask))
+            channels = len(feature_mask)
+        else:
+            self.feature_mask = None
 
         self.normalize_input = RunningNorm(channels) if normalize_input else None
 
@@ -218,6 +228,8 @@ class Grid2EntityTransformerNetwork(ActorCriticNetwork):
                 x == _x_squash
             )
 
+        if self.feature_mask:
+            x = self.feature_mask(x)
         if self.normalize_input:
             x = self.normalize_input(x, mask=~key_padding_mask)
 

@@ -157,6 +157,7 @@ class ActorCritic(OnPolicy, Generic[ObsType]):
         normalize_input: bool = False,
         entropy_mask_correction: bool = True,
         value_output_gain: float = 1.0,
+        feature_mask: Optional[List[int]] = None,
         **kwargs,
     ) -> None:
         super().__init__(env_spaces, **kwargs)
@@ -312,6 +313,7 @@ class ActorCritic(OnPolicy, Generic[ObsType]):
                 normalize_input=normalize_input,
                 entropy_mask_correction=entropy_mask_correction,
                 value_output_gain=value_output_gain,
+                feature_mask=feature_mask,
             )
         elif share_features_extractor:
             self.network = ConnectedTrioActorCriticNetwork(
