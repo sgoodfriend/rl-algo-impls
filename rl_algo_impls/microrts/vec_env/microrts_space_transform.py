@@ -452,7 +452,11 @@ class MicroRTSSpaceTransform(VectorEnv, MicroRTSInterfaceListener):
             for env_idx in range(self.num_envs)
         ]
         self._verify_action_mask(action_mask)
-        self.source_unit_mask = action_mask[:, :, :, 0].reshape(self.num_envs, -1)
+        self.source_unit_mask = (
+            action_mask[:, :, :, 0].reshape(self.num_envs, -1)
+            if not self.disallow_no_op
+            else action_mask.any(axis=-1).reshape(self.num_envs, -1)
+        )
         self._action_mask = action_mask[:, :, :, 1:].reshape(
             self.num_envs, self.height * self.width, -1
         )
