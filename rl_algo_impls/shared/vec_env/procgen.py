@@ -64,6 +64,7 @@ def make_procgen_env(
         _,  # play_checkpoints_kwargs,
         _,  # additional_win_loss_smoothing_factor,
         _,  # info_rewards,
+        _,  # disallow_no_op,
     ) = astuple(hparams)
 
     seed = config.seed(training=training)

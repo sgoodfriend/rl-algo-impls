@@ -12,8 +12,8 @@ from rl_algo_impls.microrts.vec_env.microrts_space_transform import (
 from rl_algo_impls.microrts.wrappers.microrts_stats_recorder import (
     MicrortsStatsRecorder,
 )
-from rl_algo_impls.runner.env_hyperparams import EnvHyperparams
 from rl_algo_impls.runner.config import Config
+from rl_algo_impls.runner.env_hyperparams import EnvHyperparams
 from rl_algo_impls.shared.data_store.data_store_view import VectorEnvDataStoreView
 from rl_algo_impls.shared.summary_wrapper.abstract_summary_wrapper import (
     AbstractSummaryWrapper,
@@ -72,6 +72,7 @@ def make_microrts_bots_env(
         _,  # play_checkpoints_kwargs,
         _,  # additional_win_loss_smoothing_factor,
         _,  # info_rewards,
+        _,  # disallow_no_op,
     ) = astuple(hparams)
 
     seed = config.seed(training=training)

@@ -69,6 +69,7 @@ class MicroRTSSpaceTransform(VectorEnv, MicroRTSInterfaceListener):
         paper_planes_sizes: Optional[List[int]] = None,
         fixed_size: bool = False,
         terrain_overrides: Optional[Dict[str, Dict]] = None,
+        disallow_no_op: bool = False,
     ) -> None:
         self.interface = interface
         self.valid_sizes = list(sorted(valid_sizes)) if valid_sizes else None
@@ -149,6 +150,8 @@ class MicroRTSSpaceTransform(VectorEnv, MicroRTSInterfaceListener):
         self.use_paper_obs = False
         self._update_spaces(is_init=True)
         self.num_envs = self.interface.num_envs
+
+        self.disallow_no_op = disallow_no_op
 
         super().__init__()
 
@@ -433,7 +436,7 @@ class MicroRTSSpaceTransform(VectorEnv, MicroRTSInterfaceListener):
             env_h = self.interface.heights[idx]
             env_w = self.interface.widths[idx]
             m = np.zeros((env_h, env_w, action_plane_dim + 1), dtype=np.bool_)
-            m[m_array[:, 0], m_array[:, 1], 0] = 1
+            m[m_array[:, 0], m_array[:, 1], 0] = not self.disallow_no_op
             m[m_array[:, 0], m_array[:, 1], 1:] = m_array[:, 2:]
             if env_h == self.height and env_w == self.width:
                 masks.append(m)

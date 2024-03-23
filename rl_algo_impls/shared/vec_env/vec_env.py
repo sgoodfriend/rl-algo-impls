@@ -90,6 +90,7 @@ def make_vec_env(
         _,  # play_checkpoints_kwargs,
         _,  # additional_win_loss_smoothing_factor,
         _,  # info_rewards,
+        _,  # disallow_no_op,
     ) = astuple(hparams)
 
     import_for_env_id(config.env_id)

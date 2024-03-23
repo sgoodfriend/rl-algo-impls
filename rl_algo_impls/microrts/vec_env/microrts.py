@@ -77,6 +77,7 @@ def make_microrts_env(
         play_checkpoints_kwargs,
         _,  # additional_win_loss_smoothing_factor,
         info_rewards,
+        disallow_no_op,
     ) = astuple(hparams)
 
     seed = config.seed(training=training)
@@ -195,6 +196,7 @@ def make_microrts_env(
         paper_planes_sizes=paper_planes_sizes,
         fixed_size=fixed_size,
         terrain_overrides=terrain_overrides,
+        disallow_no_op=disallow_no_op,
     )
     envs = HwcToChwVectorObservation(envs)
     envs = IsVectorEnv(envs)

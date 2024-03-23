@@ -36,3 +36,4 @@ class EnvHyperparams:
     play_checkpoints_kwargs: Optional[Dict[str, Any]] = None
     additional_win_loss_smoothing_factor: Optional[float] = None
     info_rewards: Optional[Dict[str, Any]] = None
+    disallow_no_op: bool = False

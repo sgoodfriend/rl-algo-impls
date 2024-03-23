@@ -3,8 +3,8 @@ from typing import Optional
 
 from rl_algo_impls.lux.vec_env.vec_lux_env import VecLuxEnv
 from rl_algo_impls.lux.vec_env.vec_lux_replay_env import VecLuxReplayEnv
-from rl_algo_impls.runner.env_hyperparams import EnvHyperparams
 from rl_algo_impls.runner.config import Config
+from rl_algo_impls.runner.env_hyperparams import EnvHyperparams
 from rl_algo_impls.shared.data_store.data_store_view import VectorEnvDataStoreView
 from rl_algo_impls.shared.summary_wrapper.abstract_summary_wrapper import (
     AbstractSummaryWrapper,
@@ -68,6 +68,7 @@ def make_lux_env(
         play_checkpoints_kwargs,
         additional_win_loss_smoothing_factor,
         info_rewards,
+        _,  # disallow_no_op,
     ) = astuple(hparams)
 
     seed = config.seed(training=training)
