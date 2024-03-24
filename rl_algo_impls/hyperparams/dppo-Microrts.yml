@@ -435,6 +435,11 @@ Microrts-env16-240m-ent5d1-lr4d1-05wb2lwr-adv-bot-only-a100:
       coacAI: 12
       mayari: 12
 
+Microrts-env16-500m-ent5d1-lr4d1-05wb2lwr-adv-bot-only-a100:
+  &microrts-env16-500m-ent5d1-lr4d1-05wb2lwr-adv-bot-only-a100
+  <<: *microrts-env16-240m-ent5d1-lr4d1-05wb2lwr-adv-bot-only-a100
+  n_timesteps: !!float 500e6
+
 Microrts-env32-240m-ent5d1-lr4d1-05wb2lwr-a100:
   &microrts-env32-240m-ent5d1-lr4d1-05wb2lwr-a100
   <<: *microrts-env16-240m-ent5d1-lr4d1-05wb2lwr-adv-bot-only-a100
