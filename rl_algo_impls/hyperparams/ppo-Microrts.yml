@@ -1952,7 +1952,7 @@ Microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2entity-a10:
     make_kwargs:
       &microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2entity-a10-env-make-kwargs
       <<: *microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10-env-make-kwargs
-      always_player_1: false
+      always_player_1: true
       reward_weight: [10.0, 1.0, 1.0, 0.2, 1.0, 4.0, 5.25, 6.0, 0]
   hyperparam_transitions_kwargs:
     phases:
