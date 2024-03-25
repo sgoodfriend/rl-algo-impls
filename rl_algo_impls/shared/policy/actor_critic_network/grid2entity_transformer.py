@@ -60,6 +60,7 @@ class Grid2EntityTransformerNetwork(ActorCriticNetwork):
         post_backbone_normalization: Optional[str] = "layer",
         add_position_features: bool = True,
         normalize_input: bool = False,
+        normalize_input_feature_indexes: Optional[List[int]] = None,
         entropy_mask_correction: bool = True,
         value_output_gain: float = 1.0,
         feature_mask: Optional[List[int]] = None,
@@ -114,7 +115,18 @@ class Grid2EntityTransformerNetwork(ActorCriticNetwork):
         else:
             self.feature_mask = None
 
-        self.normalize_input = RunningNorm(channels) if normalize_input else None
+        self.normalize_input = (
+            RunningNorm(
+                num_features=channels if not normalize_input_feature_indexes else None,
+                feature_indexes=(
+                    torch.tensor(normalize_input_feature_indexes)
+                    if normalize_input_feature_indexes
+                    else None
+                ),
+            )
+            if normalize_input
+            else None
+        )
 
         embedding_layer_sizes = [channels, *hidden_embedding_dims, encoder_embed_dim]
         self.embedding_layer = mlp(
