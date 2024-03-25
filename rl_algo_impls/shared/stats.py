@@ -147,10 +147,17 @@ class EpisodesStats:
     def __repr__(self) -> str:
         mean = self.score.mean
         score = self.score.score()
-        if mean != score:
-            return f"Score: {self.score} ({round(score)}) | Length: {self.length}"
-        else:
-            return f"Score: {self.score} | Length: {self.length}"
+        items = [
+            (
+                f"Score: {self.score} ({round(score)})"
+                if mean != score
+                else f"Score: {self.score}"
+            ),
+            f"Length: {self.length}",
+        ]
+        if "results_WinLoss" in self.additional_stats:
+            items.append(f"WinLoss: {self.additional_stats['results_WinLoss']}")
+        return " | ".join(items)
 
     def __len__(self) -> int:
         return len(self.episodes)
