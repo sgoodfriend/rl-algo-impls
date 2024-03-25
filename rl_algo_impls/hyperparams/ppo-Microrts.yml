@@ -2506,6 +2506,12 @@ Microrts-agent: &microrts-agent
         #   size: 64
         #   use_paper_obs: true
 
+Microrts-b2w10-grid2entity-a10-vog1: &microrts-b2w10-grid2entity-a10-vog1
+  <<: *microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2entity-a10
+  policy_hyperparams: &microrts-b2w10-grid2entity-a10-vog1-policy
+    <<: *microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2entity-a10-policy
+    value_output_gain: 1
+
 Microrts-debug:
   <<: *microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2entity-a10
   # eval_hyperparams:
