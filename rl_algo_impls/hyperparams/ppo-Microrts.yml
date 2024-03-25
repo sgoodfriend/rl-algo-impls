@@ -1943,7 +1943,7 @@ Microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2entity-a10:
   algo_hyperparams:
     &microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2entity-a10-algo
     <<: *microrts-bw10-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10-algo
-    ent_coef: 0.1
+    ent_coef: 0.05
     scale_loss_by_has_actions: true
   env_hyperparams:
     &microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2entity-a10-env
@@ -1956,7 +1956,7 @@ Microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2entity-a10:
   hyperparam_transitions_kwargs:
     phases:
       - learning_rate: 0.001
-        ent_coef: 0.1
+        ent_coef: 0.05
       - learning_rate: 0
         ent_coef: 0
     durations: [0, 1, 0]
@@ -1967,7 +1967,7 @@ Microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2entity-a10:
     encoder_embed_dim: 32
     encoder_feed_forward_dim: 128
     encoder_layers: 2
-    entropy_mask_correction: true
+    entropy_mask_correction: false
     feature_mask: [3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14]
     hidden_critic_dims: []
     normalization: layer
