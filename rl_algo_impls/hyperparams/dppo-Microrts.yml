@@ -621,3 +621,17 @@ Microrts-env64-240m-ent5d1-lr1ru-05wb2lhr-no-ft-2x2a100:
       - ent_coef: !!float 1e-3
         learning_rate: !!float 1e-4
     durations: [0, 0.05, 0, 0.95, 0]
+
+Microrts-env16o-500m-ent5d1-lr4d1-05wb2lwr-adv-bot-only-a100:
+  &microrts-env16o-500m-ent5d1-lr4d1-05wb2lwr-adv-bot-only-a100
+  <<: *microrts-env16-500m-ent5d1-lr4d1-05wb2lwr-adv-bot-only-a100
+  env_hyperparams:
+    &microrts-env16o-500m-ent5d1-lr4d1-05wb2lwr-adv-bot-only-a100-env
+    <<: *microrts-env16-240m-ent5d1-lr4d1-05wb2lwr-adv-bot-only-a100-env
+    map_paths:
+      - maps/16x16/basesWorkers16x16A.xml
+      - maps/16x16/TwoBasesBarracks16x16.xml
+      - maps/8x8/basesWorkers8x8A.xml
+      - maps/8x8/FourBasesWorkers8x8.xml
+      - maps/NoWhereToRun9x8.xml
+      - maps/NoWhereToRun9x8.xml
