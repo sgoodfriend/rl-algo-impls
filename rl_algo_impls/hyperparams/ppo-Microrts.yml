@@ -1943,7 +1943,7 @@ Microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2entity-a10:
   algo_hyperparams:
     &microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2entity-a10-algo
     <<: *microrts-bw10-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10-algo
-    ent_coef: 0.075
+    ent_coef: 0.1
     scale_loss_by_has_actions: true
   env_hyperparams:
     &microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2entity-a10-env
@@ -1956,7 +1956,7 @@ Microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2entity-a10:
   hyperparam_transitions_kwargs:
     phases:
       - learning_rate: 0.001
-        ent_coef: 0.075
+        ent_coef: 0.1
       - learning_rate: 0
         ent_coef: 0
     durations: [0, 1, 0]
