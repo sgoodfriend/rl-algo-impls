@@ -156,7 +156,9 @@ class EpisodesStats:
             f"Length: {self.length}",
         ]
         if "results_WinLoss" in self.additional_stats:
-            items.append(f"WinLoss: {self.additional_stats['results_WinLoss']}")
+            items.append(
+                f"WinLoss: {round(self.additional_stats['results_WinLoss'].mean, 2)}"
+            )
         return " | ".join(items)
 
     def __len__(self) -> int:
