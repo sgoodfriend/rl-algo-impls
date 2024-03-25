@@ -131,8 +131,8 @@ class Grid2EntityTransformerNetwork(ActorCriticNetwork):
         embedding_layer_sizes = [channels, *hidden_embedding_dims, encoder_embed_dim]
         self.embedding_layer = mlp(
             embedding_layer_sizes,
-            nn.GELU,
-            output_activation=nn.GELU(),
+            nn.ReLU,
+            output_activation=nn.ReLU(),
             init_layers_orthogonal=init_layers_orthogonal,
             final_normalization=pre_backbone_normalization,
         )
