@@ -2519,6 +2519,18 @@ Microrts-b2w10-grid2entity-a10-scale-actions:
     scale_loss_by_has_actions: false
     scale_loss_by_num_actions: true
 
+Microrts-b2w10-grid2entity-a10-base-rews:
+  &microrts-b2w10-grid2entity-a10-base-rews
+  <<: *microrts-b2w10-grid2entity-a10-scale-actions
+  env_hyperparams:
+    &microrts-b2w10-grid2entity-a10-base-rews-env
+    <<: *microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2entity-a10-env
+    make_kwargs:
+      &microrts-b2w10-grid2entity-a10-base-rews-env-make-kwargs
+      <<:
+      *microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2entity-a10-env-make-kwargs
+      reward_weight: [10.0, 1.0, 1.0, 0.2, 1.0, 4.0, 4.0, 4.0, 0]  
+
 Microrts-debug:
   <<: *microrts-b2w10-grid2entity-a10-scale-actions
   # eval_hyperparams:
