@@ -306,7 +306,7 @@ tests = ["ale_py", "multi_agent_ale_py"]
 name = "batchrenorm"
 version = "0.1.1"
 description = "Batch Renormalization"
-optional = true
+optional = false
 python-versions = "^3.7"
 files = []
 develop = false
@@ -505,7 +505,7 @@ files = [
 name = "chex"
 version = "0.1.7"
 description = "Chex: Testing made fun, in JAX!"
-optional = true
+optional = false
 python-versions = ">=3.8"
 files = [
     {file = "chex-0.1.7-py3-none-any.whl", hash = "sha256:9f583015303b1205443843c0b55849bb287f1dfdbd22d9907b1ebb04f964d93e"},
@@ -683,7 +683,7 @@ files = [
 name = "dm-tree"
 version = "0.1.8"
 description = "Tree is a library for working with nested data structures."
-optional = true
+optional = false
 python-versions = "*"
 files = [
     {file = "dm-tree-0.1.8.tar.gz", hash = "sha256:0fcaabbb14e7980377439e7140bd05552739ca5e515ecb3119f234acee4b9430"},
@@ -801,23 +801,24 @@ files = [
 
 [[package]]
 name = "fastapi"
-version = "0.103.2"
+version = "0.1.17"
 description = "FastAPI framework, high performance, easy to learn, fast to code, ready for production"
 optional = false
-python-versions = ">=3.7"
+python-versions = ">=3.6"
 files = [
-    {file = "fastapi-0.103.2-py3-none-any.whl", hash = "sha256:3270de872f0fe9ec809d4bd3d4d890c6d5cc7b9611d721d6438f9dacc8c4ef2e"},
-    {file = "fastapi-0.103.2.tar.gz", hash = "sha256:75a11f6bfb8fc4d2bec0bd710c2d5f2829659c0e8c0afd5560fdda6ce25ec653"},
+    {file = "fastapi-0.1.17-py3-none-any.whl", hash = "sha256:a6aaad2f60684477480ac9d7a1c95e67f4696a722f184db467494bfdd5b8f29d"},
+    {file = "fastapi-0.1.17.tar.gz", hash = "sha256:a9a9b6cc32c38bab27a6549b94c44a30c70b485bc789d03de3aa8725f3394be5"},
 ]
 
 [package.dependencies]
-anyio = ">=3.7.1,<4.0.0"
-pydantic = ">=1.7.4,<1.8 || >1.8,<1.8.1 || >1.8.1,<2.0.0 || >2.0.0,<2.0.1 || >2.0.1,<2.1.0 || >2.1.0,<3.0.0"
-starlette = ">=0.27.0,<0.28.0"
-typing-extensions = ">=4.5.0"
+pydantic = ">=0.17"
+starlette = ">=0.9.7"
 
 [package.extras]
-all = ["email-validator (>=2.0.0)", "httpx (>=0.23.0)", "itsdangerous (>=1.1.0)", "jinja2 (>=2.11.2)", "orjson (>=3.2.1)", "pydantic-extra-types (>=2.0.0)", "pydantic-settings (>=2.0.0)", "python-multipart (>=0.0.5)", "pyyaml (>=5.3.1)", "ujson (>=4.0.1,!=4.0.2,!=4.1.0,!=4.2.0,!=4.3.0,!=5.0.0,!=5.1.0)", "uvicorn[standard] (>=0.12.0)"]
+all = ["aiofiles", "email_validator", "graphene", "itsdangerous", "jinja2", "python-multipart", "pyyaml", "requests", "ujson", "ujson", "uvicorn"]
+dev = ["passlib[bcrypt]", "pyjwt"]
+doc = ["markdown-include", "mkdocs", "mkdocs-material"]
+test = ["black", "email_validator", "isort", "mypy", "pytest (>=4.0.0)", "pytest-cov", "requests"]
 
 [[package]]
 name = "filelock"
@@ -1515,7 +1516,7 @@ colors = ["colorama (>=0.4.6)"]
 name = "jax"
 version = "0.4.7"
 description = "Differentiate, compile, and transform Numpy code."
-optional = true
+optional = false
 python-versions = ">=3.8"
 files = [
     {file = "jax-0.4.7.tar.gz", hash = "sha256:5e7002d74db25f97c99b979d4ba1233b1ef26e1597e5fc468ad11d1c8a9dc4f8"},
@@ -1545,7 +1546,7 @@ tpu = ["jaxlib (==0.4.7)", "libtpu-nightly (==0.1.dev20230327)", "requests"]
 name = "jaxlib"
 version = "0.4.7"
 description = "XLA library for JAX"
-optional = true
+optional = false
 python-versions = ">=3.8"
 files = [
     {file = "jaxlib-0.4.7-cp310-cp310-macosx_10_14_x86_64.whl", hash = "sha256:63c2890978e8646516db3d8a680b43d2bed8b63543a70556391f589a261bd85f"},
@@ -1676,7 +1677,7 @@ referencing = ">=0.31.0"
 name = "juxai-s2"
 version = "3.0.1"
 description = "JUX is a jax-accelerated engine for Lux-2022."
-optional = true
+optional = false
 python-versions = "<3.12,>=3.8"
 files = []
 develop = false
@@ -1814,7 +1815,7 @@ files = [
 name = "luxai-s2"
 version = "3.0.1"
 description = "The Lux AI Challenge Season 2"
-optional = true
+optional = false
 python-versions = ">=3.8"
 files = [
     {file = "luxai-s2-3.0.1.tar.gz", hash = "sha256:45edd0eed084221bfd9c0fbba68f21010d3b909d22255ebeb561c60f65d1dc70"},
@@ -2036,7 +2037,7 @@ files = [
 name = "ml-dtypes"
 version = "0.2.0"
 description = ""
-optional = true
+optional = false
 python-versions = ">=3.7"
 files = [
     {file = "ml_dtypes-0.2.0-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:df6a76e1c8adf484feb138ed323f9f40a7b6c21788f120f7c78bec20ac37ee81"},
@@ -2061,8 +2062,8 @@ files = [
 [package.dependencies]
 numpy = [
     {version = ">1.20", markers = "python_version <= \"3.9\""},
-    {version = ">=1.23.3", markers = "python_version > \"3.10\""},
     {version = ">=1.21.2", markers = "python_version > \"3.9\" and python_version <= \"3.10\""},
+    {version = ">=1.23.3", markers = "python_version > \"3.10\""},
 ]
 
 [package.extras]
@@ -2643,7 +2644,7 @@ numpy = [
 name = "opt-einsum"
 version = "3.3.0"
 description = "Optimizing numpys einsum function"
-optional = true
+optional = false
 python-versions = ">=3.5"
 files = [
     {file = "opt_einsum-3.3.0-py3-none-any.whl", hash = "sha256:2455e59e3947d3c275477df7f5205b30635e266fe6dc300e3d9f9646bfcea147"},
@@ -2760,7 +2761,7 @@ files = [
 name = "pettingzoo"
 version = "1.24.3"
 description = "Gymnasium for multi-agent reinforcement learning."
-optional = true
+optional = false
 python-versions = ">=3.8"
 files = [
     {file = "pettingzoo-1.24.3-py3-none-any.whl", hash = "sha256:23ed90517d2e8a7098bdaf5e31234b3a7f7b73ca578d70d1ca7b9d0cb0e37982"},
@@ -3377,6 +3378,7 @@ files = [
     {file = "PyYAML-6.0.1-cp311-cp311-win_amd64.whl", hash = "sha256:bf07ee2fef7014951eeb99f56f39c9bb4af143d8aa3c21b1677805985307da34"},
     {file = "PyYAML-6.0.1-cp312-cp312-macosx_10_9_x86_64.whl", hash = "sha256:855fb52b0dc35af121542a76b9a84f8d1cd886ea97c84703eaa6d88e37a2ad28"},
     {file = "PyYAML-6.0.1-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:40df9b996c2b73138957fe23a16a4f0ba614f4c0efce1e9406a184b6d07fa3a9"},
+    {file = "PyYAML-6.0.1-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:a08c6f0fe150303c1c6b71ebcd7213c2858041a7e01975da3a99aed1e7a378ef"},
     {file = "PyYAML-6.0.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:6c22bec3fbe2524cde73d7ada88f6566758a8f7227bfbf93a408a9d86bcc12a0"},
     {file = "PyYAML-6.0.1-cp312-cp312-musllinux_1_1_x86_64.whl", hash = "sha256:8d4e9c88387b0f5c7d5f281e55304de64cf7f9c0021a3525bd3b1c542da3b0e4"},
     {file = "PyYAML-6.0.1-cp312-cp312-win32.whl", hash = "sha256:d483d2cdf104e7c9fa60c544d92981f12ad66a457afae824d146093b8c294c54"},
@@ -3866,7 +3868,7 @@ tests = ["black (>=23.3.0)", "matplotlib (>=3.1.3)", "mypy (>=1.3)", "numpydoc (
 name = "scipy"
 version = "1.10.1"
 description = "Fundamental algorithms for scientific computing in Python"
-optional = true
+optional = false
 python-versions = "<3.12,>=3.8"
 files = [
     {file = "scipy-1.10.1-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:e7354fd7527a4b0377ce55f286805b34e8c54b91be865bac273f527e1b839019"},
@@ -4186,13 +4188,13 @@ tests = ["black (>=23.9.1,<24)", "mypy", "pytest", "pytest-cov", "pytest-env", "
 
 [[package]]
 name = "starlette"
-version = "0.27.0"
+version = "0.36.2"
 description = "The little ASGI library that shines."
 optional = false
-python-versions = ">=3.7"
+python-versions = ">=3.8"
 files = [
-    {file = "starlette-0.27.0-py3-none-any.whl", hash = "sha256:918416370e846586541235ccd38a474c08b80443ed31c578a418e2209b3eef91"},
-    {file = "starlette-0.27.0.tar.gz", hash = "sha256:6a6b0d042acb8d469a01eba54e9cda6cbd24ac602c4cd016723117d6a7e73b75"},
+    {file = "starlette-0.36.2-py3-none-any.whl", hash = "sha256:e53e086e620ba715f0c187daca92927b722484d148e70921f0de075936119536"},
+    {file = "starlette-0.36.2.tar.gz", hash = "sha256:4134757b950f027c8f16028ec81787751bb44145df17c8b0fa84087b9851b42d"},
 ]
 
 [package.dependencies]
@@ -4200,7 +4202,7 @@ anyio = ">=3.4.0,<5"
 typing-extensions = {version = ">=3.10.0", markers = "python_version < \"3.10\""}
 
 [package.extras]
-full = ["httpx (>=0.22.0)", "itsdangerous", "jinja2", "python-multipart", "pyyaml"]
+full = ["httpx (>=0.22.0)", "itsdangerous", "jinja2", "python-multipart (>=0.0.7)", "pyyaml"]
 
 [[package]]
 name = "swig"
@@ -4297,7 +4299,7 @@ protobuf = ">=3.20"
 name = "termcolor"
 version = "2.4.0"
 description = "ANSI color formatting for output in terminal"
-optional = true
+optional = false
 python-versions = ">=3.8"
 files = [
     {file = "termcolor-2.4.0-py3-none-any.whl", hash = "sha256:9297c0df9c99445c2412e832e882a7884038a25617c60cea2ad69488d4040d63"},
@@ -4333,7 +4335,7 @@ files = [
 name = "toolz"
 version = "0.12.1"
 description = "List processing tools and functional utilities"
-optional = true
+optional = false
 python-versions = ">=3.7"
 files = [
     {file = "toolz-0.12.1-py3-none-any.whl", hash = "sha256:d22731364c07d72eea0a0ad45bafb2c2937ab6fd38a3507bf55eae8744aa7d85"},
@@ -4589,7 +4591,7 @@ test = ["Cython (>=0.29.36,<0.30.0)", "aiohttp (==3.9.0b0)", "aiohttp (>=3.8.1)"
 name = "vec-noise"
 version = "1.1.4"
 description = "Vectorized Perlin noise for Python"
-optional = true
+optional = false
 python-versions = "*"
 files = [
     {file = "vec_noise-1.1.4-cp36-cp36m-win32.whl", hash = "sha256:bec2db0d0c32bb0f1e1581a70c18bdc73440f74227e741691f69b93d0cd6a5d3"},
