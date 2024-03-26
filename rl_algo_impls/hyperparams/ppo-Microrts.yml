@@ -2511,8 +2511,16 @@ Microrts-b2w10-grid2entity-a10-vog1: &microrts-b2w10-grid2entity-a10-vog1
     <<: *microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2entity-a10-policy
     value_output_gain: 1
 
-Microrts-debug:
+Microrts-b2w10-grid2entity-a10-scale-actions:
+  &microrts-b2w10-grid2entity-a10-scale-actions
   <<: *microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2entity-a10
+  algo_hyperparams: &microrts-b2w10-grid2entity-a10-scale-actions-algo
+    <<: *microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2entity-a10-algo
+    scale_loss_by_has_actions: false
+    scale_loss_by_num_actions: true
+
+Microrts-debug:
+  <<: *microrts-b2w10-grid2entity-a10-scale-actions
   # eval_hyperparams:
   #   <<: *microrts-bw10-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10-eval
   #   skip_evaluate_at_start: true

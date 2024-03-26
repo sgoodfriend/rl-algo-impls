@@ -137,6 +137,7 @@ class PPO(Algorithm):
         teacher_kl_loss_coef: Optional[float] = None,
         teacher_loss_importance_sampling: bool = True,
         scale_loss_by_has_actions: bool = False,
+        scale_loss_by_num_actions: bool = False,
     ) -> None:
         super().__init__(
             policy,
@@ -185,7 +186,11 @@ class PPO(Algorithm):
         self.teacher_kl_loss_fn = TeacherKLLoss() if teacher_kl_loss_coef else None
         self.teacher_loss_importance_sampling = teacher_loss_importance_sampling
 
+        assert (
+            bool(scale_loss_by_has_actions) + bool(scale_loss_by_num_actions) <= 1
+        ), f"Cannot scale loss by both has_actions and num_actions"
         self.scale_loss_by_has_actions = scale_loss_by_has_actions
+        self.scale_loss_by_num_actions = scale_loss_by_num_actions
 
     def learn(
         self: PPOSelf,
@@ -315,9 +320,14 @@ class PPO(Algorithm):
                     if multi_reward_weights is not None:
                         mb_adv = mb_adv @ multi_reward_weights
 
-                mb_has_actions = (
-                    mb_num_actions.bool() if mb_num_actions is not None else None
-                )
+                loss_factor = None
+                if self.scale_loss_by_has_actions:
+                    assert mb_num_actions is not None
+                    mb_has_actions = mb_num_actions.bool().float()
+                    loss_factor = mb_has_actions / mb_has_actions.sum()
+                elif self.scale_loss_by_num_actions:
+                    assert mb_num_actions is not None
+                    loss_factor = mb_num_actions.float() / mb_num_actions.sum()
 
                 additional_losses = {}
                 with maybe_autocast(self.autocast_loss, self.device):
@@ -329,9 +339,8 @@ class PPO(Algorithm):
                     ratio = torch.exp(logratio)
                     clipped_ratio = torch.clamp(ratio, min=1 - pi_clip, max=1 + pi_clip)
                     pi_loss = -torch.min(ratio * mb_adv, clipped_ratio * mb_adv)
-                    if self.scale_loss_by_has_actions:
-                        assert mb_has_actions is not None
-                        pi_loss = pi_loss[mb_has_actions].mean()
+                    if loss_factor is not None:
+                        pi_loss = (pi_loss * loss_factor).sum()
                     else:
                         pi_loss = pi_loss.mean()
 
@@ -355,8 +364,8 @@ class PPO(Algorithm):
                     if self.ppo2_vf_coef_halving:
                         v_loss *= 0.5
 
-                    if self.scale_loss_by_has_actions:
-                        entropy_loss = -entropy[mb_has_actions].mean()
+                    if loss_factor is not None:
+                        entropy_loss = -(entropy * loss_factor).sum()
                     else:
                         entropy_loss = -entropy.mean()
                     with torch.no_grad():

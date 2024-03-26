@@ -125,7 +125,9 @@ class PPORollout(Rollout):
         else:
             self.teacher_logprobs = None
 
-        if config.algo_hyperparams.get("scale_loss_by_has_actions", False):
+        if config.algo_hyperparams.get(
+            "scale_loss_by_has_actions", False
+        ) or config.algo_hyperparams.get("scale_loss_by_num_actions", False):
             n_actions = num_actions(
                 actions,
                 action_masks,
