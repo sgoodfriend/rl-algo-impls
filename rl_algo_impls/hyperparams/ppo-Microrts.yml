@@ -2568,8 +2568,7 @@ Microrts-b2w10-grid2entity-a10-adam-opts:
   <<: *microrts-b2w10-grid2entity-a10-base-rews
   algo_hyperparams: &microrts-b2w10-grid2entity-a10-adam-opts-algo
     <<: *microrts-b2w10-grid2entity-a10-scale-actions-algo
-    optim_eps: 1e-5
-    optim_betas: [0.9, 0.95]
+    optim_eps: !!float 1e-5
     optim_amsgrad: true
 
 Microrts-debug:
