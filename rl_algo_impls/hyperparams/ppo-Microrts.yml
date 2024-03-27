@@ -2536,7 +2536,7 @@ Microrts-b2w10-grid2entity-a10-no-autocast-loss:
     autocast_loss: false
 
 Microrts-debug:
-  <<: *microrts-b2w10-grid2entity-a10-base-rews
+  <<: *microrts-b2w10-grid2entity-a10-no-autocast-loss
   # eval_hyperparams:
   #   <<: *microrts-bw10-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10-eval
   #   skip_evaluate_at_start: true
