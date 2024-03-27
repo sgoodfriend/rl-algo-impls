@@ -138,6 +138,10 @@ class PPO(Algorithm):
         teacher_loss_importance_sampling: bool = True,
         scale_loss_by_has_actions: bool = False,
         scale_loss_by_num_actions: bool = False,
+        optim_eps: float = 1e-7,
+        optim_weight_decay: float = 0.0,
+        optim_betas: Optional[List[int]] = None,
+        optim_amsgrad: bool = False,
     ) -> None:
         super().__init__(
             policy,
@@ -147,9 +151,10 @@ class PPO(Algorithm):
             AdamW(
                 policy.parameters(),
                 lr=learning_rate,
-                betas=(0.9, 0.95),
-                eps=1e-5,
-                weight_decay=0.0,
+                betas=(0.9, 0.999) if optim_betas is None else tuple(optim_betas),  # type: ignore
+                eps=optim_eps,
+                weight_decay=optim_weight_decay,
+                amsgrad=optim_amsgrad,
             ),
         )
         self.policy = policy

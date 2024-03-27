@@ -2563,8 +2563,17 @@ Microrts-b2w10-grid2entity-a10-vog0: &microrts-b2w10-grid2entity-a10-vog0
     <<: *microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2entity-a10-policy
     value_output_gain: 0
 
+Microrts-b2w10-grid2entity-a10-adam-opts:
+  &microrts-b2w10-grid2entity-a10-adam-opts
+  <<: *microrts-b2w10-grid2entity-a10-base-rews
+  algo_hyperparams: &microrts-b2w10-grid2entity-a10-adam-opts-algo
+    <<: *microrts-b2w10-grid2entity-a10-scale-actions-algo
+    optim_eps: 1e-5
+    optim_betas: [0.9, 0.95]
+    optim_amsgrad: true
+
 Microrts-debug:
-  <<: *microrts-b2w10-grid2entity-a10-vog0
+  <<: *microrts-b2w10-grid2entity-a10-adam-opts
   # eval_hyperparams:
   #   <<: *microrts-bw10-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10-eval
   #   skip_evaluate_at_start: true
