@@ -2528,6 +2528,13 @@ Microrts-b2w10-grid2entity-a10-base-rews:
       <<: *microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2entity-a10-env-make-kwargs
       reward_weight: [10.0, 1.0, 1.0, 0.2, 1.0, 4.0, 4.0, 4.0, 0]
 
+Microrts-b2w10-grid2entity-a10-no-autocast-loss:
+  &microrts-b2w10-grid2entity-a10-no-autocast-loss
+  <<: *microrts-b2w10-grid2entity-a10-base-rews
+  algo_hyperparams: &microrts-b2w10-grid2entity-a10-no-autocast-loss-algo
+    <<: *microrts-b2w10-grid2entity-a10-scale-actions-algo
+    autocast_loss: false
+
 Microrts-debug:
   <<: *microrts-b2w10-grid2entity-a10-base-rews
   # eval_hyperparams:
