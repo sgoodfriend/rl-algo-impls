@@ -9,7 +9,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.optim import Adam
+from torch.optim import AdamW
 
 from rl_algo_impls.loss.teacher_kl_loss import TeacherKLLoss
 from rl_algo_impls.rollout.ppo_rollout import PPOBatch
@@ -144,7 +144,13 @@ class PPO(Algorithm):
             device,
             tb_writer,
             learning_rate,
-            AdamW(policy.parameters(), lr=learning_rate, eps=1e-5, weight_decay=0.0),
+            AdamW(
+                policy.parameters(),
+                lr=learning_rate,
+                betas=(0.9, 0.95),
+                eps=1e-5,
+                weight_decay=0.0,
+            ),
         )
         self.policy = policy
 
