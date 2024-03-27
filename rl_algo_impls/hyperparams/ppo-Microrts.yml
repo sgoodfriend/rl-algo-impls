@@ -2557,8 +2557,14 @@ Microrts-b2w10-grid2entity-a10-lnprepost:
     pre_backbone_normalization: layer
     post_backbone_normalization: layer
 
-Microrts-debug:
+Microrts-b2w10-grid2entity-a10-vog0: &microrts-b2w10-grid2entity-a10-vog0
   <<: *microrts-b2w10-grid2entity-a10-base-rews
+  policy_hyperparams: &microrts-b2w10-grid2entity-a10-vog0-policy
+    <<: *microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2entity-a10-policy
+    value_output_gain: 0
+
+Microrts-debug:
+  <<: *microrts-b2w10-grid2entity-a10-vog0
   # eval_hyperparams:
   #   <<: *microrts-bw10-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10-eval
   #   skip_evaluate_at_start: true
