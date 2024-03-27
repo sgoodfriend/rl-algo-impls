@@ -2542,8 +2542,15 @@ Microrts-b2w10-grid2entity-a10-gamma999:
     <<: *microrts-bw10-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10-rollout
     gamma: 0.999
 
+Microrts-b2w10-grid2entity-a10-lnpost: &microrts-b2w10-grid2entity-a10-lnpost
+  <<: *microrts-b2w10-grid2entity-a10-base-rews
+  policy_hyperparams: &microrts-b2w10-grid2entity-a10-lnpost-policy
+    <<: *microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2entity-a10
+    pre_backbone_normalization: null
+    post_backbone_normalization: layer
+
 Microrts-debug:
-  <<: *microrts-b2w10-grid2entity-a10-no-autocast-loss
+  <<: *microrts-b2w10-grid2entity-a10-lnpost
   # eval_hyperparams:
   #   <<: *microrts-bw10-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10-eval
   #   skip_evaluate_at_start: true
