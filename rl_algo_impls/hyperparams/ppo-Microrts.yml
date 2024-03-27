@@ -2571,8 +2571,39 @@ Microrts-b2w10-grid2entity-a10-adam-opts:
     optim_eps: !!float 1e-5
     optim_amsgrad: true
 
-Microrts-debug:
+Microrts-b2w10-grid2entity-a10-multi-rews:
+  &microrts-b2w10-grid2entity-a10-multi-rews
   <<: *microrts-b2w10-grid2entity-a10-adam-opts
+  algo_hyperparams: &microrts-b2w10-grid2entity-a10-multi-rews-algo
+    <<: *microrts-b2w10-grid2entity-a10-adam-opts-algo
+    multi_reward_weights: [0.99, 0.01]
+    vf_coef: [0.5, 0.1]
+  env_hyperparams: &microrts-b2w10-grid2entity-a10-multi-rews-env
+    <<: *microrts-b2w10-grid2entity-a10-base-rews-env
+    additional_win_loss_reward: true
+  eval_hyperparams: &microrts-b2w10-grid2entity-a10-multi-rews-eval
+    <<: *microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10-eval
+    env_overrides:
+      <<: *microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10-eval-env-overrides
+      additional_win_loss_reward: false
+  hyperparam_transitions_kwargs:
+    &microrts-b2w10-grid2entity-a10-multi-rews-transitions
+    <<: *microrts-bw10-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10-transitions
+    phases:
+      - learning_rate: !!float 1e-3
+        ent_coef: 0.05
+        multi_reward_weights: [0.99, 0.01]
+        vf_coef: [0.4, 0.1]
+      - learning_rate: 0
+        ent_coef: 0
+        multi_reward_weights: [0.01, 0.99]
+        vf_coef: [0.1, 0.4]
+  policy_hyperparams: &microrts-b2w10-grid2entity-a10-multi-rews-policy
+    <<: *microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2entity-a10-policy
+    additional_critic_activation_functions: [identity]
+
+Microrts-debug:
+  <<: *microrts-b2w10-grid2entity-a10-multi-rews
   # eval_hyperparams:
   #   <<: *microrts-bw10-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10-eval
   #   skip_evaluate_at_start: true
