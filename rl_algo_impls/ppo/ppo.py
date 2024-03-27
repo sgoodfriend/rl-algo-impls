@@ -144,7 +144,7 @@ class PPO(Algorithm):
             device,
             tb_writer,
             learning_rate,
-            Adam(policy.parameters(), lr=learning_rate, eps=1e-7),
+            Adam(policy.parameters(), lr=learning_rate, eps=1e-5),
         )
         self.policy = policy
 

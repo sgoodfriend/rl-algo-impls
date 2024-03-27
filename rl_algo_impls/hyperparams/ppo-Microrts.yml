@@ -2558,7 +2558,7 @@ Microrts-b2w10-grid2entity-a10-lnprepost:
     post_backbone_normalization: layer
 
 Microrts-debug:
-  <<: *microrts-b2w10-grid2entity-a10-lnprepost
+  <<: *microrts-b2w10-grid2entity-a10-base-rews
   # eval_hyperparams:
   #   <<: *microrts-bw10-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10-eval
   #   skip_evaluate_at_start: true
