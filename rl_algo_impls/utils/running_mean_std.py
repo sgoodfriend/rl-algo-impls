@@ -90,6 +90,8 @@ class TrackableRMS(TrackableState):
             assert hasattr(
                 self.rms, k
             ), f"Unknown key {k} in {self.rms.__class__.__name__}"
+            if type(getattr(self.rms, k)) == tuple:
+                v = tuple(v)
             setattr(self.rms, k, v)
 
 
