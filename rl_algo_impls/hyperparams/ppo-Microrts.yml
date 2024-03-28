@@ -2622,7 +2622,7 @@ Microrts-b2w10-grid2entity-a10-max-critic-neck:
     <<: *microrts-b2w10-grid2entity-a10-adam-opts-vog0-policy
     critic_neck_pooling: max
 
-MicroRTS-b2w10-grid2entity-a10-both-critic-neck:
+Microrts-b2w10-grid2entity-a10-both-critic-neck:
   &microrts-b2w10-grid2entity-a10-both-critic-neck
   <<: *microrts-b2w10-grid2entity-a10-max-critic-neck
   policy_hyperparams: &microrts-b2w10-grid2entity-a10-both-critic-neck-policy
