@@ -64,6 +64,7 @@ class Grid2EntityTransformerNetwork(ActorCriticNetwork):
         entropy_mask_correction: bool = True,
         value_output_gain: float = 1.0,
         feature_mask: Optional[List[int]] = None,
+        critic_neck_pooling: str = "mean",
     ) -> None:
         if hidden_embedding_dims is None:
             hidden_embedding_dims = []
@@ -174,8 +175,14 @@ class Grid2EntityTransformerNetwork(ActorCriticNetwork):
             for act_fn_name in [output_activation_fn]
             + (additional_critic_activation_functions or [])
         ]
+        assert critic_neck_pooling in (
+            "mean",
+            "max",
+            "both",
+        ), f"Invalid pooling {critic_neck_pooling} (mean, max, both supported)"
+        self.critic_neck_pooling = critic_neck_pooling
         critic_layer_sizes = [
-            encoder_embed_dim,
+            encoder_embed_dim * (2 if critic_neck_pooling == "both" else 1),
             *hidden_critic_dims,
             len(output_activations),
         ]
@@ -286,9 +293,29 @@ class Grid2EntityTransformerNetwork(ActorCriticNetwork):
             entropy_mask_correction=self.entropy_mask_correction,
         )
 
-        v_input = torch.where(key_padding_mask.unsqueeze(-1), 0, x).sum(dim=1) / (
-            n_keep.unsqueeze(-1) + 1e-6
-        )  # [B, S, E] -> [B, E]
+        if self.critic_neck_pooling in ("mean", "both"):
+            v_input_mean = torch.where(key_padding_mask.unsqueeze(-1), 0, x).sum(
+                dim=1
+            ) / (
+                n_keep.unsqueeze(-1) + 1e-6
+            )  # [B, S, E] -> [B, E]
+        elif self.critic_neck_pooling in ("max", "both"):
+            v_input_max = torch.where(
+                key_padding_mask.unsqueeze(-1),
+                0,
+                x,
+            ).max(
+                dim=1
+            )  # [B, S, E] -> [B, E]
+            assert isinstance(v_input_max, torch.Tensor)
+        if self.critic_neck_pooling == "mean":
+            v_input = v_input_mean
+        elif self.critic_neck_pooling == "max":
+            v_input = v_input_max
+        elif self.critic_neck_pooling == "both":
+            v_input = torch.cat((v_input_mean, v_input_max), dim=1)
+        else:
+            raise ValueError(f"Invalid critic_neck_pooling {self.critic_neck_pooling}")
         v = self.critic_head(v_input)  # -> [B, V]
         if v.shape[-1] == 1:
             v = v.squeeze(-1)

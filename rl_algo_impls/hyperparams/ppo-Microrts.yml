@@ -2615,6 +2615,20 @@ Microrts-b2w10-grid2entity-a10-multi-rews-vog0:
     <<: *microrts-b2w10-grid2entity-a10-multi-rews-policy
     value_output_gain: 0
 
+Microrts-b2w10-grid2entity-a10-max-critic-neck:
+  &microrts-b2w10-grid2entity-a10-max-critic-neck
+  <<: *microrts-b2w10-grid2entity-a10-adam-opts-vog0
+  policy_hyperparams: &microrts-b2w10-grid2entity-a10-max-critic-neck-policy
+    <<: *microrts-b2w10-grid2entity-a10-adam-opts-vog0-policy
+    critic_neck_pooling: max
+
+MicroRTS-b2w10-grid2entity-a10-both-critic-neck:
+  &microrts-b2w10-grid2entity-a10-both-critic-neck
+  <<: *microrts-b2w10-grid2entity-a10-max-critic-neck
+  policy_hyperparams: &microrts-b2w10-grid2entity-a10-both-critic-neck-policy
+    <<: *microrts-b2w10-grid2entity-a10-max-critic-neck-policy
+    critic_neck_pooling: both
+
 Microrts-debug:
   <<: *microrts-b2w10-grid2entity-a10-multi-rews
   # eval_hyperparams:
