@@ -2571,6 +2571,12 @@ Microrts-b2w10-grid2entity-a10-adam-opts:
     optim_eps: !!float 1e-5
     optim_amsgrad: true
 
+Microrts-b2w10-grid2entity-a10-adam-opts-vog0:
+  &microrts-b2w10-grid2entity-a10-adam-opts-vog0
+  <<: *microrts-b2w10-grid2entity-a10-adam-opts
+  policy_hyperparams: &microrts-b2w10-grid2entity-a10-adam-opts-vog0-policy
+    <<: *microrts-b2w10-grid2entity-a10-vog0-policy
+
 Microrts-b2w10-grid2entity-a10-multi-rews:
   &microrts-b2w10-grid2entity-a10-multi-rews
   <<: *microrts-b2w10-grid2entity-a10-adam-opts
@@ -2602,7 +2608,8 @@ Microrts-b2w10-grid2entity-a10-multi-rews:
     <<: *microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2entity-a10-policy
     additional_critic_activation_functions: [identity]
 
-Microrts-b2w10-grid2entity-a10-multi-rews-vog0: &microrts-b2w10-grid2entity-a10-multi-rews-vog0
+Microrts-b2w10-grid2entity-a10-multi-rews-vog0:
+  &microrts-b2w10-grid2entity-a10-multi-rews-vog0
   <<: *microrts-b2w10-grid2entity-a10-multi-rews
   policy_hyperparams: &microrts-b2w10-grid2entity-a10-multi-rews-vog0-policy
     <<: *microrts-b2w10-grid2entity-a10-multi-rews-policy
