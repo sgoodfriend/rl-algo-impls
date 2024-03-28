@@ -2645,6 +2645,14 @@ Microrts-b2w10-grid2entity-a10-multi-rews-no-adam-opts:
     optim_eps: !!float 1e-7
     optim_amsgrad: false
 
+Microrts-b2w10-grid2entity-a10-multi-rews-max-critic-neck:
+  &microrts-b2w10-grid2entity-a10-multi-rews-max-critic-neck
+  <<: *microrts-b2w10-grid2entity-a10-multi-rews-no-adam-opts
+  policy_hyperparams:
+    &microrts-b2w10-grid2entity-a10-multi-rews-max-critic-neck-policy
+    <<: *microrts-b2w10-grid2entity-a10-multi-rews-vog0-policy
+    critic_neck_pooling: max
+
 Microrts-debug:
   <<: *microrts-b2w10-grid2entity-a10-both-critic-neck
   # eval_hyperparams:
