@@ -317,7 +317,7 @@ class ActorCritic(OnPolicy, Generic[ObsType]):
                 entropy_mask_correction=entropy_mask_correction,
                 value_output_gain=value_output_gain,
                 feature_mask=feature_mask,
-                critic_neck_pooling=critic_avg_max_pool,
+                critic_neck_pooling=critic_neck_pooling,
             )
         elif share_features_extractor:
             self.network = ConnectedTrioActorCriticNetwork(

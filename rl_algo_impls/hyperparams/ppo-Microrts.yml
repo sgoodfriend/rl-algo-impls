@@ -2630,7 +2630,7 @@ MicroRTS-b2w10-grid2entity-a10-both-critic-neck:
     critic_neck_pooling: both
 
 Microrts-debug:
-  <<: *microrts-b2w10-grid2entity-a10-multi-rews
+  <<: *microrts-b2w10-grid2entity-a10-both-critic-neck
   # eval_hyperparams:
   #   <<: *microrts-bw10-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10-eval
   #   skip_evaluate_at_start: true

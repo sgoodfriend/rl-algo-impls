@@ -292,22 +292,41 @@ class Grid2EntityTransformerNetwork(ActorCriticNetwork):
             subaction_mask=self.subaction_mask,
             entropy_mask_correction=self.entropy_mask_correction,
         )
+        v = self.critic_head(
+            self._value_input(x, key_padding_mask, n_keep)
+        )  # -> [B, V]
+        if v.shape[-1] == 1:
+            v = v.squeeze(-1)
 
+        return ACNForward(pi_forward(pi, action), v)
+
+    def value(self, obs: torch.Tensor) -> torch.Tensor:
+        x, key_padding_mask, _, n_keep = self._backbone_forward(obs)
+        v = self.critic_head(
+            self._value_input(x, key_padding_mask, n_keep)
+        )  # -> [B, V]
+        if v.shape[-1] == 1:
+            v = v.squeeze(-1)
+        return v
+
+    def _value_input(
+        self, x: torch.Tensor, key_padding_mask: torch.Tensor, n_keep: torch.Tensor
+    ) -> torch.Tensor:
         if self.critic_neck_pooling in ("mean", "both"):
             v_input_mean = torch.where(key_padding_mask.unsqueeze(-1), 0, x).sum(
                 dim=1
             ) / (
                 n_keep.unsqueeze(-1) + 1e-6
             )  # [B, S, E] -> [B, E]
-        elif self.critic_neck_pooling in ("max", "both"):
-            v_input_max = torch.where(
-                key_padding_mask.unsqueeze(-1),
-                0,
-                x,
-            ).max(
-                dim=1
+        if self.critic_neck_pooling in ("max", "both"):
+            v_input_max, _ = torch.max(
+                torch.where(
+                    key_padding_mask.unsqueeze(-1),
+                    0,
+                    x,
+                ),
+                dim=1,
             )  # [B, S, E] -> [B, E]
-            assert isinstance(v_input_max, torch.Tensor)
         if self.critic_neck_pooling == "mean":
             v_input = v_input_mean
         elif self.critic_neck_pooling == "max":
@@ -316,21 +335,7 @@ class Grid2EntityTransformerNetwork(ActorCriticNetwork):
             v_input = torch.cat((v_input_mean, v_input_max), dim=1)
         else:
             raise ValueError(f"Invalid critic_neck_pooling {self.critic_neck_pooling}")
-        v = self.critic_head(v_input)  # -> [B, V]
-        if v.shape[-1] == 1:
-            v = v.squeeze(-1)
-
-        return ACNForward(pi_forward(pi, action), v)
-
-    def value(self, obs: torch.Tensor) -> torch.Tensor:
-        x, key_padding_mask, _, n_keep = self._backbone_forward(obs)
-        v_input = torch.where(key_padding_mask.unsqueeze(-1), 0, x).sum(dim=1) / (
-            n_keep.unsqueeze(-1) + 1e-6
-        )  # [B, S, E] -> [B, E]
-        v = self.critic_head(v_input)  # -> [B, V]
-        if v.shape[-1] == 1:
-            v = v.squeeze(-1)
-        return v
+        return v_input
 
     def reset_noise(self, batch_size: int) -> None:
         pass
