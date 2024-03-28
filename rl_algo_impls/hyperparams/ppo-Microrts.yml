@@ -2592,12 +2592,12 @@ Microrts-b2w10-grid2entity-a10-multi-rews:
     phases:
       - learning_rate: !!float 1e-3
         ent_coef: 0.05
-        multi_reward_weights: [0.99, 0.01]
-        vf_coef: [0.4, 0.1]
+        multi_reward_weights: [1, 0]
+        vf_coef: [0.5, 0]
       - learning_rate: 0
         ent_coef: 0
-        multi_reward_weights: [0.01, 0.99]
-        vf_coef: [0.1, 0.4]
+        multi_reward_weights: [0.5, 0.5]
+        vf_coef: [0.25, 0.25]
   policy_hyperparams: &microrts-b2w10-grid2entity-a10-multi-rews-policy
     <<: *microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2entity-a10-policy
     additional_critic_activation_functions: [identity]
