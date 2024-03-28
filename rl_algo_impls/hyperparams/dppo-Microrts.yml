@@ -635,3 +635,12 @@ Microrts-env16o-500m-ent5d1-lr4d1-05wb2lwr-adv-bot-only-a100:
       - maps/8x8/FourBasesWorkers8x8.xml
       - maps/NoWhereToRun9x8.xml
       - maps/NoWhereToRun9x8.xml
+
+Microrts-env32-500m-ent5d1-lr4d1-05wb2lwr-ft-a100:
+  &microrts-env32-500m-ent5d1-lr4d1-05wb2lwr-ft-a100
+  <<: *microrts-env32-240m-ent5d1-lr8d1-05wb2lwr-ft-a100
+  policy_hyperparams: &microrts-env32-500m-ent5d1-lr4d1-05wb2lwr-ft-a100-policy
+    <<: *microrts-env32-240m-ent5d1-lr8d1-05wb2lwr-ft-a100-policy
+    load_run_path: sgoodfriend/rl-algo-impls-microrts-2024/t48q14f8
+    load_run_path_best: true
+  n_timesteps: !!float 500e6
