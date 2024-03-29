@@ -2668,6 +2668,14 @@ Microrts-b2w10-1p-2m-grid2entity-a10-deterministic:
     <<: *microrts-bw10-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10-device
     use_deterministic_algorithms: true
 
+Microrts-b2w10-1p-2m-grid2entity-a10-deterministc-multi-rews:
+  &microrts-b2w10-1p-2m-grid2entity-a10-deterministc-multi-rews
+  <<: *microrts-b2w10-grid2entity-a10-multi-rews-max-critic-neck
+  device_hyperparams:
+    &microrts-b2w10-1p-2m-grid2entity-a10-deterministc-multi-rews-device
+    <<: *microrts-b2w10-1p-2m-grid2entity-a10-deterministic-device
+  n_timesteps: !!float 2e6
+
 Microrts-debug:
   <<: *microrts-b2w10-1p-2m-grid2entity-a10
   # eval_hyperparams:
