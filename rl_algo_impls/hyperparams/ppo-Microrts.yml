@@ -2608,6 +2608,9 @@ Microrts-b2w10-grid2entity-a10-multi-rews:
   policy_hyperparams: &microrts-b2w10-grid2entity-a10-multi-rews-policy
     <<: *microrts-bw10-p1-1m-ent100d-lr10d-shaped-rew-mgn2-grid2entity-a10-policy
     additional_critic_activation_functions: [identity]
+  rollout_hyperparams: &microrts-b2w10-grid2entity-a10-multi-rews-rollout
+    <<: *microrts-bw10-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10-rollout
+    gamma: [0.99, 0.999]
 
 Microrts-b2w10-grid2entity-a10-multi-rews-vog0:
   &microrts-b2w10-grid2entity-a10-multi-rews-vog0
