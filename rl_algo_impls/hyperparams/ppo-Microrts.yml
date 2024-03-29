@@ -1821,6 +1821,7 @@ Microrts-bw10-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10:
     ppo2_vf_coef_halving: true
     vf_coef: 0.5
   device_hyperparams:
+    &microrts-bw10-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10-device
     set_float32_matmul_precision: high
     use_deterministic_algorithms: false
   env_hyperparams:
@@ -2656,6 +2657,13 @@ Microrts-b2w10-grid2entity-a10-multi-rews-max-critic-neck:
 Microrts-b2w10-1p-2m-grid2entity-a10: &microrts-b2w10-1p-2m-grid2entity-a10
   <<: *microrts-b2w10-grid2entity-a10-max-critic-neck-no-adam-opts
   n_timesteps: !!float 2e6
+
+Microrts-b2w10-1p-2m-grid2entity-a10-deterministic:
+  &microrts-b2w10-1p-2m-grid2entity-a10-deterministic
+  <<: *microrts-b2w10-1p-2m-grid2entity-a10
+  device_hyperparams: &microrts-b2w10-1p-2m-grid2entity-a10-deterministic-device
+    <<: *microrts-bw10-1m-ent100d-lr10d-shaped-rew-mgn2-grid2seq-a10-device
+    use_deterministic_algorithms: true
 
 Microrts-debug:
   <<: *microrts-b2w10-1p-2m-grid2entity-a10
