@@ -644,3 +644,18 @@ Microrts-env32-500m-ent5d1-lr4d1-05wb2lwr-ft-a100:
     load_run_path: sgoodfriend/rl-algo-impls-microrts-2024/t48q14f8
     load_run_path_best: true
   n_timesteps: !!float 500e6
+
+Microrts-env32-1b-ent5d1-lr8d1-05wb2lwr-ft-a100:
+  &microrts-env32-1b-ent5d1-lr8d1-05wb2lwr-ft-a100
+  <<: *microrts-env32-500m-ent5d1-lr4d1-05wb2lwr-ft-a100
+  env_hyperparams: &microrts-env32-1b-ent5d1-lr8d1-05wb2lwr-ft-a100-env
+    <<: *microrts-env32-240m-ent5d1-lr4d1-05wb2lwr-a100-env
+    normalize_kwargs:
+      &microrts-env32-1b-ent5d1-lr8d1-05wb2lwr-ft-a100-normalize-kwargs
+      <<: *microrts-env32-240m-ent5d1-lr8d1-05wb2lwr-ft-a100-normalize-kwargs
+      clip_reward: 10
+      gamma_reward: 0.9995
+  n_timesteps: !!float 1e9
+  rollout_hyperparams: &microrts-env32-1b-ent5d1-lr8d1-05wb2lwr-ft-a100-rollout
+    <<: *microrts-env32-240m-ent5d1-lr4d1-05wb2lwr-a100-rollout
+    gamma: 0.9995
