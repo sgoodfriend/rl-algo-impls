@@ -1,14 +1,13 @@
-name: rl_algo_impls
+name: rl_algo_impls_310
 channels:
   - pytorch
   - conda-forge
   - nodefaults
 dependencies:
-  - python=3.8
+  - python=3.10
   - mamba
   - pip
   - pytorch
   - torchvision
   - torchaudio
   - build
-  - vec-noise
