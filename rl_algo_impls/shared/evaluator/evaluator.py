@@ -111,9 +111,9 @@ def evaluate(
         act = policy.act(
             obs,
             deterministic=deterministic,
-            action_masks=batch_dict_keys(get_action_mask())
-            if get_action_mask
-            else None,
+            action_masks=(
+                batch_dict_keys(get_action_mask()) if get_action_mask else None
+            ),
         )
         obs, rew, terminations, truncations, info = env.step(act)
 
@@ -182,9 +182,9 @@ class Evaluator:
                     override_hparams={"n_envs": 1},
                     self_play_wrapper=self_play_wrapper,
                 ),
-                tb_writer,
                 video_dir,  # This is updated when a video is actually created
                 max_video_length=self.max_video_length,
+                tb_writer=tb_writer,
             )
         else:
             self.video_env = None
