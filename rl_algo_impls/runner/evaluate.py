@@ -6,10 +6,8 @@ from typing import Any, Dict, NamedTuple, Optional
 import numpy as np
 from torch.utils.tensorboard.writer import SummaryWriter
 
-from rl_algo_impls.rollout.rollout import flatten_actions_to_tensor, flatten_to_tensor
-from rl_algo_impls.runner.env_hyperparams import EnvHyperparams
 from rl_algo_impls.runner.config import Config, Hyperparams, RunArgs
-from rl_algo_impls.utils.device import get_device
+from rl_algo_impls.runner.env_hyperparams import EnvHyperparams
 from rl_algo_impls.runner.running_utils import (
     load_hyperparams,
     make_eval_policy,
@@ -23,9 +21,10 @@ from rl_algo_impls.shared.data_store.in_process_data_store_accessor import (
 from rl_algo_impls.shared.evaluator.evaluator import evaluate
 from rl_algo_impls.shared.policy.policy import Policy
 from rl_algo_impls.shared.stats import EpisodesStats
-from rl_algo_impls.shared.tensor_utils import batch_dict_keys
+from rl_algo_impls.shared.tensor_utils import batch_dict_keys, numpy_to_tensor
 from rl_algo_impls.shared.vec_env.env_spaces import EnvSpaces
 from rl_algo_impls.shared.vec_env.make_env import make_eval_env
+from rl_algo_impls.utils.device import get_device
 from rl_algo_impls.wrappers.vec_episode_recorder import VecEpisodeRecorder
 
 
@@ -127,12 +126,10 @@ def evaluate_model(args: EvalArgs, root_dir: str) -> Evaluation:
             action_masks=action_masks,
         )
         assert isinstance(obs, np.ndarray)
-        t_obs = flatten_to_tensor(obs, device)
-        t_act = flatten_actions_to_tensor(act, device)
+        t_obs = numpy_to_tensor(obs, device)
+        t_act = numpy_to_tensor(act, device)
         t_action_mask = (
-            flatten_actions_to_tensor(action_masks, device)
-            if action_masks is not None
-            else None
+            numpy_to_tensor(action_masks, device) if action_masks is not None else None
         )
         inputs = (t_obs, t_act, t_action_mask)
 
