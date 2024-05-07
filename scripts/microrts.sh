@@ -16,7 +16,7 @@ done
 
 algos="${algos:-ppo}"
 n_jobs="${n_jobs:-1}"
-project_name="${project_name:-rl-algo-impls-microrts-2024}"
+project_name="${project_name:-mech-interp-rl-algo-impls}"
 seeds="${seeds:-1}"
 
 BASIC_ENVS=(
