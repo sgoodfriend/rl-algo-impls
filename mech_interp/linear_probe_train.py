@@ -4,6 +4,7 @@ import shutil
 from dataclasses import dataclass
 from typing import Any, Dict, Optional
 
+from mech_interp.occupancy_linear_probe_trainer import OccupancyLinearProbeTrainer
 from rl_algo_impls.runner.config import Config, Hyperparams, RunArgs
 from rl_algo_impls.runner.env_hyperparams import EnvHyperparams
 from rl_algo_impls.runner.evaluate import Evaluation
@@ -19,6 +20,10 @@ from rl_algo_impls.shared.data_store.in_process_data_store_accessor import (
     InProcessDataStoreAccessor,
 )
 from rl_algo_impls.shared.evaluator.evaluator import evaluate
+from rl_algo_impls.shared.policy.actor_critic import ActorCritic
+from rl_algo_impls.shared.policy.actor_critic_network.grid2entity_transformer import (
+    Grid2EntityTransformerNetwork,
+)
 from rl_algo_impls.shared.vec_env.env_spaces import EnvSpaces
 from rl_algo_impls.shared.vec_env.make_env import make_eval_env
 from rl_algo_impls.utils.device import get_device
@@ -34,7 +39,7 @@ class LinearProbeTrainArgs(RunArgs):
     deterministic_eval: Optional[bool] = None
     n_steps: int = 1_000_000
     no_print_returns: bool = False
-    
+
 
 def linear_probe_train() -> None:
     parser = base_parser(multiple=False)
@@ -42,7 +47,7 @@ def linear_probe_train() -> None:
     parser.add_argument("--best", default=True, type=bool)
     parser.add_argument("--n_envs", default=1, type=int)
     parser.add_argument("--deterministic-eval", default=None, type=bool)
-    parser.add_argument("--n_steps", default=3, type=int)
+    parser.add_argument("--n_steps", default=100_000, type=int)
     parser.add_argument(
         "--no-print-returns", action="store_true", help="Limit printing"
     )
@@ -129,17 +134,18 @@ def train(args: LinearProbeTrainArgs, root_dir: str) -> None:
         if args.deterministic_eval is not None
         else config.eval_hyperparams.get("deterministic", True)
     )
-    Evaluation(
-        policy,
-        evaluate(
-            env,
-            policy,
-            1,
-            render=args.render,
-            deterministic=deterministic,
-            print_returns=not args.no_print_returns,
-        ),
-        config,
-        data_store_accessor,
-    )
 
+    assert isinstance(policy, ActorCritic)
+    network = policy.network
+    assert isinstance(network, Grid2EntityTransformerNetwork)
+    occupancy_trainer = OccupancyLinearProbeTrainer(
+        device,
+        network.encoder_embed_dim,
+        env.observation_space.shape[-2:],
+    )
+    occupancy_trainer.train(
+        policy,
+        env,
+        args.n_steps,
+        deterministic_actions=deterministic,
+    )

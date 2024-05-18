@@ -129,6 +129,7 @@ class Grid2EntityTransformerNetwork(ActorCriticNetwork):
             else None
         )
 
+        self.encoder_embed_dim = encoder_embed_dim
         embedding_layer_sizes = [channels, *hidden_embedding_dims, encoder_embed_dim]
         self.embedding_layer = mlp(
             embedding_layer_sizes,
