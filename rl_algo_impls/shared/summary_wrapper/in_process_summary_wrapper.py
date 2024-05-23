@@ -3,7 +3,7 @@ import logging
 import os
 import shutil
 from dataclasses import asdict
-from typing import Any, Dict, Optional, Set
+from typing import Any, Dict, Optional
 
 from torch.utils.tensorboard.writer import SummaryWriter
 
