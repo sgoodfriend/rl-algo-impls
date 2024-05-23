@@ -23,6 +23,7 @@ class OccupancyLinearProbeTrainer:
         optim_betas: Tuple[float, float] = (0.9, 0.99),
         optim_weight_decay: float = 0.01,
         detach: bool = False,
+        residual_layer_idx: int = 0,
     ) -> None:
         self.device = device
         self.probe_w = nn.Parameter(torch.zeros((d_model,) + map_shape)).to(device)
@@ -36,6 +37,7 @@ class OccupancyLinearProbeTrainer:
             weight_decay=optim_weight_decay,
         )
         self.detach = detach
+        self.residual_layer_idx = residual_layer_idx
 
     def train(
         self,
@@ -52,7 +54,9 @@ class OccupancyLinearProbeTrainer:
             residual_activations["key_padding_mask"] = output.key_padding_mask
 
         assert isinstance(policy, ActorCritic)
-        policy.network.backbone.encoders[0].register_forward_hook(hook_fn)
+        policy.network.backbone.encoders[self.residual_layer_idx].register_forward_hook(
+            hook_fn
+        )
 
         obs, _ = env.reset()
         get_action_mask = getattr(env, "get_action_mask", None)

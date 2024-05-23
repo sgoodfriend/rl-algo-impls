@@ -49,6 +49,7 @@ class LinearProbeTrainArgs(RunArgs):
     detach_from_model: bool = False
 
     learning_rate: float = 3e-4
+    residual_layer_idx: int = 0
 
 
 def linear_probe_train() -> None:
@@ -56,7 +57,7 @@ def linear_probe_train() -> None:
     parser.add_argument("--best", default=True, type=bool)
     parser.add_argument("--n_envs", default=1, type=int)
     parser.add_argument("--deterministic-eval", default=None, type=bool)
-    parser.add_argument("--n_steps", default=20_000, type=int)
+    parser.add_argument("--n_steps", default=10_000, type=int)
     parser.add_argument(
         "--no-print-returns", action="store_true", help="Limit printing"
     )
@@ -72,6 +73,7 @@ def linear_probe_train() -> None:
     parser.add_argument("--wandb-group", default=None, type=str)
     parser.add_argument("--detach-from-model", action="store_true")
     parser.add_argument("--learning-rate", default=3e-4, type=float)
+    parser.add_argument("--residual-layer-idx", default=0, type=int)
 
     parser.set_defaults(
         n_envs=8,
@@ -79,6 +81,8 @@ def linear_probe_train() -> None:
         override_hparams='{"bots":{"coacAI":8}, "map_paths": ["maps/10x10/basesTwoWorkers10x10.xml"]}',
         detach_from_model=False,
         learning_rate=5e-3,
+        n_steps=10_000,
+        residual_layer_idx=1,
     )
     args = parser.parse_args()
     args.algo = args.algo[0]
@@ -181,6 +185,7 @@ def train(args: LinearProbeTrainArgs, root_dir: str) -> None:
         env.observation_space.shape[-2:],
         learning_rate=args.learning_rate,
         detach=args.detach_from_model,
+        residual_layer_idx=args.residual_layer_idx,
     )
     occupancy_trainer.train(
         policy,
