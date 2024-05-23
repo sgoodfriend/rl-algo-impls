@@ -4,6 +4,7 @@ import einops
 import torch
 import torch.nn as nn
 import tqdm
+from torch.utils.tensorboard.writer import SummaryWriter
 
 from rl_algo_impls.shared.policy.abstract_policy import AbstractPolicy
 from rl_algo_impls.shared.policy.actor_critic import ActorCritic
@@ -38,6 +39,7 @@ class OccupancyLinearProbeTrainer:
         policy: AbstractPolicy,
         env: VectorEnv,
         steps: int,
+        tb_writer: SummaryWriter,
         deterministic_actions: bool = True,
     ) -> None:
         residual_activations = {}
@@ -53,6 +55,7 @@ class OccupancyLinearProbeTrainer:
         get_action_mask = getattr(env, "get_action_mask", None)
 
         num_env_steps = steps // env.num_envs + (1 if steps % env.num_envs else 0)
+        step = 0
         tqdm_bar = tqdm.tqdm(range(num_env_steps))
         for _ in tqdm_bar:
             act = policy.act(
@@ -73,7 +76,9 @@ class OccupancyLinearProbeTrainer:
             )
             target = einops.repeat(
                 torch.tensor(obs[:, 4:6].any(1), device=self.device).float(),
-                "b h w -> b num_ent h w", num_ent=logits.size(1))
+                "b h w -> b num_ent h w",
+                num_ent=logits.size(1),
+            )
             loss = torch.zeros(1, device=self.device)
             num_entities = 0
             for i in range(logits.size(0)):
@@ -88,5 +93,9 @@ class OccupancyLinearProbeTrainer:
             self.optimizer.zero_grad()
 
             obs, _, _, _, _ = env.step(act)
+            step += env.num_envs
+
+            with torch.no_grad():
+                tb_writer.add_scalar("loss", loss.item(), global_step=step)
 
             tqdm_bar.set_description(f"Loss: {loss.item():.4f}")

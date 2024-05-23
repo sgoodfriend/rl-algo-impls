@@ -1,13 +1,15 @@
 import json
 import os
 import shutil
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
+from datetime import datetime
 from typing import Any, Dict, Optional
+
+from torch.utils.tensorboard.writer import SummaryWriter
 
 from mech_interp.occupancy_linear_probe_trainer import OccupancyLinearProbeTrainer
 from rl_algo_impls.runner.config import Config, Hyperparams, RunArgs
 from rl_algo_impls.runner.env_hyperparams import EnvHyperparams
-from rl_algo_impls.runner.evaluate import Evaluation
 from rl_algo_impls.runner.running_utils import (
     base_parser,
     load_hyperparams,
@@ -19,7 +21,6 @@ from rl_algo_impls.shared.data_store.data_store_view import EvalDataStoreView
 from rl_algo_impls.shared.data_store.in_process_data_store_accessor import (
     InProcessDataStoreAccessor,
 )
-from rl_algo_impls.shared.evaluator.evaluator import evaluate
 from rl_algo_impls.shared.policy.actor_critic import ActorCritic
 from rl_algo_impls.shared.policy.actor_critic_network.grid2entity_transformer import (
     Grid2EntityTransformerNetwork,
@@ -37,8 +38,14 @@ class LinearProbeTrainArgs(RunArgs):
     override_hparams: Optional[Dict[str, Any]] = None
     n_envs: Optional[int] = 1
     deterministic_eval: Optional[bool] = None
-    n_steps: int = 1_000_000
+    n_steps: int = 10_000
     no_print_returns: bool = False
+
+    run_prefix: str = "probe"
+    wandb_project_name: Optional[str] = None
+    wandb_entity: Optional[str] = None
+    wandb_tags: Optional[str] = None
+    wandb_group: Optional[str] = None
 
 
 def linear_probe_train() -> None:
@@ -47,13 +54,21 @@ def linear_probe_train() -> None:
     parser.add_argument("--best", default=True, type=bool)
     parser.add_argument("--n_envs", default=1, type=int)
     parser.add_argument("--deterministic-eval", default=None, type=bool)
-    parser.add_argument("--n_steps", default=100_000, type=int)
+    parser.add_argument("--n_steps", default=10_000, type=int)
     parser.add_argument(
         "--no-print-returns", action="store_true", help="Limit printing"
     )
     # wandb-run-path overrides base RunArgs
     parser.add_argument("--wandb-run-path", default=None, type=str)
     parser.add_argument("--override-hparams", default=None, type=str)
+    parser.add_argument("--run-prefix", default="probe", type=str)
+    parser.add_argument(
+        "--wandb-project-name", default="rl-algo-impls-interp", type=str
+    )
+    parser.add_argument("--wandb-entity", default=None, type=str)
+    parser.add_argument("--wandb-tags", default=None, nargs="*")
+    parser.add_argument("--wandb-group", default=None, type=str)
+
     parser.set_defaults(
         algo=["ppo"],
         wandb_run_path="sgoodfriend/mech-interp-rl-algo-impls/eh5nxxe2",
@@ -101,6 +116,21 @@ def train(args: LinearProbeTrainArgs, root_dir: str) -> None:
 
     print(args)
 
+    run_name = f"{args.run_prefix}-{config.model_name()}-{datetime.now().isoformat()}"
+    tb_path = os.path.join(root_dir, "runs", run_name)
+    wandb_enabled = bool(args.wandb_project_name)
+    if wandb_enabled:
+        wandb.tensorboard.patch(root_logdir=tb_path, pytorch=True)
+        wandb.init(
+            project=args.wandb_project_name,
+            entity=args.wandb_entity,
+            config=asdict(args),
+            name=run_name,
+            tags=args.wandb_tags,
+            group=args.wandb_group,
+        )
+    tb_writer = SummaryWriter(tb_path)
+
     set_seeds(args.seed)
 
     data_store_accessor = InProcessDataStoreAccessor(
@@ -147,5 +177,8 @@ def train(args: LinearProbeTrainArgs, root_dir: str) -> None:
         policy,
         env,
         args.n_steps,
+        tb_writer,
         deterministic_actions=deterministic,
     )
+
+    tb_writer.close()
