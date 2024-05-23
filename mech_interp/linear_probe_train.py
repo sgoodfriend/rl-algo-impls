@@ -56,7 +56,7 @@ def linear_probe_train() -> None:
     parser.add_argument("--best", default=True, type=bool)
     parser.add_argument("--n_envs", default=1, type=int)
     parser.add_argument("--deterministic-eval", default=None, type=bool)
-    parser.add_argument("--n_steps", default=10_000, type=int)
+    parser.add_argument("--n_steps", default=20_000, type=int)
     parser.add_argument(
         "--no-print-returns", action="store_true", help="Limit printing"
     )
