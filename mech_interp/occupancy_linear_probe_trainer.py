@@ -1,6 +1,7 @@
 from typing import Tuple
 
 import einops
+import numpy as np
 import torch
 import torch.nn as nn
 import tqdm
@@ -74,18 +75,21 @@ class OccupancyLinearProbeTrainer:
                 )
                 + self.probe_b
             )
-            target = einops.repeat(
-                torch.tensor(obs[:, 4:6].any(1), device=self.device).float(),
-                "b h w -> b num_ent h w",
-                num_ent=logits.size(1),
-            )
+            target = torch.tensor(obs[:, 4:6].any(1), device=self.device).float()
             loss = torch.zeros(1, device=self.device)
             num_entities = 0
+            num_correct = 0
             for i in range(logits.size(0)):
+                target_labels = target[i]
                 for entity_idx in range(logits.size(1)):
                     if residual_activations["key_padding_mask"][i, entity_idx]:
                         continue
-                    loss += self.loss_fn(logits[i, entity_idx], target[i, entity_idx])
+                    entity_logits = logits[i, entity_idx]
+                    loss += self.loss_fn(entity_logits, target_labels)
+                    with torch.no_grad():
+                        num_correct += (
+                            (entity_logits.sigmoid() > 0.5) == target_labels
+                        ).float().sum() / np.prod(target_labels.shape)
                     num_entities += 1
             loss /= num_entities
             loss.backward()
@@ -97,5 +101,8 @@ class OccupancyLinearProbeTrainer:
 
             with torch.no_grad():
                 tb_writer.add_scalar("loss", loss.item(), global_step=step)
+            tb_writer.add_scalar(
+                "accuracy", num_correct / num_entities, global_step=step
+            )
 
             tqdm_bar.set_description(f"Loss: {loss.item():.4f}")
