@@ -48,6 +48,8 @@ class LinearProbeTrainArgs(RunArgs):
 
     detach_from_model: bool = False
 
+    learning_rate: float = 3e-4
+
 
 def linear_probe_train() -> None:
     parser = base_parser(multiple=False)
@@ -69,12 +71,14 @@ def linear_probe_train() -> None:
     parser.add_argument("--wandb-tags", default=None, nargs="*")
     parser.add_argument("--wandb-group", default=None, type=str)
     parser.add_argument("--detach-from-model", action="store_true")
+    parser.add_argument("--learning-rate", default=3e-4, type=float)
 
     parser.set_defaults(
         n_envs=8,
         wandb_run_path="sgoodfriend/mech-interp-rl-algo-impls/eh5nxxe2",
         override_hparams='{"bots":{"coacAI":8}, "map_paths": ["maps/10x10/basesTwoWorkers10x10.xml"]}',
         detach_from_model=False,
+        learning_rate=5e-3,
     )
     args = parser.parse_args()
     args.algo = args.algo[0]
@@ -175,6 +179,7 @@ def train(args: LinearProbeTrainArgs, root_dir: str) -> None:
         device,
         network.encoder_embed_dim,
         env.observation_space.shape[-2:],
+        learning_rate=args.learning_rate,
         detach=args.detach_from_model,
     )
     occupancy_trainer.train(
