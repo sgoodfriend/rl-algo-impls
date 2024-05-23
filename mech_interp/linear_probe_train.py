@@ -47,6 +47,8 @@ class LinearProbeTrainArgs(RunArgs):
     wandb_tags: Optional[str] = None
     wandb_group: Optional[str] = None
 
+    detach_from_model: bool = False
+
 
 def linear_probe_train() -> None:
     parser = base_parser(multiple=False)
@@ -68,12 +70,14 @@ def linear_probe_train() -> None:
     parser.add_argument("--wandb-entity", default=None, type=str)
     parser.add_argument("--wandb-tags", default=None, nargs="*")
     parser.add_argument("--wandb-group", default=None, type=str)
+    parser.add_argument("--detach-from-model", action="store_true")
 
     parser.set_defaults(
         algo=["ppo"],
         wandb_run_path="sgoodfriend/mech-interp-rl-algo-impls/eh5nxxe2",
         render=False,
         override_hparams='{"bots":{"coacAI":1}, "map_paths": ["maps/10x10/basesTwoWorkers10x10.xml"]}',
+        detach_from_model=True,
     )
     args = parser.parse_args()
     args.algo = args.algo[0]
@@ -116,7 +120,10 @@ def train(args: LinearProbeTrainArgs, root_dir: str) -> None:
 
     print(args)
 
-    run_name = f"{args.run_prefix}-{config.model_name()}-{datetime.now().isoformat()}"
+    run_prefix = args.run_prefix
+    if args.detach_from_model:
+        run_prefix += "-detached"
+    run_name = f"{run_prefix}-{config.model_name()}-{datetime.now().isoformat()}"
     tb_path = os.path.join(root_dir, "runs", run_name)
     wandb_enabled = bool(args.wandb_project_name)
     if wandb_enabled:
@@ -172,6 +179,7 @@ def train(args: LinearProbeTrainArgs, root_dir: str) -> None:
         device,
         network.encoder_embed_dim,
         env.observation_space.shape[-2:],
+        detach=args.detach_from_model,
     )
     occupancy_trainer.train(
         policy,

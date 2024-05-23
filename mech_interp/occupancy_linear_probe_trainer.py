@@ -22,6 +22,7 @@ class OccupancyLinearProbeTrainer:
         learning_rate: float = 3e-4,
         optim_betas: Tuple[float, float] = (0.9, 0.99),
         optim_weight_decay: float = 0.01,
+        detach: bool = False,
     ) -> None:
         self.device = device
         self.probe_w = nn.Parameter(torch.zeros((d_model,) + map_shape)).to(device)
@@ -34,6 +35,7 @@ class OccupancyLinearProbeTrainer:
             betas=optim_betas,
             weight_decay=optim_weight_decay,
         )
+        self.detach = detach
 
     def train(
         self,
@@ -67,14 +69,25 @@ class OccupancyLinearProbeTrainer:
                 ),
             )
 
-            logits = (
-                einops.einsum(
-                    residual_activations["activation"],
-                    self.probe_w,
-                    "b num_ent d_model, d_model h w -> b num_ent h w",
+            if self.detach:
+                logits = (
+                    torch.zeros(
+                        residual_activations["activation"].shape[:2]
+                        + self.probe_b.shape,
+                        dtype=self.probe_b.dtype,
+                        device=self.probe_b.device,
+                    )
+                    + self.probe_b
                 )
-                + self.probe_b
-            )
+            else:
+                logits = (
+                    einops.einsum(
+                        residual_activations["activation"],
+                        self.probe_w,
+                        "b num_ent d_model, d_model h w -> b num_ent h w",
+                    )
+                    + self.probe_b
+                )
             target = torch.tensor(obs[:, 4:6].any(1), device=self.device).float()
             loss = torch.zeros(1, device=self.device)
             num_entities = 0
@@ -89,7 +102,7 @@ class OccupancyLinearProbeTrainer:
                     with torch.no_grad():
                         num_correct += (
                             (entity_logits.sigmoid() > 0.5) == target_labels
-                        ).float().sum() / np.prod(target_labels.shape)
+                        ).float().sum().item() / np.prod(target_labels.shape)
                     num_entities += 1
             loss /= num_entities
             loss.backward()
@@ -101,8 +114,9 @@ class OccupancyLinearProbeTrainer:
 
             with torch.no_grad():
                 tb_writer.add_scalar("loss", loss.item(), global_step=step)
-            tb_writer.add_scalar(
-                "accuracy", num_correct / num_entities, global_step=step
-            )
+            accuracy = num_correct / num_entities
+            tb_writer.add_scalar("accuracy", accuracy, global_step=step)
 
-            tqdm_bar.set_description(f"Loss: {loss.item():.4f}")
+            tqdm_bar.set_description(
+                f"Loss: {loss.item():.4f}, Acc: {accuracy * 100:.1f}%"
+            )
