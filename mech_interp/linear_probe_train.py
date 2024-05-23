@@ -32,7 +32,6 @@ from rl_algo_impls.utils.device import get_device
 
 @dataclass
 class LinearProbeTrainArgs(RunArgs):
-    render: bool = True
     best: bool = True
     wandb_run_path: Optional[str] = None
     override_hparams: Optional[Dict[str, Any]] = None
@@ -52,7 +51,6 @@ class LinearProbeTrainArgs(RunArgs):
 
 def linear_probe_train() -> None:
     parser = base_parser(multiple=False)
-    parser.add_argument("--render", default=True, type=bool)
     parser.add_argument("--best", default=True, type=bool)
     parser.add_argument("--n_envs", default=1, type=int)
     parser.add_argument("--deterministic-eval", default=None, type=bool)
@@ -73,11 +71,10 @@ def linear_probe_train() -> None:
     parser.add_argument("--detach-from-model", action="store_true")
 
     parser.set_defaults(
-        algo=["ppo"],
+        n_envs=8,
         wandb_run_path="sgoodfriend/mech-interp-rl-algo-impls/eh5nxxe2",
-        render=False,
-        override_hparams='{"bots":{"coacAI":1}, "map_paths": ["maps/10x10/basesTwoWorkers10x10.xml"]}',
-        detach_from_model=True,
+        override_hparams='{"bots":{"coacAI":8}, "map_paths": ["maps/10x10/basesTwoWorkers10x10.xml"]}',
+        detach_from_model=False,
     )
     args = parser.parse_args()
     args.algo = args.algo[0]
@@ -152,7 +149,6 @@ def train(args: LinearProbeTrainArgs, root_dir: str) -> None:
         EnvHyperparams(**config.env_hyperparams),
         EvalDataStoreView(data_store_accessor, is_eval_job=True),
         override_hparams=override_hparams,
-        render=args.render,
     )
 
     device = get_device(config, EnvSpaces.from_vec_env(env))
