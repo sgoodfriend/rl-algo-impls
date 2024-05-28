@@ -5,7 +5,7 @@ from typing import Dict, List, Optional, TypeVar, Union
 import numpy as np
 import torch
 import torch.nn as nn
-from torch.optim import Adam
+from torch.optim import AdamW
 
 from rl_algo_impls.acbc.train_stats import TrainStats
 from rl_algo_impls.rollout.acbc_rollout import ACBCBatch
@@ -41,13 +41,24 @@ class ACBC(Algorithm):
         max_grad_norm: float = 0.5,
         gradient_accumulation: bool = False,
         scale_loss_by_num_actions: bool = False,
+        optim_eps: float = 1e-7,
+        optim_weight_decay: float = 0.0,
+        optim_betas: Optional[List[int]] = None,
+        optim_amsgrad: bool = False,
     ) -> None:
         super().__init__(
             policy,
             device,
             tb_writer,
             learning_rate,
-            Adam(policy.parameters(), lr=learning_rate),
+            AdamW(
+                policy.parameters(),
+                lr=learning_rate,
+                betas=(0.9, 0.999) if optim_betas is None else tuple(optim_betas),  # type: ignore
+                eps=optim_eps,
+                weight_decay=optim_weight_decay,
+                amsgrad=optim_amsgrad,
+            ),
         )
         self.policy = policy
 

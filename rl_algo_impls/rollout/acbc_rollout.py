@@ -9,7 +9,7 @@ from rl_algo_impls.rollout.rollout_dataloader import RolloutDataset
 from rl_algo_impls.runner.config import Config
 from rl_algo_impls.shared.actor.gridnet import ValueDependentMask
 from rl_algo_impls.shared.gae import compute_advantages
-from rl_algo_impls.shared.tensor_utils import TDN, NumOrArray, NumpyOrDict, TensorOrDict
+from rl_algo_impls.shared.tensor_utils import TDN, NumOrArray, NumpyOrDict, TensorOrDict, numpy_to_tensor
 
 ACBCBatchSelf = TypeVar("ACBCBatchSelf", bound="ACBCBatch")
 

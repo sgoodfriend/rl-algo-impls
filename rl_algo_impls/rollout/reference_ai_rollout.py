@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Type
 
 import numpy as np
 
@@ -21,9 +21,10 @@ class ReferenceAIRolloutGenerator(SyncStepRolloutGenerator):
         config: Config,
         data_store_accessor: AbstractDataStoreAccessor,
         tb_writer: AbstractSummaryWrapper,
+        rollout_cls: Type[Rollout],
         **kwargs
     ) -> None:
-        super().__init__(config, data_store_accessor, tb_writer, **kwargs)
+        super().__init__(config, data_store_accessor, tb_writer, rollout_cls, **kwargs)
         if not self.include_logp:
             if isinstance(self.actions, dict):
                 self.zero_action = np.array(
@@ -45,9 +46,10 @@ class ReferenceAIRolloutGenerator(SyncStepRolloutGenerator):
         rollout_view = self.data_store_view.update_for_rollout_start()
         if rollout_view is None:
             return None
-        (policy, rollout_params, self.tb_writer.timesteps_elapsed, _) = rollout_view
+        (policy, rollout_params, timesteps_elapsed, _) = rollout_view
+        self.tb_writer.on_timesteps_elapsed(timesteps_elapsed)
         self.update_rollout_params(rollout_params)
-        log_scalars(self.tb_writer, rollout_params, self.tb_writer.timesteps_elapsed)
+        log_scalars(self.tb_writer, "charts", rollout_params)
 
         policy.eval()
         policy.reset_noise()
@@ -75,9 +77,11 @@ class ReferenceAIRolloutGenerator(SyncStepRolloutGenerator):
             (
                 self.next_obs,
                 self.rewards[s],
-                self.next_episode_starts,
+                terminations,
+                truncations,
                 _,
             ) = self.vec_env.step(step_actions)
+            self.next_episode_starts = terminations | truncations
             actions = batch_dict_keys(getattr(self.vec_env, "last_action"))
             set_items(self.actions, actions, s)
 
