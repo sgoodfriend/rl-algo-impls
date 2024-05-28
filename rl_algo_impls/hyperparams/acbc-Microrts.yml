@@ -331,7 +331,7 @@ Microrts-b2w10-grid2entity-a10-multi-rews-max-critic-neck:
       - 1
       - 0
     phases:
-      - learning_rate: 0.001
+      - learning_rate: 0.00016
       - learning_rate: 0
   n_timesteps: 1000000.0
   policy_hyperparams:
