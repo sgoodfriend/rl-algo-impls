@@ -12,6 +12,7 @@ class TrainStats:
         self,
         step_stats: List[Dict[str, Union[float, np.ndarray]]],
         explained_var: float,
+        grad_norms: List[float],
     ) -> None:
         self.step_stats: Dict[str, Union[float, np.ndarray]] = {}
         for k, item in step_stats[0].items():
@@ -20,9 +21,13 @@ class TrainStats:
             else:
                 self.step_stats[k] = np.mean([s[k] for s in step_stats]).item()
         self.explained_var = explained_var
+        self.grad_norm = np.mean(grad_norms).item()
 
     def write_to_tensorboard(self, tb_writer: AbstractSummaryWrapper) -> None:
-        stats = {**self.step_stats, **{"explained_var": self.explained_var}}
+        stats = {
+            **self.step_stats,
+            **{"explained_var": self.explained_var, "grad_norm": self.grad_norm},
+        }
         for name, value in stats.items():
             if isinstance(value, np.ndarray):
                 for idx, v in enumerate(value.flatten()):
@@ -31,7 +36,10 @@ class TrainStats:
                 tb_writer.add_scalar(f"losses/{name}", value)
 
     def __repr__(self) -> str:
-        stats = {**self.step_stats, **{"explained_var": self.explained_var}}
+        stats = {
+            **self.step_stats,
+            **{"explained_var": self.explained_var, "grad_norm": self.grad_norm},
+        }
         s = []
         for name, value in stats.items():
             if isinstance(value, np.ndarray):

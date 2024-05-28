@@ -97,9 +97,11 @@ class ACBC(Algorithm):
             timesteps_elapsed += r.total_steps
 
             step_stats: List[Dict[str, Union[float, np.ndarray]]] = []
+            grad_norms = []
             vf_coef = torch.Tensor(np.array(self.vf_coef)).to(self.device)
             for _ in range(self.n_epochs):
                 step_stats.clear()
+                grad_norms.clear()
                 for mb in r.minibatches(
                     self.batch_size, self.device, shuffle=not self.gradient_accumulation
                 ):
@@ -129,7 +131,7 @@ class ACBC(Algorithm):
                         loss /= r.num_minibatches(self.batch_size)
                     loss.backward()
                     if not self.gradient_accumulation:
-                        self.optimizer_step()
+                        grad_norms.append(self.optimizer_step())
 
                     step_stats.append(
                         {
@@ -140,7 +142,7 @@ class ACBC(Algorithm):
                     )
 
                 if self.gradient_accumulation:
-                    self.optimizer_step()
+                    grad_norms.append(self.optimizer_step())
 
             self.tb_writer.on_timesteps_elapsed(timesteps_elapsed)
 
@@ -148,7 +150,9 @@ class ACBC(Algorithm):
             explained_var = (
                 np.nan if var_y == 0 else 1 - np.var(r.y_true - r.y_pred).item() / var_y
             )
-            TrainStats(step_stats, explained_var).write_to_tensorboard(self.tb_writer)
+            TrainStats(step_stats, explained_var, grad_norms).write_to_tensorboard(
+                self.tb_writer
+            )
 
             end_time = perf_counter()
             rollout_steps = r.total_steps
@@ -174,7 +178,10 @@ class ACBC(Algorithm):
             )
         return self
 
-    def optimizer_step(self) -> None:
-        nn.utils.clip_grad_norm_(self.policy.parameters(), self.max_grad_norm)
+    def optimizer_step(self) -> float:
+        grad_norm = nn.utils.clip_grad_norm_(
+            self.policy.parameters(), self.max_grad_norm
+        ).item()
         self.optimizer.step()
         self.optimizer.zero_grad()
+        return grad_norm
