@@ -20,6 +20,7 @@ import util.Pair;
 public class GameStateWrapper {
     GameState gs;
     int debugLevel;
+    boolean allowMoveAwayAttacks;
     ResourceUsage base_ru;
 
     int[][][][] vectorObservation;
@@ -32,8 +33,13 @@ public class GameStateWrapper {
     }
 
     public GameStateWrapper(GameState a_gs, int a_debugLevel) {
+        this(a_gs, a_debugLevel, false);
+    }
+
+    public GameStateWrapper(GameState a_gs, int a_debugLevel, boolean a_allowMoveAwayAttacks) {
         gs = a_gs;
         debugLevel = a_debugLevel;
+        allowMoveAwayAttacks = a_allowMoveAwayAttacks;
 
         base_ru = new ResourceUsage();
         var pgs = gs.getPhysicalGameState();
@@ -449,19 +455,20 @@ public class GameStateWrapper {
             int attackTime = type.attackTime;
             if (type.attackRange == 1) {
                 if (y > 0 && uup != null && uup.getPlayer() != player && uup.getPlayer() >= 0
-                        && !isUnitMovingWithinTimesteps(uaaUp, attackTime)) {
+                        && (allowMoveAwayAttacks || !isUnitMovingWithinTimesteps(uaaUp, attackTime))) {
                     l.add(new UnitAction(UnitAction.TYPE_ATTACK_LOCATION, uup.getX(), uup.getY()));
                 }
                 if (x < pgs.getWidth() - 1 && uright != null && uright.getPlayer() != player
-                        && uright.getPlayer() >= 0 && !isUnitMovingWithinTimesteps(uaaRight, attackTime)) {
+                        && uright.getPlayer() >= 0
+                        && (allowMoveAwayAttacks || !isUnitMovingWithinTimesteps(uaaRight, attackTime))) {
                     l.add(new UnitAction(UnitAction.TYPE_ATTACK_LOCATION, uright.getX(), uright.getY()));
                 }
                 if (y < pgs.getHeight() - 1 && udown != null && udown.getPlayer() != player && udown.getPlayer() >= 0
-                        && !isUnitMovingWithinTimesteps(uaaDown, attackTime)) {
+                        && (allowMoveAwayAttacks || !isUnitMovingWithinTimesteps(uaaDown, attackTime))) {
                     l.add(new UnitAction(UnitAction.TYPE_ATTACK_LOCATION, udown.getX(), udown.getY()));
                 }
                 if (x > 0 && uleft != null && uleft.getPlayer() != player && uleft.getPlayer() >= 0
-                        && !isUnitMovingWithinTimesteps(uaaLeft, attackTime)) {
+                        && (allowMoveAwayAttacks || !isUnitMovingWithinTimesteps(uaaLeft, attackTime))) {
                     l.add(new UnitAction(UnitAction.TYPE_ATTACK_LOCATION, uleft.getX(), uleft.getY()));
                 }
             } else {
@@ -474,7 +481,7 @@ public class GameStateWrapper {
                     int sq_dy = (u.getY() - y) * (u.getY() - y);
                     if (sq_dx + sq_dy <= sqrange) {
                         UnitActionAssignment uaa = gs.getActionAssignment(u);
-                        if (!isUnitMovingWithinTimesteps(uaa, attackTime))
+                        if (allowMoveAwayAttacks || !isUnitMovingWithinTimesteps(uaa, attackTime))
                             l.add(new UnitAction(UnitAction.TYPE_ATTACK_LOCATION, u.getX(), u.getY()));
                     }
                 }

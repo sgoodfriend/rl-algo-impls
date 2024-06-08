@@ -163,7 +163,7 @@ public class RAIBotClient {
                 rewards[i][j] = rfs[j].getReward();
                 dones[i][j] = rfs[j].isDone();
             }
-            var gsw = new GameStateWrapper(gs);
+            var gsw = new GameStateWrapper(gs, 0, true);
             response[i].set(
                     gsw.getArrayObservation(i),
                     gsw.getBinaryMask(i),
@@ -205,7 +205,7 @@ public class RAIBotClient {
                 dones[i][j] = false;
             }
 
-            var gsw = new GameStateWrapper(gs);
+            var gsw = new GameStateWrapper(gs, 0, true);
             response[i].set(
                     gsw.getArrayObservation(i),
                     gsw.getBinaryMask(i),
