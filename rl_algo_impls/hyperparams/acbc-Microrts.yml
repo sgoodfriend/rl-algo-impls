@@ -255,12 +255,14 @@ Microrts-short-squnet-map64: &microrts-short-squnet-map64
     decoder_residual_blocks_per_level: [2, 2]
 
 Microrts-b2w10-grid2entity-a10-multi-rews-max-critic-neck:
+  &microrts-b2w10-grid2entity-a10-multi-rews-max-critic-neck
   additional_keys_to_log:
     - microrts_stats
     - microrts_results
     - results
     - action_mask_stats
   algo_hyperparams:
+    &microrts-b2w10-grid2entity-a10-multi-rews-max-critic-neck-algo
     batch_size: 3072
     gradient_accumulation: false
     learning_rate: 0.00016
@@ -274,6 +276,7 @@ Microrts-b2w10-grid2entity-a10-multi-rews-max-critic-neck:
     set_float32_matmul_precision: high
     use_deterministic_algorithms: false
   env_hyperparams:
+    &microrts-b2w10-grid2entity-a10-multi-rews-max-critic-neck-env
     additional_win_loss_reward: false
     bots:
       randomBiasedAI: 12
@@ -378,6 +381,12 @@ Microrts-b2w10-grid2entity-a10-multi-rews-max-critic-neck:
     include_logp: false
     n_steps: 256
   rollout_type: reference
+
+Microrts-b2w10-grid2entity-ignore-mask: &microrts-b2w10-grid2entity-ignore-mask
+  <<: *microrts-b2w10-grid2entity-a10-multi-rews-max-critic-neck
+  env_hyperparams:
+    <<: *microrts-b2w10-grid2entity-a10-multi-rews-max-critic-neck-env
+    ignore_mask: true
 
 Microrts-debug: &microrts-debug-defaults
   <<: *microrts-short-squnet-map64

@@ -78,6 +78,7 @@ def make_microrts_env(
         _,  # additional_win_loss_smoothing_factor,
         info_rewards,
         disallow_no_op,
+        _, # ignore_mask,
     ) = astuple(hparams)
 
     seed = config.seed(training=training)

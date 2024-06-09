@@ -70,6 +70,7 @@ class MicroRTSSpaceTransform(VectorEnv, MicroRTSInterfaceListener):
         fixed_size: bool = False,
         terrain_overrides: Optional[Dict[str, Dict]] = None,
         disallow_no_op: bool = False,
+        ignore_mask: bool = False,
     ) -> None:
         self.interface = interface
         self.valid_sizes = list(sorted(valid_sizes)) if valid_sizes else None
@@ -152,6 +153,7 @@ class MicroRTSSpaceTransform(VectorEnv, MicroRTSInterfaceListener):
         self.num_envs = self.interface.num_envs
 
         self.disallow_no_op = disallow_no_op
+        self.ignore_mask = ignore_mask
 
         super().__init__()
 
@@ -426,6 +428,8 @@ class MicroRTSSpaceTransform(VectorEnv, MicroRTSInterfaceListener):
         )
 
     def get_action_mask(self) -> np.ndarray:
+        if self.ignore_mask:
+            return np.ones_like(self._action_mask)
         return self._action_mask
 
     def _update_action_mask(self, microrts_mask: List[ByteArray]) -> None:

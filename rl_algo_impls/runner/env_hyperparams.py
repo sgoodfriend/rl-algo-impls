@@ -37,3 +37,4 @@ class EnvHyperparams:
     additional_win_loss_smoothing_factor: Optional[float] = None
     info_rewards: Optional[Dict[str, Any]] = None
     disallow_no_op: bool = False
+    ignore_mask: bool = False

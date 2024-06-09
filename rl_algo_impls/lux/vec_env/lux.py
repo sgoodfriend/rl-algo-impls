@@ -69,6 +69,7 @@ def make_lux_env(
         additional_win_loss_smoothing_factor,
         info_rewards,
         _,  # disallow_no_op,
+        _, # ignore_mask,
     ) = astuple(hparams)
 
     seed = config.seed(training=training)
