@@ -338,6 +338,7 @@ Microrts-b2w10-grid2entity-a10-multi-rews-max-critic-neck:
       - learning_rate: 0
   n_timesteps: !!float 10e6
   policy_hyperparams:
+    &microrts-b2w10-grid2entity-a10-multi-rews-max-critic-neck-policy
     actor_head_style: grid2entity_transformer
     critic_neck_pooling: max
     encoder_attention_heads: 2
@@ -387,6 +388,16 @@ Microrts-b2w10-grid2entity-ignore-mask: &microrts-b2w10-grid2entity-ignore-mask
   env_hyperparams:
     <<: *microrts-b2w10-grid2entity-a10-multi-rews-max-critic-neck-env
     ignore_mask: true
+
+Microrts-b2w10-grid2entity-ignore-mask-4layers:
+  &microrts-b2w10-grid2entity-ignore-mask-4layers
+  <<: *microrts-b2w10-grid2entity-ignore-mask
+  policy_hyperparams:
+    <<: *microrts-b2w10-grid2entity-a10-multi-rews-max-critic-neck-policy
+    encoder_attention_heads: 4
+    encoder_embed_dim: 64
+    encoder_feed_forward_dim: 256
+    encoder_layers: 4
 
 Microrts-debug: &microrts-debug-defaults
   <<: *microrts-short-squnet-map64

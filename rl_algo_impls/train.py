@@ -51,7 +51,7 @@ def train() -> None:
         # env=["BipedalWalker-v3"],
         # env=["PongNoFrameskip-v4"],
         # env=["BreakoutNoFrameskip-v4"],
-        env=["Microrts-b2w10-grid2entity-ignore-mask"],
+        env=["Microrts-b2w10-grid2entity-ignore-mask-4layers"],
         # env=["Microrts-env32-500m-ent5d1-lr4d1-05wb2lwr-ft-a100"],
         # env=["LuxAI_S2-v0-debug"],
         seed=[1],
