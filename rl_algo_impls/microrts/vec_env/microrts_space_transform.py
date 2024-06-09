@@ -429,7 +429,11 @@ class MicroRTSSpaceTransform(VectorEnv, MicroRTSInterfaceListener):
 
     def get_action_mask(self) -> np.ndarray:
         if self.ignore_mask:
-            return np.ones_like(self._action_mask)
+            return np.where(
+                np.expand_dims(self._action_mask.any(-1), -1),
+                np.ones_like(self._action_mask),
+                np.zeros_like(self._action_mask),
+            )
         return self._action_mask
 
     def _update_action_mask(self, microrts_mask: List[ByteArray]) -> None:
