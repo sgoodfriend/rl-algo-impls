@@ -1,4 +1,4 @@
-# Toward a board presence linear probe on microRTS agent
+# Toward a board presence linear probe on a microRTS agent
 Scott Goodfriend (goodfriend.scott@gmail.com)
 
 _A project for the AI Safety Fundamentals Alignment course._
