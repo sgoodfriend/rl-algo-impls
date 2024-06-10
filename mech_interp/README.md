@@ -20,7 +20,7 @@ learn to pursue long-term (possibly instrumental) goals. We already have concret
 of goal misgeneralization when using RL ("Goal Misgeneralization in Deep Reinforcement
 Learning", Langosco et. al. 2022). Currently, we have little data on what’s going on
 with these RL-trained models. Mechanistic interpretability case studies on capable
-RL-trained models can go a long way into understanding (and eventually trusting) agents
+RL-trained models can go a long way towards understanding (and eventually trusting) agents
 trained with RL.
 
 I believe using a transformer neural network trained on microRTS is an excellent case study to get insight into what and how RL agents are learning:
@@ -40,22 +40,17 @@ This project uses the work from 3 projects:
 
 1) [rl-algo-impls](https://github.com/sgoodfriend/rl-algo-impls): This reinforcement
    learning library was used to win the [2023 IEEE Conference on Games microRTS
-   competition](https://arxiv.org/abs/2402.08112).
-   This is the basic training library though this project uses a transformer
-   architecture based on the [entity-neural-network
-   library](https://github.com/entity-neural-network). 
+   competition](https://arxiv.org/abs/2402.08112). This library is used to train the models and probes.
 2) [entity-neural-network](https://github.com/entity-neural-network): This project
    represents entities as "tokens" in a transformer architecture. We use [their
    hyperparams for
    Gym-μRTS](https://github.com/entity-neural-network/enn-zoo?tab=readme-ov-file#gym-%C2%B5rts)
    for the initial reinforcement learning (RL) trained agent.
-3) [Actually, Othello-GPT Has A Linear Emergent World
-   Representation](https://www.neelnanda.io/mechanistic-interpretability/othello): This
-   project's probe training is inspired by the [ARENA_3.0 OthelloGPT Training a Probe
-   implementation](https://arena3-chapter1-transformer-interp.streamlit.app/[1.6]_OthelloGPT).
-   While early work used RL, I switched to behavior cloning a random move bot because
+3) [ARENA_3.0 OthelloGPT Training a Probe
+   implementation](https://arena3-chapter1-transformer-interp.streamlit.app/[1.6]_OthelloGPT): 
+   While I started with RL agents, I switched to behavior cloning a random move bot because
    the [Emergent World Representations paper](https://arxiv.org/abs/2210.13382) found
-   that training their GPT-2 transformer on a random move dataset instead of an
+   that training their GPT-2 transformer on a random move dataset instead of a
    championship move dataset generated a model whose probes could elicit board state
    better.
 
@@ -65,7 +60,7 @@ This project involved two major phases:
 1) Implement linear probe training that can take a trained agent, attach probes to the
    residual stream of this agent, and train the linear probe as the agent played the
    game.
-2) Train different agents to improve linear probe performance in relation to a baseline
+2) Train different agents to improve linear probe performance compared against a baseline
    estimate of board occupancy independent of the model.
 
 ### Linear Probe Trainer
@@ -82,11 +77,11 @@ number of entities on the map. Therefore, the linear probe is determining if eve
 entity gains a full-board representation through the course of the transformer computing
 the output.
 
-### Baseline Probe
+#### Baseline Probe
 `OccupancyLinearProbeTrainer` can also be trained using only the bias parameters
 (zeroing out the weights of the linear parameters) through the `detach` hyperparameter.
 This "baseline probe" represents board occupancy statistics (how often a board position
-is occupied over the course of playthroughts) independent of the model's input and
+is occupied over the course of playthroughs) independent of the model's input and
 transformer computation. Such a baseline is likely to be highly accurate because certain
 board positions are likely to be occupied (e.g., the bases at the top-left and
 bottom-right), unoccupied (e.g., the corners not occupied by the bases), and moderately
@@ -96,11 +91,11 @@ The linear probe should be more accurate than the baseline probe, but this is de
 on how the model is trained and understanding the challenges of this project.
 
 ### Challenges
-While Othello-GPT was inspiration for this project, microRTS had several significant
+While Othello-GPT was inspiration for this project, microRTS has several significant
 challenges:
 1) The input and output of the entity-based transformer is significantly different from
    a token-based sequence. Othello-GPT mapped naturally to a token sequence by
-   representing each token as a board placement. In contrast, microRTS's input sequence
+   representing each token as a board position. In contrast, microRTS's input sequence
    is the units and resources of the current timestep. While Othello-GPT's output is
    simply the last token, microRTS's output is on every entity that the player owns (on
    every turn, a microRTS player can move several units at once).
@@ -126,10 +121,10 @@ We trained 4 categories of agents:
    towards attacking an in-range enemy (neighbor for all non-ranged units).
 3) Behavior cloned, no invalid action mask (BC, no mask): Similar to BC but
    the RL invalid action mask is replaced with a mask that sets all actions valid for
-   own units ready to take commands while otherwise keeping everything else invalid.
+   own units ready to take commands (not currently doing an action) while otherwise keeping everything else invalid.
 4) Behavior cloned, no invalid action mask, large (BC, no mask, large): Similar to "BC,
    no mask" but the model has twice as many transformer blocks (4 vs 2), twice the
-   number of attention heads per layer (4 vs 2), and twice the residual size (64 vs 32).
+   number of attention heads per layer (4 vs 2), and twice the residual dimension (64 vs 32).
    The intention is that this gives the model capacity to represent board position in
    the residual stream and the ability to compute such information with the additional
    layers and heads.
@@ -143,7 +138,7 @@ performing slightly worse.
 
 ### PPO
 ![The linear (yellow) and baseline (cyan) probes converge on nearly the same accuracy and
-loss](imgs/probe-RL.png)
+loss.](imgs/probe-RL.png)
 
 * PPO trained agent: [ppo-Microrts-b2w10-grid2entity-a10-multi-rews-max-critic-neck-S1-2024-05-07T20:34:29.247010
 ](https://wandb.ai/sgoodfriend/mech-interp-rl-algo-impls/runs/eh5nxxe2)
@@ -154,7 +149,7 @@ loss](imgs/probe-RL.png)
 
 ### BC
 ![The linear (brown) probe is slightly over 1% less accurate than the baseline (red)
-probe](imgs/probe-BC.png)
+probe.](imgs/probe-BC.png)
 
 * BC trained agent: [acbc-Microrts-b2w10-grid2entity-a10-multi-rews-max-critic-neck-S1-2024-06-08T06:11:30.418059
 ](https://wandb.ai/sgoodfriend/mech-interp-rl-algo-impls/runs/lfo9ll4m?nw=nwusersgoodfriend)
@@ -164,8 +159,8 @@ probe](imgs/probe-BC.png)
 ](https://wandb.ai/sgoodfriend/rl-algo-impls-interp/runs/pldrxtwr?nw=nwusersgoodfriend)
 
 ### BC, no mask
-![The linear (purple) and baseline (yellow) probes converse on nearly the same accuracy
-and loss](imgs/probe-noMask.png)
+![The linear (purple) and baseline (yellow) probes convene on nearly the same accuracy
+and loss.](imgs/probe-noMask.png)
 
 * "BC, no mask" trained agent: [acbc-Microrts-b2w10-grid2entity-ignore-mask-S1-2024-06-09T03:34:22.495925
 ](https://wandb.ai/sgoodfriend/mech-interp-rl-algo-impls/runs/ja5u6r9y?nw=nwusersgoodfriend)
@@ -175,12 +170,26 @@ and loss](imgs/probe-noMask.png)
 ](https://wandb.ai/sgoodfriend/rl-algo-impls-interp/runs/y3gv5r5e?nw=nwusersgoodfriend)
 
 ### BC, no mask, large
-![]()
+"BC, no mask, large" probes only predict on entities that can take actions instead of
+all entities (as done earlier). The
+idea is that action taking entities are the only entities whose output is being trained
+during behavior cloning. The results still show similar performance between baseline and
+linear probes, so the earlier probes were not retrained.
+
+![The linear probes (orange and green) and baseline (pink) probes convene on nearly the
+same accuracy and loss](imgs/probe-noMaskLarge.png)
 
 * "BC, no mask, large" trained agent: [acbc-Microrts-b2w10-grid2entity-ignore-mask-4layers-S1-2024-06-09T07:43:20.497034
 ](https://wandb.ai/sgoodfriend/mech-interp-rl-algo-impls/runs/1synx02r?nw=nwusersgoodfriend)
-* Linear probe
-* Baseline probe
+* Layer 1 linear probe (orange): [probe-acbc-Microrts-b2w10-grid2entity-ignore-mask-4layers-S1-2024-06-09T16:23:17.140649
+](https://wandb.ai/sgoodfriend/rl-algo-impls-interp/runs/cjepf215?nw=nwusersgoodfriend)
+* Layer 2 linear probe (green): [probe-acbc-Microrts-b2w10-grid2entity-ignore-mask-4layers-S1-2024-06-09T16:04:41.294346
+](https://wandb.ai/sgoodfriend/rl-algo-impls-interp/runs/onpwwdoh?nw=nwusersgoodfriend)
+* Baseline probe (pink): [probe-detached-acbc-Microrts-b2w10-grid2entity-ignore-mask-4layers-S1-2024-06-09T16:18:03.351128
+](https://wandb.ai/sgoodfriend/rl-algo-impls-interp/runs/rj4mjikz?nw=nwusersgoodfriend)
+
+_Note: Layer indexes are 0-indexed, so Layer 1 in a 4 layer network is after the second
+transformer block._
 
 ## Conclusion
 We did not train a linear probe that outperformed the statistical baseline. We cannot
@@ -199,4 +208,14 @@ build an internal representation that accounts for the entire board.
 We will likely not continue work on this project, but interested parties should consider
 these possible next steps if they want to continue this or similar investigations:
 
-1) 
+1) Investigate if accuracy comes from the probe always predicting "not occupied" given total map
+   occupancy likely lies around 10%. If this is the case, weigh the occupied group
+   higher.
+2) Linear probe occupancy on neighboring spaces around entities. The random move bot
+   being behavior cloned only considers if neighboring spaces are occupied for targeting
+   actions. A behavior cloned model likely learns only to consider neighboring spaces.
+3) Attempt to recreate the action mask with the linear probe for each entity that is
+   able to perform an action this turn. Only own units that are not already performing
+   an action can take actions. The "BC, no mask" agents are trained without an invalid
+   action mask, but a random bot will avoid invalid actions so an implicit invalid
+   action mask could be learned from training.
