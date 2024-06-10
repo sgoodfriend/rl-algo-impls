@@ -77,11 +77,12 @@ def linear_probe_train() -> None:
 
     parser.set_defaults(
         n_envs=8,
-        wandb_run_path="sgoodfriend/mech-interp-rl-algo-impls/eh5nxxe2",
-        override_hparams='{"bots":{"coacAI":8}, "map_paths": ["maps/10x10/basesTwoWorkers10x10.xml"]}',
+        wandb_run_path="sgoodfriend/mech-interp-rl-algo-impls/1synx02r",
+        best=False,
+        override_hparams='{"bots":{"randomBiasedAI":8}, "map_paths": ["maps/10x10/basesTwoWorkers10x10.xml"]}',
         detach_from_model=False,
-        learning_rate=5e-3,
-        n_steps=10_000,
+        learning_rate=3e-4,
+        n_steps=100_000,
         residual_layer_idx=1,
     )
     args = parser.parse_args()

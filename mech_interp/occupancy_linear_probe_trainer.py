@@ -9,6 +9,9 @@ from torch.utils.tensorboard.writer import SummaryWriter
 
 from rl_algo_impls.shared.policy.abstract_policy import AbstractPolicy
 from rl_algo_impls.shared.policy.actor_critic import ActorCritic
+from rl_algo_impls.shared.policy.actor_critic_network.grid2seq_transformer import (
+    empty_spaces_mask,
+)
 from rl_algo_impls.shared.tensor_utils import batch_dict_keys
 from rl_algo_impls.wrappers.vector_wrapper import VectorEnv
 
@@ -65,12 +68,13 @@ class OccupancyLinearProbeTrainer:
         step = 0
         tqdm_bar = tqdm.tqdm(range(num_env_steps))
         for _ in tqdm_bar:
+            action_masks = (
+                batch_dict_keys(get_action_mask()) if get_action_mask else None
+            )
             act = policy.act(
                 obs,
                 deterministic=deterministic_actions,
-                action_masks=(
-                    batch_dict_keys(get_action_mask()) if get_action_mask else None
-                ),
+                action_masks=action_masks,
             )
 
             if self.detach:
@@ -96,10 +100,21 @@ class OccupancyLinearProbeTrainer:
             loss = torch.zeros(1, device=self.device)
             num_entities = 0
             num_correct = 0
+
+            keep_mask = ~empty_spaces_mask(
+                einops.rearrange(
+                    torch.tensor(obs, device=logits.device), "b c h w -> b (h w) c"
+                )
+            )
+
             for i in range(logits.size(0)):
                 target_labels = target[i]
-                for entity_idx in range(logits.size(1)):
-                    if residual_activations["key_padding_mask"][i, entity_idx]:
+                if action_masks is not None:
+                    entity_mask = action_masks[i][keep_mask[i]].any(-1)
+                else:
+                    entity_mask = ~residual_activations["key_padding_mask"][i]
+                for entity_idx, has_action in enumerate(entity_mask):
+                    if not has_action:
                         continue
                     entity_logits = logits[i, entity_idx]
                     loss += self.loss_fn(entity_logits, target_labels)
@@ -108,10 +123,11 @@ class OccupancyLinearProbeTrainer:
                             (entity_logits.sigmoid() > 0.5) == target_labels
                         ).float().sum().item() / np.prod(target_labels.shape)
                     num_entities += 1
-            loss /= num_entities
-            loss.backward()
-            self.optimizer.step()
-            self.optimizer.zero_grad()
+            if num_entities > 0:
+                loss /= num_entities
+                loss.backward()
+                self.optimizer.step()
+                self.optimizer.zero_grad()
 
             obs, _, _, _, _ = env.step(act)
             step += env.num_envs
