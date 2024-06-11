@@ -635,9 +635,10 @@ opponent on each map for 20 matches
 
 \section{Additional IEEE-CoG 2023 microRTS competition details}
 \begin{supptable}[H]
-    \caption{Win rates of all agents in the IEEE-CoG 2023 microRTS competition on Open maps.  Player 1 is the row agent and player 2 is the column agent. Each win rate value is the percentage of games won by player 1 (the row agent).}
+    \caption{Win rates of all agents in the IEEE-CoG 2023 microRTS competition on Open maps. Player 1 is the row agent and player 2 is the column agent. Each win rate value is the percentage of games won by player 1 (the row agent). Higher win rates are redder. Lower win rates are bluer.}
     \label{tab:all-competition-winrate}
     \begin{center}
+    \arrayrulecolor{black}
     \begin{tabular}{lccccccccccccccccc|c}
     & \begin{sideways} Mayari \end{sideways} & \begin{sideways} 2L \end{sideways} 
     & \begin{sideways} \textbf{\agentName} \end{sideways} & \begin{sideways} ObiBotKenobi \end{sideways} 
@@ -648,48 +649,48 @@ opponent on each map for 20 matches
     & \begin{sideways} NaiveMCTS \end{sideways} & \begin{sideways} myBot \end{sideways} 
     & \begin{sideways} NIlSiBot \end{sideways} & \begin{sideways} Predator \end{sideways} 
     & \begin{sideways} RandomBiasedAI \end{sideways} & \begin{sideways} Overall \end{sideways} \\
-    \midrule
-    Mayari         & -      & 53 & 32          & 73           & 78       & 93     & 95        & 64     & 88          & 93            & 75           & 78            & 100       & 100   & 100      & 100      & 100            & 82      \\
-    2L             & 51     & -  & 39          & 50           & 69       & 63     & 93        & 56     & 75          & 98            & 88           & 81            & 76        & 94    & 94       & 95       & 96             & 76      \\
-    \textbf{\agentName}    & 62     & 59 & -           & 49           & 64       & 71     & 64        & 64     & 64          & 78            & 78           & 76            & 84        & 94    & 73       & 87       & 87             & 72      \\
-    ObiBotKenobi   & 39     & 29 & 47          & -            & 47       & 69     & 60        & 56     & 58          & 83            & 65           & 76            & 72        & 99    & 79       & 85       & 100            & 66      \\
-    Aggrobot       & 9      & 25 & 26          & 60           & -        & 69     & 55        & 44     & 63          & 86            & 69           & 94            & 66        & 94    & 94       & 91       & 94             & 65      \\
-    sophia         & 25     & 44 & 30          & 35           & 38       & -      & 41        & 88     & 75          & 76            & 63           & 69            & 71        & 100   & 75       & 84       & 83             & 62      \\
-    bRHEAdBot      & 4      & 7  & 24          & 44           & 49       & 69     & -         & 51     & 64          & 79            & 59           & 65            & 83        & 99    & 81       & 96       & 98             & 61      \\
-    Ragnar         & 40     & 50 & 32          & 26           & 50       & 13     & 46        & -      & 44          & 71            & 63           & 69            & 73        & 88    & 81       & 73       & 85             & 56      \\
-    POLightRush    & 0      & 25 & 29          & 38           & 31       & 44     & 34        & 38     & -           & 71            & 69           & 69            & 73        & 100   & 75       & 91       & 100            & 55      \\
-    SaveTheBeesV4  & 14     & 9  & 21          & 43           & 31       & 59     & 38        & 47     & 66          & -             & 50           & 57            & 81        & 86    & 85       & 90       & 93             & 54      \\
-    POWorkerRush   & 13     & 13 & 21          & 29           & 31       & 44     & 44        & 56     & 38          & 89            & -            & 75            & 49        & 94    & 81       & 81       & 96             & 53      \\
-    MyMicroRtsBot  & 11     & 13 & 15          & 25           & 38       & 56     & 38        & 56     & 38          & 86            & 44           & -             & 43        & 94    & 69       & 74       & 92             & 49      \\
-    NaiveMCTS      & 0      & 11 & 17          & 22           & 34       & 27     & 15        & 26     & 29          & 69            & 56           & 58            & -         & 92    & 46       & 60       & 84             & 40      \\
-    myBot          & 1      & 6  & 21          & 20           & 39       & 48     & 28        & 41     & 43          & 77            & 39           & 40            & 50        & -     & 55       & 66       & 66             & 40      \\
-    NIlSiBot       & 0      & 13 & 18          & 18           & 31       & 25     & 13        & 13     & 31          & 63            & 31           & 38            & 51        & 81    & -        & 58       & 73             & 35      \\
-    Predator       & 1      & 7  & 13          & 6            & 12       & 21     & 11        & 16     & 14          & 56            & 22           & 28            & 44        & 73    & 43       & -        & 45             & 26      \\
-    RandomBiasedAI & 0      & 1  & 15          & 0            & 4        & 15     & 6
-    & 9      & 4           & 52            & 4            & 13            & 18        &
-    85    & 39       & 39       & - & 19 \\
+    \arrayrulecolor{black}\specialrule{.5pt}{0pt}{0pt}
+    Mayari         & -      & \colcell{53} & \colcell{32} & \colcell{73} & \colcell{78} & \colcell{93} & \colcell{95} & \colcell{64} & \colcell{88} & \colcell{93} & \colcell{75} & \colcell{78} & \colcell{100} & \colcell{100} & \colcell{100} & \colcell{100} & \colcell{100} & \colcell{82} \\
+    2L             & \colcell{51} & -  & \colcell{39} & \colcell{50} & \colcell{69} & \colcell{63} & \colcell{93} & \colcell{56} & \colcell{75} & \colcell{98} & \colcell{88} & \colcell{81} & \colcell{76} & \colcell{94} & \colcell{94} & \colcell{95} & \colcell{96} & \colcell{76} \\
+    \textbf{\agentName} & \colcell{62} & \colcell{59} & -  & \colcell{49} & \colcell{64} & \colcell{71} & \colcell{64} & \colcell{64} & \colcell{64} & \colcell{78} & \colcell{78} & \colcell{76} & \colcell{84} & \colcell{94} & \colcell{73} & \colcell{87} & \colcell{87} & \colcell{72} \\
+    ObiBotKenobi   & \colcell{39} & \colcell{29} & \colcell{47} & -  & \colcell{47} & \colcell{69} & \colcell{60} & \colcell{56} & \colcell{58} & \colcell{83} & \colcell{65} & \colcell{76} & \colcell{72} & \colcell{99} & \colcell{79} & \colcell{85} & \colcell{100} & \colcell{66} \\
+    Aggrobot       & \colcell{9}  & \colcell{25} & \colcell{26} & \colcell{60} & -  & \colcell{69} & \colcell{55} & \colcell{44} & \colcell{63} & \colcell{86} & \colcell{69} & \colcell{94} & \colcell{66} & \colcell{94} & \colcell{94} & \colcell{91} & \colcell{94} & \colcell{65} \\
+    sophia         & \colcell{25} & \colcell{44} & \colcell{30} & \colcell{35} & \colcell{38} & - & \colcell{41} & \colcell{88} & \colcell{75} & \colcell{76} & \colcell{63} & \colcell{69} & \colcell{71} & \colcell{100} & \colcell{75} & \colcell{84} & \colcell{83} & \colcell{62} \\
+    bRHEAdBot      & \colcell{4}  & \colcell{7}  & \colcell{24} & \colcell{44} & \colcell{49} & \colcell{69} & -  & \colcell{51} & \colcell{64} & \colcell{79} & \colcell{59} & \colcell{65} & \colcell{83} & \colcell{99} & \colcell{81} & \colcell{96} & \colcell{98} & \colcell{61} \\
+    Ragnar         & \colcell{40} & \colcell{50} & \colcell{32} & \colcell{26} & \colcell{50} & \colcell{13} & \colcell{46} & -  & \colcell{44} & \colcell{71} & \colcell{63} & \colcell{69} & \colcell{73} & \colcell{88} & \colcell{81} & \colcell{73} & \colcell{85} & \colcell{56} \\
+    POLightRush    & \colcell{0}  & \colcell{25} & \colcell{29} & \colcell{38} & \colcell{31} & \colcell{44} & \colcell{34} & \colcell{38} & -  & \colcell{71} & \colcell{69} & \colcell{69} & \colcell{73} & \colcell{100} & \colcell{75} & \colcell{91} & \colcell{100} & \colcell{55} \\
+    SaveTheBeesV4  & \colcell{14} & \colcell{9}  & \colcell{21} & \colcell{43} & \colcell{31} & \colcell{59} & \colcell{38} & \colcell{47} & \colcell{66} & -  & \colcell{50} & \colcell{57} & \colcell{81} & \colcell{86} & \colcell{85} & \colcell{90} & \colcell{93} & \colcell{54} \\
+    POWorkerRush   & \colcell{13} & \colcell{13} & \colcell{21} & \colcell{29} & \colcell{31} & \colcell{44} & \colcell{44} & \colcell{56} & \colcell{38} & \colcell{89} & - & \colcell{75} & \colcell{49} & \colcell{94} & \colcell{81} & \colcell{81} & \colcell{96} & \colcell{53} \\
+    MyMicroRtsBot  & \colcell{11} & \colcell{13} & \colcell{15} & \colcell{25} & \colcell{38} & \colcell{56} & \colcell{38} & \colcell{56} & \colcell{38} & \colcell{86} & \colcell{44} & - & \colcell{43} & \colcell{94} & \colcell{69} & \colcell{74} & \colcell{92} & \colcell{49} \\
+    NaiveMCTS      & \colcell{0}  & \colcell{11} & \colcell{17} & \colcell{22} & \colcell{34} & \colcell{27} & \colcell{15} & \colcell{26} & \colcell{29} & \colcell{69} & \colcell{56} & \colcell{58} & - & \colcell{92} & \colcell{46} & \colcell{60} & \colcell{84} & \colcell{40} \\
+    myBot          & \colcell{1}  & \colcell{6}  & \colcell{21} & \colcell{20} & \colcell{39} & \colcell{48} & \colcell{28} & \colcell{41} & \colcell{43} & \colcell{77} & \colcell{39} & \colcell{40} & \colcell{50} & - & \colcell{55} & \colcell{66} & \colcell{66} & \colcell{40} \\
+    NIlSiBot       & \colcell{0}  & \colcell{13} & \colcell{18} & \colcell{18} & \colcell{31} & \colcell{25} & \colcell{13} & \colcell{13} & \colcell{31} & \colcell{63} & \colcell{31} & \colcell{38} & \colcell{51} & \colcell{81} & - & \colcell{58} & \colcell{73} & \colcell{35} \\
+    Predator       & \colcell{1}  & \colcell{7}  & \colcell{13} & \colcell{6}  & \colcell{12} & \colcell{21} & \colcell{11} & \colcell{16} & \colcell{14} & \colcell{56} & \colcell{22} & \colcell{28} & \colcell{44} & \colcell{73} & \colcell{43} & - & \colcell{45} & \colcell{26} \\
+    RandomBiasedAI & \colcell{0}  & \colcell{1}  & \colcell{15} & \colcell{0}  & \colcell{4}  & \colcell{15} & \colcell{6}  & \colcell{9}  & \colcell{4}  & \colcell{52} & \colcell{4}  & \colcell{13} & \colcell{18} & \colcell{85} & \colcell{39} & \colcell{39} & - & \colcell{19} \\
     \end{tabular}
 \end{center}
 \end{supptable}
 
 \section{Additional behavior cloning benchmarks}
+
 \begin{supptable}[H]
-    \caption{\bcAgent\ win rate in single player round-robin benchmark. Win rates above 50\% are bolded.}
+    \caption{\bcAgent\ win rate in single player round-robin benchmark. Win rates above 50\% are bolded. Higher win rates are redder. Lower win rates are bluer.}
     \label{tab:bc-winrate}
+    \arrayrulecolor{black}
     \begin{center}
     \begin{tabular}{lcccc|c}
      & POWorkerRush & POLightRush & CoacAI & Mayari & Overall \\
-    \midrule
-    \texttt{basesWorkers8x8A} & \textbf{60} & \textbf{100} & \textbf{90} & 50 & \textbf{75} \\
-    \texttt{FourBasesWorkers8x8} & \textbf{100} & \textbf{100} & \textbf{85} & \textbf{65} & \textbf{88} \\
-    \texttt{NoWhereToRun9x8} & \textbf{100} & \textbf{100} & \textbf{83} & \textbf{55} & \textbf{85} \\
-    \texttt{basesWorkers16x16A} & 10 & \textbf{100} & \textbf{100} & 28 & \textbf{60} \\
-    \texttt{TwoBasesBarracks16x16} & \textbf{100} & \textbf{100} & 43 & 20 & \textbf{66} \\
-    \texttt{DoubleGame24x24} & 0 & \textbf{100} & \textbf{100} & 30 & \textbf{58} \\
-    \texttt{BWDistantResources32x32} & 48 & \textbf{100} & \textbf{100} & \textbf{65} & \textbf{78} \\
-    \texttt{(4)BloodBath.scmB} & \textbf{100} & \textbf{63} & 20 & 40 & \textbf{56} \\
-    \hline
-    AI Average & \textbf{65} & \textbf{96} & \textbf{78} & 44 & \textbf{71} \\
+    \arrayrulecolor{black}\specialrule{.5pt}{0pt}{0pt}
+    \texttt{basesWorkers8x8A} & \colcell{60} & \colcell{100} & \colcell{90} & \colcell{50} & \colcell{75} \\
+    \texttt{FourBasesWorkers8x8} & \colcell{100} & \colcell{100} & \colcell{85} & \colcell{65} & \colcell{88} \\
+    \texttt{NoWhereToRun9x8} & \colcell{100} & \colcell{100} & \colcell{83} & \colcell{55} & \colcell{85} \\
+    \texttt{basesWorkers16x16A} & \colcell{10} & \colcell{100} & \colcell{100} & \colcell{28} & \colcell{60} \\
+    \texttt{TwoBasesBarracks16x16} & \colcell{100} & \colcell{100} & \colcell{43} & \colcell{20} & \colcell{66} \\
+    \texttt{DoubleGame24x24} & \colcell{0} & \colcell{100} & \colcell{100} & \colcell{30} & \colcell{58} \\
+    \texttt{BWDistantResources32x32} & \colcell{48} & \colcell{100} & \colcell{100} & \colcell{65} & \colcell{78} \\
+    \texttt{(4)BloodBath.scmB} & \colcell{100} & \colcell{63} & \colcell{20} & \colcell{40} & \colcell{56} \\
+    \arrayrulecolor{black}\specialrule{.5pt}{0pt}{0pt}
+    AI Average & \colcell{65} & \colcell{96} & \colcell{78} & \colcell{44} & \colcell{71} \\
     \end{tabular}
     \end{center}
 \end{supptable}
