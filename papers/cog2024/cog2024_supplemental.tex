@@ -22,6 +22,44 @@
 \usepackage{adjustbox}
 \usepackage{rotating}
 \usepackage{subcaption}
+\usepackage{colortbl} % for cellcolor
+\usepackage{pgf}      % for pgfmathsetmacro
+
+\definecolor{lightred}{RGB}{255, 204, 204}
+\definecolor{lightblue}{RGB}{204, 204, 255}
+\definecolor{white}{RGB}{255, 255, 255}
+
+\newcommand{\colcellbuffer}{\rule{-0.33em}{2ex}}
+
+\newcommand{\colcell}[1]{%
+    \ifnum #1>50
+        \pgfmathsetmacro{\redComponent}{2*(#1-50)}
+        \edef\clrmacro{\noexpand\cellcolor{lightred!\redComponent!white}}\clrmacro{\colcellbuffer\textbf{#1}\colcellbuffer}
+    \else
+        \pgfmathsetmacro{\blueComponent}{2*(50-#1)}
+        \edef\clrmacro{\noexpand\cellcolor{lightblue!\blueComponent!white}}\clrmacro{\colcellbuffer#1\colcellbuffer}
+    \fi
+}
+
+\newcommand{\colcellnobold}[1]{%
+    \ifnum #1>50
+        \pgfmathsetmacro{\redComponent}{2*(#1-50)}
+        \edef\clrmacro{\noexpand\cellcolor{lightred!\redComponent!white}}\clrmacro{\colcellbuffer#1\colcellbuffer}
+    \else
+        \pgfmathsetmacro{\blueComponent}{2*(50-#1)}
+        \edef\clrmacro{\noexpand\cellcolor{lightblue!\blueComponent!white}}\clrmacro{\colcellbuffer#1\colcellbuffer}
+    \fi
+}
+
+\newcommand{\colcellbold}[1]{%
+    \ifnum #1>50
+        \pgfmathsetmacro{\redComponent}{2*(#1-50)}
+        \edef\clrmacro{\noexpand\cellcolor{lightred!\redComponent!white}}\clrmacro{\colcellbuffer\textbf{#1}\colcellbuffer}
+    \else
+        \pgfmathsetmacro{\blueComponent}{2*(50-#1)}
+        \edef\clrmacro{\noexpand\cellcolor{lightblue!\blueComponent!white}}\clrmacro{\colcellbuffer\textbf{#1}\colcellbuffer}
+    \fi
+}
 
 \usepackage{xr}
 \externaldocument{cog2024}

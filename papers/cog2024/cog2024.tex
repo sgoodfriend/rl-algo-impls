@@ -22,6 +22,44 @@
 \usepackage{adjustbox}
 \usepackage{rotating}
 \usepackage{subcaption}
+\usepackage{colortbl} % for cellcolor
+\usepackage{pgf}      % for pgfmathsetmacro
+
+\definecolor{lightred}{RGB}{255, 204, 204}
+\definecolor{lightblue}{RGB}{204, 204, 255}
+\definecolor{white}{RGB}{255, 255, 255}
+
+\newcommand{\colcellbuffer}{\rule{-0.33em}{2ex}}
+
+\newcommand{\colcell}[1]{%
+    \ifnum #1>50
+        \pgfmathsetmacro{\redComponent}{2*(#1-50)}
+        \edef\clrmacro{\noexpand\cellcolor{lightred!\redComponent!white}}\clrmacro{\colcellbuffer\textbf{#1}\colcellbuffer}
+    \else
+        \pgfmathsetmacro{\blueComponent}{2*(50-#1)}
+        \edef\clrmacro{\noexpand\cellcolor{lightblue!\blueComponent!white}}\clrmacro{\colcellbuffer#1\colcellbuffer}
+    \fi
+}
+
+\newcommand{\colcellnobold}[1]{%
+    \ifnum #1>50
+        \pgfmathsetmacro{\redComponent}{2*(#1-50)}
+        \edef\clrmacro{\noexpand\cellcolor{lightred!\redComponent!white}}\clrmacro{\colcellbuffer#1\colcellbuffer}
+    \else
+        \pgfmathsetmacro{\blueComponent}{2*(50-#1)}
+        \edef\clrmacro{\noexpand\cellcolor{lightblue!\blueComponent!white}}\clrmacro{\colcellbuffer#1\colcellbuffer}
+    \fi
+}
+
+\newcommand{\colcellbold}[1]{%
+    \ifnum #1>50
+        \pgfmathsetmacro{\redComponent}{2*(#1-50)}
+        \edef\clrmacro{\noexpand\cellcolor{lightred!\redComponent!white}}\clrmacro{\colcellbuffer\textbf{#1}\colcellbuffer}
+    \else
+        \pgfmathsetmacro{\blueComponent}{2*(50-#1)}
+        \edef\clrmacro{\noexpand\cellcolor{lightblue!\blueComponent!white}}\clrmacro{\colcellbuffer\textbf{#1}\colcellbuffer}
+    \fi
+}
 
 \usepackage{xr}
 \externaldocument{cog2024_supplemental}
@@ -453,27 +491,27 @@ across all opponents, but maintained an over 50\% win rate against all but CoacA
 
 \begin{table}[t]
     \centering
+    \caption{Single player round-robin benchmark win rates. Win rates over 50\% are bolded. Higher win rates are redder. Lower win rates are bluer.}
     \begin{threeparttable}
-    \caption{Single player round-robin benchmark win rates. Win rates above 50\% are bolded}
     \label{tab:single-player-winrate}
+    \arrayrulecolor{black}
     \begin{tabular}{lcccc|c}
      & \rotatebox{90}{\textbf{WorkerRush}} & \rotatebox{90}{\textbf{LightRush}} & \rotatebox{90}{\textbf{CoacAI}} & \rotatebox{90}{\textbf{Mayari}} & \rotatebox{90}{\textbf{Overall}} \\
-    \midrule
-    basesWorkers8x8A & \textbf{95} & \textbf{100} & \textbf{99} & \textbf{100} & \textbf{99} \\
-    FourBasesWorkers8x8 & \textbf{100} & \textbf{100} & \textbf{100} & \textbf{98} & \textbf{100} \\
-    NoWhereToRun9x8 & \textbf{100} & \textbf{100} & \textbf{93} & \textbf{99} & \textbf{98} \\
-    basesWorkers16x16A & \textbf{100} & \textbf{100} & \textbf{90} & \textbf{98} & \textbf{97} \\
-    TwoBasesBarracks16x16 & \textbf{100} & \textbf{89} & \textbf{99} & \textbf{100} & \textbf{97} \\
-    DoubleGame24x24 & \textbf{100} & \textbf{98} & \textbf{94} & \textbf{100} & \textbf{98} \\
-    BWDistantResources32x32\tnote{a} & \textbf{99}/\textbf{93} & \textbf{90}/\textbf{73} &
-    \textbf{88}/23 & \textbf{99}/\textbf{58} & \textbf{94}\tnote{b}{ }/\textbf{61} \\
-    (4)BloodBath.scmB & \textbf{98} & 0 & 0 & 0 & 25\tnote{c} \\
-    \hline
-    AI Average\tnote{d} & \textbf{99} & \textbf{85} & \textbf{83} & \textbf{87} & \textbf{88} \\
+    \arrayrulecolor{black}\specialrule{.5pt}{0pt}{0pt}
+    basesWorkers8x8A & \colcell{95} & \colcell{100} & \colcell{99} & \colcell{100} & \colcell{99} \\
+    FourBasesWorkers8x8 & \colcell{100} & \colcell{100} & \colcell{100} & \colcell{98} & \colcell{100} \\
+    NoWhereToRun9x8 & \colcell{100} & \colcell{100} & \colcell{93} & \colcell{99} & \colcell{98} \\
+    basesWorkers16x16A & \colcell{100} & \colcell{100} & \colcell{90} & \colcell{98} & \colcell{97} \\
+    TwoBasesBarracks16x16 & \colcell{100} & \colcell{89} & \colcell{99} & \colcell{100} & \colcell{97} \\
+    DoubleGame24x24 & \colcell{100} & \colcell{98} & \colcell{94} & \colcell{100} & \colcell{98} \\
+    BWDistantResources32x32\tnote{a} & \colcell{99}/\textbf{93} & \colcell{90}/\textbf{73} & \colcell{88}/23 & \colcell{99}/\textbf{58} & \colcell{94}\tnote{b}{ }/\textbf{61} \\
+    (4)BloodBath.scmB & \colcell{98} & \colcell{0} & \colcell{0} & \colcell{0} & \colcell{25}\tnote{c} \\
+    \arrayrulecolor{black}\specialrule{.5pt}{0pt}{0pt}
+    AI Average\tnote{d} & \colcell{99} & \colcell{85} & \colcell{83} & \colcell{87} & \colcell{88} \\
     \end{tabular}
     \begin{tablenotes}
     \item[a] Two models were trained for BWDistantResources32x32: DoubleCone (1\textsuperscript{st} number)
-    and squnet (2\textsuperscript{nd} number).
+    and squnet (2\textsuperscript{nd} number). Cell color based on DoubleCone results.
     \item[b] \agentName\ lost 0.25\% of matches (1 match) by timeout.
     \item[c] \agentName\ lost  1\% of matches (4 matches) by timeout.
     \item[d] AI Average uses the DoubleCone (1\textsuperscript{st} number) results from BWDistantResources32x32.
@@ -510,11 +548,11 @@ over 50\% win rate versus every opponent including \texttt{2L} (60\%) and Mayari
 
 \begin{table}[t]
     \centering
-    \begin{threeparttable}
     \caption{Win rates of selection of agents in the IEEE-CoG 2023 microRTS competition.
     The row agent is player 1, while the column agent is player 2. The win rate value is
     the percentage of games won by player 1. Cells are bolded if the win
     rate is higher than the opponent's row win rate.}
+    \begin{threeparttable}
     \label{tab:competition-winrate}
     \begin{tabular}{lcccccc|c}
     & \begin{sideways} Mayari \end{sideways} 
@@ -524,13 +562,14 @@ over 50\% win rate versus every opponent including \texttt{2L} (60\%) and Mayari
     & \begin{sideways} POLightRush \end{sideways} 
     & \begin{sideways} POWorkerRush \end{sideways} 
     & \begin{sideways} Overall\tnote{a} \end{sideways} \\
-    \midrule
-    Mayari (2021 winner) & - & \textbf{53} & 32 & \textbf{73} & \textbf{88} & \textbf{75} & 82 \\
-    2L (baseline) & 51 & - & 39 & \textbf{50} & \textbf{75} & \textbf{88} & 76 \\
-    \textbf{\agentName} (2023 winner) & \textbf{62} & \textbf{59} & - & \textbf{49}\tnote{b} & \textbf{64} & \textbf{78} & 72 \\
-    ObiBotKenobi (2023 2\textsuperscript{nd} place) & 39 & 29 & 47 & - & \textbf{58} & \textbf{65} & 66 \\
-    POLightRush (baseline) & 0 & 25 & 29 & 38 & - & \textbf{69} & 55 \\
-    POWorkerRush (baseline) & 13 & 13 & 21 & 29 & 38 & - & 53 \\
+    \arrayrulecolor{black}\specialrule{.5pt}{0pt}{0pt}
+    Mayari (2021 winner) & - & \colcell{53} & \colcell{32} & \colcell{73} & \colcell{88} & \colcell{75} & \colcell{82} \\
+    2L (baseline) & \colcell{51} & - & \colcell{39} & \colcell{50} & \colcell{75} & \colcell{88} & \colcell{76} \\
+    \textbf{\agentName} (2023 winner) & \colcell{62} & \colcell{59} & - & \colcell{49}\tnote{b} & \colcell{64} & \colcell{78} & \colcell{72} \\
+    ObiBotKenobi (2023 2\textsuperscript{nd} place) & \colcell{39} & \colcell{29} & \colcell{47} & - & \colcell{58} & \colcell{65} & \colcell{66} \\
+    POLightRush (baseline) & \colcell{0} & \colcell{25} & \colcell{29} & \colcell{38} & - & \colcell{69} & \colcell{55} \\
+    POWorkerRush (baseline) & \colcell{13} & \colcell{13} & \colcell{21} & \colcell{29} & \colcell{38} & - & \colcell{53} \\
+    \arrayrulecolor{black}\specialrule{.5pt}{0pt}{0pt}
     \end{tabular}
     \begin{tablenotes}
     \item[a] Overall includes all agents, including those not shown.
@@ -550,22 +589,23 @@ the weaker squnet model on \mapname{BWDistantResources32x32}.  Breaking down by 
 
 \begin{table}[t]
     \centering
+    \caption{\agentName\ win rates in 2023 competition by opponent and map. Win rates over 50\% are bolded. Higher win rates are redder. Lower win rates are bluer.}
     \begin{threeparttable}
-    \caption{\agentName\ win rates in 2023 competition by opponent and map. Bolded cells are win rates over 50\%.}
     \label{tab:competition-winrate-by-map}
+    \arrayrulecolor{black}
     \begin{tabular}{lccccc|c}
     & \rotatebox{90}{POWorkerRush} & \rotatebox{90}{POLightRush} & \rotatebox{90}{ObiBotKenobi} & \rotatebox{90}{2L} & \rotatebox{90}{Mayari} & \rotatebox{90}{Overall\tnote{a}}\\ 
-    \midrule
-    basesWorkers8x8A & \textbf{60} & \textbf{70} & \textbf{60} & \textbf{60} & \textbf{60} & \textbf{66}\\ 
-    FourBasesWorkers8x8 & \textbf{100} & \textbf{100} & 20 & \textbf{95} & \textbf{100} & \textbf{95}\\ 
-    NoWhereToRun9x8 & \textbf{90} & \textbf{85} & \textbf{83} & \textbf{70} & \textbf{70} & \textbf{84}\\
-    basesWorkers16x16A & \textbf{100} & \textbf{100} & \textbf{95} & \textbf{100} & \textbf{100} & \textbf{100}\\
-    TwoBasesBarracks16x16 & \textbf{80} & \textbf{80} & 10 & \textbf{70} & \textbf{80} & \textbf{75}\\
-    DoubleGame24x24 & \textbf{80} & \textbf{75} & \textbf{78} & \textbf{80} & \textbf{75} & \textbf{80}\\ 
-    BWDistantResources32x32 & 50 & 30 & 35 & 3 & 35 & \textbf{54}\\
-    (4)BloodBath.scmB & \textbf{70} & 0 & 28 & 0 & 0 & 34\\ 
-    \hline
-    AI Average & \textbf{79} & \textbf{68} & \textbf{51} & \textbf{60} & \textbf{65} & \textbf{74}\\ 
+    \arrayrulecolor{black}\specialrule{.5pt}{0pt}{0pt}
+    basesWorkers8x8A & \colcell{60} & \colcell{70} & \colcell{60} & \colcell{60} & \colcell{60} & \colcell{66}\\ 
+    FourBasesWorkers8x8 & \colcell{100} & \colcell{100} & \colcell{20} & \colcell{95} & \colcell{100} & \colcell{95}\\ 
+    NoWhereToRun9x8 & \colcell{90} & \colcell{85} & \colcell{83} & \colcell{70} & \colcell{70} & \colcell{84}\\
+    basesWorkers16x16A & \colcell{100} & \colcell{100} & \colcell{95} & \colcell{100} & \colcell{100} & \colcell{100}\\
+    TwoBasesBarracks16x16 & \colcell{80} & \colcell{80} & \colcell{10} & \colcell{70} & \colcell{80} & \colcell{75}\\
+    DoubleGame24x24 & \colcell{80} & \colcell{75} & \colcell{78} & \colcell{80} & \colcell{75} & \colcell{80}\\ 
+    BWDistantResources32x32 & \colcell{50} & \colcell{30} & \colcell{35} & \colcell{3} & \colcell{35} & \colcell{54}\\
+    (4)BloodBath.scmB & \colcell{70} & \colcell{0} & \colcell{28} & \colcell{0} & \colcell{0} & \colcell{34}\\ 
+    \arrayrulecolor{black}\specialrule{.5pt}{0pt}{0pt}
+    AI Average & \colcell{79} & \colcell{68} & \colcell{51} & \colcell{60} & \colcell{65} & \colcell{74}\\ 
     \end{tabular}
     \begin{tablenotes}
     \item[a] Overall includes all agents, including those not shown.
@@ -583,8 +623,8 @@ for \agentName\ (Table~\ref{tab:outlier-winrate}).
 
 \begin{table}[t]
     \centering
-    \begin{threeparttable}
     \caption{\agentName\ win rates split by competition job. Outlier jobs are bolded.}
+    \begin{threeparttable}
     \label{tab:outlier-winrate}
     \begin{tabular}{r|rrrrrrrr|l}
     & \begin{sideways}\tablemapname{basesWorkers8x8A}\end{sideways} &
@@ -596,27 +636,27 @@ for \agentName\ (Table~\ref{tab:outlier-winrate}).
     \begin{sideways}\tablemapname{BWDistantResources32x32}\end{sideways} &
     \begin{sideways}\tablemapname{(4)BloodBath.scmB}\end{sideways} & 
     \begin{sideways}Overall\end{sideways}\\
-    \midrule
-    & 98 & 97 & 97 & 100 & 94 & 99 & 49 & 34 &  \\
-    & 100 & 94 & 97 & 100 & \textbf{4} & 96 & 53 & 38 &  \\
-    & 100 & 95 & \textbf{33} & 100 & 92 & 100 & 54 & 38 &  \\
-    & \textbf{5} & 92 & 94 & 98 & 94 & 97 & 58 & 39 &  \\
-    & \textbf{28} & 95 & 100 & 100 & 94 & \textbf{9} & 58 & \textbf{19} &  \\
-    & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & 100 & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & 39 &  \\
-    & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & 97 & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \textbf{19} &  \\
-    & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \textbf{30} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & 44 &  \\
-    & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & 97 & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & 36 &  \\
-    & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & 95 & \multicolumn{1}{l}{} &
-    \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & 36 &  \\
-    \hline
-   Average\tnote{a} & 66 & 95 & 84 & 100 & 75 & 80 & 54 & 34 & \multicolumn{1}{r}{74} \\
-   No Outliers\tnote{b} & 99 & 95 & 97 & 100 & 93 & 98 & 54 & 38 & \multicolumn{1}{r}{84} \\
+    \arrayrulecolor{black}\specialrule{.5pt}{0pt}{0pt}
+    & \colcellnobold{98} & \colcellnobold{97} & \colcellnobold{97} & \colcellnobold{100} & \colcellnobold{94} & \colcellnobold{99} & \colcellnobold{49} & \colcellnobold{34} &  \\
+    & \colcellnobold{100} & \colcellnobold{94} & \colcellnobold{97} & \colcellnobold{100} & \colcellbold{4} & \colcellnobold{96} & \colcellnobold{53} & \colcellnobold{38} &  \\
+    & \colcellnobold{100} & \colcellnobold{95} & \colcellbold{33} & \colcellnobold{100} & \colcellnobold{92} & \colcellnobold{100} & \colcellnobold{54} & \colcellnobold{38} &  \\
+    & \colcellbold{5} & \colcellnobold{92} & \colcellnobold{94} & \colcellnobold{98} & \colcellnobold{94} & \colcellnobold{97} & \colcellnobold{58} & \colcellnobold{39} &  \\
+    & \colcellbold{28} & \colcellnobold{95} & \colcellnobold{100} & \colcellnobold{100} & \colcellnobold{94} & \colcellbold{9} & \colcellnobold{58} & \colcellbold{19} &  \\
+    & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \colcellnobold{100} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \colcellnobold{39} &  \\
+    & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \colcellnobold{97} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \colcellbold{19} &  \\
+    & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \colcellbold{30} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \colcellnobold{44} &  \\
+    & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \colcellnobold{97} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \colcellnobold{36} &  \\
+    & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \colcellnobold{95} & \multicolumn{1}{l}{} &
+    \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \multicolumn{1}{l}{} & \colcellnobold{36} &  \\
+    \arrayrulecolor{black}\specialrule{.5pt}{0pt}{0pt}
+   Average\tnote{a} & \colcellnobold{66} & \colcellnobold{95} & \colcellnobold{84} & \colcellnobold{100} & \colcellnobold{75} & \colcellnobold{80} & \colcellnobold{54} & \colcellnobold{34} & \multicolumn{1}{r}{\colcellnobold{74}} \\
+   No Outliers\tnote{b} & \colcellnobold{99} & \colcellnobold{95} & \colcellnobold{97} & \colcellnobold{100} & \colcellnobold{93} & \colcellnobold{98} & \colcellnobold{54} & \colcellnobold{38} & \multicolumn{1}{r}{\colcellnobold{84}} \\
     \end{tabular}
     \begin{tablenotes}
         \item[a] Average is the average win rate for all jobs.
         \item[b] No Outliers is the average win rate for all jobs excluding "outlier" jobs.
     \end{tablenotes}
-\end{threeparttable}
+    \end{threeparttable}
 \end{table}
 
 \subsection{Behavior Cloning Results}
@@ -642,24 +682,23 @@ where the fine-tuned model can no longer beat CoacAI and Mayari.
 
 \begin{table}[t]
     \centering
-    \caption{\bcPPOAgent\ win rate in a single player round-robin benchmark. Win rates above 50\% are bolded.}
+    \caption{\bcPPOAgent\ win rate in a single player round-robin benchmark. Win rates over 50\% are bolded. Higher win rates are redder. Lower win rates are bluer.}
     \label{tab:bcppo-winrate}
-    \begin{center}
+    \arrayrulecolor{black}
     \begin{tabular}{lcccc|c}
     & \rotatebox{90}{POWorkerRush} & \rotatebox{90}{POLightRush} & \rotatebox{90}{CoacAI} & \rotatebox{90}{Mayari} & \rotatebox{90}{Overall} \\
-    \midrule
-    basesWorkers8x8A & \textbf{92} & \textbf{100} & \textbf{85} & \textbf{100} & \textbf{94} \\
-    FourBasesWorkers8x8 & \textbf{100} & \textbf{100} & \textbf{100} & \textbf{100} & \textbf{100} \\
-    NoWhereToRun9x8 & \textbf{100} & \textbf{100} & \textbf{90} & \textbf{80} & \textbf{92} \\
-    basesWorkers16x16A & \textbf{100} & \textbf{100} & \textbf{95} & \textbf{95} & \textbf{98} \\
-    TwoBasesBarracks16x16 & \textbf{100} & 0 & \textbf{100} & \textbf{95} & \textbf{74} \\
-    DoubleGame24x24 & \textbf{98} & \textbf{85} & \textbf{100} & \textbf{100} & \textbf{96} \\
-    BWDistantResources32x32 & \textbf{100} & \textbf{100} & \textbf{95} & \textbf{100} & \textbf{99} \\
-    (4)BloodBath.scmB & \textbf{100} & \textbf{88} & 0 & 5 & 48 \\
-    \hline
-    AI Average & \textbf{99} & \textbf{84} & \textbf{83} & \textbf{84} & \textbf{88} \\
+    \arrayrulecolor{black}\specialrule{.5pt}{0pt}{0pt}
+    basesWorkers8x8A & \colcell{92} & \colcell{100} & \colcell{85} & \colcell{100} & \colcell{94} \\
+    FourBasesWorkers8x8 & \colcell{100} & \colcell{100} & \colcell{100} & \colcell{100} & \colcell{100} \\
+    NoWhereToRun9x8 & \colcell{100} & \colcell{100} & \colcell{90} & \colcell{80} & \colcell{92} \\
+    basesWorkers16x16A & \colcell{100} & \colcell{100} & \colcell{95} & \colcell{95} & \colcell{98} \\
+    TwoBasesBarracks16x16 & \colcell{100} & \colcell{0} & \colcell{100} & \colcell{95} & \colcell{74} \\
+    DoubleGame24x24 & \colcell{98} & \colcell{85} & \colcell{100} & \colcell{100} & \colcell{96} \\
+    BWDistantResources32x32 & \colcell{100} & \colcell{100} & \colcell{95} & \colcell{100} & \colcell{99} \\
+    (4)BloodBath.scmB & \colcell{100} & \colcell{88} & \colcell{0} & \colcell{5} & \colcell{48} \\
+    \arrayrulecolor{black}\specialrule{.5pt}{0pt}{0pt}
+    AI Average & \colcell{99} & \colcell{84} & \colcell{83} & \colcell{84} & \colcell{88} \\
     \end{tabular}
-    \end{center}
 \end{table}
 
 While \agentName\ required map-specific fine-tuned models to be competitive on
