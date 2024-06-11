@@ -363,10 +363,11 @@ against each of CoacAI and Mayari.
 
 \subsection{Transfer Learning}
 Up to this point, the model had only been trained on the 5 smaller Open maps. Using the
-fine-tuned model as a starting point, we trained additional models, each trained exclusively
-on 1 of 3 Open maps. \mapname{NoWhereToRun9x8} is very different from the other smaller maps with a wall of
-resources separating opponents. \mapname{DoubleGame24x24} and \mapname{BWDistantResources32x32} are larger 
-than the maps the base model trained on.
+fine-tuned model parameters to jumpstart training \cite{DBLP:books/sp/12/Lazaric12}, we
+trained additional models, each trained exclusively on 1 of 3 Open maps.
+\mapname{NoWhereToRun9x8} is very different from the other smaller maps with a wall of
+resources separating opponents. \mapname{DoubleGame24x24} and
+\mapname{BWDistantResources32x32} are larger than the maps the base model trained on.
 All 3 transfer learning runs used the same schedule:
 \begin{inparaenum}[(1)]
     \item warmup of sparse, win-loss reward weights linearly transitioned to a mixture
