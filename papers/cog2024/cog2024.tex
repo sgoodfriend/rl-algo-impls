@@ -416,7 +416,7 @@ All 3 transfer learning runs used the same schedule:
     \item warmup of sparse, win-loss reward weights linearly transitioned to a mixture
     of both shaped and sparse rewards,
     \item middle phase of mixed rewards,
-    \item end phase of sparse rewards again at a lower learning rate\supptableref{tab:transfer-learning-schedule}.
+    \item end phase of sparse rewards at a lower learning rate\supptableref{tab:transfer-learning-schedule}.
 \end{inparaenum}
 We did additional fine-tuning on \mapname{NoWhereToRun9x8} using only the win-loss
 reward. These transfer learned agents exceeded 90\% win rate on their respective maps,
@@ -497,8 +497,8 @@ across all opponents, but maintained an over 50\% win rate against all but CoacA
 \begin{table}[t]
     \centering
     \caption{Single player round-robin benchmark win rates. Win rates over 50\% are bolded. Higher win rates are redder. Lower win rates are bluer.}
-    \begin{threeparttable}
     \label{tab:single-player-winrate}
+    \begin{threeparttable}
     \arrayrulecolor{black}
     \begin{tabular}{lcccc|c}
      & \rotatebox{90}{\textbf{WorkerRush}} & \rotatebox{90}{\textbf{LightRush}} & \rotatebox{90}{\textbf{CoacAI}} & \rotatebox{90}{\textbf{Mayari}} & \rotatebox{90}{\textbf{Overall}} \\
@@ -557,8 +557,8 @@ over 50\% win rate versus every opponent including \texttt{2L} (60\%) and Mayari
     The row agent is player 1, while the column agent is player 2. The win rate value is
     the percentage of games won by player 1. Cells are bolded if the win
     rate is higher than the opponent's row win rate.}
-    \begin{threeparttable}
     \label{tab:competition-winrate}
+    \begin{threeparttable}
     \arrayrulecolor{black}
     \begin{tabular}{lcccccc|c}
     & \begin{sideways} Mayari \end{sideways} 
@@ -595,8 +595,8 @@ the weaker squnet model on \mapname{BWDistantResources32x32}.  Breaking down by 
 \begin{table}[t]
     \centering
     \caption{\agentName\ win rates in 2023 competition by opponent and map. Win rates over 50\% are bolded. Higher win rates are redder. Lower win rates are bluer.}
-    \begin{threeparttable}
     \label{tab:competition-winrate-by-map}
+    \begin{threeparttable}
     \arrayrulecolor{black}
     \begin{tabular}{lccccc|c}
     & \rotatebox{90}{POWorkerRush} & \rotatebox{90}{POLightRush} & \rotatebox{90}{ObiBotKenobi} & \rotatebox{90}{2L} & \rotatebox{90}{Mayari} & \rotatebox{90}{Overall\tnote{a}}\\ 
@@ -629,8 +629,8 @@ for \agentName\ (Table~\ref{tab:outlier-winrate}).
 \begin{table}[t]
     \centering
     \caption{\agentName\ win rates split by competition job. Outlier jobs are bolded.}
-    \begin{threeparttable}
     \label{tab:outlier-winrate}
+    \begin{threeparttable}
     \begin{tabular}{r|rrrrrrrr|l}
     & \begin{sideways}\tablemapname{basesWorkers8x8A}\end{sideways} &
     \begin{sideways}\tablemapname{FourBasesWorkers8x8}\end{sideways} &
@@ -789,7 +789,7 @@ There are several ways to make DRL more feasible in a competition and educationa
     \item focus on smaller maps,
     \item fine-tune pretrained models from DRL or behavior cloning,
     \item transfer an existing model to new maps, or
-    \item use a significantly smaller neural architecture.
+    \item use a significantly smaller neural network architecture.
 \end{inparaenum}
 The largest map took 19 GPU-days to train for \agentName, 15 GPU-days for \bcAgent, and
 34 GPU-days for \bcPPOAgent. Over two-thirds of training time for \bcPPOAgent\ was spent
@@ -818,7 +818,7 @@ it can train an agent to beat CoacAI on a 10x10 map in 20 minutes using a single
 consumer-grade GPU.
 
 \section{Conclusion}
-\agentName\ is the first DRL agent to win a microRTS competition in 6 iterations. It demonstrates that
+\agentName\ is the first DRL agent to win the microRTS competition in 6 iterations. It demonstrates that
 an iterative training process of fine-tuning and transfer learning is effective for
 creating competitive DRL agents. Such a training process can be used by
 resource-constrained researchers and students to create novel DRL agents for future
@@ -879,7 +879,7 @@ A supplemental document includes many implementation details and additional resu
 \begin{inparaenum}[(1)]
     \item additional neural network architecture details for DoubleCone and squnet,
     \item training hyperparameters and schedules,
-    \item \bcAgent\ and \bcPPOAgent\ parameters and training schedules,
+    \item \bcAgent\ and \bcPPOAgent\ hyperparameters and training schedules,
     \item training durations,
     \item single player round-robin benchmark setup,
     \item win rates against all opponents in the IEEE-CoG 2023 microRTS competition,
