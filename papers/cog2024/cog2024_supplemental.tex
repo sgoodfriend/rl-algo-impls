@@ -186,11 +186,11 @@ The adaptive average pooling layer allows the network to be used on different ma
     \toprule
      & Phase 1 & Transition 1→2\tnote{a} & Phase 2 & Transition 2→3\tnote{a} & Phase 3 \\
     \midrule
-    steps & 90M & 60M & 30M & 60M & 60M \\
-    reward weights\tnote{b} & [0.8, 0.01, 0.19] &  & [0, 0.5, 0.5] &  & [0, 0.99, 0.01] \\
-    $c_1$ (value loss coef)\tnote{b} & [0.5, 0.1, 0.2] &  & [0, 0.4, 0.4] &  & [0, 0.5, 0.1]\\
-    $c_2$ (entropy coef)& 0.01 & & 0.01 & & 0.001 \\
-    learning rate & $10^{-4}$ & & $10^{-4}$ & & $5 \times 10^{-5}$\\
+    Steps & 90M & 60M & 30M & 60M & 60M \\
+    Reward Weights\tnote{b} & [0.8, 0.01, 0.19] &  & [0, 0.5, 0.5] &  & [0, 0.99, 0.01] \\
+    $c_1$ (Value Loss Coef)\tnote{b} & [0.5, 0.1, 0.2] &  & [0, 0.4, 0.4] &  & [0, 0.5, 0.1]\\
+    $c_2$ (Entropy Coef)& 0.01 & & 0.01 & & 0.001 \\
+    Learning Rate & $10^{-4}$ & & $10^{-4}$ & & $5 \times 10^{-5}$\\
     \bottomrule
     \end{tabular}
     \begin{tablenotes}
@@ -244,11 +244,11 @@ The adaptive average pooling layer allows the network to be used on different ma
     \toprule
      & Start & Transition →1\tnote{a} & Phase 1 & Transition 1→2\tnote{a} & Phase 2 \\
      \midrule
-    steps & & 5M & 30M & 20M & 45M \\
-    reward weights\tnote{b} & [0, 0.99, 0.01] & & [0, 0.5, 0.5] & & [0, 0.99, 0.01] \\
-    $c_1$ (value loss coef)\tnote{b} & [0, 0.4, 0.2] & & [0, 0.4, 0.4] & & [0, 0.5, 0.1]\\
-    $c_2$ (entropy coef) & 0.01 & & 0.01 & & 0.001 \\
-    learning rate & $10^{-5}$ & & $5 \times 10^{-5}$ & & $5 \times 10^{-5}$\\
+    Steps & & 5M & 30M & 20M & 45M \\
+    Reward Weights\tnote{b} & [0, 0.99, 0.01] & & [0, 0.5, 0.5] & & [0, 0.99, 0.01] \\
+    $c_1$ (Value Loss Coef)\tnote{b} & [0, 0.4, 0.2] & & [0, 0.4, 0.4] & & [0, 0.5, 0.1]\\
+    $c_2$ (Entropy Coef) & 0.01 & & 0.01 & & 0.001 \\
+    Learning Rate & $10^{-5}$ & & $5 \times 10^{-5}$ & & $5 \times 10^{-5}$\\
     \bottomrule
     \end{tabular}
     \begin{tablenotes}
@@ -267,11 +267,11 @@ The adaptive average pooling layer allows the network to be used on different ma
     \toprule
      & Phase 1 & Transition 1→2\tnote{a} & Phase 2 \\
      \midrule
-    steps & 30M & 40M & 30M \\
-    reward weights\tnote{b} & [0, 0.99, 0.01] &  & [0, 0.99, 0.01] \\
-    $c_1$ (value loss coef)\tnote{b} & [0, 0.5, 0.1] &  & [0, 0.5, 0.1]\\
-    $c_2$ (entropy coef)) & 0.001 & & 0.0001 \\
-    learning rate & $5 \times 10^{-5}$ & & $10^{-5}$ \\
+    Steps & 30M & 40M & 30M \\
+    Reward Weights\tnote{b} & [0, 0.99, 0.01] &  & [0, 0.99, 0.01] \\
+    $c_1$ (Value Loss Coef)\tnote{b} & [0, 0.5, 0.1] &  & [0, 0.5, 0.1]\\
+    $c_2$ (Entropy Coef) & 0.001 & & 0.0001 \\
+    Learning Rate & $5 \times 10^{-5}$ & & $10^{-5}$ \\
     \bottomrule
     \end{tabular}
     \begin{tablenotes}
@@ -293,11 +293,11 @@ The adaptive average pooling layer allows the network to be used on different ma
     \toprule
      & Start & Transition →1\tnote{a} & Phase 1 & Transition 1→2\tnote{a} & Phase 2 \\
      \midrule
-    steps & & 5M & 30M & 20M & 45M \\
-    reward weights\tnote{b} & [0, 0.99, 0.01] & & [0.4, 0.5, 0.1] & & [0, 0.99, 0.01] \\
-    $c_1$ (value loss coef)\tnote{b} & [0.2, 0.4, 0.2] & & [0.3, 0.4, 0.1] & & [0, 0.5, 0.1]\\
-    $c_2$ (entropy coef) & 0.01 & & 0.01 & & 0.0001 \\
-    learning rate & $5 \times 10^{-5}$ & & $7 \times 10^{-5}$ & & $10^{-5}$ \\
+    Steps & & 5M & 30M & 20M & 45M \\
+    Reward Weights\tnote{b} & [0, 0.99, 0.01] & & [0.4, 0.5, 0.1] & & [0, 0.99, 0.01] \\
+    $c_1$ (Value Loss Coef)\tnote{b} & [0.2, 0.4, 0.2] & & [0.3, 0.4, 0.1] & & [0, 0.5, 0.1]\\
+    $c_2$ (Entropy Coef) & 0.01 & & 0.01 & & 0.0001 \\
+    Learning Rate & $5 \times 10^{-5}$ & & $7 \times 10^{-5}$ & & $10^{-5}$ \\
     \bottomrule
     \end{tabular}
     \begin{tablenotes}
@@ -320,7 +320,7 @@ The adaptive average pooling layer allows the network to be used on different ma
     Parameter & map32 & map32-DistantResources & map64 \\
     \midrule
     Steps & 200M & 100M & 200M \\
-    n\_envs & 24 & \textquotedbl & \textquotedbl \\
+    Number of Environments & 24 & \textquotedbl & \textquotedbl \\
     Rollout Steps Per Env & 512 & 512 & 256 \\
     Minibatch Size & 2048 & 2048 & 258 \\
     Clip Range & 0.1 & \textquotedbl & \textquotedbl \\
@@ -347,11 +347,11 @@ The adaptive average pooling layer allows the network to be used on different ma
     \toprule
      & Phase 1 & Transition 1→2\tnote{a} & Phase 2 \\
      \midrule
-    steps & 100M & 60M & 40M \\
-    reward weights\tnote{b} & [0.8, 0.01, 0.19] &  & [0, 0.99, 0.01] \\
-    $c_1$ (value loss coef)\tnote{b} & [0.5, 0.1, 0.2] &  & [0, 0.5, 0.1]\\
-    $c_2$ (entropy coef) & 0.01 & & 0.001 \\
-    learning rate & $10^{-4}$ & & $5 \times 10^{-5}$ \\
+    Steps & 100M & 60M & 40M \\
+    Reward Weights\tnote{b} & [0.8, 0.01, 0.19] &  & [0, 0.99, 0.01] \\
+    $c_1$ (Value Loss Coef)\tnote{b} & [0.5, 0.1, 0.2] &  & [0, 0.5, 0.1]\\
+    $c_2$ (Entropy Coef) & 0.01 & & 0.001 \\
+    Learning Rate & $10^{-4}$ & & $5 \times 10^{-5}$ \\
     \bottomrule
     \end{tabular}
     \begin{tablenotes}
@@ -384,7 +384,7 @@ The adaptive average pooling layer allows the network to be used on different ma
     \bottomrule
     \end{tabular}
     \begin{tablenotes}
-       \item[a] 2 stride-2 transpose convolutions to match the 1 stride-4 convolution.
+       \item[a] 2 stride-2 transpose convolutions to match each 1 stride-4 convolution.
        \item[b] Multiply-Accumulates for computing actions for a single observation.
     \end{tablenotes}
     \end{threeparttable}
@@ -429,7 +429,7 @@ The adaptive average pooling layer allows the network to be used on different ma
 \begin{supptable}[H]
     \centering
     \begin{threeparttable}
-    \caption{Training parameters for PPO of behavior cloned models}
+    \caption{Training parameters for PPO fine-tuning of behavior cloned models}
     \label{tab:bc-ppo-training-parameters}
     \begin{tabular}{lccc}
     Map Size & 16x16 & 32x32 & 64x64 \\
@@ -466,7 +466,7 @@ The adaptive average pooling layer allows the network to be used on different ma
     & Start & Transition & End \\
     \midrule
     & & 100M & \\
-    learning rate & $8 \times 10^{-5}$ &  & 0 \\
+    Learning Rate & $8 \times 10^{-5}$ &  & 0 \\
     \end{tabular}
 \end{center}
 \end{supptable}
@@ -479,7 +479,7 @@ The adaptive average pooling layer allows the network to be used on different ma
     & Start & Transition →1 & Phase 1 & Transition 1→2 & Phase 2 \\
     \midrule
     &  & 5M & 5M & 85M & 5M \\
-    learning rate & $10^{-5}$ &  & $8 \times 10^{-5}$ &  & $10^{-6}$
+    Learning Rate & $10^{-5}$ &  & $8 \times 10^{-5}$ &  & $10^{-6}$
     \end{tabular}
 \end{center}
 \end{supptable}
@@ -492,8 +492,8 @@ The adaptive average pooling layer allows the network to be used on different ma
     & Start & Transition →1 & Phase 1 & Transition 1→2 & Phase 2 \\
     \midrule
     &  & 5M & 5M & 85M & 5M \\
-    $c_2$ (entropy coef) & 0.001 &  & 0.001 &  & 0.0001 \\
-    learning rate & $10^{-5}$ &  & $5 \times 10^{-5}$ &  & $10^{-5}$ \\
+    $c_2$ (Entropy Coef) & 0.001 &  & 0.001 &  & 0.0001 \\
+    Learning Rate & $10^{-5}$ &  & $5 \times 10^{-5}$ &  & $10^{-5}$ \\
     \end{tabular}
 \end{center}
 \end{supptable}
@@ -506,8 +506,8 @@ The adaptive average pooling layer allows the network to be used on different ma
     & Start & Transition →1 & Phase 1 & Transition 1→2 & Phase 2 \\
     \midrule
     &  & 10M & 80M & 70M & 40M \\
-    $c_2$ (entropy coef) & 0.001 &  & 0.001 &  & 0.0001 \\
-    learning rate & $10^{-5}$ &  & $5 \times 10^{-5}$ &  & $10^{-5}$ \\
+    $c_2$ (Entropy Coef) & 0.001 &  & 0.001 &  & 0.0001 \\
+    Learning Rate & $10^{-5}$ &  & $5 \times 10^{-5}$ &  & $10^{-5}$ \\
     \end{tabular}
 \end{center}
 \end{supptable}
@@ -525,9 +525,9 @@ The adaptive average pooling layer allows the network to be used on different ma
             \begin{sideways} Phase 4 \end{sideways} \\
             \midrule
             &  & 10M &  &  &  & 40M & 80M & 66M & 4M \\
-           $c_2$ (entropy coef) & 0 &  & 0 &  & 0.001 &  & 0.001 &  & 0.0001 \\
-           learning rate & $10^{-6}$ &  & $5 \times 10^{-5}$ & & $10^{-6}$ &  & $5 \times 10^{-5}$ &  & $10^{-6}$ \\
-           \begin{tabular}[c]{@{}l@{}}freeze backbone \\ and policy head\end{tabular} & TRUE &  & TRUE &  & FALSE &  & FALSE &  & FALSE
+           $c_2$ (Entropy Coef) & 0 &  & 0 &  & 0.001 &  & 0.001 &  & 0.0001 \\
+           Learning Rate & $10^{-6}$ &  & $5 \times 10^{-5}$ & & $10^{-6}$ &  & $5 \times 10^{-5}$ &  & $10^{-6}$ \\
+           \begin{tabular}[c]{@{}l@{}}Freeze Backbone \\ and Policy Head\end{tabular} & TRUE &  & TRUE &  & FALSE &  & FALSE &  & FALSE
     \end{tabular}
 \end{center}
 \end{supptable}
