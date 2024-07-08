@@ -23,6 +23,7 @@ public class RAITournamentArguments {
                 "Override torch threads to this value. Ignoring other logic");
         options.addOption("v", "python-verbose", false, "Make Python process logging extra verbose");
         options.addOption("q", "quiet", false, "Make Python process not log to file");
+        options.addOption("m", "model-set", true, "Use the specified model set");
         CommandLineParser parser = new DefaultParser();
         try {
             cmd = parser.parse(options, args);
@@ -47,6 +48,14 @@ public class RAITournamentArguments {
     public int getOptionInteger(char opt, int defaultValue) {
         if (cmd.hasOption(opt)) {
             return Integer.valueOf(cmd.getOptionValue(opt));
+        } else {
+            return defaultValue;
+        }
+    }
+
+    public String getOptionValue(char opt, String defaultValue) {
+        if (cmd.hasOption(opt)) {
+            return cmd.getOptionValue(opt);
         } else {
             return defaultValue;
         }

@@ -15,6 +15,7 @@ import ai.abstraction.partialobservability.POLightRush;
 import ai.abstraction.partialobservability.POWorkerRush;
 import ai.coac.CoacAI;
 import ai.core.AI;
+import ai.rai.RAIBCPPOAI;
 import ai.rai.RAISocketAI;
 import mayariBot.mayari;
 import rts.PhysicalGameState;
@@ -31,23 +32,33 @@ public class RAIPerformanceTournament extends RAITournament {
         int overrideTorchThreads = raiArgs.getOptionInteger('p', 0);
         int pythonVerboseLevel = raiArgs.pythonVerbosity;
         boolean useBestModels = raiArgs.hasOption('b');
+        String modelSet = raiArgs.getOptionValue('m', "RAISocketAI");
+        System.out.println("modelSet: " + modelSet);
 
         final int timeBudget = raiArgs.getOptionInteger('t', 100);
         final boolean timeoutCheck = !raiArgs.hasOption('T');
         final UnitTypeTable utt = new UnitTypeTable(UnitTypeTable.VERSION_ORIGINAL_FINETUNED);
+
+        AI raiAI;
+        if (modelSet.equals("RAI-BC-PPO")) {
+            raiAI = new RAIBCPPOAI(timeBudget, -1, utt, overrideTorchThreads, pythonVerboseLevel, useBestModels);
+        } else {
+            raiAI = new RAISocketAI(timeBudget, -1, utt, overrideTorchThreads, pythonVerboseLevel, useBestModels,
+                    modelSet);
+        }
         final AI[] AIs = {
-                new RAISocketAI(timeBudget, -1, utt, overrideTorchThreads, pythonVerboseLevel, useBestModels),
+                raiAI,
                 new CoacAI(utt),
                 new mayari(utt),
         };
         var tournament = new RAIPerformanceTournament(Arrays.asList(AIs));
 
         final List<Pair<String, Integer>> maps = new ArrayList<Pair<String, Integer>>();
-        maps.add(new Pair<>("maps/BroodWar/(4)BloodBath.scmB.xml", 1000));
-        maps.add(new Pair<>("maps/BWDistantResources32x32.xml", 1000));
-        maps.add(new Pair<>("maps/DoubleGame24x24.xml", 1000));
-        maps.add(new Pair<>("maps/16x16/TwoBasesBarracks16x16.xml", 1000));
-        maps.add(new Pair<>("maps/NoWhereToRun9x8.xml", 1000));
+        maps.add(new Pair<>("maps/NoWhereToRun9x8.xml", 5000));
+        maps.add(new Pair<>("maps/16x16/TwoBasesBarracks16x16.xml", 5000));
+        maps.add(new Pair<>("maps/DoubleGame24x24.xml", 6000));
+        maps.add(new Pair<>("maps/BWDistantResources32x32.xml", 7000));
+        maps.add(new Pair<>("maps/BroodWar/(4)BloodBath.scmB.xml", 10000));
 
         String prefix = "tournament_";
         if (maps.size() == 1) {

@@ -39,44 +39,156 @@ from rl_algo_impls.utils.timing import measure_time
 
 MAX_TORCH_THREADS = 8
 
-AGENT_ARGS_BY_TERRAIN_MD5 = {
-    # "ac3b5a19643ee5816a1df17f2fadaae3": [],  # maps/NoWhereToRun9x8.xml
-    # "f112aaf99e09861a5d6c6ec195130fa7": [],  # maps/DoubleGame24x24.xml
-    # "ee6e75dae5051fe746a68b39112921c4": [],  # maps/BWDistantResources32x32.xml
-    # "686eb7e687e50729cb134d3958d7814d": [],  # maps/BroodWar/(4)BloodBath.scmB.xml
+AGENT_ARGS_BY_TERRAIN_MD5_BY_MODEL_SET = {
+    "RAISocketAI": {
+        "ac3b5a19643ee5816a1df17f2fadaae3": [
+            PickerArgs(
+                algo="ppo",
+                env="Microrts-finetuned-NoWhereToRun",
+                seed=1,
+                best=True,
+                use_paper_obs=True,
+                size=12,
+                map_name="maps/NoWhereToRun9x8.xml",
+                is_final_valid_model=True,
+            )
+        ],
+        "f112aaf99e09861a5d6c6ec195130fa7": [
+            PickerArgs(
+                algo="ppo",
+                env="Microrts-finetuned-DoubleGame-shaped",
+                seed=1,
+                best=True,
+                use_paper_obs=True,
+                size=24,
+                map_name="maps/DoubleGame24x24.xml",
+                is_final_valid_model=True,
+            )
+        ],
+        "ee6e75dae5051fe746a68b39112921c4": [
+            PickerArgs(
+                algo="ppo",
+                env="Microrts-finetuned-DistantResources-shaped",
+                seed=1,
+                best=True,
+                use_paper_obs=True,
+                size=32,
+                map_name="maps/BWDistantResources32x32.xml",
+            ),
+            PickerArgs(
+                algo="ppo",
+                env="Microrts-squnet-DistantResources-128ch-finetuned",
+                seed=1,
+                best=True,
+                use_paper_obs=False,
+                size=32,
+                map_name="maps/BWDistantResources32x32.xml",
+                is_final_valid_model=True,
+            ),
+        ],
+        # "686eb7e687e50729cb134d3958d7814d": [],  # maps/BroodWar/(4)BloodBath.scmB.xml
+    },
+    "RAI-BC": {},
+    "RAI-BC-PPO": {},
 }
 
-AGENT_ARGS_BY_MAP_SIZE = {
-    16: [
-        PickerArgs(
-            algo="ppo",
-            env="Microrts-squnet-d16-128-BC-finetune",
-            seed=1,
-            best=False,
-            use_paper_obs=False,
-            size=16,
-        )
-    ],
-    32: [
-        PickerArgs(
-            algo="ppo",
-            env="Microrts-squnet-d16-128-map32-BC-finetune-A10",
-            seed=1,
-            best=False,
-            use_paper_obs=False,
-            size=32,
-        )
-    ],
-    64: [
-        PickerArgs(
-            algo="ppo",
-            env="Microrts-squnet-d16-128-map64-BC-finetune-A10",
-            seed=1,
-            best=False,
-            use_paper_obs=False,
-            size=64,
-        )
-    ],
+AGENT_ARGS_BY_MAP_SIZE_BY_MODEL_SET = {
+    "RAISocketAI": {
+        16: [
+            PickerArgs(
+                algo="ppo",
+                env="Microrts-A6000-finetuned-coac-mayari",
+                seed=1,
+                best=True,
+                use_paper_obs=True,
+                size=16,
+            )
+        ],
+        32: [
+            PickerArgs(
+                algo="ppo",
+                env="Microrts-squnet-map32-128ch-selfplay",
+                seed=1,
+                best=True,
+                use_paper_obs=False,
+                size=32,
+            )
+        ],
+        64: [
+            PickerArgs(
+                algo="ppo",
+                env="Microrts-squnet-map64-64ch-selfplay",
+                seed=1,
+                best=True,
+                use_paper_obs=False,
+                size=64,
+            )
+        ],
+    },
+    "RAI-BC": {
+        16: [
+            PickerArgs(
+                algo="acbc",
+                env="Microrts-squnet-d16-128-iMayari-nondeterministic",
+                seed=1,
+                best=False,
+                use_paper_obs=False,
+                size=16,
+            )
+        ],
+        32: [
+            PickerArgs(
+                algo="acbc",
+                env="Microrts-squnet-d16-128-iMayari-map32",
+                seed=1,
+                best=False,
+                use_paper_obs=False,
+                size=32,
+            )
+        ],
+        64: [
+            PickerArgs(
+                algo="acbc",
+                env="Microrts-squnet-d16-128-iMayari-map64-from32",
+                seed=1,
+                best=False,
+                use_paper_obs=False,
+                size=64,
+            )
+        ],
+    },
+    "RAI-BC-PPO": {
+        16: [
+            PickerArgs(
+                algo="ppo",
+                env="Microrts-squnet-d16-128-BC-finetune",
+                seed=1,
+                best=False,
+                use_paper_obs=False,
+                size=16,
+            )
+        ],
+        32: [
+            PickerArgs(
+                algo="ppo",
+                env="Microrts-squnet-d16-128-map32-BC-finetune-A10",
+                seed=1,
+                best=False,
+                use_paper_obs=False,
+                size=32,
+            )
+        ],
+        64: [
+            PickerArgs(
+                algo="ppo",
+                env="Microrts-squnet-d16-128-map64-BC-finetune-A10",
+                seed=1,
+                best=False,
+                use_paper_obs=False,
+                size=64,
+            )
+        ],
+    },
 }
 
 
@@ -98,6 +210,13 @@ def main():
         "--use_best_models",
         help="Disable performance-based model selection. Always pick highest precedence model.",
         action="store_true",
+    )
+    parser.add_argument(
+        "--model_set",
+        help="Model set to use.",
+        type=str,
+        choices=["RAI-BC-PPO", "RAI-BC", "RAISocketAI"],
+        default="RAISocketAI",
     )
     parser.add_argument("-v", "--verbose", action="count", default=0)
     args = parser.parse_args()
@@ -175,8 +294,11 @@ def main():
         },
     )
 
+    agent_args_by_terrain_md5 = AGENT_ARGS_BY_TERRAIN_MD5_BY_MODEL_SET[args.model_set]
+    agent_args_by_map_size = AGENT_ARGS_BY_MAP_SIZE_BY_MODEL_SET[args.model_set]
+
     envs_by_name: Dict[str, VectorEnv] = {}
-    for sz, picker_args in AGENT_ARGS_BY_MAP_SIZE.items():
+    for sz, picker_args in agent_args_by_map_size.items():
         for p_arg in picker_args:
             envs_by_name[p_arg.env] = make_eval_env(
                 env_config,
@@ -188,7 +310,7 @@ def main():
                     "fixed_size": True,
                 },
             )
-    for terrain_md5, picker_args in AGENT_ARGS_BY_TERRAIN_MD5.items():
+    for terrain_md5, picker_args in agent_args_by_terrain_md5.items():
         for p_arg in picker_args:
             envs_by_name[p_arg.env] = make_eval_env(
                 env_config,
@@ -211,8 +333,8 @@ def main():
     env_spaces = EnvSpaces.from_vec_env(env)
     device = get_device(env_config, env_spaces)
     policy = MapSizePolicyPicker(
-        AGENT_ARGS_BY_MAP_SIZE,
-        AGENT_ARGS_BY_TERRAIN_MD5,
+        agent_args_by_map_size,
+        agent_args_by_terrain_md5,
         env_spaces,
         env,
         device,
