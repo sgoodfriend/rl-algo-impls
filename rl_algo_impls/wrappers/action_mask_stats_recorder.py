@@ -24,7 +24,7 @@ class ActionMaskStatsRecorder(VectorWrapper):
 
     def step(self, actions) -> VecEnvStepReturn:
         obs, rewards, terminations, truncations, infos = super().step(actions)
-        dones = terminations | truncations
+        dones = np.logical_or(terminations, truncations)
 
         action_mask = self.get_action_mask()
         num_valid_locations = np.sum(np.any(action_mask, axis=2), axis=1)

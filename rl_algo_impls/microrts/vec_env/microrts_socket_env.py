@@ -215,7 +215,13 @@ class MicroRTSSocketEnv(MicroRTSInterface):
                     self._matrix_mask = np.array(
                         json.loads(args[matrix_mask_idx].decode("utf-8")),
                     )
-                return self.obs, self.action_mask, np.zeros(1), np.zeros(1), [{}]
+                return (
+                    self.obs,
+                    self.action_mask,
+                    np.zeros(1),
+                    np.zeros(1, dtype=np.bool_),
+                    [{}],
+                )
             elif self.command == MessageType.GAME_OVER:
                 winner = args[0][0]
                 if winner == 0:
@@ -251,7 +257,7 @@ class MicroRTSSocketEnv(MicroRTSInterface):
                     self.obs,
                     self.action_mask,
                     np.ones(1) * reward,
-                    np.ones(1),
+                    np.ones(1, dtype=np.bool_),
                     [{}],
                 )
             else:
