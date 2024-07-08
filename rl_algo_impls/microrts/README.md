@@ -19,6 +19,38 @@ cd rl-algo-impls
 ./scripts/microrts.sh -a appo -e Microrts-small-net-bw8a-40m-ent5-lr3c-05wb2lwr-vf50-nga-a10
 ```
 
+## IEEE-CoG2024 MicroRTS competition
+
+Note: This submission is RAI-BC-PPO from [A Competition Winning Deep Reinforcement
+Learning Agent in microRTS](https://arxiv.org/abs/2402.08112), which is not optimized
+for competition run-time limits. It will likely time-out on the largest (64x64) maps.
+
+1. Java (tested 11+) and Python 3.8+ must be installed
+2. Download the RAISocketAI archive. For the CoG2023 MicroRTS competition this can be
+   downloaded from https://github.com/sgoodfriend/rl-algo-impls/releases/download/v0.2.0/rl_algo_impls-0.2.0.zip
+3. Unzip the archive: `unzip -j rl_algo_impls-0.2.0.zip`
+4. Upgrade and install Python depdendencies:
+
+```
+python -m pip install --upgrade pip
+python -m pip install --upgrade torch
+```
+
+5. Install the `.whl` file:
+
+```
+python -m pip install --upgrade rl_algo_impls-0.2.0-py3-none-any.whl
+```
+
+The above steps makes `rai_microrts` callable within the terminal. `RAIBCPPO.java`
+uses this to start a Python child process, which is used to compute actions.
+`RAISocketAI.java` runs the 2023 competition winning model.
+
+To see this demonstrated in Google Colab running a small command-line tournament, open
+[colab_microrts_demo.ipynb](colab_microrts_demo.ipynb)
+in Google Colab (ideally High-RAM Runtime shape, no Hardware accelator).
+
+
 ## IEEE-CoG2023 MicroRTS competition
 
 _Technical details in [technical-description.md](https://github.com/sgoodfriend/rl-algo-impls/blob/main/rl_algo_impls/microrts/technical-description.md)_
