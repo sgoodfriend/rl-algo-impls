@@ -1,3 +1,3 @@
 recursive-exclude papers/* *
-recursive-exclude rai_microrts_saved_models/* *
 recursive-exclude lux_models/* *
+recursive-include rai_microrts_saved_models *

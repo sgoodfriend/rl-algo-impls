@@ -17,8 +17,12 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
 ]
 packages = [
-    { include = "rl_algo_impls" }
+    { include = "rl_algo_impls" },
+    { include = "rai_microrts_saved_models", format = ["sdist", "wheel"] }
 ]
+
+[tool.poetry.package-data]
+"rai_microrts_saved_models" = ["**/*"]
 
 [tool.poetry.dependencies]
 python = ">=3.8,<3.12"
