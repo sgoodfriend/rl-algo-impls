@@ -14,11 +14,13 @@ class Plane(ABC):
         source_col: int,
         destination: np.ndarray,
         destination_col: int,
-    ) -> int: ...
+    ) -> int:
+        ...
 
     @property
     @abstractmethod
-    def n_dim(self) -> int: ...
+    def n_dim(self) -> int:
+        ...
 
 
 @dataclass
@@ -52,11 +54,6 @@ class OffsetPlane(Plane):
 class MultiplierPlane(OffsetPlane):
     def __init__(self, multiplier: float, clip_expected: bool = False) -> None:
         super().__init__(multiplier=multiplier, offset=0, clip_expected=clip_expected)
-
-
-class IdentityPlane(OffsetPlane):
-    def __init__(self, clip_expected: bool = False) -> None:
-        super().__init__(multiplier=1, offset=0, clip_expected=clip_expected)
 
 
 @dataclass

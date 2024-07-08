@@ -14,7 +14,6 @@ from rl_algo_impls.microrts.vec_env.microrts_interface import (
     MicroRTSInterfaceListener,
 )
 from rl_algo_impls.microrts.vec_env.planes import (
-    IdentityPlane,
     MultiplierPlane,
     ObservationTransform,
     OffsetPlane,
@@ -118,7 +117,7 @@ class MicroRTSSpaceTransform(VectorEnv, MicroRTSInterfaceListener):
                         OffsetThresholdPlane(offset=128, min_threshold=10),
                     ],
                 ),
-                Planes("terrain", [IdentityPlane()]),
+                Planes("terrain", [OneHotPlane(2)]),
             ]
         )
         if self.interface.partial_obs:
