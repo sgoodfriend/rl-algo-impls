@@ -352,13 +352,16 @@ class MicroRTSSpaceTransform(VectorEnv, MicroRTSInterfaceListener):
 
         o = np.zeros((env_h, env_w, self.obs_dim), dtype=obs_array.dtype)
         o[:, :, 11] = -128  # ETA offset by -128
-        o[:, :, -1] = self.interface.terrain(env_idx)
+        o[:, :, -1] = np.ones(
+            (env_h, env_w), dtype=obs_array.dtype
+        ) - self.interface.terrain(env_idx)
         o[obs_array[:, 0], obs_array[:, 1], :-1] = obs_array[:, 2:]
 
         if env_h == self.height and env_w == self.width:
             return o
 
         obs = np.zeros((self.height, self.width, self.obs_dim), dtype=o.dtype)
+        obs[:, :, -1] = 0
         pad_h = (self.height - env_h) // 2
         pad_w = (self.width - env_w) // 2
         obs[pad_h : pad_h + env_h, pad_w : pad_w + env_w, :] = o
