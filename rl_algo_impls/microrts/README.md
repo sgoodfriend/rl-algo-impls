@@ -25,7 +25,7 @@ Note: This submission is RAI-BC-PPO from [A Competition Winning Deep Reinforceme
 Learning Agent in microRTS](https://arxiv.org/abs/2402.08112), which is not optimized
 for competition run-time limits. It will likely time-out on the largest (64x64) maps.
 
-1. Java (tested 11+) and Python 3.8+ must be installed
+1. Java (tested 11+), swig, and Python 3.8-3.10 (ideally 3.10) must be installed
 2. Download the RAISocketAI archive. For the CoG2023 MicroRTS competition this can be
    downloaded from https://github.com/sgoodfriend/rl-algo-impls/releases/download/v0.2.0/rl_algo_impls-0.2.0.zip
 3. Unzip the archive: `unzip -j rl_algo_impls-0.2.0.zip`
