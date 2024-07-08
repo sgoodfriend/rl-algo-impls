@@ -27,6 +27,7 @@ from rl_algo_impls.runner.running_utils import load_hyperparams, make_eval_polic
 from rl_algo_impls.shared.data_store.in_process_data_store_accessor import (
     InProcessDataStoreAccessor,
 )
+from rl_algo_impls.shared.policy.abstract_policy import Step
 from rl_algo_impls.shared.policy.policy import Policy
 from rl_algo_impls.shared.tensor_utils import NumpyOrDict
 from rl_algo_impls.shared.vec_env.env_spaces import EnvSpaces
@@ -136,13 +137,15 @@ class MapSizePolicyPicker(Policy, Generic[ObsType]):
         self,
         picker_args_by_size: Dict[int, List[PickerArgs]],
         picker_args_by_terrain_md5: Dict[str, List[PickerArgs]],
+        env_spaces: EnvSpaces,
         env: VectorEnv,
         device: torch.device,
         envs_by_name: Dict[str, VectorEnv],
         time_budget_ms: int,
         use_best_models: bool,
     ) -> None:
-        super().__init__(env)
+        super().__init__(env_spaces)
+        self.env = env
         self.to(device)
         self.envs_by_name = envs_by_name
         self.time_budget_ms = time_budget_ms
@@ -279,18 +282,18 @@ class MapSizePolicyPicker(Policy, Generic[ObsType]):
                         and terrain_md5 not in self.avg_ms_by_terrain_md5
                     ):
                         self.logger.info(f"Loading EMA for {terrain_md5}")
-                        self.avg_ms_by_terrain_md5[
-                            terrain_md5
-                        ] = ExponentialMovingAverages(
-                            EXPONENTIAL_MOVING_AVERAGE_SPAN,
-                            avg_ms_by_terrain_policy[terrain_md5],
+                        self.avg_ms_by_terrain_md5[terrain_md5] = (
+                            ExponentialMovingAverages(
+                                EXPONENTIAL_MOVING_AVERAGE_SPAN,
+                                avg_ms_by_terrain_policy[terrain_md5],
+                            )
                         )
 
         valid_policies = self._valid_policies(obs)
         pga_expiration = getattr(self.env, "pre_game_analysis_expiration_ms")
-        observation_by_policy_name: Dict[
-            str, Tuple[ObsType, Optional[NumpyOrDict]]
-        ] = {}
+        observation_by_policy_name: Dict[str, Tuple[ObsType, Optional[NumpyOrDict]]] = (
+            {}
+        )
         for p_name, p in valid_policies:
             p_env = self.envs_by_name[p_name]
             observation_by_policy_name[p_name] = (
@@ -390,3 +393,17 @@ class MapSizePolicyPicker(Policy, Generic[ObsType]):
             policy_name, [(end_s - start_s) * 1000]
         )
         return actions
+
+    def value(self, obs: ObsType) -> np.ndarray:
+        raise NotImplementedError
+
+    def step(self, obs: ObsType, action_masks: Optional[NumpyOrDict] = None) -> Step:
+        raise NotImplementedError
+
+    def logprobs(
+        self,
+        obs: ObsType,
+        actions: NumpyOrDict,
+        action_masks: Optional[NumpyOrDict] = None,
+    ) -> np.ndarray:
+        raise NotImplementedError

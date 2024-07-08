@@ -10,6 +10,11 @@ from typing import Dict
 import torch
 import torch.backends.mkldnn
 
+from rl_algo_impls.shared.data_store.data_store_view import EvalDataStoreView
+from rl_algo_impls.shared.data_store.in_process_data_store_accessor import (
+    InProcessDataStoreAccessor,
+)
+from rl_algo_impls.shared.vec_env.env_spaces import EnvSpaces
 from rl_algo_impls.utils.system_info import (
     log_cpu_info,
     log_installed_libraries_info,
@@ -28,8 +33,8 @@ from rl_algo_impls.microrts.map_size_policy_picker import (
 from rl_algo_impls.runner.config import Config, RunArgs
 from rl_algo_impls.runner.env_hyperparams import EnvHyperparams
 from rl_algo_impls.runner.running_utils import load_hyperparams
-from rl_algo_impls.utils.device import get_device
 from rl_algo_impls.shared.vec_env.make_env import make_eval_env
+from rl_algo_impls.utils.device import get_device
 from rl_algo_impls.utils.timing import measure_time
 
 MAX_TORCH_THREADS = 8
@@ -157,9 +162,14 @@ def main():
     hyperparams = load_hyperparams(run_args.algo, run_args.env)
     env_config = Config(run_args, hyperparams, root_dir)
 
+    data_store_accessor = InProcessDataStoreAccessor(
+        **(env_config.hyperparams.checkpoints_kwargs or {})
+    )
+
     env = make_eval_env(
         env_config,
         EnvHyperparams(**env_config.env_hyperparams),
+        EvalDataStoreView(data_store_accessor, is_eval_job=True),
         override_hparams={
             "time_budget_ms": args.time_budget_ms,
         },
@@ -171,6 +181,7 @@ def main():
             envs_by_name[p_arg.env] = make_eval_env(
                 env_config,
                 EnvHyperparams(**env_config.env_hyperparams),
+                EvalDataStoreView(data_store_accessor, is_eval_job=True),
                 override_hparams={
                     "valid_sizes": [sz],
                     "paper_planes_sizes": [sz] if p_arg.use_paper_obs else [],
@@ -182,6 +193,7 @@ def main():
             envs_by_name[p_arg.env] = make_eval_env(
                 env_config,
                 EnvHyperparams(**env_config.env_hyperparams),
+                EvalDataStoreView(data_store_accessor, is_eval_job=True),
                 override_hparams={
                     "valid_sizes": None,
                     "paper_planes_sizes": None,
@@ -196,10 +208,12 @@ def main():
                 },
             )
 
-    device = get_device(env_config, env)
+    env_spaces = EnvSpaces.from_vec_env(env)
+    device = get_device(env_config, env_spaces)
     policy = MapSizePolicyPicker(
         AGENT_ARGS_BY_MAP_SIZE,
         AGENT_ARGS_BY_TERRAIN_MD5,
+        env_spaces,
         env,
         device,
         envs_by_name,
@@ -224,7 +238,7 @@ def main():
             act_duration = (time.perf_counter() - act_start) * 1000
             if act_duration >= args.time_budget_ms:
                 logger.warn(f"act took too long: {int(act_duration)}ms")
-        obs, _, _, _ = env.step(act)
+        obs, _, _, _, _ = env.step(act)
 
         action_mask = get_action_mask()
 
