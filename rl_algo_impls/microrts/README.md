@@ -27,7 +27,7 @@ for competition run-time limits. It will likely time-out on the largest (64x64) 
 
 1. Java (tested 11+), swig, and Python 3.8-3.10 (ideally 3.10) must be installed
 2. Download the RAISocketAI archive. For the CoG2023 MicroRTS competition this can be
-   downloaded from https://github.com/sgoodfriend/rl-algo-impls/releases/download/v0.2.0/rl_algo_impls-0.2.1.zip
+   downloaded from https://github.com/sgoodfriend/rl-algo-impls/releases/download/v0.2.1/rl_algo_impls-0.2.1.zip
 3. Unzip the archive: `unzip -j rl_algo_impls-0.2.1.zip`
 4. Upgrade and install Python depdendencies:
 
