@@ -124,6 +124,16 @@ AGENT_ARGS_BY_MAP_SIZE_BY_MODEL_SET = {
                 size=64,
             )
         ],
+        128: [
+            PickerArgs(
+                algo="ppo",
+                env="Microrts-squnet-map64-64ch-selfplay",
+                seed=1,
+                best=True,
+                use_paper_obs=False,
+                size=128,
+            )
+        ],
     },
     "RAI-BC": {
         16: [
@@ -156,6 +166,16 @@ AGENT_ARGS_BY_MAP_SIZE_BY_MODEL_SET = {
                 size=64,
             )
         ],
+        128: [
+            PickerArgs(
+                algo="acbc",
+                env="Microrts-squnet-d16-128-iMayari-map64-from32",
+                seed=1,
+                best=False,
+                use_paper_obs=False,
+                size=128,
+            )
+        ],
     },
     "RAI-BC-PPO": {
         16: [
@@ -186,6 +206,16 @@ AGENT_ARGS_BY_MAP_SIZE_BY_MODEL_SET = {
                 best=False,
                 use_paper_obs=False,
                 size=64,
+            )
+        ],
+        128: [
+            PickerArgs(
+                algo="ppo",
+                env="Microrts-squnet-d16-128-map64-BC-finetune-A10",
+                seed=1,
+                best=False,
+                use_paper_obs=False,
+                size=128,
             )
         ],
     },

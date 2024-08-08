@@ -59,6 +59,7 @@ public class RAIPerformanceTournament extends RAITournament {
         maps.add(new Pair<>("maps/DoubleGame24x24.xml", 6000));
         maps.add(new Pair<>("maps/BWDistantResources32x32.xml", 7000));
         maps.add(new Pair<>("maps/BroodWar/(4)BloodBath.scmB.xml", 10000));
+        maps.add(new Pair<>("maps/BroodWar/(4)Andromeda.scxB.xml", 14000));
 
         String prefix = "tournament_";
         if (maps.size() == 1) {

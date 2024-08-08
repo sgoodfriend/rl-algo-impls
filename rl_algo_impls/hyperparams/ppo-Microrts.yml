@@ -2486,7 +2486,7 @@ Microrts-agent: &microrts-agent
         save_steps: .inf
         swap_steps: .inf
       is_agent: true
-      valid_sizes: [16, 32, 64]
+      valid_sizes: [16, 32, 64, 128]
       paper_planes_sizes: [16]
       terrain_overrides:
         maps/NoWhereToRun9x8.xml:
