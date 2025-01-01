@@ -133,8 +133,8 @@ sh Miniconda3-latest-MacOSX-arm64.sh
    [environment.yml](https://github.com/sgoodfriend/rl-algo-impls/blob/main/environment.yml)
 
 ```sh
-conda env create -f environment.yml -n rai_py38_poetry
-conda activate rai_py38_poetry
+conda env create -f environment.yml
+conda activate rl_algo_impls_310
 ```
 
 4. Install other dependencies with poetry
