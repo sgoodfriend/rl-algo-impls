@@ -10,4 +10,5 @@ dependencies:
   - pytorch
   - torchvision
   - torchaudio
-  - build
+  - pip:
+      - build
